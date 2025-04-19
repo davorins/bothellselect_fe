@@ -1,0 +1,1371 @@
+import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import { OverlayTrigger, Tooltip } from 'react-bootstrap';
+import axios from 'axios';
+import ImageWithBasePath from '../../../core/common/imageWithBasePath';
+import { all_routes } from '../../router/all_routes';
+import { useAuth } from '../../../context/AuthContext';
+
+interface Address {
+  street: string;
+  street2: string;
+  city: string;
+  state: string;
+  zip: string;
+}
+
+// Define the Guardian type
+interface Guardian {
+  fullName: string;
+  relationship: string;
+  phone: string;
+  email: string;
+  address: Address;
+  isCoach: boolean;
+  aauNumber?: string;
+}
+
+interface FormData {
+  fullName: string;
+  email: string;
+  phone: string;
+  address: Address;
+  relationship: string;
+  isCoach: boolean;
+  aauNumber: string;
+}
+
+// Define the Player type
+interface Player {
+  _id: string;
+  fullName: string;
+  gender: string;
+  dob: string;
+  schoolName: string;
+  grade?: string;
+  healthConcerns: string;
+  aauNumber: string;
+  registrationYear: number;
+  season: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
+const Profile = () => {
+  const route = all_routes;
+  const {
+    parent,
+    fetchParentData,
+    isLoading,
+    fetchPlayersData,
+    players,
+    setPlayers,
+    role, // Added role from context
+  } = useAuth();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [isEditingPlayer, setIsEditingPlayer] = useState<string | null>(null);
+  const [isEditingGuardian, setIsEditingGuardian] = useState<number | null>(
+    null
+  );
+
+  const [formData, setFormData] = useState<FormData>({
+    fullName: '',
+    email: '',
+    phone: '',
+    address: {
+      street: '',
+      street2: '',
+      city: '',
+      state: '',
+      zip: '',
+    },
+    relationship: '',
+    isCoach: false,
+    aauNumber: '',
+  });
+
+  const [playerFormData, setPlayerFormData] = useState<Player | null>(null);
+  const [editedGuardians, setEditedGuardians] = useState<Guardian[]>([]);
+
+  // Helper function to parse address string into object
+  const parseAddress = (addressString: string | Address): Address => {
+    // If it's already an Address object, return it as-is
+    if (typeof addressString !== 'string') {
+      return addressString as Address;
+    }
+
+    if (!addressString) {
+      return {
+        street: '',
+        street2: '',
+        city: '',
+        state: '',
+        zip: '',
+      };
+    }
+
+    // Normalize the string by replacing multiple spaces with single space
+    const normalized = addressString.replace(/\s+/g, ' ').trim();
+
+    // Split into parts and trim whitespace
+    const parts = normalized.split(',').map((part) => part.trim());
+
+    // Initialize address object
+    const address: Address = {
+      street: '',
+      street2: '',
+      city: '',
+      state: '',
+      zip: '',
+    };
+
+    // First part is always street
+    if (parts.length > 0) address.street = parts[0];
+
+    // Handle street2 if present (assuming it's the part before the last 3 parts)
+    if (parts.length > 3) {
+      address.street2 = parts.slice(1, -2).join(', ');
+    }
+
+    // City/state/zip handling
+    if (parts.length >= 3) {
+      // The city is typically the part before the last one
+      address.city = parts[parts.length - 2] || '';
+
+      // The last part should contain state and ZIP
+      const stateZipPart = parts[parts.length - 1].trim();
+
+      // Improved state/ZIP parsing
+      const stateZipMatch = stateZipPart.match(
+        /([A-Za-z]{2})\s*(\d{5}(?:-\d{4})?)/
+      );
+
+      if (stateZipMatch) {
+        address.state = stateZipMatch[1].toUpperCase(); // Ensure uppercase state code
+        address.zip = stateZipMatch[2];
+      } else {
+        // Fallback - try to extract just the ZIP if state isn't found
+        const zipMatch = stateZipPart.match(/(\d{5}(?:-\d{4})?)/);
+        if (zipMatch) {
+          address.zip = zipMatch[0];
+        } else {
+          // If no ZIP found, put the whole thing in state (last resort)
+          address.state = stateZipPart;
+        }
+      }
+    }
+
+    return address;
+  };
+
+  // Helper function to ensure address is in the correct format
+  const ensureAddress = useCallback(
+    (
+      address:
+        | string
+        | Address
+        | { street: string; city: string; state: string; zip: string }
+        | undefined
+    ): Address => {
+      if (!address) {
+        return {
+          street: '',
+          street2: '',
+          city: '',
+          state: '',
+          zip: '',
+        };
+      }
+
+      if (typeof address === 'string') {
+        return parseAddress(address);
+      }
+
+      // Handle case where street2 might be missing
+      return {
+        street: address.street || '',
+        street2: 'street2' in address ? address.street2 : '',
+        city: address.city || '',
+        state: address.state || '',
+        zip: address.zip || '',
+      };
+    },
+    []
+  );
+
+  // Helper function to format address for display
+  const formatAddress = (address: string | Address): string => {
+    if (!address) return '';
+
+    const addr = typeof address === 'string' ? parseAddress(address) : address;
+
+    const parts = [
+      addr.street,
+      addr.street2,
+      `${addr.city}, ${addr.state} ${addr.zip}`.trim(),
+    ].filter((part) => part && part.trim() !== '');
+
+    return parts.join(', ');
+  };
+
+  // Initialize form data and edited guardians when parent data is fetched
+  useEffect(() => {
+    if (parent) {
+      setFormData({
+        fullName: parent.fullName || '',
+        email: parent.email || '',
+        phone: parent.phone || '',
+        address: ensureAddress(
+          typeof parent.address === 'object'
+            ? parent.address
+            : parent.address || ''
+        ),
+        relationship: parent.relationship || '',
+        isCoach: parent.isCoach || false,
+        aauNumber: parent.aauNumber || '',
+      });
+
+      if (role !== 'admin' && parent.players && parent.players.length > 0) {
+        const playerIds = parent.players.map((player) =>
+          typeof player === 'string' ? player : player._id
+        );
+
+        fetchPlayersData(playerIds).then((response) => {
+          console.log('Fetched Players:', response);
+        });
+      } else {
+        setPlayers([]);
+      }
+
+      setEditedGuardians(
+        parent.additionalGuardians?.map((g) => ({
+          ...g,
+          address: ensureAddress(
+            g.address || {
+              street: '',
+              street2: '',
+              city: '',
+              state: '',
+              zip: '',
+            }
+          ),
+        })) || []
+      );
+
+      const playerIds =
+        parent.players?.map((player) =>
+          typeof player === 'string' ? player : player._id
+        ) || [];
+
+      if (playerIds.length > 0) {
+        fetchPlayersData(playerIds).then((response) => {
+          console.log('Fetched Players:', response);
+        });
+      }
+    }
+  }, [parent, fetchPlayersData, role, setPlayers, ensureAddress]);
+
+  // Cleanup effect to reset players when component unmounts
+  useEffect(() => {
+    return () => {
+      setPlayers([]);
+    };
+  }, [setPlayers]);
+
+  // Handle form input changes for parent
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    let updatedValue = value;
+
+    if (name === 'phone') {
+      updatedValue = value.replace(/\D/g, '');
+      if (updatedValue.length > 3 && updatedValue.length <= 6) {
+        updatedValue = `(${updatedValue.slice(0, 3)}) ${updatedValue.slice(3)}`;
+      } else if (updatedValue.length > 6) {
+        updatedValue = `(${updatedValue.slice(0, 3)}) ${updatedValue.slice(
+          3,
+          6
+        )}-${updatedValue.slice(6, 10)}`;
+      }
+    }
+
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: type === 'checkbox' ? checked : updatedValue,
+    }));
+  };
+
+  // Handle form input changes for player
+  const handlePlayerInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+
+    console.log(`Updating ${name}:`, value); // Debugging log
+
+    setPlayerFormData((prevData) =>
+      prevData ? { ...prevData, [name]: value } : null
+    );
+  };
+
+  // Handle form submission for personal information
+  const handlePersonalInfoSubmit = async (
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    e.preventDefault();
+    try {
+      const parentId = localStorage.getItem('parentId');
+      const token = localStorage.getItem('token');
+
+      if (!parentId || !token || !parent) {
+        console.error('Parent ID, token, or parent data not found');
+        return;
+      }
+
+      // No need for ensureAddress since we're already working with Address objects
+      const response = await axios.put(
+        `https://bothellselect.com/api/parent/${parentId}`,
+        formData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      console.log('Update Response:', response.data);
+      setIsEditing(false);
+      fetchParentData();
+    } catch (error) {
+      console.error('Error updating personal information:', error);
+    }
+  };
+
+  // Handle form submission for guardian information
+  const handleGuardianInfoSubmit = async (guardianIndex: number) => {
+    try {
+      const parentId = localStorage.getItem('parentId');
+      const token = localStorage.getItem('token');
+
+      if (!parentId || !token || !parent) {
+        console.error('Parent ID, token, or parent data not found');
+        return;
+      }
+
+      const updatedGuardian = editedGuardians[guardianIndex];
+      if (!updatedGuardian) {
+        console.error('Guardian not found');
+        return;
+      }
+
+      // Ensure all required address fields are present
+      const guardianToUpdate = {
+        ...updatedGuardian,
+        address: {
+          street: updatedGuardian.address.street || '',
+          street2: updatedGuardian.address.street2 || '',
+          city: updatedGuardian.address.city || '',
+          state: updatedGuardian.address.state || '',
+          zip: updatedGuardian.address.zip || '',
+        },
+      };
+
+      const response = await axios.put(
+        `https://bothellselect.com/api/parent/${parentId}/guardian/${guardianIndex}`,
+        guardianToUpdate,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      console.log('Guardian Update Response:', response.data);
+      setIsEditingGuardian(null);
+      fetchParentData(); // Refetch parent data to update the UI
+    } catch (error) {
+      console.error('Error updating guardian information:', error);
+    }
+  };
+
+  // Handle form submission for player information
+  const handlePlayerInfoSubmit = async (playerId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+
+      if (!token || !playerFormData) {
+        console.error('Token or player data not found');
+        return;
+      }
+
+      const updatedPlayerData = {
+        ...playerFormData,
+        grade: playerFormData.grade || '',
+      };
+
+      const response = await axios.put(
+        `https://bothellselect.com/api/player/${playerId}`,
+        updatedPlayerData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      console.log('Player Update Response:', response.data);
+      setIsEditingPlayer(null);
+
+      // Fix: Ensure we pass an array of strings (player IDs)
+      const playerIds =
+        parent?.players?.map((player) =>
+          typeof player === 'string' ? player : player._id
+        ) || [];
+
+      fetchPlayersData(playerIds);
+    } catch (error) {
+      console.error('Error updating player information:', error);
+    }
+  };
+  // Utility function to format date as YYYY-MM-DD
+  const formatDateForInput = (dateString: string) => {
+    if (!dateString) return '';
+
+    // Parse the date string
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date:', dateString); // Log invalid dates for debugging
+      return '';
+    }
+
+    const year = date.getUTCFullYear(); // Use UTC methods
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  };
+
+  // Fetch parent data when the component mounts
+  useEffect(() => {
+    const fetchData = async () => {
+      await fetchParentData();
+      // Don't fetch players here - let the parent effect handle it
+    };
+    fetchData();
+  }, [fetchParentData]);
+
+  // Handle form input changes for guardian
+  const handleGuardianInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    const { name, value, type, checked } = e.target;
+    let updatedValue = value;
+
+    if (name === 'phone') {
+      updatedValue = formatPhoneNumber(value);
+    }
+
+    const updatedGuardians = [...editedGuardians];
+    updatedGuardians[index] = {
+      ...updatedGuardians[index],
+      [name]: type === 'checkbox' ? checked : updatedValue,
+    };
+
+    setEditedGuardians(updatedGuardians);
+  };
+
+  // Utility function to format phone number
+  const formatPhoneNumber = (phoneNumber: string) => {
+    const cleaned = ('' + phoneNumber).replace(/\D/g, '');
+
+    if (cleaned.length === 0) {
+      return '';
+    }
+
+    if (cleaned.length <= 3) {
+      return `(${cleaned}`;
+    } else if (cleaned.length <= 6) {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
+    } else {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(
+        6,
+        10
+      )}`;
+    }
+  };
+
+  // Function to add a new guardian
+  const addNewGuardian = () => {
+    const newGuardian: Guardian = {
+      fullName: '',
+      relationship: '',
+      phone: '',
+      email: '',
+      address: {
+        street: '',
+        street2: '',
+        city: '',
+        state: '',
+        zip: '',
+      },
+      isCoach: false,
+      aauNumber: '',
+    };
+    setEditedGuardians([...editedGuardians, newGuardian]);
+    setIsEditingGuardian(editedGuardians.length);
+  };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!parent) {
+    return <div>No parent data found.</div>;
+  }
+
+  return (
+    <div className='page-wrapper'>
+      <div className='content'>
+        <div className='d-md-flex d-block align-items-center justify-content-between border-bottom pb-3'>
+          <div className='my-auto mb-2'>
+            <h3 className='page-title mb-1'>Profile</h3>
+            <nav>
+              <ol className='breadcrumb mb-0'>
+                <li className='breadcrumb-item'>
+                  <Link to={route.adminDashboard}>Dashboard</Link>
+                </li>
+                <li className='breadcrumb-item'>
+                  <Link to='#'>Settings</Link>
+                </li>
+                <li className='breadcrumb-item active' aria-current='page'>
+                  Profile
+                </li>
+              </ol>
+            </nav>
+          </div>
+          <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
+            <div className='pe-1 mb-2'>
+              <OverlayTrigger
+                placement='top'
+                overlay={<Tooltip id='tooltip-top'>Refresh</Tooltip>}
+              >
+                <Link
+                  to='#'
+                  className='btn btn-outline-light bg-white btn-icon me-1'
+                >
+                  <i className='ti ti-refresh' />
+                </Link>
+              </OverlayTrigger>
+            </div>
+          </div>
+        </div>
+        <div className='d-md-flex d-block mt-3'>
+          <div className='settings-right-sidebar me-md-3 border-0'>
+            <div className='card'>
+              <div className='card-header'>
+                <h5>Personal Information</h5>
+              </div>
+              <div className='card-body '>
+                <div className='settings-profile-upload'>
+                  <span className='profile-pic'>
+                    <ImageWithBasePath
+                      src='assets/img/profiles/avatar-27.jpg'
+                      alt='Profile'
+                    />
+                  </span>
+                  <div className='title-upload'>
+                    <h5>Edit Your Photo</h5>
+                    <Link to='#' className='me-2'>
+                      Delete{' '}
+                    </Link>
+                    <Link to='#' className='text-primary'>
+                      Update
+                    </Link>
+                  </div>
+                </div>
+                <div className='profile-uploader profile-uploader-two mb-0'>
+                  <span className='upload-icon'>
+                    <i className='ti ti-upload' />
+                  </span>
+                  <div className='drag-upload-btn bg-transparent me-0 border-0'>
+                    <p className='upload-btn'>
+                      <span>Click to Upload</span> or drag and drop
+                    </p>
+                    <h6>JPG or PNG</h6>
+                    <h6>(Max 450 x 450 px)</h6>
+                  </div>
+                  <input
+                    type='file'
+                    className='form-control'
+                    multiple
+                    id='image_sign'
+                  />
+                  <div id='frames' />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className='flex-fill ps-0 border-0'>
+            <div className='d-md-flex'>
+              <div className='flex-fill'>
+                <div className='card'>
+                  <div className='card-header d-flex justify-content-between align-items-center'>
+                    <h5>Personal Information</h5>
+                  </div>
+                  <div className='card-body pb-0'>
+                    <div className='d-block d-xl-flex'>
+                      <div className='mb-3 flex-fill me-xl-3 me-0'>
+                        <label className='form-label'>Full Name</label>
+                        <input
+                          type='text'
+                          className='form-control'
+                          name='fullName'
+                          value={formData.fullName}
+                          onChange={handleInputChange}
+                          placeholder='Enter Full Name'
+                          disabled={!isEditing}
+                          data-testid='fullName-input'
+                        />
+                      </div>
+                      <div className='mb-3 flex-fill'>
+                        <label className='form-label'>Email</label>
+                        <input
+                          type='email'
+                          className='form-control'
+                          name='email'
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          placeholder='Enter Email'
+                          disabled={!isEditing}
+                        />
+                      </div>
+                    </div>
+                    <div className='d-block d-xl-flex'>
+                      <div className='mb-3 flex-fill me-xl-3 me-0'>
+                        <label className='form-label'>Phone Number</label>
+                        <input
+                          type='text'
+                          className='form-control'
+                          name='phone'
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                        />
+                      </div>
+                      <div className='mb-3 flex-fill'>
+                        {!isEditing ? (
+                          <>
+                            <label className='form-label'>Address</label>
+                            <input
+                              type='text'
+                              className='form-control'
+                              name='address'
+                              value={formatAddress(formData.address)}
+                              onChange={handleInputChange}
+                              disabled={!isEditing}
+                            />
+                          </>
+                        ) : (
+                          <div className='flex-fill'>
+                            {/* First Line - Street Address and Apt/Suite */}
+                            <div className='row mb-3'>
+                              <div className='col-md-8'>
+                                <label className='form-label'>
+                                  Street Address
+                                </label>
+                                <input
+                                  type='text'
+                                  className='form-control'
+                                  name='address.street'
+                                  value={formData.address.street}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      address: {
+                                        ...formData.address,
+                                        street: e.target.value,
+                                      },
+                                    })
+                                  }
+                                />
+                              </div>
+                              <div className='col-md-4'>
+                                <label className='form-label'>
+                                  Apt/Suite (optional)
+                                </label>
+                                <input
+                                  type='text'
+                                  className='form-control'
+                                  name='address.street2'
+                                  value={formData.address.street2}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      address: {
+                                        ...formData.address,
+                                        street2: e.target.value,
+                                      },
+                                    })
+                                  }
+                                />
+                              </div>
+                            </div>
+
+                            {/* Second Line - City, State, ZIP */}
+                            <div className='row'>
+                              <div className='col-md-5'>
+                                <label className='form-label'>City</label>
+                                <input
+                                  type='text'
+                                  className='form-control'
+                                  name='address.city'
+                                  value={formData.address.city}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      address: {
+                                        ...formData.address,
+                                        city: e.target.value,
+                                      },
+                                    })
+                                  }
+                                />
+                              </div>
+                              <div className='col-md-3'>
+                                <label className='form-label'>State</label>
+                                <input
+                                  type='text'
+                                  className='form-control'
+                                  name='address.state'
+                                  value={formData.address.state}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      address: {
+                                        ...formData.address,
+                                        state: e.target.value,
+                                      },
+                                    })
+                                  }
+                                  maxLength={2}
+                                />
+                              </div>
+                              <div className='col-md-4'>
+                                <label className='form-label'>ZIP Code</label>
+                                <input
+                                  type='text'
+                                  className='form-control'
+                                  name='address.zip'
+                                  value={formData.address.zip}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      address: {
+                                        ...formData.address,
+                                        zip: e.target.value,
+                                      },
+                                    })
+                                  }
+                                  maxLength={10}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className='d-block d-xl-flex'>
+                      <div className='mb-3 flex-fill me-xl-3 me-0'>
+                        <label className='form-label'>
+                          Relationship to Player
+                        </label>
+                        <input
+                          type='text'
+                          className='form-control'
+                          name='relationship'
+                          value={formData.relationship}
+                          onChange={handleInputChange}
+                          placeholder='Enter Relationship to Player'
+                          disabled={!isEditing}
+                        />
+                      </div>
+                      {/* Conditionally render isCoach and aauNumber in edit mode */}
+                      {isEditing && (
+                        <div className='mb-3 flex-fill'>
+                          <label className='form-label'>AAU Number</label>
+                          <input
+                            type='text'
+                            className='form-control'
+                            name='aauNumber'
+                            value={formData.aauNumber}
+                            onChange={handleInputChange}
+                            placeholder='Enter AAU Number'
+                          />
+                        </div>
+                      )}
+                      {/* Display isCoach and aauNumber in view mode */}
+                      {!isEditing && (
+                        <div className='mb-3 flex-fill'>
+                          <label className='form-label'>AAU Number</label>
+                          <input
+                            type='text'
+                            className='form-control'
+                            name='aauNumber'
+                            value={formData.aauNumber}
+                            onChange={handleInputChange}
+                            placeholder='Enter AAU Number'
+                            disabled={!isEditing}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {!isEditing && (
+                      <button
+                        type='button'
+                        className='btn btn-primary btn-sm mb-4'
+                        onClick={() => {
+                          setIsEditing(true);
+                          console.log('Edit button clicked. isEditing:', true);
+                        }}
+                      >
+                        <i className='ti ti-edit me-2' />
+                        Edit
+                      </button>
+                    )}
+                    {isEditing && (
+                      <button
+                        type='button'
+                        className='btn btn-primary btn-sm mb-4'
+                        onClick={handlePersonalInfoSubmit}
+                      >
+                        <i className='ti ti-edit me-2' />
+                        Save Changes
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className='card mt-3'>
+                  <div className='card-header d-flex justify-content-between align-items-center'>
+                    <h5>Additional Parent/Guardian Information</h5>
+                    {editedGuardians.length === 0 && (
+                      <button
+                        type='button'
+                        className='btn btn-primary btn-sm'
+                        onClick={addNewGuardian}
+                      >
+                        <i className='ti ti-plus me-2' />
+                        Add Parent/Guardian
+                      </button>
+                    )}
+                  </div>
+                  <div className='card-body pb-0'>
+                    {editedGuardians.length > 0 ? (
+                      editedGuardians.map((guardian, index) => (
+                        <div key={index} className='mb-4'>
+                          <div className='d-md-flex'>
+                            <div className='flex-fill'>
+                              <div className='card'>
+                                <div className='card-header d-flex justify-content-between align-items-center'>
+                                  <h5>{guardian.fullName}</h5>
+                                </div>
+                                <div className='card-body pb-0'>
+                                  <div className='d-block d-xl-flex'>
+                                    <div className='mb-3 flex-fill me-xl-3 me-0'>
+                                      <label className='form-label'>
+                                        Full Name
+                                      </label>
+                                      <input
+                                        type='text'
+                                        className='form-control'
+                                        value={guardian.fullName}
+                                        onChange={(e) => {
+                                          const updatedGuardians = [
+                                            ...editedGuardians,
+                                          ];
+                                          updatedGuardians[index].fullName =
+                                            e.target.value;
+                                          setEditedGuardians(updatedGuardians);
+                                        }}
+                                        disabled={isEditingGuardian !== index}
+                                      />
+                                    </div>
+                                    <div className='mb-3 flex-fill'>
+                                      <label className='form-label'>
+                                        Email
+                                      </label>
+                                      <input
+                                        type='email'
+                                        className='form-control'
+                                        value={guardian.email}
+                                        onChange={(e) => {
+                                          const updatedGuardians = [
+                                            ...editedGuardians,
+                                          ];
+                                          updatedGuardians[index].email =
+                                            e.target.value;
+                                          setEditedGuardians(updatedGuardians);
+                                        }}
+                                        disabled={isEditingGuardian !== index}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className='d-block d-xl-flex'>
+                                    <div className='mb-3 flex-fill me-xl-3 me-0'>
+                                      <label className='form-label'>
+                                        Phone Number
+                                      </label>
+                                      <input
+                                        type='text'
+                                        className='form-control'
+                                        name='phone'
+                                        value={guardian.phone}
+                                        onChange={(e) =>
+                                          handleGuardianInputChange(e, index)
+                                        }
+                                        disabled={isEditingGuardian !== index}
+                                      />
+                                    </div>
+                                    <div className='mb-3 flex-fill'>
+                                      {isEditingGuardian === index ? (
+                                        <div className='flex-fill'>
+                                          {/* First Line - Street Address and Apt/Suite */}
+                                          <div className='row mb-3'>
+                                            <div className='col-md-8'>
+                                              <label className='form-label'>
+                                                Street Address
+                                              </label>
+                                              <input
+                                                type='text'
+                                                className='form-control'
+                                                value={guardian.address.street}
+                                                onChange={(e) => {
+                                                  const updatedGuardians = [
+                                                    ...editedGuardians,
+                                                  ];
+                                                  updatedGuardians[
+                                                    index
+                                                  ].address.street =
+                                                    e.target.value;
+                                                  setEditedGuardians(
+                                                    updatedGuardians
+                                                  );
+                                                }}
+                                              />
+                                            </div>
+                                            <div className='col-md-4'>
+                                              <label className='form-label'>
+                                                Apt/Suite (optional)
+                                              </label>
+                                              <input
+                                                type='text'
+                                                className='form-control'
+                                                value={guardian.address.street2}
+                                                onChange={(e) => {
+                                                  const updatedGuardians = [
+                                                    ...editedGuardians,
+                                                  ];
+                                                  updatedGuardians[
+                                                    index
+                                                  ].address.street2 =
+                                                    e.target.value;
+                                                  setEditedGuardians(
+                                                    updatedGuardians
+                                                  );
+                                                }}
+                                              />
+                                            </div>
+                                          </div>
+
+                                          {/* Second Line - City, State, ZIP */}
+                                          <div className='row'>
+                                            <div className='col-md-5'>
+                                              <label className='form-label'>
+                                                City
+                                              </label>
+                                              <input
+                                                type='text'
+                                                className='form-control'
+                                                value={guardian.address.city}
+                                                onChange={(e) => {
+                                                  const updatedGuardians = [
+                                                    ...editedGuardians,
+                                                  ];
+                                                  updatedGuardians[
+                                                    index
+                                                  ].address.city =
+                                                    e.target.value;
+                                                  setEditedGuardians(
+                                                    updatedGuardians
+                                                  );
+                                                }}
+                                              />
+                                            </div>
+                                            <div className='col-md-3'>
+                                              <label className='form-label'>
+                                                State
+                                              </label>
+                                              <input
+                                                type='text'
+                                                className='form-control'
+                                                value={guardian.address.state}
+                                                onChange={(e) => {
+                                                  const updatedGuardians = [
+                                                    ...editedGuardians,
+                                                  ];
+                                                  updatedGuardians[
+                                                    index
+                                                  ].address.state =
+                                                    e.target.value;
+                                                  setEditedGuardians(
+                                                    updatedGuardians
+                                                  );
+                                                }}
+                                                maxLength={2}
+                                              />
+                                            </div>
+                                            <div className='col-md-4'>
+                                              <label className='form-label'>
+                                                ZIP Code
+                                              </label>
+                                              <input
+                                                type='text'
+                                                className='form-control'
+                                                value={guardian.address.zip}
+                                                onChange={(e) => {
+                                                  const updatedGuardians = [
+                                                    ...editedGuardians,
+                                                  ];
+                                                  updatedGuardians[
+                                                    index
+                                                  ].address.zip =
+                                                    e.target.value;
+                                                  setEditedGuardians(
+                                                    updatedGuardians
+                                                  );
+                                                }}
+                                                maxLength={10}
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <>
+                                          <label className='form-label'>
+                                            Address
+                                          </label>
+                                          <input
+                                            type='text'
+                                            className='form-control'
+                                            name='address'
+                                            value={formatAddress(
+                                              guardian.address
+                                            )}
+                                            onChange={(e) =>
+                                              handleGuardianInputChange(
+                                                e,
+                                                index
+                                              )
+                                            }
+                                            disabled={
+                                              isEditingGuardian !== index
+                                            }
+                                          />
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className='d-block d-xl-flex'>
+                                    <div className='mb-3 flex-fill me-xl-3 me-0'>
+                                      <label className='form-label'>
+                                        Relationship
+                                      </label>
+                                      <input
+                                        type='text'
+                                        className='form-control'
+                                        value={guardian.relationship}
+                                        onChange={(e) => {
+                                          const updatedGuardians = [
+                                            ...editedGuardians,
+                                          ];
+                                          updatedGuardians[index].relationship =
+                                            e.target.value;
+                                          setEditedGuardians(updatedGuardians);
+                                        }}
+                                        disabled={isEditingGuardian !== index}
+                                      />
+                                    </div>
+                                    <div className='mb-3 flex-fill'>
+                                      <label className='form-label'>
+                                        AAU Number
+                                      </label>
+                                      <input
+                                        type='text'
+                                        className='form-control'
+                                        value={guardian.aauNumber || ''}
+                                        onChange={(e) => {
+                                          const updatedGuardians = [
+                                            ...editedGuardians,
+                                          ];
+                                          const aauNumber = e.target.value;
+
+                                          // Update AAU number
+                                          updatedGuardians[index].aauNumber =
+                                            aauNumber;
+
+                                          // Automatically set isCoach based on AAU number
+                                          updatedGuardians[index].isCoach =
+                                            !!aauNumber; // Set isCoach to true if AAU number is not empty
+
+                                          setEditedGuardians(updatedGuardians);
+                                        }}
+                                        disabled={isEditingGuardian !== index}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              {isEditingGuardian !== index && (
+                                <button
+                                  type='button'
+                                  className='btn btn-primary btn-sm'
+                                  onClick={() => setIsEditingGuardian(index)}
+                                >
+                                  <i className='ti ti-edit me-2' />
+                                  Edit
+                                </button>
+                              )}
+                              {isEditingGuardian === index && (
+                                <button
+                                  type='button'
+                                  className='btn btn-primary btn-sm'
+                                  onClick={() =>
+                                    handleGuardianInfoSubmit(index)
+                                  }
+                                >
+                                  <i className='ti ti-edit me-2' />
+                                  Save Changes
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className='mb-4'>
+                        No additional guardians registered.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className='flex-fill ps-0 border-0'>
+              <div className='card mt-3'>
+                <div className='card-header d-flex justify-content-between align-items-center'>
+                  <h5>Player Information</h5>
+                </div>
+                <div className='card-body pb-0'>
+                  {players.length > 0 ? (
+                    players.map((player, index) => (
+                      <div key={index} className='mb-4'>
+                        <div className='d-md-flex'>
+                          <div className='flex-fill'>
+                            <div className='card'>
+                              <div className='card-header d-flex justify-content-between align-items-center'>
+                                <h5>{player.fullName}</h5>
+                              </div>
+                              <div className='card-body pb-0'>
+                                <div className='d-block d-xl-flex'>
+                                  <div className='mb-3 flex-fill me-xl-3 me-0'>
+                                    <label className='form-label'>
+                                      Full Name
+                                    </label>
+                                    <input
+                                      type='text'
+                                      className='form-control'
+                                      name='fullName'
+                                      value={
+                                        isEditingPlayer === player._id
+                                          ? playerFormData?.fullName || ''
+                                          : player.fullName
+                                      }
+                                      onChange={handlePlayerInputChange}
+                                      placeholder='Enter Full Name'
+                                      disabled={isEditingPlayer !== player._id}
+                                    />
+                                  </div>
+                                  <div className='mb-3 flex-fill'>
+                                    <label className='form-label'>Gender</label>
+                                    <input
+                                      type='text'
+                                      className='form-control'
+                                      name='gender'
+                                      value={
+                                        isEditingPlayer === player._id
+                                          ? playerFormData?.gender || ''
+                                          : player.gender
+                                      }
+                                      onChange={handlePlayerInputChange}
+                                      placeholder='Enter Gender'
+                                      disabled={isEditingPlayer !== player._id}
+                                    />
+                                  </div>
+                                </div>
+                                <div className='d-block d-xl-flex'>
+                                  <div className='mb-3 flex-fill me-xl-3 me-0'>
+                                    <label className='form-label'>
+                                      Date of Birth
+                                    </label>
+                                    <input
+                                      type='date'
+                                      className='form-control'
+                                      name='dob'
+                                      value={
+                                        isEditingPlayer === player._id
+                                          ? formatDateForInput(
+                                              playerFormData?.dob || ''
+                                            )
+                                          : formatDateForInput(player.dob || '')
+                                      }
+                                      onChange={handlePlayerInputChange}
+                                      placeholder='Enter Date of Birth'
+                                      disabled={isEditingPlayer !== player._id}
+                                    />
+                                  </div>
+                                  <div className='mb-3 flex-fill'>
+                                    <label className='form-label'>
+                                      School Name
+                                    </label>
+                                    <input
+                                      type='text'
+                                      className='form-control'
+                                      name='schoolName'
+                                      value={
+                                        isEditingPlayer === player._id
+                                          ? playerFormData?.schoolName || ''
+                                          : player.schoolName
+                                      }
+                                      onChange={handlePlayerInputChange}
+                                      placeholder='Enter School Name'
+                                      disabled={isEditingPlayer !== player._id}
+                                    />
+                                  </div>
+                                </div>
+                                <div className='d-block d-xl-flex'>
+                                  <div className='d-block d-xl-flex'>
+                                    <div className='mb-3 me-xl-3 me-0'>
+                                      <label className='form-label'>
+                                        Grade
+                                      </label>
+                                      <select
+                                        name='grade'
+                                        className='form-control'
+                                        value={
+                                          isEditingPlayer === player._id
+                                            ? playerFormData?.grade || ''
+                                            : (player as Player).grade || '' // Cast player to Player type
+                                        }
+                                        onChange={handlePlayerInputChange}
+                                        disabled={
+                                          isEditingPlayer !== player._id
+                                        }
+                                      >
+                                        <option value=''>Select Grade</option>
+                                        {[...Array(12)].map((_, i) => (
+                                          <option
+                                            key={i + 1}
+                                            value={`${i + 1}`}
+                                          >
+                                            {i + 1}
+                                            {i === 0
+                                              ? 'st'
+                                              : i === 1
+                                              ? 'nd'
+                                              : i === 2
+                                              ? 'rd'
+                                              : 'th'}{' '}
+                                            Grade
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </div>
+                                  <div className='mb-3 flex-fill me-xl-3 me-0'>
+                                    <label className='form-label'>
+                                      Health Concerns
+                                    </label>
+                                    <input
+                                      type='text'
+                                      className='form-control'
+                                      name='healthConcerns'
+                                      value={
+                                        isEditingPlayer === player._id
+                                          ? playerFormData?.healthConcerns || ''
+                                          : player.healthConcerns
+                                      }
+                                      onChange={handlePlayerInputChange}
+                                      placeholder='Enter Health Concerns'
+                                      disabled={isEditingPlayer !== player._id}
+                                    />
+                                  </div>
+                                  <div className='mb-3 me-xl-1 me-0'>
+                                    <label className='form-label'>
+                                      AAU Number
+                                    </label>
+                                    <input
+                                      type='text'
+                                      className='form-control'
+                                      name='aauNumber'
+                                      value={
+                                        isEditingPlayer === player._id
+                                          ? playerFormData?.aauNumber || ''
+                                          : player.aauNumber
+                                      }
+                                      onChange={handlePlayerInputChange}
+                                      placeholder='Enter AAU Number'
+                                      disabled={isEditingPlayer !== player._id}
+                                    />
+                                  </div>
+                                </div>
+                                {isEditingPlayer !== player._id && (
+                                  <button
+                                    type='button'
+                                    className='btn btn-primary btn-sm mb-4'
+                                    onClick={() => {
+                                      setIsEditingPlayer(player._id);
+                                      setPlayerFormData(player);
+                                    }}
+                                  >
+                                    <i className='ti ti-edit me-2' />
+                                    Edit
+                                  </button>
+                                )}
+                                {isEditingPlayer === player._id && (
+                                  <button
+                                    type='button'
+                                    className='btn btn-primary btn-sm mb-4'
+                                    onClick={() =>
+                                      handlePlayerInfoSubmit(player._id)
+                                    }
+                                  >
+                                    <i className='ti ti-edit me-2' />
+                                    Save Changes
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className='mb-4'>No players registered.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Profile;
