@@ -1,0 +1,580 @@
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from 'react';
+import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
+import { all_routes } from '../feature-module/router/all_routes';
+import { registerUser } from '../services/authService';
+import axios from 'axios';
+import {
+  Parent,
+  Guardian,
+  Player,
+  SearchResult,
+  DecodedToken,
+} from '../types/types';
+
+interface AuthContextType {
+  isAuthenticated: boolean;
+  parent: Parent | null;
+  parents: Parent[];
+  user: Parent | null;
+  players: Player[];
+  setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
+  allParents: Parent[]; // Add this line
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  register: (
+    email: string,
+    password: string,
+    fullName: string,
+    phone: string,
+    address: string,
+    relationship: string,
+    isCoach: boolean,
+    aauNumber: string,
+    agreeToTerms: boolean
+  ) => Promise<void>;
+  fetchParentData: () => Promise<void>;
+  fetchPlayersData: (
+    playerIds: string[],
+    queryParams?: string
+  ) => Promise<void>;
+  fetchPlayerData: (playerId: string) => Promise<Player | null>;
+  fetchAllPlayers: (queryParams?: string) => Promise<void>;
+  fetchAllParents: (queryParams?: string) => Promise<Parent[]>;
+  fetchGuardians: (playerId: string) => Promise<Guardian[]>;
+  checkAuth: () => void;
+  role: string;
+  isLoading: boolean;
+  searchAll: (term: string) => Promise<SearchResult[]>;
+  fetchParentsData: (queryParams?: string) => Promise<void>;
+  fetchParentPlayers: (parentId: string) => Promise<Player[]>;
+  fetchAllGuardians: (queryParams?: string) => Promise<Guardian[]>;
+  currentUser: Parent | null;
+}
+
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [parent, setParent] = useState<Parent | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+  const [allParents, setAllParents] = useState<Parent[]>([]);
+  const [parents, setParents] = useState<Parent[]>([]);
+
+  const searchAll = useCallback(
+    async (term: string): Promise<SearchResult[]> => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return [];
+
+        const response = await axios.get(
+          'https://bothellselect.com/api/search/all',
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { q: term },
+          }
+        );
+
+        // Transform the response to match SearchResult
+        return response.data.map((item: any) => ({
+          id: item._id || item.id,
+          type: item.type,
+          name: item.fullName || item.name,
+          gender: item.gender,
+          grade: item.grade,
+          dob: item.dob,
+          aauNumber: item.aauNumber,
+          phone: item.phone,
+          address: item.address,
+          email: item.email,
+          image: item.image || item.profileImage,
+          additionalInfo: item.schoolName || item.additionalInfo,
+          createdAt: item.createdAt,
+        }));
+      } catch (error) {
+        console.error('Search error:', error);
+        return [];
+      }
+    },
+    []
+  );
+
+  const logout = useCallback(() => {
+    console.log('Starting logout...');
+    localStorage.removeItem('token');
+    console.log('Token removed from localStorage');
+    localStorage.removeItem('parentId');
+    localStorage.removeItem('parent');
+    console.log('Parent data removed from localStorage');
+    setIsAuthenticated(false);
+    console.log('isAuthenticated set to false');
+    setParent(null);
+    console.log('Parent set to null');
+    navigate('/login');
+    console.log('Redirected to login page');
+  }, [navigate]);
+
+  const fetchPlayersData = useCallback(
+    async (playerIds: string[], queryParams = '') => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const decoded = jwtDecode<DecodedToken>(token);
+        const isAdmin = decoded.role === 'admin';
+
+        let url = 'https://bothellselect.com/api/players';
+        if (isAdmin && playerIds.length === 0) {
+          url += `?${queryParams}`;
+        } else {
+          url += `?ids=${playerIds.join(',')}`;
+          if (queryParams) {
+            url += `&${queryParams}`;
+          }
+        }
+
+        const response = await axios.get<Player[]>(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        setPlayers(response.data);
+      } catch (error) {
+        console.error('Error fetching players data:', error);
+      }
+    },
+    []
+  );
+
+  const fetchPlayerData = useCallback(async (playerId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get<Player>(
+        `https://bothellselect.com/api/player/${playerId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching player data:', error);
+      return null;
+    }
+  }, []);
+
+  const fetchAllPlayers = useCallback(async (queryParams = '') => {
+    try {
+      console.log('Fetching all players with params:', queryParams);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found');
+        return;
+      }
+
+      const url = `https://bothellselect.com/api/players?${queryParams}`;
+      console.log('Request URL:', url);
+
+      const response = await axios.get<Player[]>(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      console.log('API response:', response.data);
+      setPlayers(response.data);
+    } catch (error) {
+      console.error('Error fetching all players:', error);
+    }
+  }, []);
+
+  const setParentData = (parent: any) => {
+    const parentData: Parent = {
+      _id: parent._id || parent.parentId || '', // Handle both cases
+      email: parent.email || '',
+      fullName: parent.fullName || '',
+      role: parent.role || 'Parent',
+      phone: parent.phone || '',
+      address:
+        typeof parent.address === 'object'
+          ? `${parent.address.street}, ${parent.address.city}, ${parent.address.state} ${parent.address.zip}`
+          : parent.address || '',
+      relationship: parent.relationship || '',
+      players: parent.players || [],
+      isCoach: parent.isCoach || false,
+      aauNumber: parent.aauNumber || '',
+      additionalGuardians: parent.additionalGuardians || [],
+    };
+    setParent(parentData);
+  };
+
+  const fetchParentData = useCallback(async () => {
+    try {
+      const parentId = localStorage.getItem('parentId');
+      const token = localStorage.getItem('token');
+
+      if (!parentId || !token) {
+        throw new Error('Parent ID or token not found in localStorage');
+      }
+
+      const response = await axios.get(
+        `https://bothellselect.com/api/parent/${parentId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const parentData = response.data;
+      console.log('Parent Data:', parentData);
+
+      // Always set parent data, regardless of role
+      setParentData(parentData);
+
+      // Fetch players for this parent, whether admin or not
+      const playerIds =
+        parentData.players?.map((player: any) =>
+          typeof player === 'string' ? player : player._id
+        ) || [];
+
+      if (playerIds.length > 0) {
+        await fetchPlayersData(playerIds);
+      }
+    } catch (error) {
+      console.error('Error fetching parent data:', error);
+      logout();
+    }
+  }, [logout, fetchPlayersData]);
+
+  const fetchGuardians = useCallback(async (playerId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get<Guardian[]>(
+        `https://bothellselect.com/api/player/${playerId}/guardians`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching guardians:', error);
+      return [];
+    }
+  }, []);
+
+  const fetchAllParents = useCallback(async (queryParams = '') => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return [];
+
+      const response = await axios.get<Parent[]>(
+        `https://bothellselect.com/api/parents?${queryParams}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setAllParents(response.data);
+      setParents(response.data); // Also update the parents state
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching parents:', error);
+      return [];
+    }
+  }, []);
+
+  const fetchParentsData = useCallback(async (parentId?: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token found');
+
+      let url = `https://bothellselect.com/api/parents`;
+
+      // If parentId is provided, fetch specific parent
+      if (parentId) {
+        const response = await axios.get<Parent>(
+          `https://bothellselect.com/api/parent/${parentId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setParents([response.data]);
+        return;
+      }
+
+      // Otherwise fetch all parents (admin)
+      const response = await axios.get<Parent[]>(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setParents(response.data);
+    } catch (error) {
+      console.error('Error fetching parents:', error);
+      throw error;
+    }
+  }, []);
+
+  const fetchParentPlayers = async (parentId: string): Promise<Player[]> => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return [];
+
+      // First try to get the parent with populated players
+      const parentRes = await axios.get(
+        `https://bothellselect.com/api/parent/${parentId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // If players are already populated, return them
+      if (parentRes.data.players?.length > 0) {
+        return parentRes.data.players;
+      }
+
+      // Fallback to direct player fetch
+      const playersRes = await axios.get(
+        `https://bothellselect.com/api/parent/${parentId}/players`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      return Array.isArray(playersRes.data)
+        ? playersRes.data
+        : playersRes.data.players || [];
+    } catch (error) {
+      console.error(`Error fetching players for parent ${parentId}:`, error);
+      return [];
+    }
+  };
+
+  const fetchAllGuardians = useCallback(async (queryParams = '') => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return [];
+
+      const response = await axios.get<Guardian[]>(
+        `https://bothellselect.com/api/guardians?${queryParams}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching guardians:', error);
+      return [];
+    }
+  }, []);
+
+  const checkAuth = useCallback(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode<DecodedToken>(token);
+        console.log('Decoded Token:', decoded);
+
+        if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+          console.log('Token expired. Logging out...');
+          logout();
+          return;
+        }
+
+        setIsAuthenticated(true);
+
+        const parentData: Parent = {
+          _id: decoded.id,
+          email: decoded.email || '',
+          fullName: decoded.fullName || '',
+          role: decoded.role || 'Parent',
+          phone: decoded.phone || '',
+          address:
+            typeof decoded.address === 'string'
+              ? decoded.address
+              : decoded.address
+              ? `${decoded.address.street}, ${decoded.address.city}, ${decoded.address.state} ${decoded.address.zip}`
+              : '',
+          relationship: decoded.relationship || '',
+          players: decoded.players || [],
+          isCoach: decoded.isCoach || false,
+          aauNumber: decoded.aauNumber || '',
+          additionalGuardians: decoded.additionalGuardians || [],
+        };
+        setParent(parentData);
+        fetchParentData();
+      } catch (error) {
+        console.error('Token decoding error:', error);
+        logout();
+      }
+    }
+    setIsLoading(false);
+  }, [logout, fetchParentData]);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth, fetchParentData]);
+
+  const login = async (email: string, password: string) => {
+    try {
+      const payload = {
+        email: email.trim().toLowerCase(),
+        password: password.trim(),
+      };
+      console.log('Login Payload:', payload);
+
+      const response = await axios.post(
+        'https://bothellselect.com/api/login',
+        payload
+      );
+      console.log('Login Response:', response.data);
+
+      const { token, parent } = response.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('parentId', parent._id);
+      localStorage.setItem('parent', JSON.stringify(parent));
+
+      setIsAuthenticated(true);
+      const parentData: Parent = {
+        _id: parent._id || parent.parentId,
+        email: parent.email,
+        fullName: parent.fullName,
+        role: parent.role || 'Parent',
+        phone: parent.phone || '',
+        address: parent.address || '',
+        relationship: parent.relationship || '',
+        players: parent.players || [],
+        isCoach: parent.isCoach || false,
+        aauNumber: parent.aauNumber || '',
+        additionalGuardians: parent.additionalGuardians || [],
+        createdAt: parent.createdAt || new Date().toISOString(),
+        updatedAt: parent.updatedAt || new Date().toISOString(),
+      };
+      setParent(parentData);
+
+      navigate(all_routes.adminDashboard);
+    } catch (error) {
+      console.error('Login Error:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Error Response Data:', error.response?.data);
+        alert(error.response?.data?.error || 'Login failed. Please try again.');
+      } else {
+        alert('Login failed. Please try again.');
+      }
+    }
+  };
+
+  const register = async (
+    email: string,
+    password: string,
+    fullName: string,
+    phone: string,
+    address: string,
+    relationship: string,
+    isCoach: boolean,
+    aauNumber: string,
+    agreeToTerms: boolean
+  ) => {
+    try {
+      const data = await registerUser({
+        email,
+        password,
+        fullName,
+        phone,
+        address,
+        relationship,
+        isCoach,
+        aauNumber,
+        agreeToTerms,
+      });
+
+      if (!data.parent) {
+        throw new Error('Parent data not found in response');
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('parentId', data.parent._id);
+      localStorage.setItem('parent', JSON.stringify(data.parent));
+
+      setIsAuthenticated(true);
+      const parentData: Parent = {
+        _id: data.parent._id,
+        email: data.parent.email,
+        fullName: data.parent.fullName,
+        role: data.parent.role || 'Parent',
+        phone: data.parent.phone || '',
+        address: data.parent.address || '',
+        relationship: data.parent.relationship || '',
+        players: data.parent.players || [],
+        isCoach: data.parent.isCoach || false,
+        aauNumber: data.parent.aauNumber || '',
+        additionalGuardians: data.parent.additionalGuardians || [],
+        createdAt: data.parent.createdAt || new Date().toISOString(),
+        updatedAt: data.parent.updatedAt || new Date().toISOString(),
+      };
+      setParent(parentData);
+
+      navigate(all_routes.adminDashboard);
+    } catch (error) {
+      console.error('Registration Error:', error);
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert('Registration failed. Please try again.');
+      }
+    }
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        parent,
+        user: parent,
+        players,
+        parents,
+        setPlayers,
+        allParents,
+        login,
+        logout,
+        register,
+        fetchParentData,
+        fetchPlayersData,
+        fetchPlayerData,
+        fetchAllPlayers,
+        fetchAllParents,
+        fetchGuardians,
+        checkAuth,
+        role: parent?.role || 'Parent',
+        isLoading,
+        searchAll,
+        fetchParentsData,
+        fetchParentPlayers,
+        fetchAllGuardians,
+        currentUser: parent,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
