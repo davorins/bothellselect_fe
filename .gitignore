@@ -34,3 +34,4 @@ pnpm-debug.log*
 
 # Optional: skip local debug cache
 .cache
+node_modules/
