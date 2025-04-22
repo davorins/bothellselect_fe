@@ -15,7 +15,10 @@
       "dest": "https://your-render-backend-url.ondigitalocean.app/api"
     },
     {
-      "src": "/(.*)",
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
       "dest": "/index.html"
     }
   ]
