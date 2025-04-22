@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const token = localStorage.getItem('token');
         if (!token) return [];
 
-        const response = await axios.get(`${API_BASE_URL}/api/search/all`, {
+        const response = await axios.get(`${API_BASE_URL}/search/all`, {
           headers: { Authorization: `Bearer ${token}` },
           params: { q: term },
         });
@@ -100,7 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const decoded = jwtDecode<DecodedToken>(token);
         const isAdmin = decoded.role === 'admin';
 
-        let url = `${API_BASE_URL}/api/players`;
+        let url = `${API_BASE_URL}/players`;
         if (isAdmin && playerIds.length === 0) {
           url += `?${queryParams}`;
         } else {
@@ -130,7 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const response = await axios.get<Player>(
-        `${API_BASE_URL}/api/player/${playerId}`,
+        `${API_BASE_URL}/player/${playerId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -152,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
-      const url = `${API_BASE_URL}/api/players?${queryParams}`;
+      const url = `${API_BASE_URL}/players?${queryParams}`;
       console.log('Request URL:', url);
 
       const response = await axios.get<Player[]>(url, {
@@ -213,7 +213,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
 
         const response = await axios.get<Parent>(
-          `${API_BASE_URL}/api/parent/${parentId}`,
+          `${API_BASE_URL}/parent/${parentId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -252,7 +252,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const response = await axios.get<Guardian[]>(
-        `${API_BASE_URL}/api/player/${playerId}/guardians`,
+        `${API_BASE_URL}/player/${playerId}/guardians`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -271,7 +271,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!token) return [];
 
       const response = await axios.get<Parent[]>(
-        `${API_BASE_URL}/api/parents?${queryParams}`,
+        `${API_BASE_URL}/parents?${queryParams}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -293,9 +293,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setIsLoading(true);
 
-      let url = `${API_BASE_URL}/api/parents`;
+      let url = `${API_BASE_URL}/parents`;
       if (parentId) {
-        url = `${API_BASE_URL}/api/parent/${parentId}`;
+        url = `${API_BASE_URL}/parent/${parentId}`;
         const response = await axios.get<Parent>(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -333,7 +333,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // First try to get parent with populated players
       try {
         const parentRes = await axios.get<{ players?: Player[] }>(
-          `${API_BASE_URL}/api/parent/${parentId}`,
+          `${API_BASE_URL}/parent/${parentId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -349,7 +349,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Fallback to direct players endpoint
       const playersRes = await axios.get<Player[] | { players: Player[] }>(
-        `${API_BASE_URL}/api/parent/${parentId}/players`,
+        `${API_BASE_URL}/parent/${parentId}/players`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -371,7 +371,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!token) return [];
 
       const response = await axios.get<Guardian[]>(
-        `${API_BASE_URL}/api/guardians?${queryParams}`,
+        `${API_BASE_URL}/guardians?${queryParams}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -542,7 +542,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       };
       console.log('Login Payload:', payload);
 
-      const response = await axios.post(`${API_BASE_URL}/api/login`, payload);
+      const response = await axios.post(`${API_BASE_URL}/login`, payload);
       console.log('Login Response:', response.data);
 
       const { token, parent } = response.data;
