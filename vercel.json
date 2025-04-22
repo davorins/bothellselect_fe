@@ -1,31 +1,13 @@
 {
   "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      "dest": "https://bothell-select.onrender.com/api/$1"
+      "source": "/api/:match*",
+      "destination": "https://bothell-select.onrender.com/api/:match*"
     },
     {
-      "src": "/(login|register)",
-      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      "dest": "https://bothell-select.onrender.com/api/$1"
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/.*",
-      "dest": "/index.html"
+      "source": "/:path*",
+      "destination": "/index.html"
     }
   ]
 }
