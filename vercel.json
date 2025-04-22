@@ -1,13 +1,4 @@
 {
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/node",
-      "config": {
-        "buildCommand": "npm run build"
-      }
-    }
-  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -17,6 +8,5 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "outputDirectory": "build"
+  ]
 }
