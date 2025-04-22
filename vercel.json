@@ -1,19 +1,19 @@
 {
   "version": 2,
-  "rewrites": [
+  "builds": [
     {
-      "source": "/api/:match*",
-      "destination": "https://bothell-select.onrender.com/api/:match*"
+      "src": "src/index.tsx",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
     },
     {
-      "source": "/:path*",
-      "destination": "/index.html"
+      "src": "backend/index.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
-    {
-      "handle": "filesystem"
-    },
     {
       "src": "/(.*)",
       "dest": "/index.html"
