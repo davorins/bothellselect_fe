@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { all_routes } from '../../../router/all_routes';
@@ -29,7 +29,7 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
     playerState?.player?._id ||
     '';
 
-  const fetchParents = async () => {
+  const fetchParents = useCallback(async () => {
     try {
       setLoadingParents(true);
       const token = localStorage.getItem('token');
@@ -42,7 +42,7 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
     } finally {
       setLoadingParents(false);
     }
-  };
+  }, []);
 
   const fetchPlayerData = async (playerId: string) => {
     try {
@@ -106,7 +106,7 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
     if (!isEdit) {
       fetchParents();
     }
-  }, [isEdit]);
+  }, [isEdit, fetchParents]);
 
   useEffect(() => {
     const fetchData = async () => {
