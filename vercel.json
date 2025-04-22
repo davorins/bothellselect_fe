@@ -11,15 +11,6 @@
   ],
   "routes": [
     {
-      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      "dest": "https://bothell-select.onrender.com/api/$1"
-    },
-    {
-      "src": "/(login|register)",
-      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      "dest": "https://bothell-select.onrender.com/api/$1"
-    },
-    {
       "handle": "filesystem"
     },
     {
