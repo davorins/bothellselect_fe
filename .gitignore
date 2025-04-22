@@ -39,3 +39,6 @@ node_modules/
 # Development cache
 .cache/
 node_modules/.cache/
+
+# Explicitly un-ignore backend folder
+!/backend/
