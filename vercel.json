@@ -13,7 +13,7 @@
     {
       "src": "/(login|register|api/.*)",
       "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      "dest": "https://your-render-backend-url.ondigitalocean.app/$1"
+      "dest": "https://bothell-select.onrender.com/api/$1"
     },
     {
       "handle": "filesystem"
