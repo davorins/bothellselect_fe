@@ -11,10 +11,11 @@
   ],
   "routes": [
     {
-      "handle": "filesystem"
+      "src": "/api/.*",
+      "dest": "https://your-render-backend-url.ondigitalocean.app/api"
     },
     {
-      "src": "/.*",
+      "src": "/(.*)",
       "dest": "/index.html"
     }
   ]
