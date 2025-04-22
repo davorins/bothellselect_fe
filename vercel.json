@@ -2,15 +2,11 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/index.tsx",
+      "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist"
+        "distDir": "build"
       }
-    },
-    {
-      "src": "backend/index.js",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
