@@ -1,20 +1,13 @@
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "src/*.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "https://bothell-select.onrender.com/api/$1"
+      "source": "/api/(.*)",
+      "destination": "https://bothell-select.onrender.com/api/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html",
-      "status": 200
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
-  ]
+  ],
+  "outputDirectory": "build"
 }
