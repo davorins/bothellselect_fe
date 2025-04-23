@@ -21,7 +21,7 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 // Square configuration
 const SQUARE_APP_ID = 'sq0idp-jUCxKnO_i8i7vccQjVj_0g';
-const SQUARE_LOCATION_ID = 'LCW4GM814GWXK';
+const SQUARE_LOCATION_ID = 'L26Q50FWRCQW5';
 
 interface Player {
   _id?: string;

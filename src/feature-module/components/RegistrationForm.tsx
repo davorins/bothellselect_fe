@@ -27,7 +27,7 @@ import { useAuth } from '../../context/AuthContext';
 
 // Square configuration
 const appId = 'sq0idp-jUCxKnO_i8i7vccQjVj_0g';
-const locationId = 'LCW4GM814GWXK';
+const locationId = 'L26Q50FWRCQW5';
 
 // TypeScript interfaces
 interface Player {
