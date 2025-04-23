@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import ImageWithBasePath from '../../../../core/common/imageWithBasePath';
 import { all_routes } from '../../../router/all_routes';
 import { useAuth } from '../../../../context/AuthContext';
 import { formatDate } from '../../../../utils/dateFormatter';
@@ -66,6 +65,11 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
   const getDisplayName = () => player.fullName || player.name || 'N/A';
   const getJoinDate = () => player.DateofJoin || player.createdAt;
 
+  const getDefaultAvatar = (gender: string | undefined): string => {
+    const baseUrl = 'https://bothell-select.onrender.com/uploads/avatars';
+    return gender === 'Female' ? `${baseUrl}/girl.png` : `${baseUrl}/boy.png`;
+  };
+
   const formatGrade = (grade?: string | number) => {
     if (!grade) return 'N/A';
 
@@ -90,8 +94,12 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
           <div className='card-header'>
             <div className='d-flex align-items-center flex-wrap row-gap-3'>
               <div className='d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames'>
-                <ImageWithBasePath
-                  src={player.imgSrc || 'assets/img/students/student-01.jpg'}
+                <img
+                  src={
+                    player.imgSrc && player.imgSrc.trim() !== ''
+                      ? `${player.imgSrc}`
+                      : getDefaultAvatar(player.gender)
+                  }
                   className='img-fluid'
                   alt={`${getDisplayName()} avatar`}
                 />
@@ -215,12 +223,14 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                           <div className='d-flex align-items-center flex-wrap row-gap-3 mb-3'>
                             <div className='d-flex align-items-center justify-content-center avatar avatar-xxl'>
                               <span className='avatar avatar-lg'>
-                                <ImageWithBasePath
+                                <img
                                   src={
-                                    sibling.imgSrc ||
-                                    'assets/img/students/student-06.jpg'
+                                    sibling.imgSrc &&
+                                    sibling.imgSrc.trim() !== ''
+                                      ? `${sibling.imgSrc}`
+                                      : getDefaultAvatar(sibling.gender)
                                   }
-                                  className='img-fluid rounded'
+                                  className='img-fluid'
                                   alt={`${
                                     sibling.fullName ||
                                     sibling.name ||

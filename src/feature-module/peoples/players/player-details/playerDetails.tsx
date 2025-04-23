@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import ImageWithBasePath from '../../../../core/common/imageWithBasePath';
 import PlayerSidebar from './playerSidebar';
 import PlayerBreadcrumb from './playerBreadcrumb';
 import { useAuth } from '../../../../context/AuthContext';
@@ -98,7 +97,9 @@ const PlayerDetails = () => {
           email: guardian.email,
           address: guardian.address,
           relationship: guardian.relationship,
-          avatar: guardian.avatar || 'assets/img/students/student-06.jpg',
+          avatar:
+            guardian.avatar ||
+            'https://bothell-select.onrender.com/uploads/avatars/parents.png',
           aauNumber: guardian.aauNumber || 'Not Available',
           isPrimary: true,
         },
@@ -112,7 +113,7 @@ const PlayerDetails = () => {
             relationship: additionalGuardian.relationship,
             avatar:
               additionalGuardian.avatar ||
-              'assets/img/guardians/default-avatar.jpg',
+              'https://bothell-select.onrender.com/uploads/avatars/parents.png',
             aauNumber: additionalGuardian.aauNumber || 'Not Available',
             isPrimary: false,
           })
@@ -163,13 +164,15 @@ const PlayerDetails = () => {
                             <div className='col-sm-6 col-lg-3'>
                               <div className='d-flex align-items-center mb-3'>
                                 <span className='avatar avatar-lg flex-shrink-0'>
-                                  <ImageWithBasePath
+                                  <img
                                     src={
-                                      primaryParent.avatar ||
-                                      'assets/img/students/student-06.jpg'
+                                      primaryParent.avatar &&
+                                      primaryParent.avatar.trim() !== ''
+                                        ? `https://bothell-select.onrender.com${primaryParent.avatar}`
+                                        : 'https://bothell-select.onrender.com/uploads/avatars/parents.png'
                                     }
-                                    className='img-fluid rounded'
-                                    alt='img'
+                                    className='img-fluid'
+                                    alt={primaryParent.fullName}
                                   />
                                 </span>
                                 <div className='ms-2 overflow-hidden'>
@@ -233,10 +236,12 @@ const PlayerDetails = () => {
                               <div className='col-sm-6 col-lg-3'>
                                 <div className='d-flex align-items-center mb-3'>
                                   <span className='avatar avatar-lg flex-shrink-0'>
-                                    <ImageWithBasePath
-                                      src='assets/img/students/student-06.jpg'
+                                    <img
+                                      src={
+                                        'https://bothell-select.onrender.com/uploads/avatars/parents.png'
+                                      }
                                       className='img-fluid rounded'
-                                      alt='img'
+                                      alt={`${guardian.fullName} avatar`}
                                     />
                                   </span>
                                   <div className='ms-2 overflow-hidden'>
