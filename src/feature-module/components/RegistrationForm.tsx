@@ -362,7 +362,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const calculateTotalAmount = () => {
     const basePrice =
       formData.payment.selectedPackage === '1'
-        ? 500
+        ? 1
         : formData.payment.selectedPackage === '2'
         ? 650
         : 800;
@@ -372,7 +372,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
   const calculatePayments = (playerCount: number, packageType: string) => {
     const perPlayerAmount =
-      packageType === '1' ? 500 : packageType === '2' ? 650 : 800;
+      packageType === '1' ? 1 : packageType === '2' ? 650 : 800;
 
     const basePrice = perPlayerAmount * playerCount;
 
@@ -1399,7 +1399,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
         // Calculate amount
         const amountPerPlayer =
           selectedPackage === '1'
-            ? 50000
+            ? 100
             : selectedPackage === '2'
             ? 65000
             : 80000;
@@ -1501,7 +1501,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   Total: ${calculateTotalAmount()} ({formData.players.length} ×
                   $
                   {selectedPackage === '1'
-                    ? '500'
+                    ? '1'
                     : selectedPackage === '2'
                     ? '650'
                     : '800'}
@@ -1519,7 +1519,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     onChange={(e) => setSelectedPackage(e.target.value)}
                   />
                   <label className='form-check-label' htmlFor='threeTimes'>
-                    3 Times/Week - ${500 * formData.players.length}.00
+                    3 Times/Week - ${1 * formData.players.length}.00
                   </label>
                 </div>
               </div>
@@ -1568,7 +1568,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   total: {
                     amount: String(
                       selectedPackage === '1'
-                        ? '500.00'
+                        ? '1.00'
                         : selectedPackage === '2'
                         ? '650.00'
                         : '800.00'
@@ -1608,7 +1608,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
             <p>
               <strong>Price per player:</strong> $
               {selectedPackage === '1'
-                ? '500'
+                ? '1'
                 : selectedPackage === '2'
                 ? '650'
                 : '800'}
@@ -1620,7 +1620,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
             <p>
               <strong>Total amount:</strong> $
               {(selectedPackage === '1'
-                ? 500
+                ? 1
                 : selectedPackage === '2'
                 ? 650
                 : 800) * (formData.players?.length || 0)}
