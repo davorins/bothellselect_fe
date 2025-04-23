@@ -35,7 +35,7 @@ export const getParentTableColumns = <T extends ExtendedTableRecord>(
               src={
                 record?.imgSrc
                   ? `https://bothell-select.onrender.com${record.imgSrc}`
-                  : 'http://localhost:5001/uploads/avatars/parents.png'
+                  : 'https://localhost:5001/uploades/avatars/parents.png'
               }
               className='img-fluid rounded-circle'
               alt='img'

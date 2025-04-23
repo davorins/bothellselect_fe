@@ -1,7 +1,6 @@
 import React from 'react';
 import { TableProps } from 'antd';
 import { Link } from 'react-router-dom';
-import ImageWithBasePath from '../../../core/common/imageWithBasePath';
 import { all_routes } from '../../router/all_routes';
 
 interface PlayerTableColumnsProps {
@@ -22,10 +21,16 @@ export const getPlayerTableColumns = ({
           onClick={() => handlePlayerClick(record)}
           className='avatar avatar-md cursor-pointer'
         >
-          <ImageWithBasePath
-            src={record.imgSrc}
+          <img
+            src={
+              record?.imgSrc
+                ? `https://bothell-select.onrender.com${record.imgSrc}`
+                : record.gender === 'female'
+                ? 'http://localhost:5001/uploads/avatars/girl.png'
+                : 'http://localhost:5001/uploads/avatars/boy.png'
+            }
             className='img-fluid rounded-circle'
-            alt='img'
+            alt='avatar'
           />
         </div>
         <div className='ms-2'>
