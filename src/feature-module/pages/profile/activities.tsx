@@ -73,9 +73,7 @@ const NotificationActivities = () => {
                     />
                   </Link>
                   <div className='mb-3'>
-                    <p className='mb-0 text-dark  fw-medium'>
-                      Shawn performance in Math is below the threshold.
-                    </p>
+                    <p className='mb-0 text-dark  fw-medium'>Test...</p>
                     <span>6 mins ago</span>
                   </div>
                 </div>

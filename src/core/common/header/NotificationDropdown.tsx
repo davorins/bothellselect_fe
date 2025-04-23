@@ -69,8 +69,8 @@ const NotificationDropdown = () => {
                   </span>
                   <div className='flex-grow-1'>
                     <p className='mb-1'>
-                      <span className='text-dark fw-semibold'>Shawn</span>{' '}
-                      performance in Math is below the threshold.
+                      <span className='text-dark fw-semibold'>Davorin</span>{' '}
+                      just posted a test message
                     </p>
                     <span>Just Now</span>
                   </div>

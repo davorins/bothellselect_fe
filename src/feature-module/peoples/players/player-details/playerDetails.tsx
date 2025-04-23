@@ -82,6 +82,7 @@ const PlayerDetails = () => {
           relationship: user.relationship || 'Primary Parent',
           aauNumber: user.aauNumber || 'Not Available',
           isPrimary: true,
+          avatar: user.avatar,
         }
       : guardians?.find(
           (guardian: FetchedGuardianData) => guardian.isPrimary
@@ -97,9 +98,7 @@ const PlayerDetails = () => {
           email: guardian.email,
           address: guardian.address,
           relationship: guardian.relationship,
-          avatar:
-            guardian.avatar ||
-            'https://bothell-select.onrender.com/uploads/avatars/parents.png',
+          avatar: guardian.avatar,
           aauNumber: guardian.aauNumber || 'Not Available',
           isPrimary: true,
         },
@@ -111,9 +110,7 @@ const PlayerDetails = () => {
             email: additionalGuardian.email,
             address: additionalGuardian.address,
             relationship: additionalGuardian.relationship,
-            avatar:
-              additionalGuardian.avatar ||
-              'https://bothell-select.onrender.com/uploads/avatars/parents.png',
+            avatar: additionalGuardian.avatar,
             aauNumber: additionalGuardian.aauNumber || 'Not Available',
             isPrimary: false,
           })
@@ -169,7 +166,7 @@ const PlayerDetails = () => {
                                       primaryParent.avatar &&
                                       primaryParent.avatar.trim() !== ''
                                         ? `https://bothell-select.onrender.com${primaryParent.avatar}`
-                                        : 'https://bothell-select.onrender.com/uploads/avatars/parents.png'
+                                        : primaryParent.avatar
                                     }
                                     className='img-fluid'
                                     alt={primaryParent.fullName}
@@ -238,10 +235,13 @@ const PlayerDetails = () => {
                                   <span className='avatar avatar-lg flex-shrink-0'>
                                     <img
                                       src={
-                                        'https://bothell-select.onrender.com/uploads/avatars/parents.png'
+                                        guardian.avatar &&
+                                        guardian.avatar.trim() !== ''
+                                          ? `https://bothell-select.onrender.com${guardian.avatar}`
+                                          : 'https://bothell-select.onrender.com/uploads/avatars/parents.png'
                                       }
-                                      className='img-fluid rounded'
-                                      alt={`${guardian.fullName} avatar`}
+                                      className='img-fluid'
+                                      alt={guardian.fullName}
                                     />
                                   </span>
                                   <div className='ms-2 overflow-hidden'>
