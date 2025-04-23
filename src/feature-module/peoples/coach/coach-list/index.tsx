@@ -28,7 +28,6 @@ const CoachList = () => {
   const seasonParam = searchParams.get('season');
   const yearParam = searchParams.get('year');
   const dropdownMenuRef = useRef<HTMLDivElement>(null);
-
   const { currentUser } = useAuth();
   const { loading, error, coaches, fetchData } = useCoachData();
   const { handleCoachClick } = useCoachActions();
@@ -52,7 +51,7 @@ const CoachList = () => {
       status: coach.status || 'Active',
       type: 'coach' as const,
       DateofJoin: coach.createdAt || new Date().toISOString(),
-      imgSrc: 'assets/img/profiles/avatar-27.jpg',
+      imgSrc: '',
       canView: true,
       createdAt: coach.createdAt || new Date().toISOString(),
       aauNumber: coach.aauNumber || '',
@@ -130,7 +129,6 @@ const CoachList = () => {
                   <PredefinedDateRanges onDateChange={handleDateRangeChange} />
                 </div>
               )}
-
               <div className='dropdown mb-3 me-2'>
                 <Link
                   to='#'

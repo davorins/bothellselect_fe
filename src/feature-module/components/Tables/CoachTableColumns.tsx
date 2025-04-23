@@ -1,7 +1,6 @@
 import React from 'react';
 import { TableProps } from 'antd';
 import { Link } from 'react-router-dom';
-import ImageWithBasePath from '../../../core/common/imageWithBasePath';
 import { formatPhoneNumber } from '../../../utils/phone';
 import { formatDate } from '../../../utils/dateFormatter';
 import { TableRecord } from '../../../types/types';
@@ -33,8 +32,12 @@ export const getCoachTableColumns = <T extends ExtendedCoachTableRecord>(
           className='avatar avatar-md cursor-pointer'
           onClick={() => handleCoachClick(record)}
         >
-          <ImageWithBasePath
-            src={record.imgSrc || 'assets/img/profiles/coach-avatar.jpg'}
+          <img
+            src={
+              record.imgSrc && record.imgSrc.trim() !== ''
+                ? `https://bothell-select.onrender.com${record.imgSrc}`
+                : 'https://bothell-select.onrender.com/uploads/avatars/coach.png'
+            }
             className='img-fluid rounded-circle'
             alt={`${text} profile`}
           />
