@@ -14,6 +14,10 @@ const Header = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const routes = all_routes;
+
+  const DEFAULT_AVATAR =
+    'https://bothell-select.onrender.com/uploads/avatars/parents.png';
+
   const mobileSidebar = useSelector(
     (state: any) => state.sidebarSlice.mobileSidebar
   );
@@ -24,7 +28,7 @@ const Header = () => {
   };
 
   const handleLoginRedirect = () => {
-    navigate(all_routes.login);
+    navigate(routes.login);
   };
 
   const toggleMobileSidebar = useCallback(() => {
@@ -72,17 +76,23 @@ const Header = () => {
     </Link>
   );
 
+  // Prevent rendering if parent doesn't exist
+  if (!parent) return null;
+
+  const avatarSrc =
+    parent.avatar && parent.avatar.trim() !== ''
+      ? `https://bothell-select.onrender.com${parent.avatar}`
+      : DEFAULT_AVATAR;
+
   return (
     <>
       {/* Header */}
       <div className='header d-flex justify-content-between align-items-center px-3 py-2 shadow-sm'>
-        {/* Logo + Sidebar Toggle + Mobile Menu Button */}
         <div className='d-flex align-items-center'>
           {renderLogoSection()}
           {renderMobileMenuButton()}
         </div>
 
-        {/* Main Nav Menu (hidden on mobile) */}
         <div className='d-none d-md-block'>
           <ul className='nav'>
             <li className='nav-item'>
@@ -108,7 +118,6 @@ const Header = () => {
           </ul>
         </div>
 
-        {/* User Auth / Profile (always visible in desktop) */}
         <div className='d-none d-md-flex align-items-center'>
           {isAuthenticated ? (
             <div className='dropdown ms-2'>
@@ -118,18 +127,20 @@ const Header = () => {
                 data-bs-toggle='dropdown'
               >
                 <span className='avatar avatar-md rounded-circle'>
-                  <ImageWithBasePath
-                    src='assets/img/profiles/avatar-27.jpg'
-                    alt='User Avatar'
+                  <img
+                    src={avatarSrc}
+                    alt={parent?.fullName || 'User avatar'}
+                    className='img-fluid rounded-circle'
                   />
                 </span>
               </Link>
               <div className='dropdown-menu dropdown-menu-end'>
                 <div className='d-flex align-items-center p-2'>
                   <span className='avatar avatar-md me-2'>
-                    <ImageWithBasePath
-                      src='assets/img/profiles/avatar-27.jpg'
-                      alt='User Avatar'
+                    <img
+                      src={avatarSrc}
+                      alt={parent?.fullName || 'User avatar'}
+                      className='img-fluid rounded-circle'
                     />
                   </span>
                   <div>
@@ -200,12 +211,13 @@ const Header = () => {
                 <i className='ti ti-mail' /> Contact Us
               </Link>
             </li>
-            <li>
-              <Link className='dropdown-item' to={routes.profile}>
-                <i className='ti ti-user-circle me-2' /> My Profile
-              </Link>
-            </li>
-
+            {isAuthenticated && (
+              <li>
+                <Link className='dropdown-item' to={routes.profile}>
+                  <i className='ti ti-user-circle me-2' /> My Profile
+                </Link>
+              </li>
+            )}
             <li className='nav-item mt-2'>
               {!isAuthenticated ? (
                 <button

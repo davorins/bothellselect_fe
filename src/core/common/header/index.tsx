@@ -15,8 +15,6 @@ import SearchBar from './SearchBar';
 import FullscreenToggle from './FullscreenToggle';
 import NotificationDropdown from './NotificationDropdown';
 
-const DEFAULT_AVATAR = 'assets/img/profiles/avatar-27.jpg';
-
 const Header = () => {
   const { parent, role, logout } = useAuth();
   const dispatch = useDispatch();
@@ -28,6 +26,9 @@ const Header = () => {
   const [searchParams] = useSearchParams();
   const seasonParam = searchParams.get('season');
   const yearParam = searchParams.get('year');
+
+  const DEFAULT_AVATAR =
+    'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
   const handleLogout = useCallback(() => {
     logout();
@@ -187,60 +188,73 @@ const Header = () => {
     </div>
   );
 
-  const renderUserDropdown = () => (
-    <div className='dropdown ms-1'>
-      <Link
-        to='#'
-        className='dropdown-toggle d-flex align-items-center'
-        data-bs-toggle='dropdown'
-      >
-        <span className='avatar avatar-md rounded'>
-          <ImageWithBasePath
-            src={DEFAULT_AVATAR}
-            alt='Img'
-            className='img-fluid'
-          />
-        </span>
-      </Link>
-      <div className='dropdown-menu'>
-        <div className='d-block'>
-          <div className='d-flex align-items-center p-2'>
-            <span className='avatar avatar-md me-2 online avatar-rounded'>
-              <ImageWithBasePath src={DEFAULT_AVATAR} alt='img' />
-            </span>
-            <div>
-              <h6>{parent?.fullName || 'User'}</h6>
-              <p className='text-primary mb-0'>{role}</p>
+  const renderUserDropdown = () => {
+    if (!parent) return null;
+
+    const avatarSrc =
+      parent.avatar && parent.avatar.trim() !== ''
+        ? `https://bothell-select.onrender.com${parent.avatar}`
+        : DEFAULT_AVATAR;
+
+    return (
+      <div className='dropdown ms-1'>
+        <Link
+          to='#'
+          className='dropdown-toggle d-flex align-items-center'
+          data-bs-toggle='dropdown'
+        >
+          <span className='avatar avatar-md rounded'>
+            <img
+              src={avatarSrc}
+              alt={parent?.fullName || 'User avatar'}
+              className='img-fluid rounded-circle'
+            />
+          </span>
+        </Link>
+        <div className='dropdown-menu'>
+          <div className='d-block'>
+            <div className='d-flex align-items-center p-2'>
+              <span className='avatar avatar-md me-2 online avatar-rounded'>
+                <img
+                  src={avatarSrc}
+                  alt={parent?.fullName || 'User avatar'}
+                  className='img-fluid rounded-circle'
+                />
+              </span>
+              <div>
+                <h6>{parent?.fullName || 'User'}</h6>
+                <p className='text-primary mb-0'>{role}</p>
+              </div>
             </div>
+            <hr className='m-0' />
+            <Link
+              className='dropdown-item d-inline-flex align-items-center p-2'
+              to={routes.profile}
+            >
+              <i className='ti ti-user-circle me-2' />
+              My Profile
+            </Link>
+            <Link
+              className='dropdown-item d-inline-flex align-items-center p-2'
+              to={routes.profilesettings}
+            >
+              <i className='ti ti-settings me-2' />
+              Settings
+            </Link>
+            <hr className='m-0' />
+            <Link
+              className='dropdown-item d-inline-flex align-items-center p-2'
+              to='#'
+              onClick={handleLogout}
+            >
+              <i className='ti ti-logout me-2' />
+              Logout
+            </Link>
           </div>
-          <hr className='m-0' />
-          <Link
-            className='dropdown-item d-inline-flex align-items-center p-2'
-            to={routes.profile}
-          >
-            <i className='ti ti-user-circle me-2' />
-            My Profile
-          </Link>
-          <Link
-            className='dropdown-item d-inline-flex align-items-center p-2'
-            to={routes.profilesettings}
-          >
-            <i className='ti ti-settings me-2' />
-            Settings
-          </Link>
-          <hr className='m-0' />
-          <Link
-            className='dropdown-item d-inline-flex align-items-center p-2'
-            to='#'
-            onClick={handleLogout}
-          >
-            <i className='ti ti-logout me-2' />
-            Logout
-          </Link>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className='header'>
@@ -254,7 +268,7 @@ const Header = () => {
           <div className='d-flex align-items-center'>
             {parent?.role === 'admin' && renderSeasonDropdown()}
 
-            <div className='pe-1'>{renderAddNewDropdown()}</div>
+            {/* <div className='pe-1'>{renderAddNewDropdown()}</div> */}
 
             <NotificationDropdown />
 

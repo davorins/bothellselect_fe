@@ -88,7 +88,7 @@ export const transformParentData = (
         type: 'guardian', // Explicit type
         status: 'Active',
         DateofJoin: getSafeDate(guardian.createdAt as string | undefined),
-        imgSrc: 'assets/img/profiles/avatar-27.jpg',
+        imgSrc: '',
         aauNumber: guardian.aauNumber || 'N/A',
         canView: true,
         createdAt: getSafeDate(guardian.createdAt as string | undefined),
@@ -112,7 +112,7 @@ export const transformParentData = (
           type: 'guardian', // Explicit type
           status: 'Active',
           DateofJoin: getSafeDate(g.createdAt as string | undefined),
-          imgSrc: 'assets/img/profiles/avatar-27.jpg',
+          imgSrc: '',
           aauNumber: g.aauNumber || 'N/A',
           parentId: guardianId,
           canView: true,

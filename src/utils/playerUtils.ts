@@ -40,6 +40,11 @@ export const transformPlayerData = (
     : [];
 
   return players.map((player) => {
+    const getDefaultAvatar = (gender: string | undefined): string => {
+      const baseUrl = 'https://bothell-select.onrender.com/uploads/avatars';
+      return gender === 'Female' ? `${baseUrl}/girl.png` : `${baseUrl}/boy.png`;
+    };
+
     const siblings = players
       .filter((sib) => siblingIds.includes(sib._id) && sib._id !== player._id)
       .map((sib) => ({
@@ -55,7 +60,7 @@ export const transformPlayerData = (
         healthConcerns: sib.healthConcerns || 'No Medical History',
         status: 'Active',
         DateofJoin: new Date(sib.createdAt).toLocaleDateString(),
-        imgSrc: 'assets/img/profiles/avatar-27.jpg',
+        imgSrc: getDefaultAvatar(sib.gender),
         siblings: [],
         season: sib.season,
         registrationYear: sib.registrationYear,
@@ -74,7 +79,7 @@ export const transformPlayerData = (
       healthConcerns: player.healthConcerns || 'No Medical History',
       status: 'Active',
       DateofJoin: new Date(player.createdAt).toLocaleDateString(),
-      imgSrc: 'assets/img/profiles/avatar-27.jpg',
+      imgSrc: getDefaultAvatar(player.gender),
       siblings,
       season: player.season,
       registrationYear: player.registrationYear,

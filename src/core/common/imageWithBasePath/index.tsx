@@ -1,5 +1,5 @@
 import React from 'react';
-import { img_path} from '../../../environment';
+import { img_path } from '../../../environment';
 
 interface Image {
   className?: string;
@@ -7,7 +7,7 @@ interface Image {
   alt?: string;
   height?: number;
   width?: number;
-  id?:string;
+  id?: string;
 }
 
 const ImageWithBasePath = (props: Image) => {

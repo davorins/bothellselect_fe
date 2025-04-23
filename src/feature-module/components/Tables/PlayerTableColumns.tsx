@@ -22,15 +22,9 @@ export const getPlayerTableColumns = ({
           className='avatar avatar-md cursor-pointer'
         >
           <img
-            src={
-              record?.imgSrc
-                ? `https://bothell-select.onrender.com${record.imgSrc}`
-                : record.gender === 'female'
-                ? 'http://localhost:5001/uploads/avatars/girl.png'
-                : 'http://localhost:5001/uploads/avatars/boy.png'
-            }
+            src={record.imgSrc}
             className='img-fluid rounded-circle'
-            alt='avatar'
+            alt='img'
           />
         </div>
         <div className='ms-2'>
