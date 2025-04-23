@@ -28,7 +28,7 @@ const Header = () => {
   };
 
   const handleLoginRedirect = () => {
-    navigate(routes.login);
+    navigate(all_routes.login);
   };
 
   const toggleMobileSidebar = useCallback(() => {
@@ -76,23 +76,17 @@ const Header = () => {
     </Link>
   );
 
-  // Prevent rendering if parent doesn't exist
-  if (!parent) return null;
-
-  const avatarSrc =
-    parent.avatar && parent.avatar.trim() !== ''
-      ? `https://bothell-select.onrender.com${parent.avatar}`
-      : DEFAULT_AVATAR;
-
   return (
     <>
       {/* Header */}
       <div className='header d-flex justify-content-between align-items-center px-3 py-2 shadow-sm'>
+        {/* Logo + Sidebar Toggle + Mobile Menu Button */}
         <div className='d-flex align-items-center'>
           {renderLogoSection()}
           {renderMobileMenuButton()}
         </div>
 
+        {/* Main Nav Menu (hidden on mobile) */}
         <div className='d-none d-md-block'>
           <ul className='nav'>
             <li className='nav-item'>
@@ -118,52 +112,71 @@ const Header = () => {
           </ul>
         </div>
 
+        {/* User Auth / Profile (always visible in desktop) */}
         <div className='d-none d-md-flex align-items-center'>
           {isAuthenticated ? (
-            <div className='dropdown ms-2'>
-              <Link
-                to='#'
-                className='dropdown-toggle d-flex align-items-center'
-                data-bs-toggle='dropdown'
-              >
-                <span className='avatar avatar-md rounded-circle'>
-                  <img
-                    src={avatarSrc}
-                    alt={parent?.fullName || 'User avatar'}
-                    className='img-fluid rounded-circle'
-                  />
-                </span>
-              </Link>
-              <div className='dropdown-menu dropdown-menu-end'>
-                <div className='d-flex align-items-center p-2'>
-                  <span className='avatar avatar-md me-2'>
-                    <img
-                      src={avatarSrc}
-                      alt={parent?.fullName || 'User avatar'}
-                      className='img-fluid rounded-circle'
-                    />
-                  </span>
-                  <div>
-                    <h6 className='mb-0'>{parent?.fullName || 'User'}</h6>
-                    <small className='text-muted'>{role}</small>
-                  </div>
-                </div>
-                <hr className='dropdown-divider' />
-                <Link className='dropdown-item' to={routes.profile}>
-                  <i className='ti ti-user-circle me-2' /> My Profile
-                </Link>
-                <Link className='dropdown-item' to={routes.profilesettings}>
-                  <i className='ti ti-settings me-2' /> Settings
-                </Link>
-                <hr className='dropdown-divider' />
-                <button
-                  className='dropdown-item text-danger'
-                  onClick={handleLogout}
-                >
-                  <i className='ti ti-logout me-2' /> Logout
-                </button>
-              </div>
-            </div>
+            parent ? (
+              <>
+                {(() => {
+                  const avatarSrc =
+                    parent.avatar && parent.avatar.trim() !== ''
+                      ? `https://bothell-select.onrender.com${parent.avatar}`
+                      : DEFAULT_AVATAR;
+
+                  return (
+                    <div className='dropdown ms-2'>
+                      <Link
+                        to='#'
+                        className='dropdown-toggle d-flex align-items-center'
+                        data-bs-toggle='dropdown'
+                      >
+                        <span className='avatar avatar-md rounded-circle'>
+                          <img
+                            src={avatarSrc}
+                            alt={parent?.fullName || 'User avatar'}
+                            className='img-fluid rounded-circle'
+                          />
+                        </span>
+                      </Link>
+                      <div className='dropdown-menu dropdown-menu-end'>
+                        <div className='d-flex align-items-center p-2'>
+                          <span className='avatar avatar-md me-2'>
+                            <img
+                              src={avatarSrc}
+                              alt={parent?.fullName || 'User avatar'}
+                              className='img-fluid rounded-circle'
+                            />
+                          </span>
+                          <div>
+                            <h6 className='mb-0'>
+                              {parent?.fullName || 'User'}
+                            </h6>
+                            <small className='text-muted'>{role}</small>
+                          </div>
+                        </div>
+                        <hr className='dropdown-divider' />
+                        <Link className='dropdown-item' to={routes.profile}>
+                          <i className='ti ti-user-circle me-2' /> My Profile
+                        </Link>
+                        <Link
+                          className='dropdown-item'
+                          to={routes.profilesettings}
+                        >
+                          <i className='ti ti-settings me-2' /> Settings
+                        </Link>
+                        <hr className='dropdown-divider' />
+                        <button
+                          className='dropdown-item text-danger'
+                          onClick={handleLogout}
+                        >
+                          <i className='ti ti-logout me-2' /> Logout
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </>
+            ) : null
           ) : (
             <button
               className='btn btn-outline-primary ms-2'
@@ -211,13 +224,12 @@ const Header = () => {
                 <i className='ti ti-mail' /> Contact Us
               </Link>
             </li>
-            {isAuthenticated && (
-              <li>
-                <Link className='dropdown-item' to={routes.profile}>
-                  <i className='ti ti-user-circle me-2' /> My Profile
-                </Link>
-              </li>
-            )}
+            <li>
+              <Link className='dropdown-item' to={routes.profile}>
+                <i className='ti ti-user-circle me-2' /> My Profile
+              </Link>
+            </li>
+
             <li className='nav-item mt-2'>
               {!isAuthenticated ? (
                 <button
