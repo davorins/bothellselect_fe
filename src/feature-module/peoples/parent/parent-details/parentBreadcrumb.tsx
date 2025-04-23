@@ -1,6 +1,7 @@
 import React from 'react';
 import { all_routes } from '../../../router/all_routes';
 import { Link, useParams, useLocation } from 'react-router-dom';
+import { useAuth } from '../../../../context/AuthContext';
 
 interface ParentBreadcrumbProps {
   parent?: any;
@@ -11,6 +12,7 @@ const ParentBreadcrumb: React.FC<ParentBreadcrumbProps> = ({ parent }) => {
   const { parentId } = useParams<{ parentId: string }>();
   const location = useLocation();
   const parentData = parent || location.state?.parent;
+  const { currentUser } = useAuth();
 
   const currentParentId = parentData?._id || parentData?.parentId || parentId;
 
@@ -35,20 +37,22 @@ const ParentBreadcrumb: React.FC<ParentBreadcrumbProps> = ({ parent }) => {
             </ol>
           </nav>
         </div>
-        <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
-          <Link
-            to={`${routes.editParent}/${currentParentId}`}
-            state={{
-              parent: parentData,
-              parentId: currentParentId,
-              from: location.pathname,
-            }}
-            className='btn btn-primary d-flex align-items-center mb-2'
-          >
-            <i className='ti ti-edit-circle me-2' />
-            Edit Parent
-          </Link>
-        </div>
+        {currentUser && currentUser.role === 'admin' && (
+          <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
+            <Link
+              to={`${routes.editParent}/${currentParentId}`}
+              state={{
+                parent: parentData,
+                parentId: currentParentId,
+                from: location.pathname,
+              }}
+              className='btn btn-primary d-flex align-items-center mb-2'
+            >
+              <i className='ti ti-edit-circle me-2' />
+              Edit Parent
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
