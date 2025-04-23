@@ -1,5 +1,4 @@
 import React from 'react';
-import ImageWithBasePath from '../../../../core/common/imageWithBasePath';
 import { formatDate } from '../../../../utils/dateFormatter';
 
 interface ParentData {
@@ -50,8 +49,12 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
           <div className='card-header'>
             <div className='d-flex align-items-center flex-wrap row-gap-3'>
               <div className='d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames'>
-                <ImageWithBasePath
-                  src={parent.imgSrc || 'assets/img/profiles/avatar-01.jpg'}
+                <img
+                  src={
+                    parent.imgSrc && parent.imgSrc.trim() !== ''
+                      ? `https://bothell-select.onrender.com${parent.imgSrc}`
+                      : 'https://bothell-select.onrender.com/uploads/avatars/parents.png'
+                  }
                   className='img-fluid'
                   alt={`${getDisplayName()} avatar`}
                 />
