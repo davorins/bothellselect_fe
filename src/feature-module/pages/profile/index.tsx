@@ -606,7 +606,7 @@ const Profile = () => {
                       src={
                         parent?.avatar
                           ? `https://bothell-select.onrender.com${parent.avatar}`
-                          : '/assets/img/profiles/avatar-27.jpg'
+                          : 'https://bothell-select.onrender.com/uploads/avatars/parents.png'
                       }
                       alt='Profile'
                     />

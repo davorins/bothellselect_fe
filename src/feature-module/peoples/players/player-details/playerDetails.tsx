@@ -166,7 +166,7 @@ const PlayerDetails = () => {
                                       primaryParent.avatar &&
                                       primaryParent.avatar.trim() !== ''
                                         ? `https://bothell-select.onrender.com${primaryParent.avatar}`
-                                        : primaryParent.avatar
+                                        : 'https://bothell-select.onrender.com/uploads/avatars/parents.png'
                                     }
                                     className='img-fluid'
                                     alt={primaryParent.fullName}
