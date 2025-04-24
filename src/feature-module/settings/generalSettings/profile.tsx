@@ -36,7 +36,7 @@ export interface FormData {
   aauNumber: string;
 }
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const API_BASE_URL = 'https://bothell-select.onrender.com';
 
 const Profilesettings = () => {
   const routes = all_routes;
