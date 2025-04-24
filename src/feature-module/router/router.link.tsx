@@ -27,13 +27,9 @@ import ParentList from '../peoples/parent/parent-list';
 import GuardianGrid from '../peoples/guardian/guardian-grid';
 import GuardianList from '../peoples/guardian/guardian-list';
 import FeesGroup from '../management/feescollection/feesGroup';
-import ResetPassword2 from '../auth/resetPassword/resetPassword-2';
-import ResetPassword3 from '../auth/resetPassword/resetPassword-3';
 import TwoStepVerification2 from '../auth/twoStepVerification/twoStepVerification-2';
 import TwoStepVerification3 from '../auth/twoStepVerification/twoStepVerification-3';
 import ResetPasswordSuccess from '../auth/resetPasswordSuccess/resetPasswordSuccess';
-import ResetPasswordSuccess2 from '../auth/resetPasswordSuccess/resetPasswordSuccess-2';
-import ResetPasswordSuccess3 from '../auth/resetPasswordSuccess/resetPasswordSuccess-3';
 import FeesTypes from '../management/feescollection/feesTypes';
 import FeesMaster from '../management/feescollection/feesMaster';
 import FeesAssign from '../management/feescollection/feesAssign';
@@ -482,23 +478,8 @@ export const authRoutes = [
     route: Route,
   },
   {
-    path: routes.register,
-    element: <Register />,
-    route: Route,
-  },
-  {
     path: routes.resetPassword,
     element: <ResetPassword />,
-    route: Route,
-  },
-  {
-    path: routes.resetPassword2,
-    element: <ResetPassword2 />,
-    route: Route,
-  },
-  {
-    path: routes.resetPassword3,
-    element: <ResetPassword3 />,
     route: Route,
   },
   {
@@ -513,14 +494,6 @@ export const authRoutes = [
   {
     path: routes.resetPasswordSuccess,
     element: <ResetPasswordSuccess />,
-  },
-  {
-    path: routes.resetPasswordSuccess2,
-    element: <ResetPasswordSuccess2 />,
-  },
-  {
-    path: routes.resetPasswordSuccess3,
-    element: <ResetPasswordSuccess3 />,
   },
 ];
 
@@ -559,6 +532,11 @@ export const protectedRoutes = [
         <ParentDashboard />
       </ProtectedRoute>
     ),
+    route: Route,
+  },
+  {
+    path: routes.resetPassword,
+    element: <ResetPassword />,
     route: Route,
   },
 ];

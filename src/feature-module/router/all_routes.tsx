@@ -14,11 +14,7 @@ export const all_routes = {
 
   // auth routes routes
   login: '/login',
-  login2: '/login-2',
-  login3: '/login-3',
   register: '/register',
-  register2: '/register-2',
-  register3: '/register-3',
   forgotPassword: '/forgot-password',
   forgotPassword2: '/forgot-password-2',
   forgotPassword3: '/forgot-password-3',
@@ -31,11 +27,7 @@ export const all_routes = {
   emailVerification3: '/email-verification-3',
   lockScreen: '/lock-screen',
   resetPassword: '/reset-password',
-  resetPassword2: '/reset-password-2',
-  resetPassword3: '/reset-password-3',
   resetPasswordSuccess: '/reset-password-success',
-  resetPasswordSuccess2: '/reset-password-success-2',
-  resetPasswordSuccess3: '/reset-password-success-3',
 
   //ui routes
   alert: '/ui-alert',

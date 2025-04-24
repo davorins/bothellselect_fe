@@ -1,16 +1,43 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { all_routes } from '../../router/all_routes';
 import ImageWithBasePath from '../../../core/common/imageWithBasePath';
+import axios from 'axios';
 
 const ForgotPassword = () => {
   const routes = all_routes;
-  const navigation = useNavigate();
-
-  const navigationPath = () => {
-    navigation(routes.resetPassword2);
-  };
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const currentYear = new Date().getFullYear();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_BASE_URL}/request-password-reset`,
+        { email: email.trim() }
+      );
+
+      if (response.data.message) {
+        setSuccess(true);
+      } else {
+        setError('Failed to send reset email');
+      }
+    } catch (error: any) {
+      console.error('Forgot password error:', error);
+      setError(
+        error.response?.data?.error ||
+          'Failed to send reset email. Please try again.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <>
@@ -21,7 +48,7 @@ const ForgotPassword = () => {
               <div className='d-lg-flex align-items-center justify-content-center bg-light-300 d-lg-block d-none flex-wrap vh-100 overflowy-auto bg-01'>
                 <div>
                   <ImageWithBasePath
-                    src='assets/img/authentication/authentication_password.png'
+                    src='assets/img/authentication/authentication.png'
                     alt='Img'
                   />
                 </div>
@@ -30,7 +57,7 @@ const ForgotPassword = () => {
             <div className='col-lg-6 col-md-12 col-sm-12'>
               <div className='row justify-content-center align-items-center vh-100 overflow-auto flex-wrap '>
                 <div className='col-md-8 mx-auto p-4'>
-                  <form>
+                  <form onSubmit={handleSubmit}>
                     <div>
                       <div className=' mx-auto mb-5 text-center'>
                         <ImageWithBasePath
@@ -54,16 +81,32 @@ const ForgotPassword = () => {
                               <span className='input-icon-addon'>
                                 <i className='ti ti-mail' />
                               </span>
-                              <input type='text' className='form-control' />
+                              <input
+                                type='email'
+                                className='form-control'
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                              />
                             </div>
                           </div>
+                          {error && (
+                            <div className='alert alert-danger mb-3'>
+                              {error}
+                            </div>
+                          )}
+                          {success && (
+                            <div className='alert alert-success mb-3'>
+                              Password reset link sent to your email
+                            </div>
+                          )}
                           <div className='mb-3'>
                             <button
-                              onClick={navigationPath}
                               type='submit'
                               className='btn btn-primary w-100'
+                              disabled={isSubmitting || success}
                             >
-                              Sign In
+                              {isSubmitting ? 'Sending...' : 'Send Reset Link'}
                             </button>
                           </div>
                           <div className='text-center'>

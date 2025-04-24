@@ -530,9 +530,9 @@ const Profilesettings = () => {
               >
                 Notifications
               </Link>
-              <Link to={routes.connectedApps} className='d-block rounded p-2'>
+              {/* <Link to={routes.connectedApps} className='d-block rounded p-2'>
                 Connected Apps
-              </Link>
+              </Link> */}
             </div>
           </div>
           <div className='col-xxl-10 col-xl-9'>
