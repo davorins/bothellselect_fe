@@ -188,7 +188,9 @@ const Profile = () => {
       setFormData({
         fullName: parent.fullName || '',
         email: parent.email || '',
-        phone: parent.phone || '',
+        phone: parent.phone
+          ? formatPhoneNumber(parent.phone.replace(/\D/g, ''))
+          : '',
         address: ensureAddress(
           typeof parent.address === 'object'
             ? parent.address
@@ -214,6 +216,7 @@ const Profile = () => {
       setEditedGuardians(
         parent.additionalGuardians?.map((g) => ({
           ...g,
+          phone: g.phone ? formatPhoneNumber(g.phone.replace(/\D/g, '')) : '',
           address: ensureAddress(
             g.address || {
               street: '',
@@ -248,7 +251,8 @@ const Profile = () => {
     let updatedValue = value;
 
     if (name === 'phone') {
-      updatedValue = formatPhoneNumber(value.replace(/\D/g, ''));
+      const cleaned = value.replace(/\D/g, '');
+      updatedValue = formatPhoneNumber(cleaned);
     }
 
     setFormData((prev) => ({
@@ -702,7 +706,7 @@ const Profile = () => {
                   <div className='mb-3 flex-fill me-xl-3 me-0'>
                     <label className='form-label'>Phone Number</label>
                     <input
-                      type='text'
+                      type='tel'
                       className={`form-control ${
                         errors.phone ? 'is-invalid' : ''
                       }`}
@@ -710,6 +714,8 @@ const Profile = () => {
                       value={formData.phone}
                       onChange={handleInputChange}
                       disabled={!isEditing}
+                      placeholder='(123) 456-7890'
+                      maxLength={14}
                     />
                     {errors.phone && (
                       <div className='invalid-feedback d-block'>
@@ -941,7 +947,7 @@ const Profile = () => {
                             <div className='mb-3 flex-fill me-xl-3 me-0'>
                               <label className='form-label'>Phone Number</label>
                               <input
-                                type='text'
+                                type='tel'
                                 className={`form-control ${
                                   guardianErrors[index]?.phone
                                     ? 'is-invalid'
@@ -953,6 +959,8 @@ const Profile = () => {
                                   handleGuardianInputChange(e, index)
                                 }
                                 disabled={isEditingGuardian !== index}
+                                placeholder='(123) 456-7890'
+                                maxLength={14}
                               />
                               {guardianErrors[index]?.phone && (
                                 <div className='invalid-feedback d-block'>
