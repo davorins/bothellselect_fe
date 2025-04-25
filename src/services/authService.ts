@@ -32,24 +32,22 @@ export const registerUser = async (parentData: {
 // Login a parent
 export const loginUser = async (email: string, password: string) => {
   try {
-    const trimmedEmail = email.trim();
-    const trimmedPassword = password.trim();
-
-    console.log('Login attempt with:', { trimmedEmail, trimmedPassword }); // Debugging
-
-    const res = await axios.post(`${API_BASE_URL}/login`, {
-      email: trimmedEmail,
-      password: trimmedPassword,
+    const response = await axios.post(`${API_BASE_URL}/login`, {
+      email: email.trim(),
+      password: password.trim(),
     });
 
-    return res.data;
-  } catch (error: unknown) {
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Login failed');
+    }
+
+    return response.data;
+  } catch (error) {
     if (axios.isAxiosError(error)) {
       throw new Error(
         error.response?.data?.error || 'Login failed. Please try again.'
       );
-    } else {
-      throw new Error('An unexpected error occurred during login.');
     }
+    throw new Error('Login service unavailable');
   }
 };

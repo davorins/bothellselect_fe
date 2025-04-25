@@ -536,28 +536,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const login = async (email: string, password: string) => {
     try {
-      const payload = {
-        email: email,
-        password: password,
-      };
-      console.log('Login Payload:', payload);
+      const response = await axios.post(`${API_BASE_URL}/login`, {
+        email: email.trim(),
+        password: password.trim(),
+      });
 
-      const response = await axios.post(`${API_BASE_URL}/login`, payload);
-      console.log('Login Response:', response.data);
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Login failed');
+      }
 
       const { token, parent } = response.data;
 
-      // Add validation before storing
-      if (!parent?._id) {
-        throw new Error('Invalid parent data received from server');
+      if (!token || !parent?._id) {
+        throw new Error('Invalid response from server');
       }
 
+      // Store auth data
       localStorage.setItem('token', token);
       localStorage.setItem('parentId', parent._id);
       localStorage.setItem('parent', JSON.stringify(parent));
 
+      // Update state
       setIsAuthenticated(true);
-      const parentData: Parent = {
+      setParent({
         _id: parent._id,
         email: parent.email,
         fullName: parent.fullName,
@@ -569,20 +570,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isCoach: parent.isCoach || false,
         aauNumber: parent.aauNumber || '',
         additionalGuardians: parent.additionalGuardians || [],
-        createdAt: parent.createdAt || new Date().toISOString(),
-        updatedAt: parent.updatedAt || new Date().toISOString(),
-      };
-      setParent(parentData);
+      });
 
       navigate(all_routes.adminDashboard);
     } catch (error) {
       console.error('Login Error:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('Error Response Data:', error.response?.data);
-        alert(error.response?.data?.error || 'Login failed. Please try again.');
-      } else {
-        alert('Login failed. Please try again.');
-      }
+      throw error; // Let the login component handle the error display
     }
   };
 

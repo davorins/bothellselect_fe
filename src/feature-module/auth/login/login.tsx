@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { all_routes } from '../../router/all_routes';
 import ImageWithBasePath from '../../../core/common/imageWithBasePath';
 import { useAuth } from '../../../context/AuthContext';
@@ -8,7 +8,6 @@ type PasswordField = 'password';
 
 const Login = () => {
   const routes = all_routes;
-  const navigate = useNavigate();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,28 +28,27 @@ const Login = () => {
     e.preventDefault();
     setError('');
 
-    if (!email.trim() || !password.trim()) {
-      setError('Email and password are required');
+    // Basic validation
+    if (!email.trim()) {
+      setError('Email is required');
+      return;
+    }
+
+    if (!password.trim()) {
+      setError('Password is required');
       return;
     }
 
     try {
-      console.log('Login attempt with:', {
-        email: email,
-        trimmedEmail: email.trim(),
-        passwordLength: password.length,
-        trimmedPassword: password.trim(),
-        trimmedLength: password.trim().length,
-      });
-
       await login(email.trim(), password.trim());
-      navigate(routes.adminDashboard);
-    } catch (error) {
-      console.error('Login error details:', error);
+    } catch (error: any) {
+      console.error('Login error:', error);
+
+      // This ensures that the error message displayed is coming from the backend or a fallback message.
       setError(
-        error instanceof Error
-          ? error.message
-          : 'Invalid email or password. Please try again.'
+        error.response?.data?.error ||
+          error.message ||
+          'Login failed. Please try again.'
       );
     }
   };
@@ -90,15 +88,37 @@ const Login = () => {
                               Please enter your details to sign in
                             </p>
                           </div>
+                          {error && (
+                            <div
+                              className='alert alert-danger alert-dismissible fade show'
+                              role='alert'
+                            >
+                              <i className='fas fa-exclamation-circle me-2'></i>
+                              {error}
+                              <button
+                                type='button'
+                                className='btn-close'
+                                onClick={() => setError('')}
+                                aria-label='Close'
+                              ></button>
+                            </div>
+                          )}
+
                           <div className='mb-3 '>
                             <label className='form-label'>Email Address</label>
                             <div className='input-icon mb-3 position-relative'>
                               <span className='input-icon-addon'>
-                                <i className='ti ti-mail' />
+                                <i
+                                  className={`ti ti-mail ${
+                                    error ? 'd-none' : ''
+                                  }`}
+                                />
                               </span>
                               <input
                                 type='text'
-                                className='form-control'
+                                className={`form-control ${
+                                  error && 'is-invalid'
+                                }`}
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
@@ -112,7 +132,9 @@ const Login = () => {
                                     ? 'text'
                                     : 'password'
                                 }
-                                className='pass-input form-control'
+                                className={`pass-input form-control ${
+                                  error && 'is-invalid'
+                                }`}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
@@ -122,16 +144,13 @@ const Login = () => {
                                   passwordVisibility.password
                                     ? 'ti-eye'
                                     : 'ti-eye-off'
-                                }`}
+                                } ${error ? 'd-none' : ''}`} // Hide the icon if error exists
                                 onClick={() =>
                                   togglePasswordVisibility('password')
                                 }
                               ></span>
                             </div>
                           </div>
-                          {error && (
-                            <div className='alert alert-danger'>{error}</div>
-                          )}
                           <div className='form-wrap form-wrap-checkbox mb-3'>
                             <div className='d-flex align-items-center'>
                               <div className='form-check form-check-md mb-0'>
