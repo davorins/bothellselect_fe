@@ -16,6 +16,7 @@ const SecuritySettings = () => {
     confirmPassword: false,
   });
   const [passwords, setPasswords] = useState({
+    currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
@@ -61,6 +62,11 @@ const SecuritySettings = () => {
       return;
     }
 
+    if (!passwords.currentPassword || !passwords.newPassword) {
+      setError('Current and new passwords are required');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -76,6 +82,7 @@ const SecuritySettings = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          currentPassword: passwords.currentPassword,
           newPassword: passwords.newPassword,
         }),
       });
@@ -87,6 +94,7 @@ const SecuritySettings = () => {
 
       // Reset form on success
       setPasswords({
+        currentPassword: '',
         newPassword: '',
         confirmPassword: '',
       });
@@ -182,6 +190,38 @@ const SecuritySettings = () => {
                 <div className='bg-white border rounded p-3 mb-3'>
                   <form onSubmit={handlePasswordSubmit}>
                     <div className='mb-3'>
+                      <label className='form-label'>Current Password</label>
+                      <div className='pass-group'>
+                        <input
+                          type={
+                            passwordVisibility.currentPassword
+                              ? 'text'
+                              : 'password'
+                          }
+                          className='pass-input form-control'
+                          value={passwords.currentPassword}
+                          onChange={(e) =>
+                            handlePasswordChange(
+                              'currentPassword',
+                              e.target.value
+                            )
+                          }
+                          required
+                        />
+                        <span
+                          className={`ti toggle-passwords ${
+                            passwordVisibility.currentPassword
+                              ? 'ti-eye'
+                              : 'ti-eye-off'
+                          }`}
+                          onClick={() =>
+                            togglePasswordVisibility('currentPassword')
+                          }
+                        ></span>
+                      </div>
+                    </div>
+
+                    <div className='mb-3'>
                       <label className='form-label'>New Password</label>
                       <div className='pass-group'>
                         <input
@@ -259,6 +299,7 @@ const SecuritySettings = () => {
                           setShowPasswordChangeForm(false);
                           setError('');
                           setPasswords({
+                            currentPassword: '',
                             newPassword: '',
                             confirmPassword: '',
                           });
