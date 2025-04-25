@@ -75,7 +75,7 @@ const SecuritySettings = () => {
         throw new Error('Authentication token not found');
       }
 
-      const res = await fetch('/api/change-password', {
+      const res = await fetch('https://bothellselect.com/api/change-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
