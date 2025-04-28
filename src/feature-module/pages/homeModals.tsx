@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 const HomeModals = () => {
   return (
     <>
-      {/* Login Details */}
+      {/* Pricing Details */}
       <div className='modal fade' id='login_detail'>
         <div className='modal-dialog modal-dialog-centered  modal-lg'>
           <div className='modal-content'>
@@ -150,7 +150,95 @@ const HomeModals = () => {
           </div>
         </div>
       </div>
-      {/* /Login Details */}
+      {/* /Pricing Details */}
+
+      {/* Waiver */}
+      <div className='modal fade' id='waiver'>
+        <div className='modal-dialog modal-dialog-centered  modal-lg'>
+          <div className='modal-content'>
+            <div className='modal-header'>
+              <h4 className='modal-title'>
+                Bothell Select Basketball Camp Waiver and Release of Liability
+              </h4>
+              <button
+                type='button'
+                className='btn-close custom-btn-close'
+                data-bs-dismiss='modal'
+                aria-label='Close'
+              >
+                <i className='ti ti-x' />
+              </button>
+            </div>
+            <div className='modal-body'>
+              <div className='home-detail-info'>
+                <span className='d-block me-4 mb-2 layout-img'>
+                  <ImageWithBasePath
+                    src='assets/img/logo-small.png'
+                    alt='Img'
+                  />
+                </span>
+                <div className='name-info'>
+                  <h4>
+                    In consideration of my child’s participation in the Bothell
+                    Select Basketball Camp ("Camp"), I, as the parent or legal
+                    guardian, acknowledge and agree to the following:
+                  </h4>
+                </div>
+              </div>
+              <div className='home-detail-info'>
+                <div className='name-info'>
+                  <ul className='mb-2'>
+                    <li className='me-2' />
+                    <strong>Acknowledgment of Risk: </strong>I understand that
+                    participation in basketball and camp activities involves
+                    risk of injury, including but not limited to sprains,
+                    fractures, concussions, and in rare cases, serious injury or
+                    death. I voluntarily assume all such risks on behalf of my
+                    child.
+                    <li className='me-2' />
+                    <strong>Release and Waiver: </strong>I hereby release,
+                    discharge, and hold harmless Bothell Select, its directors,
+                    coaches, staff, volunteers, sponsors, and affiliates from
+                    any and all liability, claims, demands, or causes of action
+                    that may arise from my child’s participation in the Camp,
+                    whether caused by negligence or otherwise.
+                    <li className='me-2' />
+                    <strong>Medical Authorization: </strong>In the event of an
+                    emergency where I cannot be reached, I authorize Camp staff
+                    to seek and secure any necessary medical treatment for my
+                    child, and I accept financial responsibility for such
+                    treatment.
+                    <li className='me-2' />
+                    <strong>Photo and Media Release: </strong>I grant permission
+                    for photos and videos taken during Camp activities, which
+                    may include my child, to be used for promotional purposes,
+                    including social media, websites, and marketing materials.
+                    <li className='me-2' />
+                    <strong>Behavioral Expectations: </strong>I acknowledge that
+                    my child must follow all Camp rules and instructions.
+                    Disruptive or unsafe behavior may result in dismissal from
+                    the Camp without refund.
+                    <li className='me-2' />
+                    <strong>Refund Policy: </strong>I understand that
+                    registration fees are non-refundable after Septtember 1st
+                    unless due to medical reasons verified by a physician.
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div className='modal-footer'>
+              <Link
+                to='#'
+                className='btn btn-light me-2'
+                data-bs-dismiss='modal'
+              >
+                Close
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* /Waiver */}
     </>
   );
 };

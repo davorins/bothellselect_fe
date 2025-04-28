@@ -7,6 +7,7 @@ import React, {
   useImperativeHandle,
   useEffect,
 } from 'react';
+import { Link } from 'react-router-dom';
 import {
   CreditCard,
   PaymentForm as SquarePaymentForm,
@@ -24,6 +25,7 @@ import {
 } from '../../utils/validation';
 import { getNextSeason } from '../../utils/season';
 import { useAuth } from '../../context/AuthContext';
+import HomeModals from '../pages/homeModals';
 
 // Square configuration
 const appId = 'sq0idp-jUCxKnO_i8i7vccQjVj_0g';
@@ -1342,7 +1344,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                       required
                     />{' '}
                     By checking this box, you agree to the terms and conditions
-                    outlined in the waiver.
+                    outlined in the{' '}
+                    <Link
+                      to='#'
+                      data-bs-toggle='modal'
+                      data-bs-target='#waiver'
+                    >
+                      Waiver
+                    </Link>
                   </label>
                 </div>
               </div>
@@ -1580,6 +1589,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
               >
                 <CreditCard />
               </PaymentForm>
+              <HomeModals />
             </div>
           </div>
         </div>
