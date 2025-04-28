@@ -130,7 +130,7 @@ const HomePage = () => {
               <i className='ti ti-currency-dollar me-0' />
             </h1>
             <h4>Cost</h4>
-            <p>Get full pricing and details</p>
+            <p className='mb-1'>Get full pricing and details</p>
             <Link
               to='#'
               className='btn btn-info me-2 mb-2'
