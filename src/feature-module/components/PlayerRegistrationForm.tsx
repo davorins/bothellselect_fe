@@ -387,7 +387,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
 
   const calculateTotalAmount = () => {
     const perPlayerAmount =
-      selectedPackage === '1' ? 500 : selectedPackage === '2' ? 650 : 800;
+      selectedPackage === '1' ? 550 : selectedPackage === '2' ? 760 : 970;
 
     return perPlayerAmount * players.length; // Calculate based on number of players
   };
@@ -428,10 +428,10 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                     <p className='text-muted'>
                       Total: ${calculateTotalAmount()} ({players.length} × $
                       {selectedPackage === '1'
-                        ? '500'
+                        ? '550'
                         : selectedPackage === '2'
-                        ? '650'
-                        : '800'}
+                        ? '760'
+                        : '970'}
                       )
                     </p>
                   </div>
@@ -447,7 +447,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                         onChange={(e) => setSelectedPackage(e.target.value)}
                       />
                       <label className='form-check-label' htmlFor='threeTimes'>
-                        3 Times/Week - ${500 * players.length}.00
+                        3 Times/Week - ${550 * players.length}.00
                       </label>
                     </div>
                   </div>
@@ -463,7 +463,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                         onChange={(e) => setSelectedPackage(e.target.value)}
                       />
                       <label className='form-check-label' htmlFor='fourTimes'>
-                        4 Times/Week - ${650 * players.length}.00
+                        4 Times/Week - ${760 * players.length}.00
                       </label>
                     </div>
                   </div>
@@ -479,7 +479,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                         onChange={(e) => setSelectedPackage(e.target.value)}
                       />
                       <label className='form-check-label' htmlFor='fiveTimes'>
-                        5 Times/Week - ${800 * players.length}.00
+                        5 Times/Week - ${970 * players.length}.00
                       </label>
                     </div>
                   </div>
