@@ -12,7 +12,6 @@ import {
   sortPlayerData,
 } from '../../../../utils/playerUtils';
 import { PlayerFilterParams } from '../../../../types/playerTypes';
-import PlayerModals from '../playerModals';
 import PredefinedDateRanges from '../../../../core/common/datePicker';
 import { useAuth } from '../../../../context/AuthContext';
 import { all_routes } from '../../../router/all_routes';
@@ -165,7 +164,6 @@ const PlayerList = () => {
           </div>
         </div>
       </div>
-      <PlayerModals />
     </>
   );
 };

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import RegistrationForm from '../components/RegistrationForm';
 import PlayerRegistrationForm from '../components/PlayerRegistrationForm';
 import { useAuth } from '../../context/AuthContext';
 import ImageWithBasePath from '../../core/common/imageWithBasePath';
 import { getNextSeason } from '../../utils/season';
+import HomeModals from './homeModals';
 
 const HomePage = () => {
   const { isAuthenticated, checkAuth, players, isLoading } = useAuth();
@@ -104,8 +105,8 @@ const HomePage = () => {
             <h1>
               <i className='ti ti-calendar-bolt me-0' />
             </h1>
-            <h4>Open Enrollment</h4>
-            <p>April 21 - June 29</p>
+            <h4>Starting</h4>
+            <p>June 30th - August 29th</p>
           </div>
           {/* Quadrant 2 */}
           <div className='quadrant align-items-center text-center'>
@@ -113,7 +114,7 @@ const HomePage = () => {
               <i className='ti ti-calendar-smile me-0' />
             </h1>
             <h4>Days</h4>
-            <p>Schedule coming soon</p>
+            <p>Monday thru Friday</p>
           </div>
           {/* Quadrant 3 */}
           <div className='quadrant align-items-center text-center'>
@@ -121,7 +122,7 @@ const HomePage = () => {
               <i className='ti ti-star me-0' />
             </h1>
             <h4>Age</h4>
-            <p>4th thru 8th grade / Boys & Girls</p>
+            <p>3rd thru 12th grade / Boys & Girls</p>
           </div>
           {/* Quadrant 4 */}
           <div className='quadrant align-items-center text-center'>
@@ -129,9 +130,16 @@ const HomePage = () => {
               <i className='ti ti-currency-dollar me-0' />
             </h1>
             <h4>Cost</h4>
-            <li>3 Times/Week: $500.00/child</li>
-            <li>4 Times/Week: $650.00/child</li>
-            <li>5 Times/Week: $800.00/child</li>
+            <p>Get full pricing and details</p>
+            <Link
+              to='#'
+              className='btn btn-info me-2 mb-2'
+              data-bs-toggle='modal'
+              data-bs-target='#login_detail'
+            >
+              <i className='ti ti-currency-dollar me-0' />
+              Price Details
+            </Link>
           </div>
         </div>
         <div>
@@ -211,7 +219,16 @@ const HomePage = () => {
                     Perfect for all skill levels – every player will leave
                     stronger, smarter, and more passionate about the game!
                   </p>
-                  <p>📅 Spots are filling fast!</p>
+                  <p>
+                    📅 Spots are filling fast!{' '}
+                    <Link
+                      to='#'
+                      data-bs-toggle='modal'
+                      data-bs-target='#login_detail'
+                    >
+                      See details.
+                    </Link>
+                  </p>
                   <div className='mx-auto'>
                     {isAuthenticated
                       ? renderAuthenticatedContent()
@@ -223,6 +240,7 @@ const HomePage = () => {
           </div>
         </div>
       </div>
+      <HomeModals />;
     </div>
   );
 };

@@ -22,7 +22,6 @@ import { TableData } from '../../../core/data/interface';
 import Table from '../../../core/common/dataTable/index';
 import FeesModal from './feesModal';
 import { collectFessData } from '../../../core/data/json/collectFees';
-import PlayerModals from '../../peoples/players/playerModals';
 import ImageWithBasePath from '../../../core/common/imageWithBasePath';
 import TooltipOption from '../../../core/common/tooltipOption';
 
@@ -329,7 +328,6 @@ const CollectFees = () => {
         </div>
       </div>
       {/* /Page Wrapper */}
-      <PlayerModals />
     </>
   );
 };
