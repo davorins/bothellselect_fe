@@ -171,11 +171,11 @@ const HomePage = () => {
   };
 
   return (
-    <div className='container-fluid'>
+    <div className='container-fuild'>
       <div className='login-wrapper w-100 overflow-hidden position-relative flex-wrap d-block vh-100'>
         <div className='row'>
           <div className='col-lg-6'>
-            <div className='d-lg-flex align-items-center justify-content-center bg-light-300 d-lg-block d-none flex-wrap vh-100 overflow-y-auto bg-01'>
+            <div className='d-lg-flex align-items-center justify-content-center bg-light-300 d-lg-block d-none flex-wrap vh-100 overflowy-auto bg-01'>
               <div>
                 <ImageWithBasePath
                   src='assets/img/authentication/authentication.png'
@@ -240,7 +240,7 @@ const HomePage = () => {
           </div>
         </div>
       </div>
-      <HomeModals />;
+      <HomeModals />
     </div>
   );
 };
