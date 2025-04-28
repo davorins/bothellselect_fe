@@ -144,7 +144,7 @@ const HomeModals = () => {
                 className='btn btn-light me-2'
                 data-bs-dismiss='modal'
               >
-                Cancel
+                Close
               </Link>
             </div>
           </div>
