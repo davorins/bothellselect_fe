@@ -398,6 +398,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const token = localStorage.getItem('token');
     const parentIdFromStorage = localStorage.getItem('parentId');
+    const storedParent = localStorage.getItem('parent');
     const role = localStorage.getItem('role');
     const currentParentId = parent?._id;
 
@@ -420,6 +421,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setIsAuthenticated(true);
 
+      // First try to use stored parent data if available and matches token
+      if (storedParent) {
+        try {
+          const parsedParent = JSON.parse(storedParent);
+          if (parsedParent._id === decoded.id) {
+            setParent(parsedParent);
+            lastParentId.current = parsedParent._id;
+
+            // Still fetch fresh data in background
+            if (parentIdFromStorage) {
+              fetchParentData(parentIdFromStorage).then((freshData) => {
+                if (freshData) {
+                  localStorage.setItem('parent', JSON.stringify(freshData));
+                  setParent(freshData);
+                }
+              });
+            }
+
+            setIsLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.warn('Failed to parse stored parent data', e);
+        }
+      }
+
       // Admin user flow
       if (role === 'Admin') {
         if (currentParentId === 'admin') return;
@@ -439,11 +466,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         };
 
         setParent(adminData);
+        localStorage.setItem('parent', JSON.stringify(adminData));
         lastParentId.current = 'admin';
+        return;
       }
 
       // Regular parent user flow
-      else if (parentIdFromStorage) {
+      if (parentIdFromStorage) {
         setIsLoading(true);
 
         try {
@@ -470,12 +499,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             };
 
             setParent(fallbackParent);
+            localStorage.setItem('parent', JSON.stringify(fallbackParent));
           } else {
-            setParent({
+            const updatedParent = {
               ...parentData,
               email: parentData.email || decoded.email || '',
               fullName: parentData.fullName || decoded.fullName || '',
-            });
+            };
+            setParent(updatedParent);
+            localStorage.setItem('parent', JSON.stringify(updatedParent));
           }
 
           lastParentId.current = parentIdFromStorage;
@@ -502,6 +534,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           };
 
           setParent(fallbackParent);
+          localStorage.setItem('parent', JSON.stringify(fallbackParent));
         } finally {
           setIsLoading(false);
         }

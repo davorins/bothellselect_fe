@@ -68,7 +68,18 @@ const ResetPassword = () => {
       );
 
       if (response.data.success) {
-        navigate(routes.resetPasswordSuccess);
+        // Clear old auth data
+        localStorage.removeItem('token');
+        localStorage.removeItem('parentId');
+        localStorage.removeItem('parent');
+
+        // Redirect to login page with success state
+        navigate(routes.login, {
+          state: {
+            fromResetPassword: true,
+            email: response.data.email || '', // Use email from response if available
+          },
+        });
       } else {
         setError(response.data.message || 'Password reset failed');
       }
