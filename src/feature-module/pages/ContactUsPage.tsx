@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ImageWithBasePath from '../../core/common/imageWithBasePath';
 
 const ContactPage = () => {
@@ -8,6 +9,9 @@ const ContactPage = () => {
     subject: '',
     message: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -23,6 +27,7 @@ const ContactPage = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
     try {
       const response = await fetch(`${API_BASE_URL}/contact`, {
@@ -34,21 +39,29 @@ const ContactPage = () => {
       });
 
       if (response.ok) {
-        alert('Message sent successfully!');
+        setShowSuccess(true);
+        // Reset form
         setFormData({
           fullName: '',
           email: '',
           subject: '',
           message: '',
         });
+
+        // Show success message for 3 seconds then redirect
+        setTimeout(() => {
+          navigate('/'); // Redirect to home page
+        }, 5000);
       } else {
         const errorData = await response.json();
         console.error('Error sending message:', errorData);
-        alert('Failed to send message.');
+        alert('Failed to send message. Please try again.');
       }
     } catch (error) {
       console.error('Error sending message:', error);
       alert('Something went wrong. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -70,96 +83,115 @@ const ContactPage = () => {
             <div className='row justify-content-center align-items-center vh-100 overflow-auto flex-wrap'>
               <div className='contact-page'>
                 <div className='mx-auto p-4'>
-                  <h1 className='mb-4 text-center'>Reach Out!</h1>
-                  <h6 className='mb-2 text-center'>
-                    We’re here to support your child basketball journey!
-                  </h6>
-                  <p className='mb-4 text-center'>
-                    Whether you have questions about camp registration, practice
-                    schedules, skill levels, or training programs — don’t
-                    hesitate to reach out. Our team is dedicated to helping
-                    every player grow on and off the court. We look forward to
-                    connecting with you!
-                  </p>
-                  <div className='mx-auto mb-4'>
-                    <form onSubmit={handleSubmit}>
-                      <div className='card'>
-                        <div className='card-body'>
-                          <div className='mt-0'>
-                            <div className='mb-2'>
-                              <label className='form-label'>Full Name</label>
-                              <input
-                                type='text'
-                                name='fullName'
-                                className='form-control'
-                                value={formData.fullName}
-                                onChange={handleChange}
-                                required
-                                aria-label='Full Name'
-                              />
-                            </div>
-                            <div className='mb-2'>
-                              <label className='form-label'>Email</label>
-                              <input
-                                type='email'
-                                name='email'
-                                className='form-control'
-                                value={formData.email}
-                                onChange={handleChange}
-                                required
-                                aria-label='Email'
-                              />
-                            </div>
-                            <div className='mb-2'>
-                              <label className='form-label'>Subject</label>
-                              <input
-                                type='text'
-                                name='subject'
-                                className='form-control'
-                                value={formData.subject}
-                                onChange={handleChange}
-                                required
-                                aria-label='Subject'
-                              />
-                            </div>
-                            <div className='mb-4'>
-                              <label className='form-label'>Message</label>
-                              <textarea
-                                name='message'
-                                className='form-control'
-                                value={formData.message}
-                                onChange={handleChange}
-                                required
-                                aria-label='Message'
-                                rows={5}
-                              />
+                  {showSuccess ? (
+                    <div className='alert alert-success text-center'>
+                      <h3 className='mx-auto mb-2'>
+                        The message sent successfully!
+                      </h3>
+                      <p>
+                        Thank you for reaching out. We've received your message
+                        and will get back to you shortly!
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <h1 className='mb-4 text-center'>Reach Out!</h1>
+                      <h6 className='mb-2 text-center'>
+                        We're here to support your child basketball journey!
+                      </h6>
+                      <p className='mb-4 text-center'>
+                        Whether you have questions about camp registration,
+                        practice schedules, skill levels, or training programs —
+                        don't hesitate to reach out. Our team is dedicated to
+                        helping every player grow on and off the court. We look
+                        forward to connecting with you!
+                      </p>
+                      <div className='mx-auto mb-4'>
+                        <form onSubmit={handleSubmit}>
+                          <div className='card'>
+                            <div className='card-body'>
+                              <div className='mt-0'>
+                                <div className='mb-2'>
+                                  <label className='form-label'>
+                                    Full Name
+                                  </label>
+                                  <input
+                                    type='text'
+                                    name='fullName'
+                                    className='form-control'
+                                    value={formData.fullName}
+                                    onChange={handleChange}
+                                    required
+                                    aria-label='Full Name'
+                                  />
+                                </div>
+                                <div className='mb-2'>
+                                  <label className='form-label'>Email</label>
+                                  <input
+                                    type='email'
+                                    name='email'
+                                    className='form-control'
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    required
+                                    aria-label='Email'
+                                  />
+                                </div>
+                                <div className='mb-2'>
+                                  <label className='form-label'>Subject</label>
+                                  <input
+                                    type='text'
+                                    name='subject'
+                                    className='form-control'
+                                    value={formData.subject}
+                                    onChange={handleChange}
+                                    required
+                                    aria-label='Subject'
+                                  />
+                                </div>
+                                <div className='mb-4'>
+                                  <label className='form-label'>Message</label>
+                                  <textarea
+                                    name='message'
+                                    className='form-control'
+                                    value={formData.message}
+                                    onChange={handleChange}
+                                    required
+                                    aria-label='Message'
+                                    rows={5}
+                                  />
+                                </div>
+                              </div>
+                              <div className='mb-2'>
+                                <button
+                                  type='submit'
+                                  className='btn btn-primary w-100'
+                                  disabled={isSubmitting}
+                                >
+                                  {isSubmitting ? 'Sending...' : 'Send Message'}
+                                </button>
+                              </div>
                             </div>
                           </div>
-                          <div className='mb-2'>
-                            <button
-                              type='submit'
-                              className='btn btn-primary w-100'
-                            >
-                              Send Message
-                            </button>
-                          </div>
-                        </div>
+                        </form>
                       </div>
-                    </form>
-                  </div>
-                  <h2 className='mb-2 text-center'>Feedback & Suggestions</h2>
-                  <p className='mb-5 text-center'>
-                    We value your feedback and suggestions! If you have any
-                    comments, suggestions, or feedback about your experience
-                    with Bothell Select, please don’t hesitate to reach out to
-                    us. Your input helps us improve and enhance our camp
-                    programs for future participants.
-                  </p>
-                  <h2 className='mb-2 text-center'>Connect With Us!</h2>
-                  <p className='mb-2 text-center'>
-                    Stay connected with Bothell Select on social media for the
-                    latest news, updates, photos, and more:
-                  </p>
+                      <h2 className='mb-2 text-center'>
+                        Feedback & Suggestions
+                      </h2>
+                      <p className='mb-5 text-center'>
+                        We value your feedback and suggestions! If you have any
+                        comments, suggestions, or feedback about your experience
+                        with Bothell Select, please don't hesitate to reach out
+                        to us. Your input helps us improve and enhance our camp
+                        programs for future participants.
+                      </p>
+                      <h2 className='mb-2 text-center'>Connect With Us!</h2>
+                      <p className='mb-2 text-center'>
+                        Stay connected with Bothell Select on social media for
+                        the latest news, updates, photos, and more:
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

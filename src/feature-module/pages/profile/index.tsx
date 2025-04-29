@@ -20,6 +20,7 @@ import {
   validateZipCode,
   validateGrade,
 } from '../../../utils/validation';
+import { getAvatarUrl, handleAvatarError } from '../../../utils/avatar';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -485,7 +486,6 @@ const Profile = () => {
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      // 2MB
       alert('Image size should be less than 2MB');
       return;
     }
@@ -524,7 +524,7 @@ const Profile = () => {
       );
 
       // Update parent data with new avatar URL
-      if (response.data.avatarUrl) {
+      if (response.data.parent) {
         await fetchParentData(parentId);
         // Clear the preview since we'll use the server URL
         setAvatarPreview(null);
@@ -607,12 +607,9 @@ const Profile = () => {
                 <div className='settings-profile-upload'>
                   <span className='profile-pic'>
                     <img
-                      src={
-                        parent?.avatar
-                          ? `https://bothell-select.onrender.com${parent.avatar}`
-                          : 'https://bothell-select.onrender.com/uploads/avatars/parents.png'
-                      }
+                      src={getAvatarUrl(parent?.avatar)}
                       alt='Profile'
+                      onError={handleAvatarError}
                     />
                   </span>
                   <div className='title-upload'>
