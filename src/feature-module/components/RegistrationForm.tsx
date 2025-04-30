@@ -267,27 +267,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
   isExistingUser = false,
 }) => {
   const { parent: currentUser } = useAuth();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [additionalGuardian, setAdditionalGuardian] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [isProcessingRegistration, setIsProcessingRegistration] =
-    useState(false);
-  const [selectedPackage, setSelectedPackage] = useState('1');
-
-  type PasswordField = 'password' | 'confirmPassword';
-
-  const [passwordVisibility, setPasswordVisibility] = useState({
-    password: false,
-    confirmPassword: false,
-  });
-
-  const togglePasswordVisibility = (field: PasswordField) => {
-    setPasswordVisibility((prevState) => ({
-      ...prevState,
-      [field]: !prevState[field],
-    }));
-  };
 
   const [formData, setFormData] = useState<FormData>({
     email: currentUser?.email || '',
@@ -336,6 +315,32 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
       },
     },
   });
+
+  const [customerEmail, setCustomerEmail] = useState(
+    currentUser?.email || formData.email || ''
+  );
+
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [additionalGuardian, setAdditionalGuardian] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [isProcessingRegistration, setIsProcessingRegistration] =
+    useState(false);
+  const [selectedPackage, setSelectedPackage] = useState('1');
+
+  type PasswordField = 'password' | 'confirmPassword';
+
+  const [passwordVisibility, setPasswordVisibility] = useState({
+    password: false,
+    confirmPassword: false,
+  });
+
+  const togglePasswordVisibility = (field: PasswordField) => {
+    setPasswordVisibility((prevState) => ({
+      ...prevState,
+      [field]: !prevState[field],
+    }));
+  };
 
   useEffect(() => {
     if (isExistingUser && currentUser) {
@@ -1421,6 +1426,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           amount: totalAmount,
           parentId: parentId,
           playerCount: formData.players.length,
+          buyerEmailAddress: customerEmail,
           cardDetails: tokenResult.details?.card || {
             last_4: '****',
             card_brand: 'UNKNOWN',
@@ -1565,7 +1571,16 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 </div>
               </div>
             </div>
-
+            <div className='mb-3'>
+              <label className='form-label'>Email for Receipt</label>
+              <input
+                type='email'
+                className='form-control'
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                required
+              />
+            </div>
             <div className='payment-form-container'>
               <PaymentForm
                 applicationId={appId}
@@ -1585,6 +1600,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
                     label: 'Total',
                   },
+                  buyerEmailAddress: customerEmail,
                 })}
               >
                 <CreditCard />
@@ -1607,6 +1623,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
             {formData.players?.length !== 1 ? 's' : ''}
           </p>
           <div className='confirmation-details mt-4'>
+            <p>
+              <strong>Email for receipt:</strong> {customerEmail}
+            </p>
             <p>
               <strong>Package:</strong>{' '}
               {selectedPackage === '1'
