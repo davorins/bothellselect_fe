@@ -16,6 +16,8 @@ interface ExtendedTableRecord extends TableRecord {
   isCoach?: boolean;
 }
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 export const getParentTableColumns = <T extends ExtendedTableRecord>(
   handleParentClick: (record: T) => void,
   currentUserRole?: string
@@ -34,7 +36,9 @@ export const getParentTableColumns = <T extends ExtendedTableRecord>(
             <img
               src={
                 record.imgSrc && record.imgSrc.trim() !== ''
-                  ? `https://bothell-select.onrender.com${record.imgSrc}`
+                  ? record.imgSrc.startsWith('http')
+                    ? record.imgSrc // Use Cloudinary URL directly
+                    : `${API_BASE_URL}${record.imgSrc}` // Handle local paths
                   : 'https://bothell-select.onrender.com/uploads/avatars/parents.png'
               }
               className='img-fluid rounded-circle'

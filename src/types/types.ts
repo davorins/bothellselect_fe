@@ -236,6 +236,9 @@ export interface AuthContextType {
   setRegistrationStatus?: React.Dispatch<
     React.SetStateAction<RegistrationStatus>
   >;
+  updateParent: (
+    updatedData: Partial<Parent> & { avatar?: string | null }
+  ) => void;
 }
 
 export interface TableRecord {

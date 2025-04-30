@@ -20,7 +20,6 @@ import {
   validateZipCode,
   validateGrade,
 } from '../../../utils/validation';
-import { getAvatarUrl, handleAvatarError } from '../../../utils/avatar';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -34,6 +33,7 @@ const Profile = () => {
     players,
     setPlayers,
     role,
+    updateParent,
   } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -66,6 +66,7 @@ const Profile = () => {
   const [playerFormData, setPlayerFormData] = useState<Player | null>(null);
   const [editedGuardians, setEditedGuardians] = useState<Guardian[]>([]);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarLoaded, setAvatarLoaded] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
   const validateForm = (): boolean => {
@@ -479,61 +480,54 @@ const Profile = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type and size
-    if (!file.type.match('image/jpeg|image/png')) {
-      alert('Only JPEG or PNG images are allowed');
-      return;
-    }
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreview(previewUrl);
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Image size should be less than 2MB');
-      return;
-    }
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        setAvatarPreview(event.target.result as string);
-      }
-    };
-    reader.readAsDataURL(file);
-
-    // Upload to server
     setIsUploading(true);
     try {
       const token = localStorage.getItem('token');
       const parentId = localStorage.getItem('parentId');
 
-      if (!token || !parentId) {
+      if (!token || !parentId || !parent) {
         throw new Error('Authentication required');
       }
 
       const formData = new FormData();
-      formData.append('avatar', file);
+      formData.append('file', file);
+      formData.append('upload_preset', 'your_cloudinary_upload_preset'); // Add your Cloudinary upload preset
 
-      const response = await axios.put(
+      // Upload to Cloudinary
+      const cloudinaryResponse = await axios.post(
+        `https://api.cloudinary.com/v1_1/your_cloud_name/image/upload`, // Replace with your Cloudinary cloud name
+        formData
+      );
+
+      // Update parent with the new avatar URL
+      const updateResponse = await axios.put(
         `${API_BASE_URL}/parent/${parentId}/avatar`,
-        formData,
+        { avatarUrl: cloudinaryResponse.data.secure_url },
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
+            'Content-Type': 'application/json',
           },
         }
       );
 
-      // Update parent data with new avatar URL
-      if (response.data.parent) {
-        await fetchParentData(parentId);
-        // Clear the preview since we'll use the server URL
-        setAvatarPreview(null);
-      }
+      // Update both local state and context
+      updateParent(updateResponse.data.parent);
+      setAvatarPreview(null); // Clear preview since we have the Cloudinary URL
     } catch (error) {
-      console.error('Avatar upload failed:', error);
-      alert('Failed to upload avatar. Please try again.');
+      console.error('Upload failed:', error);
+      setAvatarPreview(null);
+      alert('Upload failed. Please try again.');
     } finally {
       setIsUploading(false);
+      // Clean up the object URL
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
     }
   };
 
@@ -542,19 +536,35 @@ const Profile = () => {
       const token = localStorage.getItem('token');
       const parentId = localStorage.getItem('parentId');
 
-      if (!token || !parentId) {
-        throw new Error('Authentication required');
+      if (!token || !parentId || !parent?.avatar) {
+        throw new Error('Authentication required or no avatar to delete');
       }
 
-      await axios.delete(`${API_BASE_URL}/parent/${parentId}/avatar`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.delete(
+        `${API_BASE_URL}/parent/${parentId}/avatar`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
+      // Update local state by removing the avatar
+      updateParent(response.data.parent);
       setAvatarPreview(null);
-      fetchParentData(parentId);
     } catch (error) {
-      console.error('Avatar deletion failed:', error);
+      console.error('Deletion failed:', error);
+      alert('Failed to delete avatar. Please try again.');
     }
+  };
+
+  const getAvatarUrl = () => {
+    // During upload preview
+    if (avatarPreview) return avatarPreview;
+
+    // From Cloudinary (stored in MongoDB)
+    if (parent?.avatar) return parent.avatar;
+
+    // Default fallback
+    return 'https://bothell-select.onrender.com/uploads/avatars/parents.png';
   };
 
   if (isLoading) return <div>Loading...</div>;
@@ -607,9 +617,13 @@ const Profile = () => {
                 <div className='settings-profile-upload'>
                   <span className='profile-pic'>
                     <img
-                      src={getAvatarUrl(parent?.avatar)}
+                      src={getAvatarUrl()}
                       alt='Profile'
-                      onError={handleAvatarError}
+                      className='profile-image'
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          'https://bothell-select.onrender.com/uploads/avatars/parents.png';
+                      }}
                     />
                   </span>
                   <div className='title-upload'>
