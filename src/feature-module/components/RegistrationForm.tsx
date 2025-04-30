@@ -514,7 +514,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
     const errors: Record<string, string> = {};
 
-    // Check email availability
+    // Check email availability (only for new users)
     if (!isExistingUser) {
       try {
         const emailCheckResponse = await fetch(`${API_BASE_URL}/check-email`, {
@@ -527,7 +527,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
         if (!emailCheckResponse.ok) {
           const errorData = await emailCheckResponse.json();
-          errors.email = errorData.message; // Set the error message from the server
+          errors.email = errorData.message;
         }
       } catch (error) {
         console.error('Email check error:', error);
@@ -535,7 +535,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
       }
     }
 
-    // Validate form fields...
+    // Validate form fields
     if (!isExistingUser) {
       if (!validateEmail(formData.email)) {
         errors.email = 'Please enter a valid email address';
@@ -581,6 +581,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
       errors.addressZip = 'Please enter a valid ZIP code';
     }
 
+    // Validate players
     formData.players.forEach((player, index) => {
       const playerPrefix = `player${index}`;
 
@@ -605,6 +606,55 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
       }
     });
 
+    // Validate additional guardian if exists
+    if (additionalGuardian) {
+      if (!validateName(additionalGuardianData.fullName)) {
+        errors.additionalGuardianFullName =
+          'Please enter a valid full name for additional guardian';
+      }
+
+      if (!validateRequired(additionalGuardianData.relationship)) {
+        errors.additionalGuardianRelationship =
+          'Relationship to player is required for additional guardian';
+      }
+
+      if (!validatePhoneNumber(additionalGuardianData.phone)) {
+        errors.additionalGuardianPhone =
+          'Please enter a valid phone number for additional guardian';
+      }
+
+      if (!validateEmail(additionalGuardianData.email)) {
+        errors.additionalGuardianEmail =
+          'Please enter a valid email for additional guardian';
+      }
+
+      // Validate address only if it's different from parent address
+      if (
+        JSON.stringify(additionalGuardianData.address) !==
+        JSON.stringify(formData.address)
+      ) {
+        if (!validateRequired(additionalGuardianData.address.street)) {
+          errors.additionalGuardianAddress =
+            'Street address is required for additional guardian';
+        }
+
+        if (!validateRequired(additionalGuardianData.address.city)) {
+          errors.additionalGuardianAddress =
+            'City is required for additional guardian';
+        }
+
+        if (!validateState(additionalGuardianData.address.state)) {
+          errors.additionalGuardianAddressState =
+            'Please enter a valid 2-letter state code for additional guardian';
+        }
+
+        if (!validateZipCode(additionalGuardianData.address.zip)) {
+          errors.additionalGuardianAddressZip =
+            'Please enter a valid ZIP code for additional guardian';
+        }
+      }
+    }
+
     if (!isExistingUser && !formData.agreeToTerms) {
       errors.agreeToTerms = 'You must agree to the terms and conditions';
     }
@@ -616,18 +666,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
       return;
     }
 
-    // Check password confirmation directly from formData
-    if (!isExistingUser) {
-      if (formData.password !== formData.confirmPassword) {
-        setPaymentError('Passwords do not match');
-        setIsProcessingRegistration(false);
-        return;
-      }
-    }
-
     try {
       if (isExistingUser) {
-        // Existing user flow
+        // Existing user flow - register players only
         const registeredPlayers: Player[] = [];
         for (const player of formData.players) {
           const response = await fetch(`${API_BASE_URL}/players/register`, {
@@ -661,7 +702,41 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
         // Proceed to payment for existing user
         setCurrentStep(2);
       } else {
-        // New user flow
+        // New user flow - full registration
+        const registrationData = {
+          email: formData.email,
+          password: formData.password,
+          fullName: formData.fullName,
+          relationship: formData.relationship,
+          phone: formData.phone,
+          address: formData.address,
+          isCoach: formData.isCoach,
+          aauNumber: formData.aauNumber,
+          players: formData.players.map((player) => ({
+            ...player,
+            registrationYear: new Date().getFullYear(),
+            season: getNextSeason(),
+          })),
+          agreeToTerms: formData.agreeToTerms,
+          additionalGuardians: additionalGuardian
+            ? [
+                {
+                  fullName: additionalGuardianData.fullName,
+                  relationship: additionalGuardianData.relationship,
+                  phone: additionalGuardianData.phone,
+                  email: additionalGuardianData.email,
+                  address: additionalGuardianData.address,
+                  isCoach: additionalGuardianData.isCoach,
+                  aauNumber: additionalGuardianData.isCoach
+                    ? additionalGuardianData.aauNumber
+                    : '',
+                },
+              ]
+            : [],
+        };
+
+        console.log('Submitting registration data:', registrationData); // Debug log
+
         const response = await fetch(
           `${API_BASE_URL}/register/basketball-camp`,
           {
@@ -669,23 +744,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              ...formData,
-              payment: null,
-              parentInfo: {
-                fullName: formData.fullName,
-                password: formData.password,
-                phone: formData.phone,
-                address: formData.address,
-                relationship: formData.relationship,
-                isCoach: formData.isCoach,
-                aauNumber: formData.aauNumber,
-                agreeToTerms: formData.agreeToTerms,
-                additionalGuardians: additionalGuardian
-                  ? [additionalGuardianData]
-                  : [],
-              },
-            }),
+            body: JSON.stringify(registrationData),
           }
         );
 
@@ -694,19 +753,19 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           throw new Error(errorData.message || 'Registration failed');
         }
 
-        const registrationData = await response.json();
+        const responseData = await response.json();
 
         // Store authentication tokens for new user
-        if (registrationData.token && registrationData.parent?.id) {
-          localStorage.setItem('token', registrationData.token);
-          localStorage.setItem('parentId', registrationData.parent.id);
+        if (responseData.token && responseData.parent?.id) {
+          localStorage.setItem('token', responseData.token);
+          localStorage.setItem('parentId', responseData.parent.id);
           localStorage.setItem('userEmail', formData.email);
 
           // Update formData with the registered players from response
-          if (registrationData.players) {
+          if (responseData.players) {
             setFormData((prev) => ({
               ...prev,
-              players: registrationData.players,
+              players: responseData.players,
             }));
           }
 
