@@ -165,7 +165,7 @@ export const getParentTableColumns = <T extends ExtendedTableRecord>(
                     <li>
                       <Link
                         className='dropdown-item rounded-1'
-                        to={`/parents/edit/${record._id}`}
+                        to={`/parents/edit/${targetRecord._id}`}
                       >
                         <i className='ti ti-edit me-2' />
                         Edit

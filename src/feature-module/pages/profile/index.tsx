@@ -66,7 +66,7 @@ const Profile = () => {
   const [playerFormData, setPlayerFormData] = useState<Player | null>(null);
   const [editedGuardians, setEditedGuardians] = useState<Guardian[]>([]);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [avatarLoaded, setAvatarLoaded] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
 
   const validateForm = (): boolean => {
@@ -476,37 +476,77 @@ const Profile = () => {
     }
   };
 
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      const parentId = localStorage.getItem('parentId');
+      const token = localStorage.getItem('token');
+
+      if (parentId && token) {
+        try {
+          // Fetch the parent info (including the avatar URL) from the backend
+          const response = await axios.get(`/parent/${parentId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const avatarUrl = response.data.parent.avatar;
+          console.log('Fetched avatar URL:', avatarUrl); // Log for debugging
+          setAvatarUrl(
+            avatarUrl ||
+              'https://bothell-select.onrender.com/uploads/avatars/parents.png'
+          ); // Default if not found
+        } catch (error) {
+          console.error('Failed to fetch avatar:', error);
+        }
+      }
+    };
+
+    fetchAvatar();
+  }, []);
+
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Create preview URL
     const previewUrl = URL.createObjectURL(file);
     setAvatarPreview(previewUrl);
-
     setIsUploading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const parentId = localStorage.getItem('parentId');
 
-      if (!token || !parentId || !parent) {
-        throw new Error('Authentication required');
+    const token = localStorage.getItem('token');
+    const parentId = localStorage.getItem('parentId');
+
+    if (!token || !parentId) {
+      alert('Authentication required. Please log in again.');
+      setIsUploading(false);
+      return;
+    }
+
+    try {
+      const uploadPreset = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET;
+      const cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
+
+      if (!uploadPreset || !cloudName) {
+        throw new Error('Cloudinary environment variables are missing');
       }
 
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', 'your_cloudinary_upload_preset'); // Add your Cloudinary upload preset
+      formData.append('upload_preset', uploadPreset);
 
-      // Upload to Cloudinary
-      const cloudinaryResponse = await axios.post(
-        `https://api.cloudinary.com/v1_1/your_cloud_name/image/upload`, // Replace with your Cloudinary cloud name
-        formData
-      );
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
 
-      // Update parent with the new avatar URL
-      const updateResponse = await axios.put(
-        `${API_BASE_URL}/parent/${parentId}/avatar`,
-        { avatarUrl: cloudinaryResponse.data.secure_url },
+      const cloudinaryResponse = await axios.post(cloudinaryUrl, formData);
+
+      const avatarUrl = cloudinaryResponse.data.secure_url;
+      if (!avatarUrl) {
+        throw new Error('Cloudinary upload failed: no URL returned');
+      }
+
+      // Save the avatar URL to the backend
+      await axios.put(
+        `/parent/${parentId}/avatar`,
+        { avatarUrl },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -515,16 +555,17 @@ const Profile = () => {
         }
       );
 
-      // Update both local state and context
-      updateParent(updateResponse.data.parent);
-      setAvatarPreview(null); // Clear preview since we have the Cloudinary URL
-    } catch (error) {
-      console.error('Upload failed:', error);
-      setAvatarPreview(null);
-      alert('Upload failed. Please try again.');
+      setAvatarUrl(avatarUrl); // Update the avatar URL
+      localStorage.setItem('avatarUrl', avatarUrl); // Save to localStorage for persistence
+    } catch (error: any) {
+      console.error('Avatar upload failed:', error);
+      alert(
+        error.response?.data?.error ||
+          error.message ||
+          'Upload failed. Please try again.'
+      );
     } finally {
       setIsUploading(false);
-      // Clean up the object URL
       if (previewUrl && previewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(previewUrl);
       }
@@ -554,17 +595,6 @@ const Profile = () => {
       console.error('Deletion failed:', error);
       alert('Failed to delete avatar. Please try again.');
     }
-  };
-
-  const getAvatarUrl = () => {
-    // During upload preview
-    if (avatarPreview) return avatarPreview;
-
-    // From Cloudinary (stored in MongoDB)
-    if (parent?.avatar) return parent.avatar;
-
-    // Default fallback
-    return 'https://bothell-select.onrender.com/uploads/avatars/parents.png';
   };
 
   if (isLoading) return <div>Loading...</div>;
@@ -617,12 +647,12 @@ const Profile = () => {
                 <div className='settings-profile-upload'>
                   <span className='profile-pic'>
                     <img
-                      src={getAvatarUrl()}
+                      src={avatarUrl} // Use the fetched or persisted avatar URL
                       alt='Profile'
                       className='profile-image'
                       onError={(e) => {
                         e.currentTarget.src =
-                          'https://bothell-select.onrender.com/uploads/avatars/parents.png';
+                          'https://bothell-select.onrender.com/uploads/avatars/parents.png'; // Fallback if image fails to load
                       }}
                     />
                   </span>
