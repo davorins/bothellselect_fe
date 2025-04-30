@@ -267,6 +267,27 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
   isExistingUser = false,
 }) => {
   const { parent: currentUser } = useAuth();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [additionalGuardian, setAdditionalGuardian] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [isProcessingRegistration, setIsProcessingRegistration] =
+    useState(false);
+  const [selectedPackage, setSelectedPackage] = useState('1');
+
+  type PasswordField = 'password' | 'confirmPassword';
+
+  const [passwordVisibility, setPasswordVisibility] = useState({
+    password: false,
+    confirmPassword: false,
+  });
+
+  const togglePasswordVisibility = (field: PasswordField) => {
+    setPasswordVisibility((prevState) => ({
+      ...prevState,
+      [field]: !prevState[field],
+    }));
+  };
 
   const [formData, setFormData] = useState<FormData>({
     email: currentUser?.email || '',
@@ -319,28 +340,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const [customerEmail, setCustomerEmail] = useState(
     currentUser?.email || formData.email || ''
   );
-
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [additionalGuardian, setAdditionalGuardian] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [isProcessingRegistration, setIsProcessingRegistration] =
-    useState(false);
-  const [selectedPackage, setSelectedPackage] = useState('1');
-
-  type PasswordField = 'password' | 'confirmPassword';
-
-  const [passwordVisibility, setPasswordVisibility] = useState({
-    password: false,
-    confirmPassword: false,
-  });
-
-  const togglePasswordVisibility = (field: PasswordField) => {
-    setPasswordVisibility((prevState) => ({
-      ...prevState,
-      [field]: !prevState[field],
-    }));
-  };
 
   useEffect(() => {
     if (isExistingUser && currentUser) {
