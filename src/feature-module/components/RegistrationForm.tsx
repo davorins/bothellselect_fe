@@ -681,6 +681,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 isCoach: formData.isCoach,
                 aauNumber: formData.aauNumber,
                 agreeToTerms: formData.agreeToTerms,
+                additionalGuardians: additionalGuardian
+                  ? [additionalGuardianData]
+                  : [],
               },
             }),
           }
