@@ -94,6 +94,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
 }) => {
   const { parent, players, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [customerEmail, setCustomerEmail] = useState(parent?.email || '');
   const [player, setPlayer] = useState<Player>({
     fullName: '',
     gender: '',
@@ -131,6 +132,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
         amount: 10000, // $100 in cents
         playerId: playerId,
         parentId: parentId,
+        buyerEmailAddress: customerEmail,
         cardDetails: tokenResult.details?.card || {
           last_4: '****',
           card_brand: 'UNKNOWN',
@@ -513,6 +515,16 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                   <div className='card'>
                     <div className='card-body'>
                       <h5>Credit/Debit Card</h5>
+                      <div className='mb-3'>
+                        <label className='form-label'>Email for Receipt</label>
+                        <input
+                          type='email'
+                          className='form-control'
+                          value={customerEmail}
+                          onChange={(e) => setCustomerEmail(e.target.value)}
+                          required
+                        />
+                      </div>
                       <PaymentForm
                         applicationId={SQUARE_APP_ID}
                         locationId={SQUARE_LOCATION_ID}
@@ -524,6 +536,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                             amount: totalAmount,
                             label: 'Total',
                           },
+                          buyerEmailAddress: customerEmail,
                         })}
                       >
                         <CreditCard />
