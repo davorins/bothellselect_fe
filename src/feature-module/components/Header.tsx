@@ -14,17 +14,16 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 const DEFAULT_AVATAR =
   'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
-const Header: React.FC = () => {
+const Header = () => {
   const { isAuthenticated, parent, role, logout } = useAuth();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const routes = all_routes;
+  const [avatarSrc, setAvatarSrc] = useState(DEFAULT_AVATAR);
 
   const mobileSidebar = useSelector(
     (state: any) => state.sidebarSlice.mobileSidebar
   );
-
-  const [avatarSrc, setAvatarSrc] = useState(DEFAULT_AVATAR);
 
   const handleLogout = () => {
     logout();
@@ -85,38 +84,76 @@ const Header: React.FC = () => {
     fetchAvatar();
   }, [parent?._id, parent?.avatar]);
 
+  const renderLogoSection = () => (
+    <div
+      className='header-left active'
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      <Link to={routes.adminDashboard} className='logo logo-normal'>
+        <ImageWithBasePath src='assets/img/logo.png' alt='Logo' />
+      </Link>
+      <Link to={routes.adminDashboard} className='logo-small'>
+        <ImageWithBasePath src='assets/img/logo-small.png' alt='Logo' />
+      </Link>
+      <Link to={routes.adminDashboard} className='dark-logo'>
+        <ImageWithBasePath src='assets/img/logo-dark.svg' alt='Logo' />
+      </Link>
+    </div>
+  );
+
+  const renderMobileMenuButton = () => (
+    <Link
+      id='mobile_btn'
+      className='mobile_btn d-md-none'
+      to='#sidebar'
+      onClick={toggleMobileSidebar}
+    >
+      <span className='bar-icon'>
+        <span />
+        <span />
+        <span />
+      </span>
+    </Link>
+  );
+
   return (
     <>
+      {/* Header */}
       <div className='header d-flex justify-content-between align-items-center px-3 py-2 shadow-sm'>
-        <div
-          className='d-flex align-items-center'
-          onMouseEnter={onMouseEnter}
-          onMouseLeave={onMouseLeave}
-        >
-          <Link to={routes.adminDashboard} className='logo logo-normal'>
-            <ImageWithBasePath src='assets/img/logo.png' alt='Logo' />
-          </Link>
-          <Link to={routes.adminDashboard} className='logo-small'>
-            <ImageWithBasePath src='assets/img/logo-small.png' alt='Logo' />
-          </Link>
-          <Link to={routes.adminDashboard} className='dark-logo'>
-            <ImageWithBasePath src='assets/img/logo-dark.svg' alt='Logo' />
-          </Link>
+        {/* Logo + Sidebar Toggle + Mobile Menu Button */}
+        <div className='d-flex align-items-center'>
+          {renderLogoSection()}
+          {renderMobileMenuButton()}
         </div>
 
-        <Link
-          id='mobile_btn'
-          className='mobile_btn d-md-none'
-          to='#sidebar'
-          onClick={toggleMobileSidebar}
-        >
-          <span className='bar-icon'>
-            <span />
-            <span />
-            <span />
-          </span>
-        </Link>
+        {/* Main Nav Menu (hidden on mobile) */}
+        <div className='d-none d-md-block'>
+          <ul className='nav'>
+            <li className='nav-item'>
+              <Link className='nav-link' to='/'>
+                Home
+              </Link>
+            </li>
+            <li className='nav-item'>
+              <Link className='nav-link' to='/about-us'>
+                About Us
+              </Link>
+            </li>
+            <li className='nav-item'>
+              <Link className='nav-link' to='/our-team'>
+                Our Team
+              </Link>
+            </li>
+            <li className='nav-item'>
+              <Link className='nav-link' to='/contact-us'>
+                Contact Us
+              </Link>
+            </li>
+          </ul>
+        </div>
 
+        {/* User Auth / Profile (always visible in desktop) */}
         <div className='d-none d-md-flex align-items-center'>
           {isAuthenticated && parent ? (
             <div className='dropdown ms-2'>
@@ -174,6 +211,7 @@ const Header: React.FC = () => {
         </div>
       </div>
 
+      {/* Mobile Slide Down Menu */}
       {mobileSidebar && (
         <div className='mobile-nav d-md-none px-3 pb-3 bg-white shadow-sm'>
           <ul className='nav flex-column'>
@@ -214,6 +252,7 @@ const Header: React.FC = () => {
                 <i className='ti ti-user-circle me-2' /> My Profile
               </Link>
             </li>
+
             <li className='nav-item mt-2'>
               {!isAuthenticated ? (
                 <button
