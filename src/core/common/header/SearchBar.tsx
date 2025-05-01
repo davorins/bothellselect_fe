@@ -2,12 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { all_routes } from '../../../feature-module/router/all_routes';
 import { useAuth } from '../../../context/AuthContext';
-import ImageWithBasePath from '../imageWithBasePath';
 import { SearchResult } from '../../../types/types';
 import { useParentActions } from '../../../feature-module/hooks/useParentActions';
-import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 const DEFAULT_AVATAR =
   'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
