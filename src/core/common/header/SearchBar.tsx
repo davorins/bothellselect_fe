@@ -5,6 +5,11 @@ import { useAuth } from '../../../context/AuthContext';
 import ImageWithBasePath from '../imageWithBasePath';
 import { SearchResult } from '../../../types/types';
 import { useParentActions } from '../../../feature-module/hooks/useParentActions';
+import axios from 'axios';
+
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const DEFAULT_AVATAR =
+  'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
 interface SearchBarProps {
   role?: string;
@@ -23,6 +28,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [avatarMap, setAvatarMap] = useState<{ [id: string]: string }>({});
 
   // Handle click outside search results
   useEffect(() => {
@@ -82,6 +88,27 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
       inputRef.current.focus();
     }
   };
+
+  const fetchAvatarForResult = useCallback(
+    async (result: SearchResult) => {
+      if (avatarMap[result.id]) return;
+
+      let avatarUrl = result.image || DEFAULT_AVATAR;
+
+      if (!result.image?.startsWith('http') && result.image) {
+        avatarUrl = `https://bothell-select.onrender.com${result.image}`;
+      }
+
+      setAvatarMap((prev) => ({ ...prev, [result.id]: avatarUrl }));
+    },
+    [avatarMap]
+  );
+
+  useEffect(() => {
+    results.forEach((result) => {
+      fetchAvatarForResult(result);
+    });
+  }, [results, fetchAvatarForResult]);
 
   const updateRecentlyViewed = (id: string) => {
     let recentlyViewed = JSON.parse(
@@ -198,7 +225,11 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
             <div className='d-flex align-items-center'>
               {result.image && (
                 <div className='avatar avatar-sm me-2'>
-                  <ImageWithBasePath src={result.image} alt={result.name} />
+                  <img
+                    src={avatarMap[result.id] || DEFAULT_AVATAR}
+                    alt={result?.name || 'User avatar'}
+                    className='avatar avatar-sm me-2'
+                  />
                 </div>
               )}
               <div>

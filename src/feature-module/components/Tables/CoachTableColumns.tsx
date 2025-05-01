@@ -5,8 +5,6 @@ import { formatPhoneNumber } from '../../../utils/phone';
 import { formatDate } from '../../../utils/dateFormatter';
 import { TableRecord } from '../../../types/types';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-
 interface ExtendedCoachTableRecord extends Omit<TableRecord, 'email'> {
   type: 'coach';
   status: string;
@@ -19,6 +17,8 @@ interface ExtendedCoachTableRecord extends Omit<TableRecord, 'email'> {
   email?: string;
   [key: string]: any;
 }
+
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 export const getCoachTableColumns = <T extends ExtendedCoachTableRecord>(
   handleCoachClick: (record: T) => void,

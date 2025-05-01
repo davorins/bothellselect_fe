@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import ImageWithBasePath from '../../core/common/imageWithBasePath';
@@ -8,19 +8,23 @@ import {
   setExpandMenu,
   setMobileSidebar,
 } from '../../core/data/redux/sidebarSlice';
+import axios from 'axios';
 
-const Header = () => {
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const DEFAULT_AVATAR =
+  'https://bothell-select.onrender.com/uploads/avatars/parents.png';
+
+const Header: React.FC = () => {
   const { isAuthenticated, parent, role, logout } = useAuth();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const routes = all_routes;
 
-  const DEFAULT_AVATAR =
-    'https://bothell-select.onrender.com/uploads/avatars/parents.png';
-
   const mobileSidebar = useSelector(
     (state: any) => state.sidebarSlice.mobileSidebar
   );
+
+  const [avatarSrc, setAvatarSrc] = useState(DEFAULT_AVATAR);
 
   const handleLogout = () => {
     logout();
@@ -43,140 +47,122 @@ const Header = () => {
     dispatch(setExpandMenu(false));
   }, [dispatch]);
 
-  const renderLogoSection = () => (
-    <div
-      className='header-left active'
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
-      <Link to={routes.adminDashboard} className='logo logo-normal'>
-        <ImageWithBasePath src='assets/img/logo.png' alt='Logo' />
-      </Link>
-      <Link to={routes.adminDashboard} className='logo-small'>
-        <ImageWithBasePath src='assets/img/logo-small.png' alt='Logo' />
-      </Link>
-      <Link to={routes.adminDashboard} className='dark-logo'>
-        <ImageWithBasePath src='assets/img/logo-dark.svg' alt='Logo' />
-      </Link>
-    </div>
-  );
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      if (!parent?._id) return;
 
-  const renderMobileMenuButton = () => (
-    <Link
-      id='mobile_btn'
-      className='mobile_btn d-md-none'
-      to='#sidebar'
-      onClick={toggleMobileSidebar}
-    >
-      <span className='bar-icon'>
-        <span />
-        <span />
-        <span />
-      </span>
-    </Link>
-  );
+      if (parent.avatar && parent.avatar.startsWith('http')) {
+        setAvatarSrc(parent.avatar);
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/parent/${parent._id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const avatar = response.data?.avatar;
+
+        if (avatar && avatar.startsWith('http')) {
+          setAvatarSrc(avatar);
+        } else if (avatar) {
+          setAvatarSrc(`https://bothell-select.onrender.com${avatar}`);
+        } else {
+          setAvatarSrc(DEFAULT_AVATAR);
+        }
+      } catch (error) {
+        console.error('Failed to fetch avatar:', error);
+        setAvatarSrc(DEFAULT_AVATAR);
+      }
+    };
+
+    fetchAvatar();
+  }, [parent?._id, parent?.avatar]);
 
   return (
     <>
-      {/* Header */}
       <div className='header d-flex justify-content-between align-items-center px-3 py-2 shadow-sm'>
-        {/* Logo + Sidebar Toggle + Mobile Menu Button */}
-        <div className='d-flex align-items-center'>
-          {renderLogoSection()}
-          {renderMobileMenuButton()}
+        <div
+          className='d-flex align-items-center'
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+        >
+          <Link to={routes.adminDashboard} className='logo logo-normal'>
+            <ImageWithBasePath src='assets/img/logo.png' alt='Logo' />
+          </Link>
+          <Link to={routes.adminDashboard} className='logo-small'>
+            <ImageWithBasePath src='assets/img/logo-small.png' alt='Logo' />
+          </Link>
+          <Link to={routes.adminDashboard} className='dark-logo'>
+            <ImageWithBasePath src='assets/img/logo-dark.svg' alt='Logo' />
+          </Link>
         </div>
 
-        {/* Main Nav Menu (hidden on mobile) */}
-        <div className='d-none d-md-block'>
-          <ul className='nav'>
-            <li className='nav-item'>
-              <Link className='nav-link' to='/'>
-                Home
-              </Link>
-            </li>
-            <li className='nav-item'>
-              <Link className='nav-link' to='/about-us'>
-                About Us
-              </Link>
-            </li>
-            <li className='nav-item'>
-              <Link className='nav-link' to='/our-team'>
-                Our Team
-              </Link>
-            </li>
-            <li className='nav-item'>
-              <Link className='nav-link' to='/contact-us'>
-                Contact Us
-              </Link>
-            </li>
-          </ul>
-        </div>
+        <Link
+          id='mobile_btn'
+          className='mobile_btn d-md-none'
+          to='#sidebar'
+          onClick={toggleMobileSidebar}
+        >
+          <span className='bar-icon'>
+            <span />
+            <span />
+            <span />
+          </span>
+        </Link>
 
-        {/* User Auth / Profile (always visible in desktop) */}
         <div className='d-none d-md-flex align-items-center'>
-          {isAuthenticated ? (
-            parent ? (
-              <>
-                {(() => {
-                  const avatarSrc =
-                    parent.avatar && parent.avatar.trim() !== ''
-                      ? `https://bothell-select.onrender.com${parent.avatar}`
-                      : DEFAULT_AVATAR;
-
-                  return (
-                    <div className='dropdown ms-2'>
-                      <Link
-                        to='#'
-                        className='dropdown-toggle d-flex align-items-center'
-                        data-bs-toggle='dropdown'
-                      >
-                        <span className='avatar avatar-md rounded-circle'>
-                          <img
-                            src={avatarSrc}
-                            alt={parent?.fullName || 'User avatar'}
-                            className='img-fluid rounded-circle'
-                          />
-                        </span>
-                      </Link>
-                      <div className='dropdown-menu dropdown-menu-end'>
-                        <div className='d-flex align-items-center p-2'>
-                          <span className='avatar avatar-md me-2'>
-                            <img
-                              src={avatarSrc}
-                              alt={parent?.fullName || 'User avatar'}
-                              className='img-fluid rounded-circle'
-                            />
-                          </span>
-                          <div>
-                            <h6 className='mb-0'>
-                              {parent?.fullName || 'User'}
-                            </h6>
-                            <small className='text-muted'>{role}</small>
-                          </div>
-                        </div>
-                        <hr className='dropdown-divider' />
-                        <Link className='dropdown-item' to={routes.profile}>
-                          <i className='ti ti-user-circle me-2' /> My Profile
-                        </Link>
-                        <Link
-                          className='dropdown-item'
-                          to={routes.profilesettings}
-                        >
-                          <i className='ti ti-settings me-2' /> Settings
-                        </Link>
-                        <hr className='dropdown-divider' />
-                        <button
-                          className='dropdown-item text-danger'
-                          onClick={handleLogout}
-                        >
-                          <i className='ti ti-logout me-2' /> Logout
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </>
-            ) : null
+          {isAuthenticated && parent ? (
+            <div className='dropdown ms-2'>
+              <Link
+                to='#'
+                className='dropdown-toggle d-flex align-items-center'
+                data-bs-toggle='dropdown'
+              >
+                <span className='avatar avatar-md rounded-circle'>
+                  <img
+                    src={avatarSrc}
+                    alt={parent?.fullName || 'User avatar'}
+                    className='img-fluid rounded-circle'
+                  />
+                </span>
+              </Link>
+              <div className='dropdown-menu dropdown-menu-end'>
+                <div className='d-flex align-items-center p-2'>
+                  <span className='avatar avatar-md me-2'>
+                    <img
+                      src={avatarSrc}
+                      alt={parent?.fullName || 'User avatar'}
+                      className='img-fluid rounded-circle'
+                    />
+                  </span>
+                  <div>
+                    <h6 className='mb-0'>{parent?.fullName || 'User'}</h6>
+                    <small className='text-muted'>{role}</small>
+                  </div>
+                </div>
+                <hr className='dropdown-divider' />
+                <Link className='dropdown-item' to={routes.profile}>
+                  <i className='ti ti-user-circle me-2' /> My Profile
+                </Link>
+                <Link className='dropdown-item' to={routes.profilesettings}>
+                  <i className='ti ti-settings me-2' /> Settings
+                </Link>
+                <hr className='dropdown-divider' />
+                <button
+                  className='dropdown-item text-danger'
+                  onClick={handleLogout}
+                >
+                  <i className='ti ti-logout me-2' /> Logout
+                </button>
+              </div>
+            </div>
           ) : (
             <button
               className='btn btn-outline-primary ms-2'
@@ -188,7 +174,6 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Mobile Slide Down Menu */}
       {mobileSidebar && (
         <div className='mobile-nav d-md-none px-3 pb-3 bg-white shadow-sm'>
           <ul className='nav flex-column'>
@@ -229,7 +214,6 @@ const Header = () => {
                 <i className='ti ti-user-circle me-2' /> My Profile
               </Link>
             </li>
-
             <li className='nav-item mt-2'>
               {!isAuthenticated ? (
                 <button

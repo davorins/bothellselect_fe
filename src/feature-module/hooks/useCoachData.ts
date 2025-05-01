@@ -9,6 +9,9 @@ export const useCoachData = () => {
   const [error, setError] = useState<string | null>(null);
   const [coaches, setCoaches] = useState<Coach[]>([]);
 
+  const DEFAULT_COACH_AVATAR =
+    'https://bothell-select.onrender.com/uploads/avatars/coach.png';
+
   const transformToExtendedRecord = useCallback(
     (coach: Coach): ExtendedCoachRecord => ({
       ...coach,
@@ -19,7 +22,12 @@ export const useCoachData = () => {
       address: coach.address,
       type: 'coach' as const,
       DateofJoin: coach.createdAt || new Date().toISOString(),
-      imgSrc: coach.avatar || 'assets/img/profiles/coach-avatar.jpg',
+      imgSrc:
+        coach.avatar &&
+        coach.avatar.includes('/upload/') &&
+        coach.avatar.split('/').pop()?.includes('.')
+          ? coach.avatar
+          : DEFAULT_COACH_AVATAR,
       canView: true,
       status: coach.status || 'Active',
       aauNumber: coach.aauNumber || 'N/A',

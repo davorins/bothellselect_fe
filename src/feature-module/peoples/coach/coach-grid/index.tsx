@@ -19,6 +19,9 @@ import { CoachFilters } from '../../../components/Filters/CoachFilters';
 import { CoachSortOptions } from '../../../components/Filters/CoachSortOptions';
 import { Moment } from 'moment';
 
+const DEFAULT_COACH_AVATAR =
+  'https://bothell-select.onrender.com/uploads/avatars/coach.png';
+
 const CoachGrid = () => {
   const routes = all_routes;
   const location = useLocation();
@@ -219,12 +222,17 @@ const CoachGrid = () => {
                         >
                           <img
                             src={
-                              coach.imgSrc && coach.imgSrc.trim() !== ''
-                                ? `https://bothell-select.onrender.com${coach.imgSrc}`
-                                : 'https://bothell-select.onrender.com/uploads/avatars/coach.png'
+                              coach.imgSrc &&
+                              coach.imgSrc.trim().startsWith('http')
+                                ? coach.imgSrc
+                                : DEFAULT_COACH_AVATAR
                             }
                             className='img-fluid rounded-circle'
-                            alt={`${coach.fullName} profile`}
+                            alt={
+                              coach.fullName
+                                ? `${coach.fullName}'s profile picture`
+                                : 'Coach profile picture'
+                            }
                           />
                         </div>
                         <div className='ms-2'>

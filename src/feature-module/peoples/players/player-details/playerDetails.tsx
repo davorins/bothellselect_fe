@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import PlayerSidebar from './playerSidebar';
 import PlayerBreadcrumb from './playerBreadcrumb';
 import { useAuth } from '../../../../context/AuthContext';
+import axios from 'axios';
 
 interface GuardianData {
   id: string;
@@ -29,13 +30,19 @@ interface FetchedGuardianData {
   additionalGuardians?: FetchedGuardianData[];
 }
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const DEFAULT_AVATAR =
+  'https://bothell-select.onrender.com/uploads/avatars/parents.png';
+
 const PlayerDetails = () => {
   const location = useLocation();
   const player = location.state?.player;
   const guardians = location.state?.guardians;
   const siblings = location.state?.siblings || [];
-  const [token, setToken] = useState<string | null>(null);
   const { user } = useAuth();
+
+  const [token, setToken] = useState<string | null>(null);
+  const [avatarSrc, setAvatarSrc] = useState(DEFAULT_AVATAR);
 
   const formatAddress = (
     address:
@@ -49,7 +56,6 @@ const PlayerDetails = () => {
         }
   ): string => {
     if (!address) return '';
-
     if (typeof address === 'string') return address;
 
     const parts = [
@@ -61,16 +67,6 @@ const PlayerDetails = () => {
     return parts.join(', ');
   };
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem('authToken');
-    setToken(storedToken);
-  }, []);
-
-  if (!player) {
-    return <div>No player data found.</div>;
-  }
-
-  // Map the logged-in user (primary parent) to GuardianData
   const primaryParent: GuardianData | null =
     user && user.role !== 'admin'
       ? {
@@ -88,7 +84,6 @@ const PlayerDetails = () => {
           (guardian: FetchedGuardianData) => guardian.isPrimary
         ) || null;
 
-  // Mapping and deduplication of guardians
   const mappedGuardians: GuardianData[] = guardians
     ? guardians.flatMap((guardian: FetchedGuardianData) => [
         {
@@ -117,6 +112,50 @@ const PlayerDetails = () => {
         ),
       ])
     : [];
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('authToken');
+    setToken(storedToken);
+
+    const fetchAvatar = async () => {
+      if (!primaryParent?.id) return;
+
+      if (primaryParent.avatar && primaryParent.avatar.startsWith('http')) {
+        setAvatarSrc(primaryParent.avatar);
+        return;
+      }
+
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/parent/${primaryParent.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${storedToken}`,
+            },
+          }
+        );
+
+        const avatar = response.data?.avatar;
+
+        if (avatar && avatar.startsWith('http')) {
+          setAvatarSrc(avatar);
+        } else if (avatar) {
+          setAvatarSrc(`https://bothell-select.onrender.com${avatar}`);
+        } else {
+          setAvatarSrc(DEFAULT_AVATAR);
+        }
+      } catch (error) {
+        console.error('Failed to fetch avatar:', error);
+        setAvatarSrc(DEFAULT_AVATAR);
+      }
+    };
+
+    fetchAvatar();
+  }, [primaryParent?.id, primaryParent?.avatar]);
+
+  if (!player) {
+    return <div>No player data found.</div>;
+  }
 
   const uniqueGuardians: GuardianData[] = Array.from(
     new Map(mappedGuardians.map((g) => [g.id, g])).values()
@@ -162,14 +201,11 @@ const PlayerDetails = () => {
                               <div className='d-flex align-items-center mb-3'>
                                 <span className='avatar avatar-lg flex-shrink-0'>
                                   <img
-                                    src={
-                                      primaryParent.avatar &&
-                                      primaryParent.avatar.trim() !== ''
-                                        ? `https://bothell-select.onrender.com${primaryParent.avatar}`
-                                        : 'https://bothell-select.onrender.com/uploads/avatars/parents.png'
+                                    src={avatarSrc}
+                                    alt={
+                                      primaryParent?.fullName || 'User avatar'
                                     }
                                     className='img-fluid'
-                                    alt={primaryParent.fullName}
                                   />
                                 </span>
                                 <div className='ms-2 overflow-hidden'>
@@ -224,75 +260,75 @@ const PlayerDetails = () => {
                         </div>
                       )}
                       {filteredGuardians.length > 0 ? (
-                        filteredGuardians.map((guardian: GuardianData) => (
-                          <div
-                            key={guardian.id}
-                            className='border rounded p-3 pb-0 mb-3'
-                          >
-                            <div className='row'>
-                              <div className='col-sm-6 col-lg-3'>
-                                <div className='d-flex align-items-center mb-3'>
-                                  <span className='avatar avatar-lg flex-shrink-0'>
-                                    <img
-                                      src={
-                                        guardian.avatar &&
-                                        guardian.avatar.trim() !== ''
-                                          ? `https://bothell-select.onrender.com${guardian.avatar}`
-                                          : 'https://bothell-select.onrender.com/uploads/avatars/parents.png'
-                                      }
-                                      className='img-fluid'
-                                      alt={guardian.fullName}
-                                    />
-                                  </span>
-                                  <div className='ms-2 overflow-hidden'>
-                                    <h6 className='text-truncate'>
-                                      {guardian.fullName}
-                                    </h6>
-                                    <p>{guardian.relationship}</p>
+                        filteredGuardians.map((guardian: GuardianData) => {
+                          const avatar = guardian.avatar || DEFAULT_AVATAR; // Ensure each guardian's avatar is handled separately
+                          return (
+                            <div
+                              key={guardian.id}
+                              className='border rounded p-3 pb-0 mb-3'
+                            >
+                              <div className='row'>
+                                <div className='col-sm-6 col-lg-3'>
+                                  <div className='d-flex align-items-center mb-3'>
+                                    <span className='avatar avatar-lg flex-shrink-0'>
+                                      <img
+                                        src={avatar}
+                                        alt={
+                                          guardian?.fullName || 'User avatar'
+                                        }
+                                        className='img-fluid'
+                                      />
+                                    </span>
+                                    <div className='ms-2 overflow-hidden'>
+                                      <h6 className='text-truncate'>
+                                        {guardian.fullName}
+                                      </h6>
+                                      <p>{guardian.relationship}</p>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                              <div className='col-sm-6 col-lg-3'>
-                                <div className='mb-3'>
-                                  <p className='text-dark fw-medium mb-1'>
-                                    AAU Number
-                                  </p>
-                                  <p>{guardian.aauNumber}</p>
-                                </div>
-                              </div>
-                              <div className='col-sm-6 col-lg-3'>
-                                <div className='mb-3'>
-                                  <p className='text-dark fw-medium mb-1'>
-                                    Phone
-                                  </p>
-                                  <p>{guardian.phone}</p>
-                                </div>
-                              </div>
-                              <div className='col-sm-6 col-lg-3'>
-                                <div className='d-flex align-items-center justify-content-between'>
-                                  <div className='mb-3 overflow-hidden me-3'>
+                                <div className='col-sm-6 col-lg-3'>
+                                  <div className='mb-3'>
                                     <p className='text-dark fw-medium mb-1'>
-                                      Email
+                                      AAU Number
                                     </p>
-                                    <p className='text-truncate'>
-                                      {guardian.email || 'N/A'}
-                                    </p>
+                                    <p>{guardian.aauNumber}</p>
                                   </div>
-                                  <Link
-                                    to='#'
-                                    data-bs-toggle='tooltip'
-                                    data-bs-placement='top'
-                                    aria-label='Reset Password'
-                                    data-bs-original-title='Reset Password'
-                                    className='btn btn-dark btn-icon btn-sm mb-3'
-                                  >
-                                    <i className='ti ti-lock-x' />
-                                  </Link>
+                                </div>
+                                <div className='col-sm-6 col-lg-3'>
+                                  <div className='mb-3'>
+                                    <p className='text-dark fw-medium mb-1'>
+                                      Phone
+                                    </p>
+                                    <p>{guardian.phone}</p>
+                                  </div>
+                                </div>
+                                <div className='col-sm-6 col-lg-3'>
+                                  <div className='d-flex align-items-center justify-content-between'>
+                                    <div className='mb-3 overflow-hidden me-3'>
+                                      <p className='text-dark fw-medium mb-1'>
+                                        Email
+                                      </p>
+                                      <p className='text-truncate'>
+                                        {guardian.email || 'N/A'}
+                                      </p>
+                                    </div>
+                                    <Link
+                                      to='#'
+                                      data-bs-toggle='tooltip'
+                                      data-bs-placement='top'
+                                      aria-label='Reset Password'
+                                      data-bs-original-title='Reset Password'
+                                      className='btn btn-dark btn-icon btn-sm mb-3'
+                                    >
+                                      <i className='ti ti-lock-x' />
+                                    </Link>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        ))
+                          );
+                        })
                       ) : (
                         <p>No parent/guardian data available.</p>
                       )}
