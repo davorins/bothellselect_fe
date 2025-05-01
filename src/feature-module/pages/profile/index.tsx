@@ -31,7 +31,6 @@ const Profile = () => {
     isLoading,
     fetchPlayersData,
     players,
-    setPlayers,
     role,
     updateParent,
   } = useAuth();
@@ -65,9 +64,8 @@ const Profile = () => {
 
   const [playerFormData, setPlayerFormData] = useState<Player | null>(null);
   const [editedGuardians, setEditedGuardians] = useState<Guardian[]>([]);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [avatarSrc, setAvatarSrc] = useState('');
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -186,67 +184,65 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    if (parent) {
-      setFormData({
-        fullName: parent.fullName || '',
-        email: parent.email || '',
-        phone: parent.phone
-          ? formatPhoneNumber(parent.phone.replace(/\D/g, ''))
-          : '',
+    if (!parent) return;
+
+    // ✅ Use avatar directly if it exists and looks like a Cloudinary URL
+    const isCloudinaryUrl =
+      typeof parent.avatar === 'string' &&
+      parent.avatar.includes('res.cloudinary.com');
+
+    const url = isCloudinaryUrl
+      ? `${parent.avatar}?${Date.now()}`
+      : 'https://bothell-select.onrender.com/uploads/avatars/parents.png';
+
+    console.log('Setting avatar URL:', url);
+
+    // ✅ Set form fields
+    setFormData({
+      fullName: parent.fullName || '',
+      email: parent.email || '',
+      phone: parent.phone
+        ? formatPhoneNumber(parent.phone.replace(/\D/g, ''))
+        : '',
+      address: ensureAddress(
+        typeof parent.address === 'object'
+          ? parent.address
+          : parent.address || ''
+      ),
+      relationship: parent.relationship || '',
+      isCoach: parent.isCoach || false,
+      aauNumber: parent.aauNumber || '',
+    });
+
+    // ✅ Set additional guardians
+    setEditedGuardians(
+      parent.additionalGuardians?.map((g) => ({
+        ...g,
+        phone: g.phone ? formatPhoneNumber(g.phone.replace(/\D/g, '')) : '',
         address: ensureAddress(
-          typeof parent.address === 'object'
-            ? parent.address
-            : parent.address || ''
+          g.address || {
+            street: '',
+            street2: '',
+            city: '',
+            state: '',
+            zip: '',
+          }
         ),
-        relationship: parent.relationship || '',
-        isCoach: parent.isCoach || false,
-        aauNumber: parent.aauNumber || '',
+      })) || []
+    );
+
+    // ✅ Fetch players
+    const playerIds =
+      parent.players?.map((player) =>
+        typeof player === 'string' ? player : player._id
+      ) || [];
+
+    if (playerIds.length > 0) {
+      fetchPlayersData(playerIds).then((response) => {
+        console.log('Fetched Players:', response);
       });
-
-      if (role !== 'admin' && parent.players && parent.players.length > 0) {
-        const playerIds = parent.players.map((player) =>
-          typeof player === 'string' ? player : player._id
-        );
-
-        fetchPlayersData(playerIds).then((response) => {
-          console.log('Fetched Players:', response);
-        });
-      } else {
-        setPlayers([]);
-      }
-
-      setEditedGuardians(
-        parent.additionalGuardians?.map((g) => ({
-          ...g,
-          phone: g.phone ? formatPhoneNumber(g.phone.replace(/\D/g, '')) : '',
-          address: ensureAddress(
-            g.address || {
-              street: '',
-              street2: '',
-              city: '',
-              state: '',
-              zip: '',
-            }
-          ),
-        })) || []
-      );
-
-      const playerIds =
-        parent.players?.map((player) =>
-          typeof player === 'string' ? player : player._id
-        ) || [];
-
-      if (playerIds.length > 0) {
-        fetchPlayersData(playerIds).then((response) => {
-          console.log('Fetched Players:', response);
-        });
-      }
     }
-  }, [parent, fetchPlayersData, role, setPlayers]);
-
-  useEffect(() => {
-    return () => setPlayers([]);
-  }, [setPlayers]);
+  }, [parent, fetchPlayersData, role]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -476,41 +472,11 @@ const Profile = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchAvatar = async () => {
-      const parentId = localStorage.getItem('parentId');
-      const token = localStorage.getItem('token');
-
-      if (parentId && token) {
-        try {
-          // Fetch the parent info (including the avatar URL) from the backend
-          const response = await axios.get(`/parent/${parentId}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          const avatarUrl = response.data.parent.avatar;
-          console.log('Fetched avatar URL:', avatarUrl); // Log for debugging
-          setAvatarUrl(
-            avatarUrl ||
-              'https://bothell-select.onrender.com/uploads/avatars/parents.png'
-          ); // Default if not found
-        } catch (error) {
-          console.error('Failed to fetch avatar:', error);
-        }
-      }
-    };
-
-    fetchAvatar();
-  }, []);
-
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const previewUrl = URL.createObjectURL(file);
-    setAvatarPreview(previewUrl);
     setIsUploading(true);
 
     const token = localStorage.getItem('token');
@@ -536,16 +502,24 @@ const Profile = () => {
 
       const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
 
+      // Upload to Cloudinary
       const cloudinaryResponse = await axios.post(cloudinaryUrl, formData);
+      console.log('Cloudinary upload response:', cloudinaryResponse.data);
 
-      const avatarUrl = cloudinaryResponse.data.secure_url;
+      let avatarUrl = cloudinaryResponse.data.secure_url;
+
       if (!avatarUrl) {
         throw new Error('Cloudinary upload failed: no URL returned');
       }
 
-      // Save the avatar URL to the backend
-      await axios.put(
-        `/parent/${parentId}/avatar`,
+      // Optional fix for malformed URLs
+      if (avatarUrl.startsWith('https//')) {
+        avatarUrl = avatarUrl.replace(/^https(?=\/\/)/, 'https:');
+      }
+
+      // Send avatar URL to backend
+      const response = await axios.put(
+        `${API_BASE_URL}/parent/${parentId}/avatar`,
         { avatarUrl },
         {
           headers: {
@@ -555,8 +529,10 @@ const Profile = () => {
         }
       );
 
-      setAvatarUrl(avatarUrl); // Update the avatar URL
-      localStorage.setItem('avatarUrl', avatarUrl); // Save to localStorage for persistence
+      console.log('Backend response:', response.data);
+
+      setAvatarSrc(avatarUrl);
+      localStorage.setItem('avatarUrl', avatarUrl);
     } catch (error: any) {
       console.error('Avatar upload failed:', error);
       alert(
@@ -572,13 +548,42 @@ const Profile = () => {
     }
   };
 
+  const fetchAvatarUrlFromBackend = async () => {
+    const token = localStorage.getItem('token');
+    const parentId = localStorage.getItem('parentId');
+    const DEFAULT_AVATAR =
+      'https://bothell-select.onrender.com/uploads/avatars/parents.png';
+
+    if (!token || !parentId) return;
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/parent/${parentId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const avatarUrl = response.data.avatar;
+
+      if (avatarUrl && avatarUrl.startsWith('http')) {
+        setAvatarSrc(avatarUrl);
+        localStorage.setItem('avatarUrl', avatarUrl);
+      } else {
+        setAvatarSrc(DEFAULT_AVATAR);
+      }
+    } catch (err) {
+      console.error('Failed to fetch avatar:', err);
+      setAvatarSrc(DEFAULT_AVATAR);
+    }
+  };
+
   const handleDeleteAvatar = async () => {
     try {
       const token = localStorage.getItem('token');
       const parentId = localStorage.getItem('parentId');
 
-      if (!token || !parentId || !parent?.avatar) {
-        throw new Error('Authentication required or no avatar to delete');
+      if (!token || !parentId) {
+        throw new Error('Authentication required');
       }
 
       const response = await axios.delete(
@@ -590,12 +595,23 @@ const Profile = () => {
 
       // Update local state by removing the avatar
       updateParent(response.data.parent);
-      setAvatarPreview(null);
+
+      // Clear the avatar from localStorage
+      localStorage.removeItem('avatarUrl');
+
+      // Optionally, you could set the avatar to a default value if needed
+      setAvatarSrc(
+        'https://bothell-select.onrender.com/uploads/avatars/parents.png'
+      );
     } catch (error) {
       console.error('Deletion failed:', error);
       alert('Failed to delete avatar. Please try again.');
     }
   };
+
+  useEffect(() => {
+    fetchAvatarUrlFromBackend();
+  }, []);
 
   if (isLoading) return <div>Loading...</div>;
   if (!parent) return <div>No parent data found.</div>;
@@ -647,13 +663,13 @@ const Profile = () => {
                 <div className='settings-profile-upload'>
                   <span className='profile-pic'>
                     <img
-                      src={avatarUrl} // Use the fetched or persisted avatar URL
+                      src={
+                        avatarSrc && avatarSrc.trim() !== ''
+                          ? avatarSrc
+                          : 'https://bothell-select.onrender.com/uploads/avatars/parents.png'
+                      }
                       alt='Profile'
                       className='profile-image'
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          'https://bothell-select.onrender.com/uploads/avatars/parents.png'; // Fallback if image fails to load
-                      }}
                     />
                   </span>
                   <div className='title-upload'>

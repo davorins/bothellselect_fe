@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { all_routes } from '../../../router/all_routes';
-import ImageWithBasePath from '../../../../core/common/imageWithBasePath';
 import PredefinedDateRanges from '../../../../core/common/datePicker';
 import { useAuth } from '../../../../context/AuthContext';
 import { useParentData } from '../../../hooks/useParentData';
@@ -15,6 +14,8 @@ import { ParentListHeader } from '../../../components/Headers/ParentListHeader';
 import { ParentFilters } from '../../../components/Filters/ParentFilters';
 import { ParentSortOptions } from '../../../components/Filters/ParentSortOptions';
 import { Moment } from 'moment';
+
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const ParentGrid = () => {
   const routes = all_routes;
@@ -215,7 +216,21 @@ const ParentGrid = () => {
                           onClick={() => handleParentClick(parent)}
                           className='avatar avatar-lg flex-shrink-0 cursor-pointer'
                         >
-                          <ImageWithBasePath src={parent.imgSrc} />
+                          <img
+                            src={
+                              parent.imgSrc && parent.imgSrc.trim() !== ''
+                                ? parent.imgSrc.startsWith('http')
+                                  ? parent.imgSrc // Use Cloudinary URL directly
+                                  : `${API_BASE_URL}${parent.imgSrc}` // Handle local paths
+                                : 'https://bothell-select.onrender.com/uploads/avatars/parents.png'
+                            }
+                            className='img-fluid rounded-circle'
+                            alt={
+                              parent.fullName
+                                ? `${parent.fullName}'s profile picture`
+                                : 'Guardian profile picture'
+                            }
+                          />
                         </div>
                         <div className='ms-2'>
                           <h5 className='mb-0'>

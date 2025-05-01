@@ -817,14 +817,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }, ${address.city}, ${address.state} ${address.zip}`;
   };
 
-  const updateParent = (updatedParentData: Partial<Parent>) => {
+  const updateParent = (updatedData: Partial<Parent>) => {
     setParent((prev) => {
       if (!prev) return null;
-      const updatedParent = { ...prev, ...updatedParentData };
-      // Update localStorage if this is the current user
+
+      const updatedParent = {
+        ...prev,
+        ...updatedData,
+        avatar: updatedData.avatar ?? prev.avatar, // Properly merge avatar
+      };
+
+      // Update localStorage
       if (updatedParent._id === localStorage.getItem('parentId')) {
         localStorage.setItem('parent', JSON.stringify(updatedParent));
       }
+
       return updatedParent;
     });
   };

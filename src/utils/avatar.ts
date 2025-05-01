@@ -1,25 +1,32 @@
-export const getAvatarUrl = (
-  avatarPath: string,
+export const optimizeCloudinaryUrl = (
+  avatarPath?: string,
   type: 'parent' | 'coach' | 'player' = 'parent'
-) => {
-  if (!avatarPath) {
-    return type === 'coach'
-      ? '/uploads/avatars/coaches.png'
-      : '/uploads/avatars/parents.png';
-  }
+): string => {
+  const defaultAvatars = {
+    coach: 'https://bothell-select.onrender.com/uploads/avatars/coaches.png',
+    parent: 'https://bothell-select.onrender.com/uploads/avatars/parents.png',
+    player: 'https://bothell-select.onrender.com/uploads/avatars/players.png',
+  };
 
-  // If it's already a full URL (Cloudinary)
+  if (!avatarPath) return defaultAvatars[type];
+
   if (avatarPath.startsWith('http')) {
+    if (
+      avatarPath.includes('res.cloudinary.com') &&
+      !avatarPath.includes('/upload/f_')
+    ) {
+      return avatarPath.replace(
+        '/upload/',
+        '/upload/f_auto,q_auto,w_300,h_300,c_fill/'
+      );
+    }
     return avatarPath;
   }
 
-  // For local paths
-  if (avatarPath.startsWith('/uploads')) {
-    return `${process.env.REACT_APP_API_BASE_URL || ''}${avatarPath}`;
+  // Only attach your backend URL for true local image paths
+  if (avatarPath.startsWith('/uploads/')) {
+    return `https://bothell-select.onrender.com${avatarPath}`;
   }
 
-  // Default fallback
-  return type === 'coach'
-    ? '/uploads/avatars/coaches.png'
-    : '/uploads/avatars/parents.png';
+  return defaultAvatars[type]; // fallback
 };

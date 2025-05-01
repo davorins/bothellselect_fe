@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { all_routes } from '../../../router/all_routes';
-import ImageWithBasePath from '../../../../core/common/imageWithBasePath';
 import PredefinedDateRanges from '../../../../core/common/datePicker';
 import { useAuth } from '../../../../context/AuthContext';
 import { useCoachData } from '../../../hooks/useCoachData';
@@ -218,10 +217,14 @@ const CoachGrid = () => {
                           onClick={() => handleCoachClick(coach)}
                           className='avatar avatar-lg flex-shrink-0 cursor-pointer'
                         >
-                          <ImageWithBasePath
-                            src={coach.imgSrc}
+                          <img
+                            src={
+                              coach.imgSrc && coach.imgSrc.trim() !== ''
+                                ? `https://bothell-select.onrender.com${coach.imgSrc}`
+                                : 'https://bothell-select.onrender.com/uploads/avatars/coach.png'
+                            }
                             className='img-fluid rounded-circle'
-                            alt='Coach Avatar'
+                            alt={`${coach.fullName} profile`}
                           />
                         </div>
                         <div className='ms-2'>

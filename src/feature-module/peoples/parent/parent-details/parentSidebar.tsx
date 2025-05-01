@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { formatDate } from '../../../../utils/dateFormatter';
+import axios from 'axios';
 
 interface ParentData {
   _id?: string;
@@ -16,11 +17,49 @@ interface ParentData {
   players?: any[];
 }
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 interface ParentSidebarProps {
   parent: ParentData;
 }
+const DEFAULT_AVATAR =
+  'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
 const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
+  const [avatarSrc, setAvatarSrc] = useState<string | undefined>(
+    DEFAULT_AVATAR
+  );
+
+  useEffect(() => {
+    const fetchAvatarUrlFromBackend = async () => {
+      const token = localStorage.getItem('token');
+      const parentId = parent._id;
+
+      if (!token || !parentId) return;
+
+      try {
+        const response = await axios.get(`${API_BASE_URL}/parent/${parentId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const avatarUrl = response.data.avatar;
+
+        if (avatarUrl && avatarUrl.startsWith('http')) {
+          setAvatarSrc(avatarUrl);
+        } else {
+          setAvatarSrc(DEFAULT_AVATAR);
+        }
+      } catch (err) {
+        console.error('Failed to fetch avatar:', err);
+        setAvatarSrc(DEFAULT_AVATAR);
+      }
+    };
+
+    fetchAvatarUrlFromBackend();
+  }, [parent._id]);
+
   if (!parent) {
     return <div>No parent data found.</div>;
   }
@@ -50,11 +89,7 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
             <div className='d-flex align-items-center flex-wrap row-gap-3'>
               <div className='d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames'>
                 <img
-                  src={
-                    parent.imgSrc && parent.imgSrc.trim() !== ''
-                      ? `https://bothell-select.onrender.com${parent.imgSrc}`
-                      : 'https://bothell-select.onrender.com/uploads/avatars/parents.png'
-                  }
+                  src={avatarSrc}
                   className='img-fluid'
                   alt={`${getDisplayName()} avatar`}
                 />

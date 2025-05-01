@@ -5,6 +5,8 @@ import { formatPhoneNumber } from '../../../utils/phone';
 import { formatDate } from '../../../utils/dateFormatter';
 import { TableRecord } from '../../../types/types';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 interface ExtendedCoachTableRecord extends Omit<TableRecord, 'email'> {
   type: 'coach';
   status: string;
@@ -35,11 +37,17 @@ export const getCoachTableColumns = <T extends ExtendedCoachTableRecord>(
           <img
             src={
               record.imgSrc && record.imgSrc.trim() !== ''
-                ? `https://bothell-select.onrender.com${record.imgSrc}`
+                ? record.imgSrc.startsWith('http')
+                  ? record.imgSrc // Use Cloudinary URL directly
+                  : `${API_BASE_URL}${record.imgSrc}` // Handle local paths
                 : 'https://bothell-select.onrender.com/uploads/avatars/coach.png'
             }
             className='img-fluid rounded-circle'
-            alt={`${text} profile`}
+            alt={
+              record.fullName
+                ? `${text}'s profile picture`
+                : 'Coach profile picture'
+            }
           />
         </div>
         <div className='ms-3'>

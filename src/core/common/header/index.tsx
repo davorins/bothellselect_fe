@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setDataLayout } from '../../data/redux/themeSettingSlice';
@@ -14,6 +14,7 @@ import SeasonDropdown from '../../../components/common/SeasonDropdown';
 import SearchBar from './SearchBar';
 import FullscreenToggle from './FullscreenToggle';
 import NotificationDropdown from './NotificationDropdown';
+import axios from 'axios';
 
 const Header = () => {
   const { parent, role, logout } = useAuth();
@@ -26,9 +27,44 @@ const Header = () => {
   const [searchParams] = useSearchParams();
   const seasonParam = searchParams.get('season');
   const yearParam = searchParams.get('year');
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   const DEFAULT_AVATAR =
     'https://bothell-select.onrender.com/uploads/avatars/parents.png';
+
+  useEffect(() => {
+    // Fetch the avatar from the backend when the component mounts
+    fetchAvatarUrlFromBackend();
+  }, []);
+
+  const fetchAvatarUrlFromBackend = async () => {
+    const token = localStorage.getItem('token');
+    const parentId = localStorage.getItem('parentId');
+
+    if (!token || !parentId) return;
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/parent/${parentId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const avatarUrl = response.data.avatar;
+
+      if (avatarUrl && avatarUrl.startsWith('http')) {
+        setAvatarSrc(avatarUrl);
+        localStorage.setItem('avatarUrl', avatarUrl);
+      } else {
+        setAvatarSrc(DEFAULT_AVATAR);
+      }
+    } catch (err) {
+      console.error('Failed to fetch avatar:', err);
+      setAvatarSrc(DEFAULT_AVATAR);
+    }
+  };
 
   const handleLogout = useCallback(() => {
     logout();
@@ -191,10 +227,10 @@ const Header = () => {
   const renderUserDropdown = () => {
     if (!parent) return null;
 
-    const avatarSrc =
+    const avatarUrl =
       parent.avatar && parent.avatar.trim() !== ''
         ? `https://bothell-select.onrender.com${parent.avatar}`
-        : DEFAULT_AVATAR;
+        : avatarSrc || DEFAULT_AVATAR;
 
     return (
       <div className='dropdown ms-1'>
@@ -205,7 +241,7 @@ const Header = () => {
         >
           <span className='avatar avatar-md rounded'>
             <img
-              src={avatarSrc}
+              src={avatarUrl}
               alt={parent.fullName || 'User avatar'}
               className='img-fluid rounded-circle'
             />
@@ -216,7 +252,7 @@ const Header = () => {
             <div className='d-flex align-items-center p-2'>
               <span className='avatar avatar-md me-2 online avatar-rounded'>
                 <img
-                  src={avatarSrc}
+                  src={avatarUrl}
                   alt={parent.fullName || 'User avatar'}
                   className='img-fluid rounded-circle'
                 />
