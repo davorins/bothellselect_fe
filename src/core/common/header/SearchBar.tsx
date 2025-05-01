@@ -86,27 +86,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
     }
   };
 
-  const fetchAvatarForResult = useCallback(
-    async (result: SearchResult) => {
-      if (avatarMap[result.id]) return;
-
-      let avatarUrl = result.image || DEFAULT_AVATAR;
-
-      if (!result.image?.startsWith('http') && result.image) {
-        avatarUrl = `https://bothell-select.onrender.com${result.image}`;
-      }
-
-      setAvatarMap((prev) => ({ ...prev, [result.id]: avatarUrl }));
-    },
-    [avatarMap]
-  );
-
-  useEffect(() => {
-    results.forEach((result) => {
-      fetchAvatarForResult(result);
-    });
-  }, [results, fetchAvatarForResult]);
-
   const updateRecentlyViewed = (id: string) => {
     let recentlyViewed = JSON.parse(
       localStorage.getItem('recentlyViewed') || '[]'
@@ -195,6 +174,27 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
     },
     [handlePlayerNavigation, handleParentClick, handleSchoolNavigation]
   );
+
+  const fetchAvatarForResult = useCallback(
+    async (result: SearchResult) => {
+      if (avatarMap[result.id]) return;
+
+      let avatarUrl = result.image || DEFAULT_AVATAR;
+
+      if (!result.image?.startsWith('http') && result.image) {
+        avatarUrl = `https://bothell-select.onrender.com${result.image}`;
+      }
+
+      setAvatarMap((prev) => ({ ...prev, [result.id]: avatarUrl }));
+    },
+    [avatarMap]
+  );
+
+  useEffect(() => {
+    results.forEach((result) => {
+      fetchAvatarForResult(result);
+    });
+  }, [results, fetchAvatarForResult]);
 
   const renderSearchResults = () => (
     <div className='search-results-dropdown'>
