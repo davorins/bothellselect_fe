@@ -206,7 +206,7 @@ const Header = () => {
           <span className='avatar avatar-md rounded'>
             <img
               src={avatarSrc}
-              alt={parent?.fullName || 'User avatar'}
+              alt={parent.fullName || 'User avatar'}
               className='img-fluid rounded-circle'
             />
           </span>
@@ -217,12 +217,12 @@ const Header = () => {
               <span className='avatar avatar-md me-2 online avatar-rounded'>
                 <img
                   src={avatarSrc}
-                  alt={parent?.fullName || 'User avatar'}
+                  alt={parent.fullName || 'User avatar'}
                   className='img-fluid rounded-circle'
                 />
               </span>
               <div>
-                <h6>{parent?.fullName || 'User'}</h6>
+                <h6>{parent.fullName || 'User'}</h6>
                 <p className='text-primary mb-0'>{role}</p>
               </div>
             </div>

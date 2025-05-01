@@ -4,57 +4,37 @@ import { useAuth } from '../../context/AuthContext';
 
 export const useCoachActions = () => {
   const navigate = useNavigate();
-  const { fetchParentPlayers, fetchAllGuardians } = useAuth();
+  const { fetchParentPlayers, fetchAllGuardians, setViewedCoach } = useAuth(); // Add setViewedCoach
   const routes = all_routes;
 
   const handleCoachClick = async (record: any) => {
     try {
-      // Determine the target ID (use coachId for guardians, fallback to _id)
-      const targetId = record.coachId || record._id;
-
-      // If record is just an ID string, do basic navigation
-      if (typeof record === 'string') {
-        navigate(`${routes.coachDetail}/${record}`);
-        return;
-      }
-
-      // Fetch associated data (players and guardians)
+      const targetId = record._id;
       const [players, guardians] = await Promise.all([
         fetchParentPlayers(targetId),
-        fetchAllGuardians(`coachId=${targetId}`),
+        fetchAllGuardians(`parentId=${targetId}`),
       ]);
 
-      // Update recently viewed
-      const recentlyViewed = JSON.parse(
-        localStorage.getItem('recentlyViewedCoachs') || '[]'
-      );
-      const updatedRecentlyViewed = [
-        targetId,
-        ...recentlyViewed.filter((id: string) => id !== targetId),
-      ].slice(0, 5);
-      localStorage.setItem(
-        'recentlyViewedCoachs',
-        JSON.stringify(updatedRecentlyViewed)
-      );
+      // Create the coach data to be viewed
+      const coachData = {
+        ...record,
+        isCoach: true,
+        players,
+      };
 
-      // Navigate to the coach detail page
+      // Set the viewed coach in context
+      setViewedCoach(coachData);
+
       navigate(`${routes.parentDetail}/${targetId}`, {
         state: {
-          coach: {
-            ...record,
-            coachId: targetId,
-            players,
-          },
+          parent: coachData,
           guardians,
-          // Include flag if this was a guardian click
-          isGuardianView: !!record.coachId || record.type === 'guardian',
+          isCoachView: true,
         },
       });
     } catch (err) {
       console.error('Error in handleCoachClick:', err);
-      // Fallback to basic navigation
-      const targetId = record.coachId || record._id || record;
-      navigate(`${routes.parentDetail}/${targetId}`);
+      navigate(`${routes.parentDetail}/${record._id}`);
     }
   };
 

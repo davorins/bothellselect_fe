@@ -213,7 +213,11 @@ export interface AuthContextType {
     aauNumber: string,
     agreeToTerms: boolean
   ) => Promise<void>;
-  fetchParentData: (parentId: string) => Promise<Parent | null>;
+  fetchParentData: (
+    parentId: string,
+    isViewing?: boolean,
+    isCoach?: boolean
+  ) => Promise<Parent | null>;
   fetchPlayersData: (
     playerIds: string[],
     queryParams?: string
@@ -239,6 +243,11 @@ export interface AuthContextType {
   updateParent: (
     updatedData: Partial<Parent> & { avatar?: string | null }
   ) => void;
+  viewedParent: Parent | null;
+  viewedCoach: Parent | null;
+  setViewedParent: (parent: Parent | null) => void;
+  setViewedCoach: (coach: Parent | null) => void;
+  setParentData: (fetchedParent: Parent | any) => Parent;
 }
 
 export interface TableRecord {

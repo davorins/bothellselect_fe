@@ -31,6 +31,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [parent, setParent] = useState<Parent | null>(null);
+  const [viewedParent, setViewedParent] = useState<Parent | null>(null);
+  const [viewedCoach, setViewedCoach] = useState<Parent | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
@@ -166,82 +168,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
-  const setParentData = (fetchedParent: Parent | any) => {
-    // Preserve existing role if available
-    const currentRole = parent?.role;
+  const setParentData = useCallback(
+    (fetchedParent: Parent | any, isViewing = false): Parent => {
+      const parentData: Parent = {
+        _id: fetchedParent._id || fetchedParent.parentId || '',
+        email: fetchedParent.email || '',
+        fullName: fetchedParent.fullName || '',
+        role: fetchedParent.role || 'Parent',
+        phone: fetchedParent.phone || '',
+        address:
+          typeof fetchedParent.address === 'object'
+            ? `${fetchedParent.address.street}, ${fetchedParent.address.city}, ${fetchedParent.address.state} ${fetchedParent.address.zip}`
+            : fetchedParent.address || '',
+        relationship: fetchedParent.relationship || '',
+        players: Array.isArray(fetchedParent.players)
+          ? fetchedParent.players.filter(
+              (p: any) => typeof p === 'object' && p._id
+            )
+          : [],
+        isCoach: fetchedParent.isCoach || false,
+        aauNumber: fetchedParent.aauNumber || '',
+        additionalGuardians: fetchedParent.additionalGuardians || [],
+      };
 
-    const parentData: Parent = {
-      _id: fetchedParent._id || fetchedParent.parentId || '',
-      email: fetchedParent.email || '',
-      fullName: fetchedParent.fullName || '',
-      role: currentRole || fetchedParent.role || 'Parent', // Preserve existing role
-      phone: fetchedParent.phone || '',
-      address:
-        typeof fetchedParent.address === 'object'
-          ? `${fetchedParent.address.street}, ${fetchedParent.address.city}, ${fetchedParent.address.state} ${fetchedParent.address.zip}`
-          : fetchedParent.address || '',
-      relationship: fetchedParent.relationship || '',
-      players: Array.isArray(fetchedParent.players)
-        ? fetchedParent.players.filter(
-            (p: any) => typeof p === 'object' && p._id
-          )
-        : [],
-      isCoach: fetchedParent.isCoach || false,
-      aauNumber: fetchedParent.aauNumber || '',
-      additionalGuardians: fetchedParent.additionalGuardians || [],
-    };
+      if (isViewing) {
+        return parentData;
+      }
 
-    console.log('Updating parent with role:', parentData.role); // Debug log
-    setParent(parentData);
-  };
+      // Only update main parent if it's the current user
+      if (parent?._id === parentData._id) {
+        setParent(parentData);
+      }
+      return parentData;
+    },
+    [parent]
+  );
 
   const fetchParentData = useCallback(
-    async (parentId: string): Promise<Parent | null> => {
+    async (parentId: string, isViewing = false): Promise<Parent | null> => {
       try {
         const token = localStorage.getItem('token');
-        if (!token) {
-          console.error('No auth token');
-          return null;
-        }
-
-        const decoded = jwtDecode<DecodedToken>(token);
-        const isAdmin = decoded.role === 'admin';
-
-        // Don't fetch if admin is viewing their own context
-        if (isAdmin && parentId === decoded.id) {
-          return parent;
-        }
+        if (!token) return null;
 
         const response = await axios.get<Parent>(
           `${API_BASE_URL}/parent/${parentId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        const parentData = response.data;
+        const processedParent = setParentData(response.data, isViewing);
 
-        // Preserve admin role when viewing other parents
-        const updatedData = isAdmin
-          ? { ...parentData, role: 'admin' }
-          : parentData;
-
-        setParentData(updatedData);
-
-        // Fetch players if needed
-        const playerIds =
-          updatedData.players?.map((p) =>
-            typeof p === 'string' ? p : p._id
-          ) || [];
-        if (playerIds.length > 0) {
-          await fetchPlayersData(playerIds);
+        if (isViewing) {
+          setViewedParent(processedParent);
         }
 
-        return updatedData;
+        return processedParent;
       } catch (error) {
         console.error('Error fetching parent:', error);
         return null;
       }
     },
-    [fetchPlayersData, parent]
+    [setParentData, setViewedParent]
   );
 
   const fetchGuardians = useCallback(async (playerId: string) => {
@@ -875,6 +861,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         registrationStatus,
         setRegistrationStatus,
         updateParent,
+        viewedParent,
+        setViewedParent,
+        viewedCoach,
+        setViewedCoach,
+        setParentData,
       }}
     >
       {children}
