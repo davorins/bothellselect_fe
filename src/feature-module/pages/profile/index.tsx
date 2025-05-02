@@ -657,7 +657,7 @@ const Profile = () => {
           <div className='settings-right-sidebar me-md-3 border-0'>
             <div className='card'>
               <div className='card-header'>
-                <h5>Personal Information</h5>
+                <h5>Profile Avatar</h5>
               </div>
               <div className='card-body'>
                 <div className='settings-profile-upload'>
@@ -673,7 +673,7 @@ const Profile = () => {
                     />
                   </span>
                   <div className='title-upload'>
-                    <h5>Edit Your Photo</h5>
+                    <h5>Edit Your Avatar</h5>
                     <Link to='#' className='me-2' onClick={handleDeleteAvatar}>
                       Delete
                     </Link>
@@ -758,7 +758,6 @@ const Profile = () => {
                     )}
                   </div>
                 </div>
-
                 <div className='d-block d-xl-flex'>
                   <div className='mb-3 flex-fill me-xl-3 me-0'>
                     <label className='form-label'>Phone Number</label>
@@ -780,108 +779,6 @@ const Profile = () => {
                       </div>
                     )}
                   </div>
-                  <div className='mb-3 flex-fill'>
-                    {!isEditing ? (
-                      <>
-                        <label className='form-label'>Address</label>
-                        <input
-                          type='text'
-                          className='form-control'
-                          value={formatAddress(formData.address)}
-                          disabled
-                        />
-                      </>
-                    ) : (
-                      <div className='flex-fill'>
-                        <div className='row mb-3'>
-                          <div className='col-md-8'>
-                            <label className='form-label'>Street Address</label>
-                            <input
-                              type='text'
-                              className={`form-control ${
-                                errors['address.street'] ? 'is-invalid' : ''
-                              }`}
-                              value={formData.address.street}
-                              onChange={(e) => handleAddressChange(e, 'street')}
-                            />
-                            {errors['address.street'] && (
-                              <div className='invalid-feedback d-block'>
-                                {errors['address.street']}
-                              </div>
-                            )}
-                          </div>
-                          <div className='col-md-4'>
-                            <label className='form-label'>
-                              Apt/Suite (optional)
-                            </label>
-                            <input
-                              type='text'
-                              className='form-control'
-                              value={formData.address.street2}
-                              onChange={(e) =>
-                                handleAddressChange(e, 'street2')
-                              }
-                            />
-                          </div>
-                        </div>
-                        <div className='row'>
-                          <div className='col-md-5'>
-                            <label className='form-label'>City</label>
-                            <input
-                              type='text'
-                              className={`form-control ${
-                                errors['address.city'] ? 'is-invalid' : ''
-                              }`}
-                              value={formData.address.city}
-                              onChange={(e) => handleAddressChange(e, 'city')}
-                            />
-                            {errors['address.city'] && (
-                              <div className='invalid-feedback d-block'>
-                                {errors['address.city']}
-                              </div>
-                            )}
-                          </div>
-                          <div className='col-md-3'>
-                            <label className='form-label'>State</label>
-                            <input
-                              type='text'
-                              className={`form-control ${
-                                errors['address.state'] ? 'is-invalid' : ''
-                              }`}
-                              value={formData.address.state}
-                              onChange={(e) => handleAddressChange(e, 'state')}
-                              maxLength={2}
-                            />
-                            {errors['address.state'] && (
-                              <div className='invalid-feedback d-block'>
-                                {errors['address.state']}
-                              </div>
-                            )}
-                          </div>
-                          <div className='col-md-4'>
-                            <label className='form-label'>ZIP Code</label>
-                            <input
-                              type='text'
-                              className={`form-control ${
-                                errors['address.zip'] ? 'is-invalid' : ''
-                              }`}
-                              value={formData.address.zip}
-                              onChange={(e) => handleAddressChange(e, 'zip')}
-                              maxLength={10}
-                            />
-                            {errors['address.zip'] && (
-                              <div className='invalid-feedback d-block'>
-                                {errors['address.zip']}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className='d-block d-xl-flex'>
                   <div className='mb-3 flex-fill me-xl-3 me-0'>
                     <label className='form-label'>Relationship to Player</label>
                     <input
@@ -912,7 +809,103 @@ const Profile = () => {
                     />
                   </div>
                 </div>
-
+                <div className='mb-3 flex-fill'>
+                  {!isEditing ? (
+                    <>
+                      <label className='form-label'>Address</label>
+                      <input
+                        type='text'
+                        className='form-control'
+                        value={formatAddress(formData.address)}
+                        disabled
+                      />
+                    </>
+                  ) : (
+                    <div className='flex-fill'>
+                      <div className='row mb-3'>
+                        <div className='col-md-8'>
+                          <label className='form-label'>Street Address</label>
+                          <input
+                            type='text'
+                            className={`form-control ${
+                              errors['address.street'] ? 'is-invalid' : ''
+                            }`}
+                            value={formData.address.street}
+                            onChange={(e) => handleAddressChange(e, 'street')}
+                          />
+                          {errors['address.street'] && (
+                            <div className='invalid-feedback d-block'>
+                              {errors['address.street']}
+                            </div>
+                          )}
+                        </div>
+                        <div className='col-md-4'>
+                          <label className='form-label'>
+                            Apt/Suite (optional)
+                          </label>
+                          <input
+                            type='text'
+                            className='form-control'
+                            value={formData.address.street2}
+                            onChange={(e) => handleAddressChange(e, 'street2')}
+                          />
+                        </div>
+                      </div>
+                      <div className='row'>
+                        <div className='col-md-5'>
+                          <label className='form-label'>City</label>
+                          <input
+                            type='text'
+                            className={`form-control ${
+                              errors['address.city'] ? 'is-invalid' : ''
+                            }`}
+                            value={formData.address.city}
+                            onChange={(e) => handleAddressChange(e, 'city')}
+                          />
+                          {errors['address.city'] && (
+                            <div className='invalid-feedback d-block'>
+                              {errors['address.city']}
+                            </div>
+                          )}
+                        </div>
+                        <div className='col-md-3'>
+                          <label className='form-label'>State</label>
+                          <input
+                            type='text'
+                            className={`form-control ${
+                              errors['address.state'] ? 'is-invalid' : ''
+                            }`}
+                            value={formData.address.state}
+                            onChange={(e) => handleAddressChange(e, 'state')}
+                            maxLength={2}
+                          />
+                          {errors['address.state'] && (
+                            <div className='invalid-feedback d-block'>
+                              {errors['address.state']}
+                            </div>
+                          )}
+                        </div>
+                        <div className='col-md-4'>
+                          <label className='form-label'>ZIP Code</label>
+                          <input
+                            type='text'
+                            className={`form-control ${
+                              errors['address.zip'] ? 'is-invalid' : ''
+                            }`}
+                            value={formData.address.zip}
+                            onChange={(e) => handleAddressChange(e, 'zip')}
+                            maxLength={10}
+                          />
+                          {errors['address.zip'] && (
+                            <div className='invalid-feedback d-block'>
+                              {errors['address.zip']}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 {!isEditing ? (
                   <button
                     type='button'
@@ -999,7 +992,6 @@ const Profile = () => {
                               )}
                             </div>
                           </div>
-
                           <div className='d-block d-xl-flex'>
                             <div className='mb-3 flex-fill me-xl-3 me-0'>
                               <label className='form-label'>Phone Number</label>
@@ -1025,190 +1017,6 @@ const Profile = () => {
                                 </div>
                               )}
                             </div>
-                            <div className='mb-3 flex-fill'>
-                              {isEditingGuardian === index ? (
-                                <div className='flex-fill'>
-                                  <div className='row mb-3'>
-                                    <div className='col-md-8'>
-                                      <label className='form-label'>
-                                        Street Address
-                                      </label>
-                                      <input
-                                        type='text'
-                                        className={`form-control ${
-                                          guardianErrors[index]?.[
-                                            'address.street'
-                                          ]
-                                            ? 'is-invalid'
-                                            : ''
-                                        }`}
-                                        value={
-                                          ensureAddress(guardian.address).street
-                                        }
-                                        onChange={(e) =>
-                                          handleGuardianAddressChange(
-                                            e,
-                                            index,
-                                            'street'
-                                          )
-                                        }
-                                      />
-                                      {guardianErrors[index]?.[
-                                        'address.street'
-                                      ] && (
-                                        <div className='invalid-feedback d-block'>
-                                          {
-                                            guardianErrors[index]?.[
-                                              'address.street'
-                                            ]
-                                          }
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className='col-md-4'>
-                                      <label className='form-label'>
-                                        Apt/Suite (optional)
-                                      </label>
-                                      <input
-                                        type='text'
-                                        className='form-control'
-                                        value={
-                                          ensureAddress(guardian.address)
-                                            .street2
-                                        }
-                                        onChange={(e) =>
-                                          handleGuardianAddressChange(
-                                            e,
-                                            index,
-                                            'street2'
-                                          )
-                                        }
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className='row'>
-                                    <div className='col-md-5'>
-                                      <label className='form-label'>City</label>
-                                      <input
-                                        type='text'
-                                        className={`form-control ${
-                                          guardianErrors[index]?.[
-                                            'address.city'
-                                          ]
-                                            ? 'is-invalid'
-                                            : ''
-                                        }`}
-                                        value={
-                                          ensureAddress(guardian.address).city
-                                        }
-                                        onChange={(e) =>
-                                          handleGuardianAddressChange(
-                                            e,
-                                            index,
-                                            'city'
-                                          )
-                                        }
-                                      />
-                                      {guardianErrors[index]?.[
-                                        'address.city'
-                                      ] && (
-                                        <div className='invalid-feedback d-block'>
-                                          {
-                                            guardianErrors[index]?.[
-                                              'address.city'
-                                            ]
-                                          }
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className='col-md-3'>
-                                      <label className='form-label'>
-                                        State
-                                      </label>
-                                      <input
-                                        type='text'
-                                        className={`form-control ${
-                                          guardianErrors[index]?.[
-                                            'address.state'
-                                          ]
-                                            ? 'is-invalid'
-                                            : ''
-                                        }`}
-                                        value={
-                                          ensureAddress(guardian.address).state
-                                        }
-                                        onChange={(e) =>
-                                          handleGuardianAddressChange(
-                                            e,
-                                            index,
-                                            'state'
-                                          )
-                                        }
-                                        maxLength={2}
-                                      />
-                                      {guardianErrors[index]?.[
-                                        'address.state'
-                                      ] && (
-                                        <div className='invalid-feedback d-block'>
-                                          {
-                                            guardianErrors[index]?.[
-                                              'address.state'
-                                            ]
-                                          }
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className='col-md-4'>
-                                      <label className='form-label'>
-                                        ZIP Code
-                                      </label>
-                                      <input
-                                        type='text'
-                                        className={`form-control ${
-                                          guardianErrors[index]?.['address.zip']
-                                            ? 'is-invalid'
-                                            : ''
-                                        }`}
-                                        value={
-                                          ensureAddress(guardian.address).zip
-                                        }
-                                        onChange={(e) =>
-                                          handleGuardianAddressChange(
-                                            e,
-                                            index,
-                                            'zip'
-                                          )
-                                        }
-                                        maxLength={10}
-                                      />
-                                      {guardianErrors[index]?.[
-                                        'address.zip'
-                                      ] && (
-                                        <div className='invalid-feedback d-block'>
-                                          {
-                                            guardianErrors[index]?.[
-                                              'address.zip'
-                                            ]
-                                          }
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              ) : (
-                                <>
-                                  <label className='form-label'>Address</label>
-                                  <input
-                                    type='text'
-                                    className='form-control'
-                                    value={formatAddress(guardian.address)}
-                                    disabled
-                                  />
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          <div className='d-block d-xl-flex'>
                             <div className='mb-3 flex-fill me-xl-3 me-0'>
                               <label className='form-label'>Relationship</label>
                               <input
@@ -1254,7 +1062,175 @@ const Profile = () => {
                               )}
                             </div>
                           </div>
-
+                          <div className='mb-3 flex-fill'>
+                            {isEditingGuardian === index ? (
+                              <div className='flex-fill'>
+                                <div className='row mb-3'>
+                                  <div className='col-md-8'>
+                                    <label className='form-label'>
+                                      Street Address
+                                    </label>
+                                    <input
+                                      type='text'
+                                      className={`form-control ${
+                                        guardianErrors[index]?.[
+                                          'address.street'
+                                        ]
+                                          ? 'is-invalid'
+                                          : ''
+                                      }`}
+                                      value={
+                                        ensureAddress(guardian.address).street
+                                      }
+                                      onChange={(e) =>
+                                        handleGuardianAddressChange(
+                                          e,
+                                          index,
+                                          'street'
+                                        )
+                                      }
+                                    />
+                                    {guardianErrors[index]?.[
+                                      'address.street'
+                                    ] && (
+                                      <div className='invalid-feedback d-block'>
+                                        {
+                                          guardianErrors[index]?.[
+                                            'address.street'
+                                          ]
+                                        }
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className='col-md-4'>
+                                    <label className='form-label'>
+                                      Apt/Suite (optional)
+                                    </label>
+                                    <input
+                                      type='text'
+                                      className='form-control'
+                                      value={
+                                        ensureAddress(guardian.address).street2
+                                      }
+                                      onChange={(e) =>
+                                        handleGuardianAddressChange(
+                                          e,
+                                          index,
+                                          'street2'
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                </div>
+                                <div className='row'>
+                                  <div className='col-md-5'>
+                                    <label className='form-label'>City</label>
+                                    <input
+                                      type='text'
+                                      className={`form-control ${
+                                        guardianErrors[index]?.['address.city']
+                                          ? 'is-invalid'
+                                          : ''
+                                      }`}
+                                      value={
+                                        ensureAddress(guardian.address).city
+                                      }
+                                      onChange={(e) =>
+                                        handleGuardianAddressChange(
+                                          e,
+                                          index,
+                                          'city'
+                                        )
+                                      }
+                                    />
+                                    {guardianErrors[index]?.[
+                                      'address.city'
+                                    ] && (
+                                      <div className='invalid-feedback d-block'>
+                                        {
+                                          guardianErrors[index]?.[
+                                            'address.city'
+                                          ]
+                                        }
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className='col-md-3'>
+                                    <label className='form-label'>State</label>
+                                    <input
+                                      type='text'
+                                      className={`form-control ${
+                                        guardianErrors[index]?.['address.state']
+                                          ? 'is-invalid'
+                                          : ''
+                                      }`}
+                                      value={
+                                        ensureAddress(guardian.address).state
+                                      }
+                                      onChange={(e) =>
+                                        handleGuardianAddressChange(
+                                          e,
+                                          index,
+                                          'state'
+                                        )
+                                      }
+                                      maxLength={2}
+                                    />
+                                    {guardianErrors[index]?.[
+                                      'address.state'
+                                    ] && (
+                                      <div className='invalid-feedback d-block'>
+                                        {
+                                          guardianErrors[index]?.[
+                                            'address.state'
+                                          ]
+                                        }
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className='col-md-4'>
+                                    <label className='form-label'>
+                                      ZIP Code
+                                    </label>
+                                    <input
+                                      type='text'
+                                      className={`form-control ${
+                                        guardianErrors[index]?.['address.zip']
+                                          ? 'is-invalid'
+                                          : ''
+                                      }`}
+                                      value={
+                                        ensureAddress(guardian.address).zip
+                                      }
+                                      onChange={(e) =>
+                                        handleGuardianAddressChange(
+                                          e,
+                                          index,
+                                          'zip'
+                                        )
+                                      }
+                                      maxLength={10}
+                                    />
+                                    {guardianErrors[index]?.['address.zip'] && (
+                                      <div className='invalid-feedback d-block'>
+                                        {guardianErrors[index]?.['address.zip']}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <label className='form-label'>Address</label>
+                                <input
+                                  type='text'
+                                  className='form-control'
+                                  value={formatAddress(guardian.address)}
+                                  disabled
+                                />
+                              </>
+                            )}
+                          </div>
                           {isEditingGuardian !== index ? (
                             <button
                               type='button'
