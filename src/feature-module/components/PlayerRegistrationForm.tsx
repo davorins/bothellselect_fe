@@ -114,6 +114,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   const [needsPayment, setNeedsPayment] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedPackage, setSelectedPackage] = useState('1');
+  const [nextSeason] = useState(getNextSeason());
   const handleCardTokenized = async (tokenResult: any) => {
     try {
       setPaymentError('');
@@ -259,6 +260,23 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     });
   }, [player, needsPayment]);
 
+  useEffect(() => {
+    // This handles both cases:
+    // 1. New registration flow (player._id exists)
+    // 2. Existing unpaid registration (showPayment prop)
+    if (player?._id || showPayment) {
+      setCurrentStep(2);
+
+      // Payment is required if:
+      // - Player exists and payment isn't complete OR
+      // - showPayment prop is true
+      const paymentRequired = showPayment || !player?.paymentComplete;
+      setNeedsPayment(paymentRequired);
+
+      setIsRegistered(true);
+    }
+  }, [player, showPayment]);
+
   const formatDate = (dateString: string): string => {
     if (!dateString || typeof dateString !== 'string') {
       return '';
@@ -394,13 +412,20 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     return perPlayerAmount * players.length;
   };
 
-  if (isRegistered) {
+  if (
+    (isRegistered || showPayment) &&
+    needsPayment &&
+    player.season === nextSeason
+  ) {
     if (needsPayment) {
       return (
         <div className='content content-two'>
           <div className='payment-notice'>
             <div className='alert alert-success mb-4'>
-              <h4>Registration Confirmed!</h4>
+              <h4>
+                Registration Confirmed for {nextSeason}{' '}
+                {player.registrationYear}!
+              </h4>
               <p>
                 Your kid is successfully registered for the {player.season}{' '}
                 {player.registrationYear} season, but payment is required to

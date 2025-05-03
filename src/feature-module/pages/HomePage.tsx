@@ -14,21 +14,33 @@ const HomePage = () => {
   const [nextSeason] = useState(getNextSeason());
   const [hasPlayersForNextSeason, setHasPlayersForNextSeason] = useState(false);
   const [hasUnpaidPlayers, setHasUnpaidPlayers] = useState(false);
+  const [isCheckingPlayers, setIsCheckingPlayers] = useState(true);
 
   useEffect(() => {
     checkAuth();
 
     if (isAuthenticated && players) {
+      setIsCheckingPlayers(true);
+
       const nextSeasonPlayers = players.filter(
         (player) => player.season === nextSeason
       );
+
       setHasPlayersForNextSeason(nextSeasonPlayers.length > 0);
 
-      // Check if any next season players are unpaid
       const unpaid = nextSeasonPlayers.some(
         (player) => !player.paymentComplete
       );
+
       setHasUnpaidPlayers(unpaid);
+      setIsCheckingPlayers(false);
+
+      console.log('Player check:', {
+        nextSeason,
+        nextSeasonPlayers,
+        hasPlayers: nextSeasonPlayers.length > 0,
+        hasUnpaid: unpaid,
+      });
     }
   }, [checkAuth, isAuthenticated, players, nextSeason]);
 
@@ -45,6 +57,24 @@ const HomePage = () => {
   }
 
   const renderAuthenticatedContent = () => {
+    if (isCheckingPlayers) {
+      return <div>Checking player status...</div>;
+    }
+
+    // Scenario 2: Has unpaid players (CHECK THIS FIRST)
+    if (hasUnpaidPlayers) {
+      const unpaidPlayer = players.find(
+        (player) => player.season === nextSeason && !player.paymentComplete
+      );
+      console.log('Rendering unpaid player form for:', unpaidPlayer);
+      return (
+        <PlayerRegistrationForm
+          playerId={unpaidPlayer?._id}
+          showPayment={true}
+        />
+      );
+    }
+
     // Scenario 1: No players registered for next season
     if (!hasPlayersForNextSeason) {
       return (
@@ -59,28 +89,13 @@ const HomePage = () => {
       );
     }
 
-    // Scenario 2: Has unpaid players
-    if (hasUnpaidPlayers) {
-      const unpaidPlayer = players.find(
-        (player) => player.season === nextSeason && !player.paymentComplete
-      );
-      return (
-        <PlayerRegistrationForm
-          playerId={unpaidPlayer?._id}
-          showPayment={true}
-        />
-      );
-    }
-
     // Scenario 3: All players paid, show dashboard with option to add more
     return (
-      <>
-        <div className='card'>
-          <div className='card-body'>
-            <PlayerRegistrationForm />
-          </div>
+      <div className='card'>
+        <div className='card-body'>
+          <PlayerRegistrationForm />
         </div>
-      </>
+      </div>
     );
   };
 

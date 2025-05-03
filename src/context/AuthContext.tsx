@@ -393,6 +393,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!token) {
         setIsAuthenticated(false);
         setParent(null);
+        setPlayers([]);
         setIsLoading(false);
         return;
       }
@@ -415,13 +416,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             setParent(parsedParent);
             lastParentId.current = parsedParent._id;
 
-            // Still fetch fresh data in background
+            // Fetch fresh data in background including players
             if (parentIdFromStorage) {
-              fetchParentData(parentIdFromStorage).then((freshData) => {
-                if (freshData) {
-                  localStorage.setItem('parent', JSON.stringify(freshData));
-                  setParent(freshData);
+              Promise.all([
+                fetchParentData(parentIdFromStorage),
+                fetchParentPlayers(parentIdFromStorage),
+              ]).then(([freshParentData, playersData]) => {
+                if (freshParentData) {
+                  localStorage.setItem(
+                    'parent',
+                    JSON.stringify(freshParentData)
+                  );
+                  setParent(freshParentData);
                 }
+                setPlayers(playersData);
               });
             }
 
@@ -462,7 +470,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsLoading(true);
 
         try {
-          const parentData = await fetchParentData(parentIdFromStorage);
+          const [parentData, playersData] = await Promise.all([
+            fetchParentData(parentIdFromStorage),
+            fetchParentPlayers(parentIdFromStorage),
+          ]);
 
           if (!parentData) {
             const fallbackParent: Parent = {
@@ -496,9 +507,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             localStorage.setItem('parent', JSON.stringify(updatedParent));
           }
 
+          setPlayers(playersData);
           lastParentId.current = parentIdFromStorage;
         } catch (error) {
-          console.error('Failed to fetch parent data:', error);
+          console.error('Failed to fetch user data:', error);
 
           const fallbackParent: Parent = {
             _id: decoded.id,
@@ -521,6 +533,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
           setParent(fallbackParent);
           localStorage.setItem('parent', JSON.stringify(fallbackParent));
+          setPlayers([]);
         } finally {
           setIsLoading(false);
         }
