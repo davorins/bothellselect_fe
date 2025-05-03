@@ -129,7 +129,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
 
       const paymentData = {
         sourceId: tokenResult.token,
-        amount: 10000, // $100 in cents
+        amount: calculateTotalAmount(),
         playerId: playerId,
         parentId: parentId,
         buyerEmailAddress: customerEmail,
@@ -335,7 +335,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
 
       const paymentData = {
         sourceId: tokenResult.token,
-        amount: 10000, // $100 in cents
+        amount: calculateTotalAmount(),
         playerId: playerId,
         parentId: localStorage.getItem('parentId'),
         cardDetails: tokenResult.details?.card || {
@@ -389,9 +389,9 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
 
   const calculateTotalAmount = () => {
     const perPlayerAmount =
-      selectedPackage === '1' ? 550 : selectedPackage === '2' ? 760 : 970;
+      selectedPackage === '1' ? 55000 : selectedPackage === '2' ? 76000 : 97000; // amounts in cents
 
-    return perPlayerAmount * players.length; // Calculate based on number of players
+    return perPlayerAmount * players.length;
   };
 
   const getPackagePrice = (pkg: string): number => {
@@ -445,7 +445,8 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                       {players.length !== 1 ? 's' : ''}):
                     </h5>
                     <p className='text-muted'>
-                      Total: ${calculateTotalAmount()} ({players.length} × $
+                      Total: ${(calculateTotalAmount() / 100).toFixed(2)} (
+                      {players.length} × $
                       {selectedPackage === '1'
                         ? '550'
                         : selectedPackage === '2'
@@ -533,7 +534,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                           countryCode: 'US',
                           currencyCode: 'USD',
                           total: {
-                            amount: totalAmount,
+                            amount: (calculateTotalAmount() / 100).toString(),
                             label: 'Total',
                           },
                           buyerEmailAddress: customerEmail,
