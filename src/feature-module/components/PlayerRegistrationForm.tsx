@@ -809,9 +809,10 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                           countryCode: 'US',
                           currencyCode: 'USD',
                           total: {
-                            amount: '100.00',
+                            amount: (calculateTotalAmount() / 100).toString(),
                             label: 'Total',
                           },
+                          buyerEmailAddress: customerEmail,
                         })}
                       >
                         <CreditCard />
