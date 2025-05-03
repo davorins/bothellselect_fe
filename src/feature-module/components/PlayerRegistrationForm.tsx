@@ -394,23 +394,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     return perPlayerAmount * players.length;
   };
 
-  const getPackagePrice = (pkg: string): number => {
-    switch (pkg) {
-      case '1':
-        return 550;
-      case '2':
-        return 760;
-      case '3':
-        return 970;
-      default:
-        return 0;
-    }
-  };
-
-  const totalAmount = (
-    getPackagePrice(selectedPackage) * players.length
-  ).toFixed(2);
-
   if (isRegistered) {
     if (needsPayment) {
       return (
