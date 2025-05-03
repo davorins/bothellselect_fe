@@ -58,31 +58,4 @@ export const SidebarData = [
       },
     ],
   },
-  {
-    label: 'Email Settings',
-    submenu: true,
-    showSubRoute: false,
-    submenuItems: [
-      {
-        label: 'Email Settings',
-        link: routes.emailSettings,
-        showSubRoute: false,
-      },
-      {
-        label: 'Email Templates',
-        link: routes.emailTemplates,
-        showSubRoute: false,
-      },
-      {
-        label: 'SMS Settings',
-        link: routes.smsSettings,
-        showSubRoute: false,
-      },
-      {
-        label: 'GDPR Cookies',
-        link: routes.gdprCookies,
-        showSubRoute: false,
-      },
-    ],
-  },
 ];
