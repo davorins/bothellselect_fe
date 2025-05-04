@@ -78,7 +78,7 @@ const ParentDetails = () => {
       state: {
         player,
         guardians: parent
-          ? [parent, ...(parent.additionalGuardians || [])]
+          ? [parent, ...(parent?.additionalGuardians || [])]
           : [],
         siblings: players.filter((p) => p._id !== player._id),
       },
@@ -87,7 +87,7 @@ const ParentDetails = () => {
 
   useEffect(() => {
     const loadParent = async () => {
-      if ((!parent || !players.length) && parentId) {
+      if (!parent && parentId) {
         try {
           setIsLoading(true);
           const parentData = await fetchParentData(parentId);

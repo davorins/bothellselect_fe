@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { all_routes } from '../../../router/all_routes';
 import { useAuth } from '../../../../context/AuthContext';
 import { formatDate } from '../../../../utils/dateFormatter';
+import { isPlayerActive } from '../../../../utils/season';
 
 export interface GuardianData {
   id: string;
@@ -38,6 +39,8 @@ interface PlayerData {
   phone?: string;
   email?: string;
   schoolName?: string;
+  season?: string;
+  registrationYear?: number;
 }
 
 interface PlayerSidebarProps {
@@ -85,7 +88,42 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
     } Grade`;
   };
 
+  const getPlayerStatus = (playerData: PlayerData): 'Active' | 'Inactive' => {
+    const { fullName, season, registrationYear, status } = playerData;
+
+    console.log('Calculating status for player:', {
+      name: fullName,
+      season,
+      year: registrationYear,
+      existingStatus: status,
+    });
+
+    // If status is set, check if the player is actually active
+    if (status?.trim() && season && registrationYear !== undefined) {
+      const active = isPlayerActive({ season, registrationYear });
+      console.log('Status provided, recalculated activity:', active);
+      return active ? 'Active' : 'Inactive';
+    }
+
+    // If no explicit status but enough data to determine activity
+    if (season && registrationYear !== undefined) {
+      const active = isPlayerActive({ season, registrationYear });
+      console.log('Calculated active status (no explicit status):', active);
+      return active ? 'Active' : 'Inactive';
+    }
+
+    // Fallback
+    console.log(
+      'Insufficient data to determine status. Defaulting to Inactive.'
+    );
+    return 'Inactive';
+  };
+
   const shouldShowSiblings = siblings?.length > 0 && user?.role !== 'admin';
+
+  // Get the final status
+  const playerStatus = getPlayerStatus(player);
+  console.log('Final player status:', playerStatus);
 
   return (
     <div className='col-xxl-3 col-xl-4 theiaStickySidebar'>
@@ -105,9 +143,19 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                 />
               </div>
               <div className='overflow-hidden'>
-                <span className='badge badge-soft-success d-inline-flex align-items-center mb-1'>
-                  <i className='ti ti-circle-filled fs-5 me-1' />
-                  {player.status || 'Active'}
+                <span
+                  className={`badge badge-soft-${
+                    getPlayerStatus(player) === 'Active' ? 'success' : 'danger'
+                  } d-inline-flex align-items-center mb-1`}
+                >
+                  <i
+                    className={`ti ti-circle-filled fs-5 me-1 ${
+                      getPlayerStatus(player) === 'Active'
+                        ? 'text-success'
+                        : 'text-danger'
+                    }`}
+                  />
+                  {getPlayerStatus(player)}
                 </span>
                 <h5 className='mb-1 text-truncate'>{getDisplayName()}</h5>
                 <p className='mb-1'>

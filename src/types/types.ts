@@ -13,6 +13,9 @@ export interface SearchResult {
   image?: string;
   additionalInfo?: string;
   createdAt: string;
+  season?: string;
+  registrationYear?: number;
+  status?: string;
 }
 
 export interface Address {
@@ -248,6 +251,8 @@ export interface AuthContextType {
   setViewedParent: (parent: Parent | null) => void;
   setViewedCoach: (coach: Parent | null) => void;
   setParentData: (fetchedParent: Parent | any) => Parent;
+  currentSeason: string;
+  currentYear: number;
 }
 
 export interface TableRecord {

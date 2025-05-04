@@ -20,7 +20,7 @@ import {
   AuthContextType,
   RegistrationStatus,
 } from '../types/types';
-import { getCurrentSeason } from '../utils/season';
+import { getCurrentSeason, getCurrentYear } from '../utils/season';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 console.log('API_BASE_URL:', process.env.REACT_APP_API_BASE_URL);
@@ -42,6 +42,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const authCheckInProgress = useRef(false);
   const lastAuthCheckTime = useRef<number>(0);
   const lastParentId = useRef<string | null>(null);
+  const [currentSeason, setCurrentSeason] = useState(getCurrentSeason());
+  const [currentYear, setCurrentYear] = useState(getCurrentYear());
 
   const searchAll = useCallback(
     async (term: string): Promise<SearchResult[]> => {
@@ -566,6 +568,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => clearInterval(refreshInterval);
   }, [checkAuth]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      const newSeason = getCurrentSeason();
+      const newYear = now.getFullYear();
+
+      if (newSeason !== currentSeason) {
+        setCurrentSeason(newSeason);
+      }
+      if (newYear !== currentYear) {
+        setCurrentYear(newYear);
+      }
+    }, 86400000); // Check once per day
+
+    return () => clearInterval(interval);
+  }, [currentSeason, currentYear]);
+
   const login = async (email: string, password: string) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/login`, {
@@ -886,6 +905,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         viewedCoach,
         setViewedCoach,
         setParentData,
+        currentSeason,
+        currentYear,
       }}
     >
       {children}

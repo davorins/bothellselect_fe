@@ -116,9 +116,13 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
                 schoolName: result.additionalInfo,
               }),
               createdAt: result.createdAt,
+              season: result.season || '',
+              registrationYear: result.registrationYear ?? undefined,
+              status: result.status || '',
             },
             guardians,
             fromSearch: true,
+            key: Date.now(),
           },
         });
       } catch (err) {
@@ -159,6 +163,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
               ...result,
               _id: result.id, // Map id to _id if needed by your backend
               parentId: result.id, // Ensure parentId is set
+              random: Date.now(),
             });
             break;
           case 'school':
