@@ -116,47 +116,46 @@ interface RegistrationFormProps {
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const parseAddress = (fullAddress: string): Address => {
-  const cleaned = fullAddress.trim().replace(/\s+/g, ' ').replace(/,+/g, ',');
+  const patternWithUnit =
+    /^(\d+\s[\w\s.]+?)\s*(?:,?\s*(apt|apartment|suite|ste|unit|building|bldg|floor|fl|room|rm|department|dept|lot|#)\.?\s*([\w\s-]+?)\s*)?,\s*([^,]+?)\s*,\s*([a-zA-Z]{2,})\s*(\d{5}(?:-\d{4})?)$/i;
+  const matchWithUnit = fullAddress.match(patternWithUnit);
 
-  const parts = cleaned.split(',').map((p) => p.trim());
-
-  let street = '';
-  let street2 = '';
-  let city = '';
-  let state = '';
-  let zip = '';
-
-  if (parts.length >= 4) {
-    // e.g., "123 Main St Apt 4B, Bothell, WA, 98021"
-    [street, city, state, zip] = parts.slice(0, 4);
-  } else if (parts.length === 3) {
-    // e.g., "123 Main St, WA, 98021" (missing city)
-    [street, state, zip] = parts;
-  } else if (parts.length === 2) {
-    // e.g., "123 Main St, 98021" (fallback)
-    [street, zip] = parts;
-  } else {
-    // fallback: take whole thing as street
-    street = cleaned;
+  if (matchWithUnit) {
+    return {
+      street: matchWithUnit[1].trim(),
+      street2:
+        matchWithUnit[2] && matchWithUnit[3]
+          ? `${matchWithUnit[2].trim()} ${matchWithUnit[3].trim()}`.replace(
+              /\s+/g,
+              ' '
+            )
+          : '',
+      city: matchWithUnit[4].trim(),
+      state: normalizeState(matchWithUnit[5].trim()),
+      zip: matchWithUnit[6].trim(),
+    };
   }
 
-  // Try to separate unit info from street if it exists
-  const unitMatch = street.match(
-    /^(.*?)(?:\s+(?:apt|ste|suite|#)\s*([\w\d-]+))?$/i
-  );
-  if (unitMatch) {
-    street = unitMatch[1].trim();
-    if (unitMatch[2]) {
-      street2 = `Unit ${unitMatch[2].trim()}`;
-    }
+  const fallbackPattern =
+    /^([^,]+?)\s*,\s*([^,]+?)\s*,\s*([a-zA-Z]{2,})\s*(\d{5}(?:-\d{4})?)$/i;
+  const fallbackMatch = fullAddress.match(fallbackPattern);
+
+  if (fallbackMatch) {
+    return {
+      street: fallbackMatch[1].trim(),
+      street2: '',
+      city: fallbackMatch[2].trim(),
+      state: normalizeState(fallbackMatch[3].trim()),
+      zip: fallbackMatch[4].trim(),
+    };
   }
 
   return {
-    street,
-    street2,
-    city,
-    state: normalizeState(state),
-    zip,
+    street: fullAddress,
+    street2: '',
+    city: '',
+    state: '',
+    zip: '',
   };
 };
 
