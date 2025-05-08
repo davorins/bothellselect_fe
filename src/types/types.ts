@@ -117,6 +117,7 @@ export interface Player {
   status: string;
   __v: number;
   paymentComplete?: boolean;
+  avatar: string;
 }
 
 export interface ParentTableData {
@@ -348,6 +349,7 @@ export interface PlayerFormData {
   registrationYear: string;
   season: string;
   parentId: string;
+  avatar: string;
 }
 
 interface GuardianData {
@@ -384,6 +386,7 @@ interface PlayerData {
   healthConcerns: string;
   aauNumber: string;
   parentId?: string;
+  avatar: string;
 }
 
 export interface PlayerState {

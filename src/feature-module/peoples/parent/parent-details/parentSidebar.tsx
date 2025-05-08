@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { formatDate } from '../../../../utils/dateFormatter';
 import axios from 'axios';
+import { isPlayerActive } from '../../../../utils/season';
+import { formatPhoneNumber } from '../../../../utils/phone';
 
 interface ParentData {
   _id?: string;
@@ -15,20 +17,20 @@ interface ParentData {
   email?: string;
   address?: string;
   players?: any[];
+  season?: string;
+  registrationYear?: number;
 }
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const DEFAULT_AVATAR =
+  'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
 interface ParentSidebarProps {
   parent: ParentData;
 }
-const DEFAULT_AVATAR =
-  'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
 const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
-  const [avatarSrc, setAvatarSrc] = useState<string | undefined>(
-    DEFAULT_AVATAR
-  );
+  const [avatarSrc, setAvatarSrc] = useState<string>(DEFAULT_AVATAR);
 
   useEffect(() => {
     const fetchAvatarUrlFromBackend = async () => {
@@ -48,6 +50,8 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
 
         if (avatarUrl && avatarUrl.startsWith('http')) {
           setAvatarSrc(avatarUrl);
+        } else if (avatarUrl) {
+          setAvatarSrc(`https://bothell-select.onrender.com${avatarUrl}`);
         } else {
           setAvatarSrc(DEFAULT_AVATAR);
         }
@@ -69,7 +73,6 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
 
   const formatAddress = (address: any): string => {
     if (!address) return 'N/A';
-
     if (typeof address === 'string') return address;
 
     const parts = [
@@ -79,6 +82,14 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
     ].filter((part) => part && part.trim() !== '');
 
     return parts.join(', ');
+  };
+
+  const getParentStatus = (parentData: ParentData): 'Active' | 'Inactive' => {
+    const hasActivePlayers = parentData.players?.some((player) =>
+      isPlayerActive(player)
+    );
+
+    return hasActivePlayers ? 'Active' : 'Inactive';
   };
 
   return (
@@ -92,12 +103,26 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
                   src={avatarSrc}
                   className='img-fluid'
                   alt={`${getDisplayName()} avatar`}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = DEFAULT_AVATAR;
+                  }}
                 />
               </div>
               <div className='overflow-hidden'>
-                <span className='badge badge-soft-success d-inline-flex align-items-center mb-1'>
-                  <i className='ti ti-circle-filled fs-5 me-1' />
-                  {parent.status || 'Active'}
+                <span
+                  className={`badge badge-soft-${
+                    getParentStatus(parent) === 'Active' ? 'success' : 'danger'
+                  } d-inline-flex align-items-center mb-1`}
+                >
+                  <i
+                    className={`ti ti-circle-filled fs-5 me-1 ${
+                      getParentStatus(parent) === 'Active'
+                        ? 'text-success'
+                        : 'text-danger'
+                    }`}
+                  />
+                  {getParentStatus(parent)}
                 </span>
                 <h5 className='mb-1 text-truncate'>{getDisplayName()}</h5>
                 <p className='mb-1'>
@@ -112,7 +137,9 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
             <h5 className='mb-3'>Basic Information</h5>
             <dl className='row mb-0'>
               <dt className='col-6 fw-medium text-dark mb-3'>Phone</dt>
-              <dd className='col-6 mb-3'>{parent.phone || 'N/A'}</dd>
+              <dd className='col-6 mb-3'>
+                {parent.phone ? formatPhoneNumber(parent.phone) : 'N/A'}
+              </dd>
 
               <dt className='col-6 fw-medium text-dark mb-3'>Email</dt>
               <dd className='col-6 mb-3'>{parent.email || 'N/A'}</dd>

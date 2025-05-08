@@ -4,11 +4,12 @@ import { all_routes } from '../../../router/all_routes';
 import { useAuth } from '../../../../context/AuthContext';
 import { formatDate } from '../../../../utils/dateFormatter';
 import { isPlayerActive } from '../../../../utils/season';
+import { formatPhoneNumber } from '../../../../utils/phone';
 
 export interface GuardianData {
   id: string;
   fullName: string;
-  phone: string;
+  phone?: string;
   email?: string;
   address: string;
   relationship: string;
@@ -31,7 +32,7 @@ interface PlayerData {
   status?: string;
   DateofJoin?: string | Date;
   createdAt?: string | Date;
-  imgSrc?: string;
+  avatar?: string;
   aauNumber?: string;
   siblings?: PlayerData[];
   guardians?: GuardianData[];
@@ -41,6 +42,7 @@ interface PlayerData {
   schoolName?: string;
   season?: string;
   registrationYear?: number;
+  playerStatus?: string;
 }
 
 interface PlayerSidebarProps {
@@ -64,13 +66,35 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
     return <div>No player data found.</div>;
   }
 
+  // Format date of birth without timezone issues
+  const formatPlayerDob = (): string => {
+    if (!player.dob) return 'N/A';
+
+    try {
+      // If it's an ISO string (from MongoDB), extract just YYYY-MM-DD
+      if (typeof player.dob === 'string') {
+        const [datePart] = player.dob.split('T');
+        return formatDate(datePart); // Will format as MM/DD/YYYY
+      }
+
+      // If it's a Date object (shouldn't happen with MongoDB data)
+      if (player.dob instanceof Date) {
+        return formatDate(player.dob);
+      }
+
+      return 'N/A';
+    } catch (error) {
+      console.error('Error formatting date of birth:', error);
+      return 'N/A';
+    }
+  };
+
   // Helper functions
   const getDisplayName = () => player.fullName || player.name || 'N/A';
-  const getJoinDate = () => player.DateofJoin || player.createdAt;
-
-  const getDefaultAvatar = (gender: string | undefined): string => {
-    const baseUrl = 'https://bothell-select.onrender.com/uploads/avatars';
-    return gender === 'Female' ? `${baseUrl}/girl.png` : `${baseUrl}/boy.png`;
+  const getJoinDate = () => {
+    if (player.DateofJoin) return player.DateofJoin;
+    if (player.createdAt) return player.createdAt;
+    return undefined;
   };
 
   const formatGrade = (grade?: string | number) => {
@@ -123,7 +147,14 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
 
   // Get the final status
   const playerStatus = getPlayerStatus(player);
-  console.log('Final player status:', playerStatus);
+  console.log('Player status determination:', {
+    name: getDisplayName(),
+    explicitStatus: player.status,
+    playerStatus: player.playerStatus,
+    season: player.season,
+    registrationYear: player.registrationYear,
+    finalStatus: playerStatus,
+  });
 
   return (
     <div className='col-xxl-3 col-xl-4 theiaStickySidebar'>
@@ -134,12 +165,25 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
               <div className='d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames'>
                 <img
                   src={
-                    player.imgSrc && player.imgSrc.trim() !== ''
-                      ? `${player.imgSrc}`
-                      : getDefaultAvatar(player.gender)
+                    player.avatar && player.avatar.trim() !== ''
+                      ? player.avatar.includes('res.cloudinary.com')
+                        ? `${player.avatar}?${Date.now()}` // Add timestamp to prevent caching
+                        : player.avatar.startsWith('/')
+                        ? `https://bothell-select.onrender.com${player.avatar}`
+                        : player.avatar
+                      : player.gender === 'Female'
+                      ? 'https://bothell-select.onrender.com/uploads/avatars/girl.png'
+                      : 'https://bothell-select.onrender.com/uploads/avatars/boy.png'
                   }
-                  className='img-fluid'
-                  alt={`${getDisplayName()} avatar`}
+                  className='img-fluid rounded-circle'
+                  alt={`${player.fullName || player.name || 'Player'} avatar`}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src =
+                      player.gender === 'Female'
+                        ? 'https://bothell-select.onrender.com/uploads/avatars/girl.png'
+                        : 'https://bothell-select.onrender.com/uploads/avatars/boy.png';
+                  }}
                 />
               </div>
               <div className='overflow-hidden'>
@@ -171,15 +215,15 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
             <h5 className='mb-3'>Basic Information</h5>
             <dl className='row mb-0'>
               <dt className='col-6 fw-medium text-dark mb-3'>Date Of Birth</dt>
-              <dd className='col-6 mb-3'>
-                {player.dob ? formatDate(player.dob) : 'N/A'}
-              </dd>
+              <dd className='col-6 mb-3'>{formatPlayerDob()}</dd>
 
               <dt className='col-6 fw-medium text-dark mb-3'>Gender</dt>
               <dd className='col-6 mb-3'>{player.gender || 'N/A'}</dd>
 
               <dt className='col-6 fw-medium text-dark mb-3'>School</dt>
-              <dd className='col-6 mb-3'>{formatGrade(player.schoolName)}</dd>
+              <dd className='col-6 mb-3'>
+                {player.section || player.schoolName || 'N/A'}
+              </dd>
 
               <dt className='col-6 fw-medium text-dark mb-3'>Grade</dt>
               <dd className='col-6 mb-3'>
@@ -188,68 +232,54 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
 
               <dt className='col-6 fw-medium text-dark mb-3'>AAU Number</dt>
               <dd className='col-6 mb-3'>{player.aauNumber || 'N/A'}</dd>
+              {user?.role === 'admin' && (
+                <>
+                  <dt className='col-6 fw-medium text-dark mb-3'>
+                    Season / Year
+                  </dt>
+                  <dd className='col-6 mb-3'>
+                    {player.season || player.registrationYear ? (
+                      <>
+                        {player.season ? `${player.season}` : ''} /{' '}
+                        {player.registrationYear
+                          ? `${player.registrationYear}`
+                          : ''}
+                      </>
+                    ) : (
+                      <span className='text-muted'>No data available</span>
+                    )}
+                  </dd>
+                </>
+              )}
             </dl>
           </div>
         </div>
 
         {/* Primary Contact Information */}
-        {user && user.role !== 'admin' ? (
-          <div className='card border-white'>
-            <div className='card-body'>
-              <h5 className='mb-3'>Primary Contact Info</h5>
-              <div className='d-flex align-items-center mb-3'>
-                <span className='avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default'>
-                  <i className='ti ti-phone' />
-                </span>
-                <div>
-                  <span className='text-dark fw-medium mb-1'>Phone Number</span>
-                  <p>{user.phone ?? 'N/A'}</p>
-                </div>
+        <div className='card border-white'>
+          <div className='card-body'>
+            <h5 className='mb-3'>Primary Contact Info</h5>
+            <div className='d-flex align-items-center mb-3'>
+              <span className='avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default'>
+                <i className='ti ti-phone' />
+              </span>
+              <div>
+                <span className='text-dark fw-medium mb-1'>Phone Number</span>
+                <p>{user?.phone ? formatPhoneNumber(user.phone) : 'N/A'}</p>
               </div>
-              <div className='d-flex align-items-center mb-3'>
-                <span className='avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default'>
-                  <i className='ti ti-mail' />
-                </span>
-                <div>
-                  <span className='text-dark fw-medium mb-1'>
-                    Email Address
-                  </span>
-                  <p>{user.email ?? 'N/A'}</p>
-                </div>
-              </div>
-              <hr className='my-3' />
             </div>
-          </div>
-        ) : primaryParent || guardians?.length > 0 ? (
-          <div className='card border-white'>
-            <div className='card-body'>
-              <h5 className='mb-3'>Primary Contact Info</h5>
-              <div className='d-flex align-items-center mb-3'>
-                <span className='avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default'>
-                  <i className='ti ti-phone' />
-                </span>
-                <div>
-                  <span className='text-dark fw-medium mb-1'>Phone Number</span>
-                  <p>{primaryParent?.phone ?? guardians[0]?.phone ?? 'N/A'}</p>
-                </div>
+            <div className='d-flex align-items-center mb-3'>
+              <span className='avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default'>
+                <i className='ti ti-mail' />
+              </span>
+              <div>
+                <span className='text-dark fw-medium mb-1'>Email Address</span>
+                <p>{user?.email ?? 'N/A'}</p>
               </div>
-              <div className='d-flex align-items-center mb-3'>
-                <span className='avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default'>
-                  <i className='ti ti-mail' />
-                </span>
-                <div>
-                  <span className='text-dark fw-medium mb-1'>
-                    Email Address
-                  </span>
-                  <p>{primaryParent?.email ?? guardians[0]?.email ?? 'N/A'}</p>
-                </div>
-              </div>
-              <hr className='my-3' />
             </div>
+            <hr className='my-3' />
           </div>
-        ) : (
-          <div>No primary contact information available.</div>
-        )}
+        </div>
 
         {/* Sibling Information */}
         {shouldShowSiblings && (
@@ -273,17 +303,32 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                               <span className='avatar avatar-lg'>
                                 <img
                                   src={
-                                    sibling.imgSrc &&
-                                    sibling.imgSrc.trim() !== ''
-                                      ? `${sibling.imgSrc}`
-                                      : getDefaultAvatar(sibling.gender)
+                                    sibling.avatar &&
+                                    sibling.avatar.trim() !== ''
+                                      ? sibling.avatar.includes(
+                                          'res.cloudinary.com'
+                                        )
+                                        ? `${sibling.avatar}?${Date.now()}`
+                                        : sibling.avatar.startsWith('/')
+                                        ? `https://bothell-select.onrender.com${sibling.avatar}`
+                                        : sibling.avatar
+                                      : sibling.gender === 'Female'
+                                      ? 'https://bothell-select.onrender.com/uploads/avatars/girl.png'
+                                      : 'https://bothell-select.onrender.com/uploads/avatars/boy.png'
                                   }
-                                  className='img-fluid'
+                                  className='img-fluid rounded-circle'
                                   alt={`${
                                     sibling.fullName ||
                                     sibling.name ||
                                     'Sibling'
                                   } avatar`}
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src =
+                                      sibling.gender === 'Female'
+                                        ? 'https://bothell-select.onrender.com/uploads/avatars/girl.png'
+                                        : 'https://bothell-select.onrender.com/uploads/avatars/boy.png';
+                                  }}
                                 />
                               </span>
                             </div>

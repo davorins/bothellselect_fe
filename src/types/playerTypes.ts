@@ -1,5 +1,56 @@
 import { Moment } from 'moment';
 
+export interface Player {
+  _id: string;
+  id?: string;
+  fullName: string;
+  name?: string;
+  gender?: string;
+  dob?: string;
+  grade?: string;
+  class?: string;
+  schoolName?: string;
+  aauNumber?: string;
+  status?: string;
+  season?: string;
+  registrationYear?: number;
+  playerStatus?: string;
+  DateofJoin?: string;
+  createdAt?: string;
+  avatar?: string;
+  parentId?: string;
+  healthConcerns?: string;
+}
+
+export interface Guardian {
+  id: string;
+  _id?: string;
+  fullName: string;
+  phone: string;
+  email?: string;
+  address: any;
+  relationship: string;
+  avatar?: string;
+  aauNumber: string;
+  isPrimary?: boolean;
+  additionalGuardians?: Guardian[];
+}
+
+export interface PlayerSidebarProps {
+  player: Player;
+  guardians: Guardian[];
+  primaryParent: Guardian | null;
+  siblings: Player[];
+  onViewSibling: (siblingId: string) => void;
+  token?: string | null;
+}
+
+export interface PlayerDetailsProps {
+  player: Player;
+  guardians: Guardian[];
+  siblings: Player[];
+}
+
 // ==================== Existing Types ====================
 export type PlayerSortOrder =
   | 'asc'

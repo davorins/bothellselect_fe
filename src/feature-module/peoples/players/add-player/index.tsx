@@ -15,6 +15,8 @@ import {
   validateGrade,
 } from '../../../../utils/validation';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -22,12 +24,19 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
   const [parents, setParents] = useState<ParentData[]>([]);
   const [loadingParents, setLoadingParents] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+  const [isUploading, setIsUploading] = useState(false);
+  const [saveStatus, setSaveStatus] = useState({
+    show: false,
+    variant: 'success',
+    message: '',
+  });
+
   const playerId =
     playerState?.playerId ||
     playerState?.player?.playerId ||
     playerState?.player?._id ||
     '';
+  const [avatarSrc, setAvatarSrc] = useState('');
 
   const fetchParents = useCallback(async () => {
     try {
@@ -100,6 +109,7 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
     registrationYear: new Date().getFullYear().toString(),
     season: getCurrentSeason(),
     parentId: '',
+    avatar: '',
   });
 
   useEffect(() => {
@@ -111,36 +121,59 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
   useEffect(() => {
     const fetchData = async () => {
       if (isEdit) {
-        if (playerState?.player) {
-          const player = playerState.player;
+        let player = playerState?.player;
+
+        if (!player && playerId) {
+          player = await fetchPlayerData(playerId);
+        }
+
+        if (player) {
+          const isCloudinaryUrl =
+            typeof player.avatar === 'string' &&
+            player.avatar.includes('res.cloudinary.com');
+
+          const avatarUrl = isCloudinaryUrl
+            ? `${player.avatar}?${Date.now()}`
+            : player.avatar?.trim()
+            ? `https://bothell-select.onrender.com${player.avatar}`
+            : `https://bothell-select.onrender.com/uploads/avatars/${
+                player.gender === 'Female' ? 'girl' : 'boy'
+              }.png`;
+
+          // Handle date of birth formatting
+          let dob = player.dob || '';
+          if (dob) {
+            // If the date is in ISO format (from database), extract just YYYY-MM-DD
+            if (dob.includes('T')) {
+              dob = dob.split('T')[0];
+            }
+            // Ensure the date is in YYYY-MM-DD format
+            else {
+              const dateObj = new Date(dob);
+              if (!isNaN(dateObj.getTime())) {
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                dob = `${year}-${month}-${day}`;
+              }
+            }
+          }
+
           setFormData((prev) => ({
             ...prev,
-            playerId: player.playerId || player._id || '',
-            fullName: player.name || player.fullName || '',
-            gender: player.gender || '',
-            dob: player.dob || '',
-            schoolName: player.section || player.schoolName || '',
-            grade: player.class || player.grade || '',
-            healthConcerns: player.healthConcerns || '',
-            aauNumber: player.aauNumber || '',
-            parentId: player.parentId || '',
+            playerId: player?._id || player?.playerId || '',
+            fullName: player?.fullName || player?.name || '',
+            gender: player?.gender || '',
+            dob: dob,
+            schoolName: player?.schoolName || player?.section || '',
+            grade: player?.grade || player?.class || '',
+            healthConcerns: player?.healthConcerns || '',
+            aauNumber: player?.aauNumber || '',
+            parentId: player?.parentId || '',
+            avatar: avatarUrl,
           }));
-        } else if (playerId) {
-          const player = await fetchPlayerData(playerId);
-          if (player) {
-            setFormData((prev) => ({
-              ...prev,
-              playerId: player._id || player.playerId || '',
-              fullName: player.fullName || player.name || '',
-              gender: player.gender || '',
-              dob: player.dob || '',
-              schoolName: player.schoolName || player.section || '',
-              grade: player.grade || player.class || '',
-              healthConcerns: player.healthConcerns || '',
-              aauNumber: player.aauNumber || '',
-              parentId: player.parentId || '',
-            }));
-          }
+
+          setAvatarSrc(avatarUrl);
         }
       }
     };
@@ -299,17 +332,127 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
     if (!dateString) return '';
 
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return '';
+      // Split the date string to avoid timezone issues
+      const [year, month, day] = dateString.split('-');
+      if (!year || !month || !day) return '';
 
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-
-      return `${year}-${month}-${day}`;
+      // Create a date in local time without timezone conversion
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     } catch (error) {
       console.error('Error formatting date:', error);
       return '';
+    }
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const previewUrl = URL.createObjectURL(file);
+    setIsUploading(true);
+
+    const token = localStorage.getItem('token');
+
+    if (!token || !formData.playerId) {
+      alert('Authentication required or player ID missing.');
+      setIsUploading(false);
+      return;
+    }
+
+    try {
+      const uploadPreset = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET;
+      const cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
+
+      if (!uploadPreset || !cloudName) {
+        throw new Error('Cloudinary environment variables are missing');
+      }
+
+      const uploadFormData = new FormData(); // Renamed to avoid conflict
+      uploadFormData.append('file', file);
+      uploadFormData.append('upload_preset', uploadPreset);
+
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+
+      const cloudinaryResponse = await axios.post(
+        cloudinaryUrl,
+        uploadFormData
+      );
+      let avatarUrl = cloudinaryResponse.data.secure_url;
+
+      if (!avatarUrl) {
+        throw new Error('Cloudinary upload failed: no URL returned');
+      }
+
+      if (avatarUrl.startsWith('https//')) {
+        avatarUrl = avatarUrl.replace(/^https(?=\/\/)/, 'https:');
+      }
+
+      const response = await axios.put(
+        `${API_BASE_URL}/player/${formData.playerId}/avatar`,
+        { avatarUrl },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      setAvatarSrc(avatarUrl);
+      setFormData((prev) => ({ ...prev, avatar: avatarUrl }));
+      setSaveStatus({
+        show: true,
+        variant: 'success',
+        message: 'Player picture updated successfully!',
+      });
+    } catch (error: any) {
+      console.error('Avatar upload failed:', error);
+      setSaveStatus({
+        show: true,
+        variant: 'danger',
+        message: 'Failed to update player picture. Please try again.',
+      });
+    } finally {
+      setIsUploading(false);
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token || !formData.playerId) {
+        throw new Error('Authentication required or player ID missing');
+      }
+
+      const response = await axios.delete(
+        `${API_BASE_URL}/player/${formData.playerId}/avatar`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const defaultAvatar =
+        formData.gender === 'Female'
+          ? 'https://bothell-select.onrender.com/uploads/avatars/girl.png'
+          : 'https://bothell-select.onrender.com/uploads/avatars/boy.png';
+
+      setAvatarSrc(defaultAvatar);
+      setFormData((prev) => ({ ...prev, avatar: defaultAvatar }));
+      setSaveStatus({
+        show: true,
+        variant: 'success',
+        message: 'Player picture removed successfully!',
+      });
+    } catch (error) {
+      console.error('Deletion failed:', error);
+      setSaveStatus({
+        show: true,
+        variant: 'danger',
+        message: 'Failed to remove player picture. Please try again.',
+      });
     }
   };
 
@@ -351,25 +494,63 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
                     <div className='col-md-12'>
                       <div className='d-flex align-items-center flex-wrap row-gap-3 mb-3'>
                         <div className='d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames'>
-                          <i className='ti ti-photo-plus fs-16' />
+                          {avatarSrc ? (
+                            <img
+                              src={avatarSrc}
+                              alt='Player Avatar'
+                              className='avatar-img rounded-circle'
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                              }}
+                            />
+                          ) : (
+                            <i className='ti ti-photo-plus fs-16' />
+                          )}
                         </div>
                         <div className='profile-upload'>
                           <div className='profile-uploader d-flex align-items-center'>
                             <div className='drag-upload-btn mb-3'>
-                              Upload
-                              <input
-                                type='file'
-                                className='form-control image-sign'
-                                multiple
-                              />
+                              <label htmlFor='avatar-upload'>
+                                Upload
+                                <input
+                                  id='avatar-upload'
+                                  type='file'
+                                  className='form-control image-sign'
+                                  onChange={handleAvatarChange}
+                                  accept='image/*'
+                                  style={{ display: 'none' }}
+                                />
+                              </label>
                             </div>
-                            <Link to='#' className='btn btn-primary mb-3'>
+                            <button
+                              type='button'
+                              className='btn btn-primary mb-3 ms-2'
+                              onClick={handleDeleteAvatar}
+                              disabled={
+                                !avatarSrc ||
+                                avatarSrc.includes('uploads/avatars/')
+                              }
+                            >
                               Remove
-                            </Link>
+                            </button>
                           </div>
                           <p className='fs-12'>
                             Upload image size 4MB, Format JPG, PNG, SVG
                           </p>
+                          {isUploading && (
+                            <p className='fs-12 text-warning'>
+                              Uploading image...
+                            </p>
+                          )}
+                          {saveStatus.show && (
+                            <div
+                              className={`alert alert-${saveStatus.variant} mt-2`}
+                            >
+                              {saveStatus.message}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -412,11 +593,11 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
                                 : ''
                             }
                             onChange={(e) => {
+                              // Store the raw YYYY-MM-DD value without timezone conversion
                               setFormData((prev) => ({
                                 ...prev,
-                                dob: e.target.value, // Stores in YYYY-MM-DD format
+                                dob: e.target.value,
                               }));
-                              // Clear error if it exists
                               if (errors.dob) {
                                 setErrors((prev) => {
                                   const newErrors = { ...prev };
@@ -433,7 +614,7 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
                                 }));
                               }
                             }}
-                            max={new Date().toISOString().split('T')[0]} // Prevent future dates
+                            max={new Date().toISOString().split('T')[0]}
                           />
                           {errors.dob && (
                             <div className='invalid-feedback d-block'>

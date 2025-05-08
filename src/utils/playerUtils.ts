@@ -41,9 +41,15 @@ export const transformPlayerData = (
 
   return players.map((player) => {
     const getDefaultAvatar = (gender: string | undefined): string => {
-      const baseUrl = 'https://bothell-select.onrender.com/uploads/avatars';
-      return gender === 'Female' ? `${baseUrl}/girl.png` : `${baseUrl}/boy.png`;
+      return gender?.toLowerCase() === 'female'
+        ? 'https://bothell-select.onrender.com/uploads/avatars/girl.png'
+        : 'https://bothell-select.onrender.com/uploads/avatars/boy.png';
     };
+
+    // Use imgSrc if provided by backend, otherwise fall back to avatar or default
+    const avatarUrl =
+      player.imgSrc || player.avatar || getDefaultAvatar(player.gender);
+    const timestamp = Date.now();
 
     const siblings = players
       .filter((sib) => siblingIds.includes(sib._id) && sib._id !== player._id)
@@ -52,15 +58,15 @@ export const transformPlayerData = (
         key: sib._id,
         name: sib.fullName,
         gender: sib.gender,
-        dob: new Date(sib.dob).toLocaleDateString('en-US'),
+        dob: sib.dob,
         age: calculateAge(sib.dob),
         section: sib.schoolName || 'No School',
         class: formatGrade(Number(sib.grade)) || 'No Grade',
         aauNumber: sib.aauNumber || 'No AAU Number',
         healthConcerns: sib.healthConcerns || 'No Medical History',
         status: 'Active',
-        DateofJoin: new Date(sib.createdAt).toLocaleDateString(),
-        imgSrc: getDefaultAvatar(sib.gender),
+        DateofJoin: sib.createdAt,
+        imgSrc: sib.imgSrc || sib.avatar || getDefaultAvatar(sib.gender),
         siblings: [],
         season: sib.season,
         registrationYear: sib.registrationYear,
@@ -71,15 +77,19 @@ export const transformPlayerData = (
       key: player._id,
       name: player.fullName,
       gender: player.gender,
-      dob: new Date(player.dob).toLocaleDateString('en-US'),
+      dob: player.dob,
       age: calculateAge(player.dob),
-      section: player.schoolName || 'No School',
+      section: player.section || player.schoolName || 'No School',
       class: formatGrade(Number(player.grade)) || 'No Grade',
       aauNumber: player.aauNumber || 'No AAU Number',
       healthConcerns: player.healthConcerns || 'No Medical History',
       status: 'Active',
-      DateofJoin: new Date(player.createdAt).toLocaleDateString(),
-      imgSrc: getDefaultAvatar(player.gender),
+      DateofJoin: player.createdAt,
+      // Use the avatar URL with cache busting if it's a Cloudinary URL
+      imgSrc: avatarUrl.includes('res.cloudinary.com')
+        ? `${avatarUrl}${avatarUrl.includes('?') ? '&' : '?'}ts=${timestamp}`
+        : avatarUrl,
+      avatar: player.avatar, // Keep original avatar URL
       siblings,
       season: player.season,
       registrationYear: player.registrationYear,
@@ -87,6 +97,7 @@ export const transformPlayerData = (
   });
 };
 
+// Rest of the file remains unchanged
 export const filterPlayerData = (
   data: PlayerTableData[],
   filters: PlayerFilterParams

@@ -71,6 +71,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           image: item.image || item.profileImage,
           additionalInfo: item.schoolName || item.additionalInfo,
           createdAt: item.createdAt,
+          isActive: item.status,
+          playerStatus: item.status,
+          status: item.status,
+          season: item.season,
+          registrationYear: item.registrationYear,
         }));
       } catch (error) {
         console.error('Search error:', error);

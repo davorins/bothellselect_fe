@@ -3,10 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { all_routes } from '../../../feature-module/router/all_routes';
 import { useAuth } from '../../../context/AuthContext';
 import { SearchResult } from '../../../types/types';
-import { useParentActions } from '../../../feature-module/hooks/useParentActions';
 
-const DEFAULT_AVATAR =
+const DEFAULT_PARENT_AVATAR =
   'https://bothell-select.onrender.com/uploads/avatars/parents.png';
+const DEFAULT_COACH_AVATAR =
+  'https://bothell-select.onrender.com/uploads/avatars/coach.png';
+const DEFAULT_GIRL_AVATAR =
+  'https://bothell-select.onrender.com/uploads/avatars/girl.png';
+const DEFAULT_BOY_AVATAR =
+  'https://bothell-select.onrender.com/uploads/avatars/boy.png';
 
 interface SearchBarProps {
   role?: string;
@@ -14,7 +19,6 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
   const { searchAll, fetchGuardians } = useAuth();
-  const { handleParentClick } = useParentActions(); // Use the hook
   const navigate = useNavigate();
   const routes = all_routes;
 
@@ -25,7 +29,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [avatarMap, setAvatarMap] = useState<{ [id: string]: string }>({});
 
   // Handle click outside search results
   useEffect(() => {
@@ -66,6 +69,36 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
     return () => clearTimeout(timer);
   }, [searchTerm, searchAll]);
 
+  // Helper function to get the correct avatar URL
+  const getAvatarUrl = (result: SearchResult): string => {
+    // If there's a custom avatar image
+    if (result.image) {
+      // Check if it's a full URL
+      if (result.image.startsWith('http')) {
+        return result.image;
+      }
+      // Check if it's a local path
+      if (result.image.startsWith('/')) {
+        return `https://bothell-select.onrender.com${result.image}`;
+      }
+    }
+
+    // Return default avatars based on type and gender
+    switch (result.type) {
+      case 'player':
+        return result.gender?.toLowerCase() === 'female'
+          ? DEFAULT_GIRL_AVATAR
+          : DEFAULT_BOY_AVATAR;
+      case 'coach':
+        return DEFAULT_COACH_AVATAR;
+      case 'parent':
+      case 'guardian':
+        return DEFAULT_PARENT_AVATAR;
+      default:
+        return DEFAULT_PARENT_AVATAR;
+    }
+  };
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (results.length > 0) {
@@ -86,49 +119,54 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
     }
   };
 
-  const updateRecentlyViewed = (id: string) => {
-    let recentlyViewed = JSON.parse(
-      localStorage.getItem('recentlyViewed') || '[]'
-    );
-    recentlyViewed = [
-      id,
-      ...recentlyViewed.filter((storedId: string) => storedId !== id),
-    ].slice(0, 5);
-    localStorage.setItem('recentlyViewed', JSON.stringify(recentlyViewed));
-  };
-
   const handlePlayerNavigation = useCallback(
     async (result: SearchResult) => {
+      console.log('Navigating with player status:', result.status);
+
       try {
         const guardians = await fetchGuardians(result.id);
-        updateRecentlyViewed(result.id);
 
+        const playerData = {
+          _id: result.id,
+          fullName: result.name,
+          gender: result.gender || '',
+          grade: result.grade || '',
+          dob: result.dob,
+          aauNumber: result.aauNumber || '',
+          status: result.status || '',
+          season: result.season || '',
+          registrationYear: result.registrationYear || null,
+          schoolName: result.additionalInfo || '',
+          createdAt: result.createdAt,
+          playerStatus: result.status,
+          imgSrc: result.image,
+          avatar: result.image,
+        };
+
+        console.log('Full player data being passed:', playerData);
+
+        navigate(`${routes.playerDetail}/${result.id}`, {
+          state: {
+            player: playerData,
+            guardians,
+            fromSearch: true,
+            key: Date.now(),
+            timestamp: Date.now(),
+          },
+          replace: true,
+        });
+      } catch (err) {
+        console.error('Navigation error:', err);
         navigate(`${routes.playerDetail}/${result.id}`, {
           state: {
             player: {
               _id: result.id,
-              fullName: result.name,
-              gender: result.gender || '',
-              grade: result.grade || '',
-              dob: result.dob || '',
-              aauNumber: result.aauNumber || '',
-              ...(result.additionalInfo && {
-                schoolName: result.additionalInfo,
-              }),
-              createdAt: result.createdAt,
-              season: result.season || '',
-              registrationYear: result.registrationYear ?? undefined,
-              status: result.status || '',
+              status: result.status || 'inactive',
+              imgSrc: result.image,
             },
-            guardians,
             fromSearch: true,
             key: Date.now(),
           },
-        });
-      } catch (err) {
-        console.error('Error fetching guardians:', err);
-        navigate(`${routes.playerDetail}/${result.id}`, {
-          state: { fromSearch: true },
         });
       }
     },
@@ -158,12 +196,15 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
             await handlePlayerNavigation(result);
             break;
           case 'parent':
-            // Ensure we're passing the full SearchResult object
-            await handleParentClick({
-              ...result,
-              _id: result.id, // Map id to _id if needed by your backend
-              parentId: result.id, // Ensure parentId is set
-              random: Date.now(),
+            navigate(`${routes.parentDetail}/${result.id}`, {
+              state: {
+                parent: {
+                  _id: result.id,
+                  fullName: result.name,
+                },
+                key: Date.now(),
+              },
+              replace: true,
             });
             break;
           case 'school':
@@ -177,29 +218,13 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
         setShowResults(true);
       }
     },
-    [handlePlayerNavigation, handleParentClick, handleSchoolNavigation]
+    [
+      handlePlayerNavigation,
+      navigate,
+      routes.parentDetail,
+      handleSchoolNavigation,
+    ]
   );
-
-  const fetchAvatarForResult = useCallback(
-    async (result: SearchResult) => {
-      if (avatarMap[result.id]) return;
-
-      let avatarUrl = result.image || DEFAULT_AVATAR;
-
-      if (!result.image?.startsWith('http') && result.image) {
-        avatarUrl = `https://bothell-select.onrender.com${result.image}`;
-      }
-
-      setAvatarMap((prev) => ({ ...prev, [result.id]: avatarUrl }));
-    },
-    [avatarMap]
-  );
-
-  useEffect(() => {
-    results.forEach((result) => {
-      fetchAvatarForResult(result);
-    });
-  }, [results, fetchAvatarForResult]);
 
   const renderSearchResults = () => (
     <div className='search-results-dropdown'>
@@ -216,41 +241,58 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
           </div>
         </div>
       ) : results.length > 0 ? (
-        results.map((result: SearchResult) => (
-          <div
-            key={`${result.type}-${result.id}`}
-            className={`search-result-item cursor-pointer ${
-              result.type === 'parent' ? 'parent-result' : ''
-            }`}
-            onClick={() => handleResultClick(result)}
-          >
-            <div className='d-flex align-items-center'>
-              {result.image && (
+        results.map((result: SearchResult) => {
+          const avatarUrl = getAvatarUrl(result);
+          return (
+            <div
+              key={`${result.type}-${result.id}`}
+              className={`search-result-item cursor-pointer ${
+                result.type === 'parent' ? 'parent-result' : ''
+              }`}
+              onClick={() => handleResultClick(result)}
+            >
+              <div className='d-flex align-items-center'>
                 <div className='avatar avatar-sm me-2'>
                   <img
-                    src={avatarMap[result.id] || DEFAULT_AVATAR}
-                    alt={result?.name || 'User avatar'}
-                    className='avatar avatar-sm me-2'
+                    src={avatarUrl}
+                    alt={result.name || 'User avatar'}
+                    className='avatar-img rounded-circle'
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      switch (result.type) {
+                        case 'player':
+                          target.src =
+                            result.gender?.toLowerCase() === 'female'
+                              ? DEFAULT_GIRL_AVATAR
+                              : DEFAULT_BOY_AVATAR;
+                          break;
+                        case 'coach':
+                          target.src = DEFAULT_COACH_AVATAR;
+                          break;
+                        default:
+                          target.src = DEFAULT_PARENT_AVATAR;
+                      }
+                    }}
                   />
                 </div>
-              )}
-              <div>
-                <h6 className='mb-0'>
-                  {result.name}
-                  {result.type === 'parent' && (
-                    <span className='badge bg-info ms-2'>Parent</span>
+                <div>
+                  <h6 className='mb-0'>
+                    {result.name}
+                    {result.type === 'parent' && (
+                      <span className='badge bg-info ms-2'>Parent</span>
+                    )}
+                  </h6>
+                  {result.email && (
+                    <small className='text-muted'>{result.email}</small>
                   )}
-                </h6>
-                {result.email && (
-                  <small className='text-muted'>{result.email}</small>
-                )}
-                {result.additionalInfo && (
-                  <small className='d-block'>{result.additionalInfo}</small>
-                )}
+                  {result.additionalInfo && (
+                    <small className='d-block'>{result.additionalInfo}</small>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))
+          );
+        })
       ) : (
         <div className='search-result-item'>
           <div className='text-center py-2'>No results found</div>
