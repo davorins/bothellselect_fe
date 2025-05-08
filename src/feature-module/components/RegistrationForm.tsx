@@ -116,42 +116,45 @@ interface RegistrationFormProps {
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const parseAddress = (fullAddress: string): Address => {
-  const patternWithUnit =
-    /^(\d+\s[\w\s.]+?)\s*(?:,?\s*(apt|apartment|suite|ste|unit|building|bldg|floor|fl|room|rm|department|dept|lot|#)\.?\s*([\w\s-]+?)\s*)?,\s*([^,]+?)\s*,\s*([a-zA-Z]{2,})\s*(\d{5}(?:-\d{4})?)$/i;
-  const matchWithUnit = fullAddress.match(patternWithUnit);
+  // Trim and clean up the input
+  const cleanedAddress = fullAddress
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/,+/g, ',');
 
-  if (matchWithUnit) {
+  // Try to match with unit/apt first (more specific pattern)
+  const unitPattern =
+    /^(\d+\s[\w\s.-]+)\s*(?:,?\s*(?:apt|apartment|suite|ste|unit|building|bldg|floor|fl|room|rm|department|dept|lot|#)?\.?\s*([\w\s-]+)?\s*,?\s*([^,]*?)\s*,?\s*([a-zA-Z]{2,})\s*,?\s*(\d{5}(?:-\d{4})?)$)/i;
+  const unitMatch = cleanedAddress.match(unitPattern);
+
+  if (unitMatch) {
     return {
-      street: matchWithUnit[1].trim(),
-      street2:
-        matchWithUnit[2] && matchWithUnit[3]
-          ? `${matchWithUnit[2].trim()} ${matchWithUnit[3].trim()}`.replace(
-              /\s+/g,
-              ' '
-            )
-          : '',
-      city: matchWithUnit[4].trim(),
-      state: normalizeState(matchWithUnit[5].trim()),
-      zip: matchWithUnit[6].trim(),
+      street: unitMatch[1].trim(),
+      street2: unitMatch[2]?.trim() || '',
+      city: unitMatch[3]?.trim() || '',
+      state: normalizeState(unitMatch[4]?.trim() || ''),
+      zip: unitMatch[5]?.trim() || '',
     };
   }
 
-  const fallbackPattern =
-    /^([^,]+?)\s*,\s*([^,]+?)\s*,\s*([a-zA-Z]{2,})\s*(\d{5}(?:-\d{4})?)$/i;
-  const fallbackMatch = fullAddress.match(fallbackPattern);
+  // Fallback pattern - more flexible with or without commas
+  const flexiblePattern =
+    /^([^,]+?)\s*(?:,|\s)\s*([^,]+?)\s*(?:,|\s)\s*([a-zA-Z]{2,})\s*(?:,|\s)\s*(\d{5}(?:-\d{4})?)$/i;
+  const flexibleMatch = cleanedAddress.match(flexiblePattern);
 
-  if (fallbackMatch) {
+  if (flexibleMatch) {
     return {
-      street: fallbackMatch[1].trim(),
+      street: flexibleMatch[1].trim(),
       street2: '',
-      city: fallbackMatch[2].trim(),
-      state: normalizeState(fallbackMatch[3].trim()),
-      zip: fallbackMatch[4].trim(),
+      city: flexibleMatch[2].trim(),
+      state: normalizeState(flexibleMatch[3].trim()),
+      zip: flexibleMatch[4].trim(),
     };
   }
 
+  // Final fallback - just take the whole input as street
   return {
-    street: fullAddress,
+    street: cleanedAddress,
     street2: '',
     city: '',
     state: '',
