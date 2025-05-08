@@ -971,7 +971,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                         ) : (
                           <div className='text-warning'>
                             Couldn't parse full address. Please use format:
-                            Street, City, State ZIP
+                            Street, City, State ZIP (123 1st St., Bothell, WA
+                            98021)
                           </div>
                         )}
                       </div>
