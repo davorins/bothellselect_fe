@@ -34,12 +34,7 @@ const Header = () => {
   const DEFAULT_AVATAR =
     'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
-  useEffect(() => {
-    // Fetch the avatar from the backend when the component mounts
-    fetchAvatarUrlFromBackend();
-  }, []);
-
-  const fetchAvatarUrlFromBackend = async () => {
+  const fetchAvatarUrlFromBackend = useCallback(async () => {
     const token = localStorage.getItem('token');
     const parentId = localStorage.getItem('parentId');
 
@@ -64,7 +59,12 @@ const Header = () => {
       console.error('Failed to fetch avatar:', err);
       setAvatarSrc(DEFAULT_AVATAR);
     }
-  };
+  }, [API_BASE_URL]);
+
+  useEffect(() => {
+    // Fetch the avatar from the backend when the component mounts
+    fetchAvatarUrlFromBackend();
+  }, [fetchAvatarUrlFromBackend]);
 
   const handleLogout = useCallback(() => {
     logout();
@@ -150,80 +150,6 @@ const Header = () => {
     </div>
   );
 
-  const renderAddNewDropdown = () => (
-    <div className='dropdown'>
-      <Link
-        to='#'
-        className='btn btn-outline-light bg-white btn-icon me-1'
-        data-bs-toggle='dropdown'
-        aria-expanded='false'
-      >
-        <i className='ti ti-square-rounded-plus' />
-      </Link>
-      <div className='dropdown-menu dropdown-menu-right border shadow-sm dropdown-md'>
-        <div className='p-3 border-bottom'>
-          <h5>Add New</h5>
-        </div>
-        <div className='p-3 pb-0'>
-          <div className='row gx-2'>
-            <div className='col-6'>
-              <Link
-                to={routes.addPlayer}
-                className='d-block bg-primary-transparent ronded p-2 text-center mb-3 class-hover'
-              >
-                <div className='avatar avatar-lg mb-2'>
-                  <span className='d-inline-flex align-items-center justify-content-center w-100 h-100 bg-primary rounded-circle'>
-                    <i className='ti ti-school' />
-                  </span>
-                </div>
-                <p className='text-dark'>Players</p>
-              </Link>
-            </div>
-            <div className='col-6'>
-              <Link
-                to={routes.addCoach}
-                className='d-block bg-success-transparent ronded p-2 text-center mb-3 class-hover'
-              >
-                <div className='avatar avatar-lg mb-2'>
-                  <span className='d-inline-flex align-items-center justify-content-center w-100 h-100 bg-success rounded-circle'>
-                    <i className='ti ti-users' />
-                  </span>
-                </div>
-                <p className='text-dark'>Coachs</p>
-              </Link>
-            </div>
-            <div className='col-6'>
-              <Link
-                to={routes.addStaff}
-                className='d-block bg-warning-transparent ronded p-2 text-center mb-3 class-hover'
-              >
-                <div className='avatar avatar-lg rounded-circle mb-2'>
-                  <span className='d-inline-flex align-items-center justify-content-center w-100 h-100 bg-warning rounded-circle'>
-                    <i className='ti ti-users-group' />
-                  </span>
-                </div>
-                <p className='text-dark'>Staffs</p>
-              </Link>
-            </div>
-            <div className='col-6'>
-              <Link
-                to={routes.addInvoice}
-                className='d-block bg-info-transparent ronded p-2 text-center mb-3 class-hover'
-              >
-                <div className='avatar avatar-lg mb-2'>
-                  <span className='d-inline-flex align-items-center justify-content-center w-100 h-100 bg-info rounded-circle'>
-                    <i className='ti ti-license' />
-                  </span>
-                </div>
-                <p className='text-dark'>Invoice</p>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   const renderUserDropdown = () => {
     if (!parent) return null;
 
@@ -303,13 +229,8 @@ const Header = () => {
 
           <div className='d-flex align-items-center'>
             {parent?.role === 'admin' && renderSeasonDropdown()}
-
-            {/* <div className='pe-1'>{renderAddNewDropdown()}</div> */}
-
             <NotificationDropdown />
-
             <FullscreenToggle />
-
             {renderUserDropdown()}
           </div>
         </div>

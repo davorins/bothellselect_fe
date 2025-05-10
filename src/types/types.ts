@@ -443,3 +443,12 @@ export interface Payment {
   season?: string;
   registrationYear?: number;
 }
+
+export interface Notification {
+  _id: string;
+  user: string;
+  message: string;
+  avatar?: string;
+  createdAt: string;
+  read: boolean;
+}

@@ -427,9 +427,7 @@ const ParentDetails = () => {
                                 <tbody>
                                   {payments.map((payment) => (
                                     <tr key={payment._id}>
-                                      <td>
-                                        ${(payment.amount / 100).toFixed(2)}
-                                      </td>
+                                      <td>${payment.amount.toFixed(2)}</td>
                                       <td>{formatDate(payment.createdAt)}</td>
                                       <td>
                                         {payment.cardBrand &&

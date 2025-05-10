@@ -1,192 +1,158 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import ImageWithBasePath from '../../../core/common/imageWithBasePath';
+import { useAuth } from '../../../context/AuthContext';
+import { useNotifications } from '../../../feature-module/hooks/useNotifications';
 
 const NotificationActivities = () => {
+  const { parent } = useAuth(); // Ensure parent data is available
+  const {
+    setNotifications,
+    setDismissedIds,
+    dismissNotification,
+    visibleNotifications,
+    markAsRead,
+  } = useNotifications();
+
+  const isAdmin = parent?.role === 'admin';
+
+  const deleteNotification = async (id: string) => {
+    try {
+      const res = await fetch(`/api/notifications/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        // Remove the notification from the state
+        setNotifications((prev) => prev.filter((n) => n._id !== id));
+      }
+    } catch (err) {
+      console.error('Failed to delete notification:', err);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await fetch('/api/notifications/read-all', { method: 'PATCH' });
+      // Mark all notifications as read in the state
+      setNotifications((prev) =>
+        prev.map((notif) => ({ ...notif, read: true }))
+      );
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    }
+  };
+
   return (
     <div className='page-wrapper'>
       <div className='content'>
-        {/* Activities */}
         <div className='card'>
           <div className='card-header pb-1'>
             <div className='d-flex align-items-center justify-content-between flex-wrap'>
-              <div className='mb-3'>
-                <h4>Notifications</h4>
-              </div>
-              <div className='d-flex align-items-center mb-3'>
-                <Link to='#' className='btn btn-light me-2'>
+              <h4>Notifications</h4>
+              <div>
+                <Link
+                  to='#'
+                  className='btn btn-light me-2'
+                  onClick={markAllAsRead}
+                >
                   <i className='ti ti-check me-2' />
                   Mark all as read
                 </Link>
-                <Link to='#' className='btn btn-danger'>
-                  <i className='ti ti-trash me-2' />
-                  Delete all
-                </Link>
+                {isAdmin && (
+                  <Link
+                    to='#'
+                    className='btn btn-danger'
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/notifications', {
+                          method: 'DELETE',
+                        });
+                        if (res.ok) {
+                          // Clear all notifications and dismissed list
+                          setNotifications([]);
+                          setDismissedIds([]);
+                          localStorage.removeItem('dismissedNotifications');
+                        }
+                      } catch (err) {
+                        console.error('Failed to delete all:', err);
+                      }
+                    }}
+                  >
+                    <i className='ti ti-trash me-2' />
+                    Delete all
+                  </Link>
+                )}
               </div>
             </div>
           </div>
           <div className='card-body pb-1'>
-            <div className='d-block'>
-              <div className='d-flex align-items-center justify-content-between flex-wrap shadow-sm p-3 pb-0 noti-hover border rounded mb-3'>
-                <div className='d-flex align-items-start flex-fill'>
-                  <Link
-                    to='#'
-                    className='avatar avatar-lg flex-shrink-0 me-2 mb-2'
+            <div className='d-block mb-3'>
+              {visibleNotifications.length === 0 ? (
+                <p>No notifications available.</p>
+              ) : (
+                visibleNotifications.map((notif) => (
+                  <div
+                    key={notif._id}
+                    className={`d-flex align-items-center justify-content-between flex-wrap shadow-sm noti-hover border p-3 pb-0 rounded mb-3 ${
+                      notif.read ? 'bg-light' : ''
+                    }`}
                   >
-                    <ImageWithBasePath
-                      alt='Lesley Grauer'
-                      src='assets/img/profiles/avatar-01.jpg'
-                      className=' img-fluid'
+                    <input
+                      type='checkbox'
+                      onChange={() => markAsRead(notif._id, !notif.read)}
+                      checked={notif.read}
+                      className='ms-2 me-4'
+                      title={notif.read ? 'Mark as unread' : 'Mark as read'}
                     />
-                  </Link>
-                  <div className='mb-3'>
-                    <p className='mb-0 text-dark  fw-medium'>
-                      Sylvia added appointment on 02:00 PM
-                    </p>
-                    <span>4 mins ago</span>
-                    <div className='d-flex align-items-center mt-1'>
-                      <Link to='#' className='btn btn-light btn-sm me-2'>
-                        Decline
+                    <div className='d-flex align-items-start flex-fill'>
+                      <Link
+                        to='#'
+                        className='avatar avatar-lg flex-shrink-0 me-2 mb-3'
+                      >
+                        <ImageWithBasePath
+                          alt={notif.user}
+                          src={
+                            notif.avatar && notif.avatar.startsWith('http')
+                              ? notif.avatar
+                              : notif.avatar?.trim()
+                              ? `/uploads/avatars/${notif.avatar}`
+                              : '/uploads/avatars/parents.png'
+                          }
+                          className='img-fluid'
+                        />
                       </Link>
-                      <Link to='#' className='btn btn-primary btn-sm'>
-                        Accept
-                      </Link>
+                      <div className='mb-3'>
+                        <p className='mb-0 text-dark fw-medium'>
+                          {notif.user} {notif.message}
+                        </p>
+                        <span>
+                          {new Date(notif.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className='noti-delete mb-3'>
+                      {isAdmin ? (
+                        <button
+                          className='btn btn-danger btn-sm text-white'
+                          onClick={() => deleteNotification(notif._id)}
+                        >
+                          Delete
+                        </button>
+                      ) : (
+                        <button
+                          className='btn btn-secondary btn-sm text-white'
+                          onClick={() => dismissNotification(notif._id)}
+                        >
+                          Dismiss
+                        </button>
+                      )}
                     </div>
                   </div>
-                </div>
-                <div className='noti-delete mb-3'>
-                  <Link to='#' className='btn btn-danger btn-sm text-white'>
-                    Delete
-                  </Link>
-                </div>
-              </div>
-              <div className='d-flex align-items-center justify-content-between flex-wrap shadow-sm noti-hover border p-3 pb-0 rounded mb-3'>
-                <div className='d-flex align-items-start flex-fill'>
-                  <Link
-                    to='#'
-                    className='avatar avatar-lg flex-shrink-0 me-2 mb-3'
-                  >
-                    <ImageWithBasePath
-                      alt='Lesley Grauer'
-                      src='assets/img/profiles/avatar-02.jpg'
-                      className=' img-fluid'
-                    />
-                  </Link>
-                  <div className='mb-3'>
-                    <p className='mb-0 text-dark  fw-medium'>Test...</p>
-                    <span>6 mins ago</span>
-                  </div>
-                </div>
-                <div className='noti-delete mb-3'>
-                  <Link to='#' className='btn btn-danger btn-sm text-white'>
-                    Delete
-                  </Link>
-                </div>
-              </div>
-              <div className='d-flex align-items-center justify-content-between flex-wrap shadow-sm noti-hover border p-3 pb-0 rounded mb-3'>
-                <div className='d-flex align-items-start flex-fill'>
-                  <Link
-                    to='#'
-                    className='avatar avatar-lg flex-shrink-0 me-2 mb-3'
-                  >
-                    <ImageWithBasePath
-                      alt='Lesley Grauer'
-                      src='assets/img/profiles/avatar-04.jpg'
-                      className=' img-fluid'
-                    />
-                  </Link>
-                  <div className='mb-3'>
-                    <p className='mb-0 text-dark  fw-medium'>
-                      A new coach record for John
-                    </p>
-                    <span>09:45 am</span>
-                  </div>
-                </div>
-                <div className='noti-delete mb-3'>
-                  <Link to='#' className='btn btn-danger btn-sm text-white'>
-                    Delete
-                  </Link>
-                </div>
-              </div>
-              <div className='d-flex align-items-center justify-content-between flex-wrap shadow-sm noti-hover border p-3 pb-0 rounded mb-3'>
-                <div className='d-flex align-items-start flex-fill'>
-                  <Link
-                    to='#'
-                    className='avatar avatar-lg flex-shrink-0 me-2 mb-3'
-                  >
-                    <ImageWithBasePath
-                      alt='Lesley Grauer'
-                      src='assets/img/profiles/avatar-03.jpg'
-                      className=' img-fluid'
-                    />
-                  </Link>
-                  <div className='mb-3'>
-                    <p className='mb-0 text-dark fw-medium'>
-                      New student record George is created by Teressa
-                    </p>
-                    <span>2 hrs ago</span>
-                  </div>
-                </div>
-                <div className='noti-delete mb-3'>
-                  <Link to='#' className='btn btn-danger btn-sm text-white'>
-                    Delete
-                  </Link>
-                </div>
-              </div>
-              <div className='d-flex align-items-center justify-content-between flex-wrap shadow-sm noti-hover border p-3 pb-0 rounded mb-3'>
-                <div className='d-flex align-items-start flex-fill'>
-                  <Link
-                    to='#'
-                    className='avatar avatar-lg flex-shrink-0 me-2 mb-3'
-                  >
-                    <ImageWithBasePath
-                      alt='Lesley Grauer'
-                      src='assets/img/profiles/avatar-27.jpg'
-                      className=' img-fluid'
-                    />
-                  </Link>
-                  <div className='mb-3'>
-                    <p className='mb-0 text-dark  fw-medium'>
-                      New staff record is created
-                    </p>
-                    <span>10 mins ago</span>
-                  </div>
-                </div>
-                <div className='noti-delete mb-3'>
-                  <Link to='#' className='btn btn-danger btn-sm text-white'>
-                    Delete
-                  </Link>
-                </div>
-              </div>
-              <div className='d-flex align-items-center justify-content-between flex-wrap shadow-sm noti-hover border p-3 pb-0 rounded mb-3'>
-                <div className='d-flex align-items-start flex-fill'>
-                  <Link
-                    to='#'
-                    className='avatar avatar-lg flex-shrink-0 me-2 mb-3'
-                  >
-                    <ImageWithBasePath
-                      alt='Lesley Grauer'
-                      src='assets/img/profiles/avatar-10.jpg'
-                      className=' img-fluid'
-                    />
-                  </Link>
-                  <div className='mb-3'>
-                    <p className='mb-0 text-dark  fw-medium'>
-                      Exam time table added
-                    </p>
-                    <span>1 hr ago</span>
-                  </div>
-                </div>
-                <div className='noti-delete mb-3'>
-                  <Link to='#' className='btn btn-danger btn-sm text-white'>
-                    Delete
-                  </Link>
-                </div>
-              </div>
+                ))
+              )}
             </div>
           </div>
         </div>
-        {/* /Activities */}
       </div>
     </div>
   );

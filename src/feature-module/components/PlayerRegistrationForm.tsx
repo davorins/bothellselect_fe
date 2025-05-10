@@ -20,8 +20,11 @@ import { getNextSeason } from '../../utils/season';
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 // Square configuration
-const SQUARE_APP_ID = 'sq0idp-jUCxKnO_i8i7vccQjVj_0g';
-const SQUARE_LOCATION_ID = 'L26Q50FWRCQW5';
+const SQUARE_APP_ID =
+  process.env.REACT_APP_SQUARE_APP_ID ||
+  'sandbox-sq0idb-I4PAJ1f1XKYqYSwLovq0xQ';
+const SQUARE_LOCATION_ID =
+  process.env.REACT_APP_SQUARE_LOCATION_ID || 'LCW4GM814GWXK';
 
 interface Player {
   _id?: string;
@@ -115,9 +118,18 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedPackage, setSelectedPackage] = useState('1');
   const [nextSeason] = useState(getNextSeason());
+  const [isProcessing, setIsProcessing] = useState(false);
+
   const handleCardTokenized = async (tokenResult: any) => {
     try {
       setPaymentError('');
+      setIsProcessing(true);
+
+      // Validate email
+      if (!customerEmail || !/^\S+@\S+\.\S+$/.test(customerEmail)) {
+        setPaymentError('Please enter a valid email for your receipt');
+        return;
+      }
 
       if (tokenResult.status !== 'OK' || !tokenResult.token) {
         throw new Error('Payment processing failed');
@@ -128,61 +140,77 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
         throw new Error('Please complete registration before payment');
       }
 
+      const tokenCard = tokenResult.details?.card;
+
       const paymentData = {
         sourceId: tokenResult.token,
         amount: calculateTotalAmount(),
-        playerId: playerId,
+        playerIds: [player._id],
         parentId: parentId,
         buyerEmailAddress: customerEmail,
-        cardDetails: tokenResult.details?.card || {
-          last_4: '****',
-          card_brand: 'UNKNOWN',
-          exp_month: '00',
-          exp_year: '00',
+        cardDetails: {
+          last_4: tokenCard?.last4 || '****',
+          card_brand: tokenCard?.brand || 'UNKNOWN',
+          exp_month: String(tokenCard?.expMonth || '00').padStart(2, '0'),
+          exp_year: String(tokenCard?.expYear || '0000'),
         },
         locationId: SQUARE_LOCATION_ID,
+        packageType: selectedPackage,
       };
 
-      // Step 1: Process payment through Square
-      const response = await fetch(`${API_BASE_URL}/payment/square-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify(paymentData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Payment failed');
-      }
-
-      // Step 2: Update player and parent payment status
-      const updateResponse = await fetch(
-        `${API_BASE_URL}/payments/update-players`,
+      // Process payment
+      const paymentResponse = await axios.post(
+        `${API_BASE_URL}/payment/square-payment`,
+        paymentData,
         {
-          method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
-          body: JSON.stringify({ parentId }),
         }
       );
 
-      if (!updateResponse.ok) {
-        throw new Error('Failed to update player payment status');
+      if (!paymentResponse.data.success) {
+        throw new Error(paymentResponse.data.error || 'Payment failed');
       }
 
-      setPlayer((prev) => ({ ...prev, paymentComplete: true }));
+      // Update player payment status
+      const updateResponse = await axios.post(
+        `${API_BASE_URL}/payments/update-players`,
+        {
+          parentId: parentId,
+          paymentId: paymentResponse.data.paymentId,
+          playerIds: [player._id],
+          amount: calculateTotalAmount(),
+          paymentMethod: 'credit_card',
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
+
+      if (!updateResponse.data.success) {
+        throw new Error(
+          updateResponse.data.error || 'Failed to update payment status'
+        );
+      }
+
+      // Update local state to trigger step 3
+      setPlayer((prev) => ({
+        ...prev,
+        paymentComplete: true,
+        _id: prev._id || player._id,
+      }));
       setNeedsPayment(false);
-      setCurrentStep(3);
+      setCurrentStep(3); // Explicitly set to step 3
     } catch (error) {
       console.error('Payment processing error:', error);
       setPaymentError(
         error instanceof Error ? error.message : 'Payment processing failed'
       );
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -192,6 +220,12 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
       navigate('/login');
     }
   }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (parent?.email) {
+      setCustomerEmail(parent.email);
+    }
+  }, [parent?.email]);
 
   // Check payment status when players load
   useEffect(() => {
@@ -343,50 +377,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     }
   };
 
-  const handlePayment = async (tokenResult: any) => {
-    setPaymentError('');
-
-    try {
-      if (tokenResult.status !== 'OK') {
-        throw new Error('Payment processing failed');
-      }
-
-      const paymentData = {
-        sourceId: tokenResult.token,
-        amount: calculateTotalAmount(),
-        playerId: playerId,
-        parentId: localStorage.getItem('parentId'),
-        cardDetails: tokenResult.details?.card || {
-          last_4: '****',
-          card_brand: 'UNKNOWN',
-          exp_month: '00',
-          exp_year: '00',
-        },
-        locationId: SQUARE_LOCATION_ID,
-      };
-
-      const response = await axios.post(
-        `${API_BASE_URL}/payment/square-payment`,
-        paymentData,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        }
-      );
-
-      if (response.data.success) {
-        setPlayer((prev) => ({ ...prev, paymentComplete: true }));
-        setNeedsPayment(false);
-      }
-    } catch (error) {
-      console.error('Payment processing error:', error);
-      setPaymentError(
-        error instanceof Error ? error.message : 'Payment processing failed'
-      );
-    }
-  };
-
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -411,6 +401,42 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
 
     return perPlayerAmount * players.length;
   };
+
+  if (player.paymentComplete) {
+    return (
+      <div className='content content-two'>
+        <div className='card-header text-center'>
+          <h3>Thank you for your payment!</h3>
+          <p className='lead'>Payment successful for {player.fullName}</p>
+          <div className='confirmation-details mt-4'>
+            <p>
+              <strong>Email for receipt:</strong> {customerEmail}
+            </p>
+            <p>
+              <strong>Package:</strong>{' '}
+              {selectedPackage === '1'
+                ? '3 Times/Week'
+                : selectedPackage === '2'
+                ? '4 Times/Week'
+                : '5 Times/Week'}
+            </p>
+            <p>
+              <strong>Amount paid:</strong> $
+              {(calculateTotalAmount() / 100).toFixed(2)}
+            </p>
+          </div>
+          <button
+            className='btn btn-primary mt-4'
+            onClick={() => {
+              window.location.reload();
+            }}
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (
     (isRegistered || showPayment) &&
@@ -512,14 +538,18 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                     </div>
                   </div>
                 </div>
-                <div className='registered-players mb-4'>
-                  <h6>Registered Player:</h6>
-                  <ul className='list-group'>
-                    <li className='list-group-item'>
-                      {player.fullName} - {player.grade}th Grade
-                    </li>
-                  </ul>
-                </div>
+                {players?.length > 0 && (
+                  <div className='registered-players mb-4'>
+                    <h6 className='mb-2'>Registered Players:</h6>
+                    <ul className='list-group'>
+                      {players.map((p) => (
+                        <li key={p._id} className='list-group-item'>
+                          {p.fullName} - {p.grade}th Grade
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <div className='payment-options'>
                   <div className='card'>
                     <div className='card-body'>
@@ -533,23 +563,36 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                           onChange={(e) => setCustomerEmail(e.target.value)}
                           required
                         />
+                        {!customerEmail && (
+                          <div className='text-danger small'>
+                            Email is required for your receipt
+                          </div>
+                        )}
                       </div>
-                      <PaymentForm
-                        applicationId={SQUARE_APP_ID}
-                        locationId={SQUARE_LOCATION_ID}
-                        cardTokenizeResponseReceived={handlePayment}
-                        createPaymentRequest={() => ({
-                          countryCode: 'US',
-                          currencyCode: 'USD',
-                          total: {
-                            amount: (calculateTotalAmount() / 100).toString(),
-                            label: 'Total',
-                          },
-                          buyerEmailAddress: customerEmail,
-                        })}
-                      >
-                        <CreditCard />
-                      </PaymentForm>
+                      {!player.paymentComplete && !isProcessing && (
+                        <PaymentForm
+                          applicationId={SQUARE_APP_ID}
+                          locationId={SQUARE_LOCATION_ID}
+                          cardTokenizeResponseReceived={handleCardTokenized}
+                          createPaymentRequest={() => ({
+                            countryCode: 'US',
+                            currencyCode: 'USD',
+                            total: {
+                              amount: (calculateTotalAmount() / 100).toString(),
+                              label: 'Total',
+                            },
+                            buyerEmailAddress: customerEmail,
+                          })}
+                        >
+                          <CreditCard />
+                        </PaymentForm>
+                      )}
+                      {isProcessing && (
+                        <div className='splash-screen'>
+                          <div className='basketball-animation'>🏀</div>
+                          <p>Processing payment...</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -590,10 +633,53 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   return (
     <div className='content content-two'>
       {currentStep === 3 ? (
-        <div className='text-center'>
+        <div className='card-header text-center'>
           <h3>Thank you for registering!</h3>
-          <p>
-            We can’t wait to welcome your young athlete to an unforgettable
+          <p className='lead'>
+            Registration and payment successful for {player.fullName}
+          </p>
+          <div className='confirmation-details mt-4'>
+            <p>
+              <strong>Email for receipt:</strong> {customerEmail}
+            </p>
+            <p>
+              <strong>Package:</strong>{' '}
+              {selectedPackage === '1'
+                ? '3 Times/Week'
+                : selectedPackage === '2'
+                ? '4 Times/Week'
+                : '5 Times/Week'}
+            </p>
+            <p>
+              <strong>Price per player:</strong> $
+              {selectedPackage === '1'
+                ? '550'
+                : selectedPackage === '2'
+                ? '760'
+                : '970'}
+            </p>
+            <p>
+              <strong>Number of players:</strong> {players?.length || 0}
+            </p>
+            <p>
+              <strong>Total amount:</strong> $
+              {(selectedPackage === '1'
+                ? 550
+                : selectedPackage === '2'
+                ? 760
+                : 970) * (players?.length || 0)}
+            </p>
+          </div>
+          <button
+            className='btn btn-primary mt-4'
+            onClick={() => {
+              window.location.href = '/dashboard';
+            }}
+          >
+            Return to Dashboard
+          </button>
+          <p className='mt-3'>
+            We can't wait to welcome your young athlete to an unforgettable
             summer of basketball, growth, and fun!
           </p>
         </div>
@@ -614,7 +700,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
           {error && <div className='alert alert-danger'>{error}</div>}
           {players.length < 2 ? (
             <>
-              {/* Progress Bar - Added Here */}
+              {/* Progress Bar */}
               <div className='progress mb-4' style={{ height: '10px' }}>
                 <div
                   className='progress-bar bg-success'
@@ -626,7 +712,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                 ></div>
               </div>
 
-              {/* Step Indicators - Added Here */}
+              {/* Step Indicators */}
               <div className='d-flex justify-content-between mb-4'>
                 <div className={`step ${currentStep >= 1 ? 'active' : ''}`}>
                   <span className='step-number'>1</span>
@@ -809,22 +895,49 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                       <h5>Payment Information</h5>
                     </div>
                     <div className='card-body'>
-                      <PaymentForm
-                        applicationId={SQUARE_APP_ID}
-                        locationId={SQUARE_LOCATION_ID}
-                        cardTokenizeResponseReceived={handleCardTokenized}
-                        createPaymentRequest={() => ({
-                          countryCode: 'US',
-                          currencyCode: 'USD',
-                          total: {
-                            amount: (calculateTotalAmount() / 100).toString(),
-                            label: 'Total',
-                          },
-                          buyerEmailAddress: customerEmail,
-                        })}
-                      >
-                        <CreditCard />
-                      </PaymentForm>
+                      <div className='mb-3'>
+                        <label className='form-label'>Email for Receipt</label>
+                        <input
+                          type='email'
+                          className='form-control'
+                          value={customerEmail}
+                          onChange={(e) => setCustomerEmail(e.target.value)}
+                          required
+                        />
+                        {!customerEmail && (
+                          <div className='text-danger small'>
+                            Email is required for your receipt
+                          </div>
+                        )}
+                      </div>
+                      {isProcessing ? (
+                        <div className='splash-screen'>
+                          <div className='basketball-animation'>🏀</div>
+                          <p>Processing payment...</p>
+                        </div>
+                      ) : (
+                        <PaymentForm
+                          applicationId={SQUARE_APP_ID}
+                          locationId={SQUARE_LOCATION_ID}
+                          cardTokenizeResponseReceived={handleCardTokenized}
+                          createPaymentRequest={() => ({
+                            countryCode: 'US',
+                            currencyCode: 'USD',
+                            total: {
+                              amount: (calculateTotalAmount() / 100).toString(),
+                              label: 'Total',
+                            },
+                            buyerEmailAddress: customerEmail,
+                          })}
+                        >
+                          <CreditCard />
+                        </PaymentForm>
+                      )}
+                      {paymentError && (
+                        <div className='alert alert-danger mt-3'>
+                          {paymentError}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

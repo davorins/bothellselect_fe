@@ -28,8 +28,8 @@ import { useAuth } from '../../context/AuthContext';
 import HomeModals from '../pages/homeModals';
 
 // Square configuration
-const appId = 'sq0idp-jUCxKnO_i8i7vccQjVj_0g';
-const locationId = 'L26Q50FWRCQW5';
+const appId = 'sandbox-sq0idb-I4PAJ1f1XKYqYSwLovq0xQ';
+const locationId = 'LCW4GM814GWXK';
 
 // TypeScript interfaces
 interface Player {
@@ -43,6 +43,7 @@ interface Player {
   registrationYear: number;
   season: string;
   grade: string;
+  paymentComplete?: boolean;
 }
 
 interface Address {
@@ -246,7 +247,14 @@ const PaymentForm = forwardRef<PaymentFormMethods, SquarePaymentFormProps>(
         if (result.status === 'OK') {
           return {
             token: result.token,
-            details: result.details,
+            details: {
+              card: {
+                last_4: result.details?.card?.last4,
+                card_brand: result.details?.card?.brand,
+                exp_month: result.details?.card?.expMonth,
+                exp_year: result.details?.card?.expYear,
+              },
+            },
           };
         }
         throw new Error(result.errors?.[0]?.message || 'Tokenization failed');
@@ -274,6 +282,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const [isProcessingRegistration, setIsProcessingRegistration] =
     useState(false);
   const [selectedPackage, setSelectedPackage] = useState('1');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   type PasswordField = 'password' | 'confirmPassword';
 
@@ -365,13 +374,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
     }
   }, [isExistingUser, currentUser]);
 
-  const calculateTotalAmount = () => {
+  const calculateTotalAmount = (packageType: string = selectedPackage) => {
     const basePrice =
-      formData.payment.selectedPackage === '1'
-        ? 550
-        : formData.payment.selectedPackage === '2'
-        ? 760
-        : 970;
+      packageType === '1' ? 550 : packageType === '2' ? 760 : 970;
 
     return basePrice * formData.players.length;
   };
@@ -395,6 +400,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
       },
     };
   };
+
+  useEffect(() => {
+    if (currentUser?.email) {
+      setCustomerEmail(currentUser.email);
+    } else if (formData?.email) {
+      setCustomerEmail(formData.email);
+    }
+  }, [currentUser?.email, formData?.email]);
 
   useEffect(() => {
     setFormData((prev) => ({
@@ -691,7 +704,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           }
 
           const playerData = await response.json();
-          registeredPlayers.push(playerData.player);
+          registeredPlayers.push({
+            ...player,
+            _id: playerData.player._id,
+            paymentComplete: false,
+          });
         }
 
         setFormData((prev) => ({
@@ -699,8 +716,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           players: registeredPlayers,
         }));
 
-        // Proceed to payment for existing user
-        setCurrentStep(2);
+        // Only proceed if all players have IDs
+        if (registeredPlayers.every((p) => p._id)) {
+          setCurrentStep(2);
+        } else {
+          throw new Error('Player registration incomplete - missing IDs');
+        }
       } else {
         // New user flow - full registration
         const registrationData = {
@@ -1460,16 +1481,63 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
     const handleCardTokenized = async (tokenResult: any) => {
       try {
         setPaymentError(null);
+        setIsProcessing(true);
+
+        // Validate email
+        if (!customerEmail || !validateEmail(customerEmail)) {
+          throw new Error('Please enter a valid email for your receipt');
+        }
 
         // Validate payment token
         if (tokenResult.status !== 'OK' || !tokenResult.token) {
           throw new Error('Payment processing failed');
         }
 
-        // Get parent ID (from current user or registration)
+        // Get parent ID
         const parentId = localStorage.getItem('parentId') || currentUser?._id;
         if (!parentId) {
           throw new Error('Please complete registration before payment');
+        }
+
+        // First try to get player IDs from current form state
+        let playerIds = formData.players
+          .map((p) => p._id)
+          .filter((id) => id !== undefined && id !== null && id !== '');
+
+        // If no IDs found, try to fetch them from the server
+        if (playerIds.length === 0) {
+          try {
+            const response = await fetch(
+              `${API_BASE_URL}/players/by-parent/${parentId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+              }
+            );
+
+            if (response.ok) {
+              const players = await response.json();
+              const refreshedIds = players
+                .map((p: Player) => p._id)
+                .filter(Boolean);
+              if (refreshedIds.length > 0) {
+                setFormData((prev) => ({
+                  ...prev,
+                  players: players,
+                }));
+                playerIds = refreshedIds;
+              }
+            }
+          } catch (refreshError) {
+            console.error('Failed to refresh player data:', refreshError);
+          }
+
+          if (playerIds.length === 0) {
+            throw new Error(
+              'No registered players found - please complete registration first'
+            );
+          }
         }
 
         // Calculate amount
@@ -1478,27 +1546,31 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
             ? 55000
             : selectedPackage === '2'
             ? 76000
-            : 97000;
+            : 97000; // amounts in cents
 
-        const totalAmount = amountPerPlayer * formData.players.length;
+        const totalAmount = amountPerPlayer * playerIds.length;
+
+        const tokenCard = tokenResult.details?.card;
 
         // Prepare payment data
         const paymentData = {
           sourceId: tokenResult.token,
           amount: totalAmount,
           parentId: parentId,
-          playerCount: formData.players.length,
+          playerIds: playerIds,
+          playerCount: playerIds.length,
           buyerEmailAddress: customerEmail,
-          cardDetails: tokenResult.details?.card || {
-            last_4: '****',
-            card_brand: 'UNKNOWN',
-            exp_month: '00',
-            exp_year: '00',
+          cardDetails: {
+            last_4: tokenCard?.last4 || '****',
+            card_brand: tokenCard?.brand || 'UNKNOWN',
+            exp_month: String(tokenCard?.expMonth || '00').padStart(2, '0'),
+            exp_year: String(tokenCard?.expYear || '0000'),
           },
           locationId: locationId,
+          packageType: selectedPackage,
         };
 
-        // Step 1: Process payment through Square
+        // Process payment
         const paymentResponse = await fetch(
           `${API_BASE_URL}/payment/square-payment`,
           {
@@ -1516,7 +1588,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           throw new Error(errorData.error || 'Payment failed');
         }
 
-        // Step 2: Update player and parent payment status
+        // Update player payment status
         const updateResponse = await fetch(
           `${API_BASE_URL}/payments/update-players`,
           {
@@ -1525,25 +1597,55 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
               'Content-Type': 'application/json',
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
-            body: JSON.stringify({ parentId }),
+            body: JSON.stringify({
+              parentId,
+              paymentId: (await paymentResponse.json()).paymentId,
+              playerIds: playerIds,
+              amount: totalAmount,
+              paymentMethod: 'credit_card',
+            }),
           }
         );
 
         if (!updateResponse.ok) {
-          throw new Error('Failed to update player payment status');
+          const errorData = await updateResponse.json();
+          throw new Error(
+            errorData.error || 'Failed to update player payment status'
+          );
         }
 
+        // Update local state to mark payment as complete
+        setFormData((prev) => ({
+          ...prev,
+          players: prev.players.map((player) => ({
+            ...player,
+            paymentComplete: true,
+            paymentStatus: 'paid',
+          })),
+          paymentComplete: true,
+        }));
+
         setIsSubmitted(true);
+        setCurrentStep(3);
       } catch (error) {
         console.error('Payment processing error:', error);
         setPaymentError(
           error instanceof Error ? error.message : 'Payment processing failed'
         );
+      } finally {
+        setIsProcessing(false);
       }
     };
 
     return (
       <>
+        {/* Splash screen during payment processing */}
+        {isProcessing && (
+          <div className='splash-screen'>
+            <div className='basketball-animation'>🏀</div>
+          </div>
+        )}
+
         <div className='alert alert-success mb-4'>
           <h4>Registration Complete!</h4>
           <p className='mb-0'>
@@ -1575,13 +1677,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   {formData.players.length !== 1 ? 's' : ''}):
                 </h5>
                 <p className='text-muted'>
-                  Total: ${calculateTotalAmount()} ({formData.players.length} ×
-                  $
+                  Total: ${calculateTotalAmount(selectedPackage)} (
+                  {formData.players.length} × $
                   {selectedPackage === '1'
                     ? '550'
                     : selectedPackage === '2'
                     ? '760'
                     : '970'}
+                  )
                 </p>
               </div>
               <div className='col-md-4'>
@@ -1642,31 +1745,33 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 onChange={(e) => setCustomerEmail(e.target.value)}
                 required
               />
+              {!customerEmail && (
+                <div className='text-danger small'>
+                  Email is required for your receipt
+                </div>
+              )}
             </div>
             <div className='payment-form-container'>
-              <PaymentForm
-                applicationId={appId}
-                locationId={locationId}
-                cardTokenizeResponseReceived={handleCardTokenized}
-                createPaymentRequest={() => ({
-                  countryCode: 'US',
-                  currencyCode: 'USD',
-                  total: {
-                    amount: String(
-                      selectedPackage === '1'
-                        ? '550.00'
-                        : selectedPackage === '2'
-                        ? '760.00'
-                        : '970.00'
-                    ),
-
-                    label: 'Total',
-                  },
-                  buyerEmailAddress: customerEmail,
-                })}
-              >
-                <CreditCard />
-              </PaymentForm>
+              {!isSubmitted ? (
+                <PaymentForm
+                  applicationId={appId}
+                  locationId={locationId}
+                  cardTokenizeResponseReceived={handleCardTokenized}
+                  createPaymentRequest={() => ({
+                    countryCode: 'US',
+                    currencyCode: 'USD',
+                    total: {
+                      amount: String(
+                        calculateTotalAmount() / 100 // Convert to dollars for display
+                      ),
+                      label: 'Total',
+                    },
+                    buyerEmailAddress: customerEmail,
+                  })}
+                >
+                  <CreditCard />
+                </PaymentForm>
+              ) : null}
               <HomeModals />
             </div>
           </div>

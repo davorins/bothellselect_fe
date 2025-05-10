@@ -729,7 +729,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const parseAddress = (fullAddress: string) => {
     // First try pattern with unit designator
     const patternWithUnit =
-      /^(\d+\s[\w\s\.]+?)\s*(?:,?\s*(apt|apartment|suite|ste|unit|building|bldg|floor|fl|room|rm|department|dept|lot|#)\.?\s*([\w\s\-]+?)\s*)?,\s*([^,]+?)\s*,\s*([a-zA-Z]{2,})\s*(\d{5}(?:-\d{4})?)$/i;
+      /^(\d+\s[\w\s.]+?)\s*(?:,?\s*(apt|apartment|suite|ste|unit|building|bldg|floor|fl|room|rm|department|dept|lot|#)\.?\s*([\w\s-]+?)\s*)?,\s*([^,]+?)\s*,\s*([a-zA-Z]{2,})\s*(\d{5}(?:-\d{4})?)$/i;
+
     const matchWithUnit = fullAddress.match(patternWithUnit);
 
     if (matchWithUnit) {
