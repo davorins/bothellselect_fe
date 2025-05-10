@@ -3,7 +3,15 @@ import { motion } from 'framer-motion';
 
 const SplashScreen: React.FC = () => {
   return (
-    <div className='flex items-center justify-center h-screen bg-black text-white relative'>
+    <div
+      className='fixed inset-0 flex items-center justify-center bg-white z-50'
+      style={{
+        width: '100vw',
+        height: '100vh',
+        // Prevent scrolling when splash screen is visible
+        overflow: 'hidden',
+      }}
+    >
       {/* Ripple Glow */}
       <motion.div
         className='absolute w-40 h-40 rounded-full'
@@ -66,7 +74,7 @@ const SplashScreen: React.FC = () => {
         <h1 className='text-xl tracking-wider' style={{ color: '#506ee4' }}>
           Bothell Select
         </h1>
-        <div className='mt-2 text-sm text-gray-400'>Loading...</div>
+        <div className='mt-2 text-sm text-gray-600'>Loading...</div>
       </div>
     </div>
   );

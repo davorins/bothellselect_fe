@@ -15,7 +15,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getNextSeason } from '../../utils/season';
-import SplashScreen from '../../components/common/SplashScreen';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 // Set API base URL - use environment variable if available, otherwise default to local development
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
@@ -587,7 +587,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                           <CreditCard />
                         </PaymentForm>
                       )}
-                      {isProcessing && <SplashScreen />}
+                      {isProcessing && <LoadingSpinner />}
                     </div>
                   </div>
                 </div>
@@ -906,7 +906,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                         )}
                       </div>
                       {isProcessing ? (
-                        <SplashScreen />
+                        <LoadingSpinner />
                       ) : (
                         <PaymentForm
                           applicationId={SQUARE_APP_ID}

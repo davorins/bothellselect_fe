@@ -26,7 +26,7 @@ import {
 import { getNextSeason } from '../../utils/season';
 import { useAuth } from '../../context/AuthContext';
 import HomeModals from '../pages/homeModals';
-import SplashScreen from '../../components/common/SplashScreen';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 // Square configuration
 const appId = 'sq0idp-jUCxKnO_i8i7vccQjVj_0g';
@@ -1639,7 +1639,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
     };
 
     return isProcessing ? (
-      <SplashScreen />
+      <LoadingSpinner />
     ) : (
       <>
         <div className='alert alert-success mb-4'>
