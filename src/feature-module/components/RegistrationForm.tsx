@@ -26,10 +26,11 @@ import {
 import { getNextSeason } from '../../utils/season';
 import { useAuth } from '../../context/AuthContext';
 import HomeModals from '../pages/homeModals';
+import SplashScreen from '../../components/common/SplashScreen';
 
 // Square configuration
-const appId = 'sandbox-sq0idb-I4PAJ1f1XKYqYSwLovq0xQ';
-const locationId = 'LCW4GM814GWXK';
+const appId = 'sq0idp-jUCxKnO_i8i7vccQjVj_0g';
+const locationId = 'L26Q50FWRCQW5';
 
 // TypeScript interfaces
 interface Player {
@@ -1637,15 +1638,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
       }
     };
 
-    return (
+    return isProcessing ? (
+      <SplashScreen />
+    ) : (
       <>
-        {/* Splash screen during payment processing */}
-        {isProcessing && (
-          <div className='splash-screen'>
-            <div className='basketball-animation'>🏀</div>
-          </div>
-        )}
-
         <div className='alert alert-success mb-4'>
           <h4>Registration Complete!</h4>
           <p className='mb-0'>
@@ -1723,19 +1719,20 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 <div className='form-check form-check-lg mb-3'>
                   <input
                     type='radio'
-                    id='fourTimes'
+                    id='fiveTimes'
                     name='package'
                     value='3'
                     className='form-check-input'
                     checked={selectedPackage === '3'}
                     onChange={(e) => setSelectedPackage(e.target.value)}
                   />
-                  <label className='form-check-label' htmlFor='fourTimes'>
+                  <label className='form-check-label' htmlFor='fiveTimes'>
                     5 Times/Week - ${970 * formData.players.length}.00
                   </label>
                 </div>
               </div>
             </div>
+
             <div className='mb-3'>
               <label className='form-label'>Email for Receipt</label>
               <input
@@ -1751,6 +1748,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 </div>
               )}
             </div>
+
             <div className='payment-form-container'>
               {!isSubmitted ? (
                 <PaymentForm
@@ -1822,7 +1820,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 : 970) * (formData.players?.length || 0)}
             </p>
           </div>
-
           <button
             className='btn btn-primary mt-4'
             onClick={() => {

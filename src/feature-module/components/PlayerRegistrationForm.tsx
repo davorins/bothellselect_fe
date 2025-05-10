@@ -15,16 +15,16 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getNextSeason } from '../../utils/season';
+import SplashScreen from '../../components/common/SplashScreen';
 
 // Set API base URL - use environment variable if available, otherwise default to local development
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 // Square configuration
 const SQUARE_APP_ID =
-  process.env.REACT_APP_SQUARE_APP_ID ||
-  'sandbox-sq0idb-I4PAJ1f1XKYqYSwLovq0xQ';
+  process.env.REACT_APP_SQUARE_APP_ID || 'sq0idp-jUCxKnO_i8i7vccQjVj_0g';
 const SQUARE_LOCATION_ID =
-  process.env.REACT_APP_SQUARE_LOCATION_ID || 'LCW4GM814GWXK';
+  process.env.REACT_APP_SQUARE_LOCATION_ID || 'L26Q50FWRCQW5';
 
 interface Player {
   _id?: string;
@@ -587,12 +587,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                           <CreditCard />
                         </PaymentForm>
                       )}
-                      {isProcessing && (
-                        <div className='splash-screen'>
-                          <div className='basketball-animation'>🏀</div>
-                          <p>Processing payment...</p>
-                        </div>
-                      )}
+                      {isProcessing && <SplashScreen />}
                     </div>
                   </div>
                 </div>
@@ -911,10 +906,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                         )}
                       </div>
                       {isProcessing ? (
-                        <div className='splash-screen'>
-                          <div className='basketball-animation'>🏀</div>
-                          <p>Processing payment...</p>
-                        </div>
+                        <SplashScreen />
                       ) : (
                         <PaymentForm
                           applicationId={SQUARE_APP_ID}
