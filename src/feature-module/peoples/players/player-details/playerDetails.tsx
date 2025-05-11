@@ -17,11 +17,18 @@ const DEFAULT_AVATAR =
   'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
 const PlayerDetails = () => {
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
   const player = location.state?.player;
-  const guardians = location.state?.guardians;
+  const guardians =
+    location.state?.guardians ||
+    location.state?.sharedData?.familyGuardians ||
+    [];
   const siblings = location.state?.siblings || [];
+  const sharedData = location.state?.sharedData || {
+    familyGuardians: guardians,
+    familyAddress: guardians.find((g: Guardian) => g.isPrimary)?.address,
+  };
 
   const [token, setToken] = useState<string | null>(null);
   const [avatarSrc, setAvatarSrc] = useState(DEFAULT_AVATAR);
@@ -42,8 +49,10 @@ const PlayerDetails = () => {
           state: string;
           zip: string;
         }
+      | undefined
+      | null
   ): string => {
-    if (!address) return '';
+    if (!address) return 'N/A';
     if (typeof address === 'string') return address;
 
     const parts = [
@@ -131,7 +140,12 @@ const PlayerDetails = () => {
   );
 
   const filteredGuardians = uniqueGuardians.filter(
-    (g) => g.id !== primaryParent?.id
+    (g) =>
+      !(
+        primaryParent &&
+        g.fullName === primaryParent.fullName &&
+        g.phone === primaryParent.phone
+      )
   );
 
   return (
@@ -147,6 +161,7 @@ const PlayerDetails = () => {
             token={token}
             primaryParent={primaryParent}
             siblings={siblings}
+            sharedData={sharedData}
           />
           <div className='col-xxl-9 col-xl-8'>
             <div className='row'>

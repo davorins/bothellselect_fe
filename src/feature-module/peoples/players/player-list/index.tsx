@@ -39,6 +39,7 @@ const PlayerList = () => {
     dateRange: null,
     seasonParam,
     yearParam,
+    schoolFilter: null,
   });
   const [sortOrder, setSortOrder] = useState<
     'asc' | 'desc' | 'recentlyViewed' | 'recentlyAdded' | null
@@ -58,6 +59,7 @@ const PlayerList = () => {
       dateRange: null,
       seasonParam,
       yearParam,
+      schoolFilter: null,
     });
   };
 

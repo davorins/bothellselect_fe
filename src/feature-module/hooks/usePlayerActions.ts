@@ -8,20 +8,24 @@ export const usePlayerActions = () => {
   const { fetchGuardians } = useAuth();
   const routes = all_routes;
 
-  const handlePlayerClick = async (player: any) => {
+  const handlePlayerClick = async (
+    player: any,
+    existingGuardians?: any[],
+    existingSiblings?: any[]
+  ) => {
     try {
       if (typeof player === 'string') {
         navigate(`${routes.playerDetail}/${player}`);
         return;
       }
 
-      const guardians = await fetchGuardians(player.id);
+      // Only fetch guardians if they're not provided
+      const guardians = existingGuardians || (await fetchGuardians(player.id));
       const avatarUrl = optimizeCloudinaryUrl(
         player.avatar || player.imgSrc,
         'player'
       );
 
-      // Create playerData without modifying the dob
       const playerData = {
         ...player,
         playerId: player.id,
@@ -47,7 +51,7 @@ export const usePlayerActions = () => {
       navigate(`${routes.playerDetail}/${player.id}`, {
         state: {
           player: playerData,
-          siblings: player.siblings,
+          siblings: existingSiblings || player.siblings || [],
           guardians,
           key: Date.now(),
           timestamp: Date.now(),

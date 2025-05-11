@@ -14,6 +14,18 @@ interface ExtendedTableRecord extends TableRecord {
   isCoach?: boolean;
 }
 
+const getParentStatus = (parent: Parent | Guardian): 'Active' | 'Inactive' => {
+  // For coaches, always consider active
+  if (parent.isCoach) return 'Active';
+
+  // Check if parent has any active players
+  const hasActivePlayers = parent.players?.some(
+    (player) => player.registrationComplete && player.paymentComplete
+  );
+
+  return hasActivePlayers ? 'Active' : 'Inactive';
+};
+
 export const transformParentData = (
   parents: Parent[],
   guardians: Guardian[],
@@ -35,8 +47,8 @@ export const transformParentData = (
         phone: currentUser.phone,
         address: currentUser.address,
         role: currentUser.role,
-        type: 'parent', // Explicit type
-        status: 'Active',
+        type: 'parent',
+        status: getParentStatus(currentUser),
         DateofJoin: getSafeDate(currentUser.createdAt),
         imgSrc: currentUser.avatar || '',
         aauNumber: currentUser.aauNumber || 'N/A',
@@ -59,8 +71,8 @@ export const transformParentData = (
       phone: parent.phone,
       address: parent.address,
       role: parent.role,
-      type: parent.isCoach ? 'coach' : 'parent', // Explicit type
-      status: 'Active',
+      type: parent.isCoach ? 'coach' : 'parent',
+      status: getParentStatus(parent),
       DateofJoin: getSafeDate(parent.createdAt),
       imgSrc: parent.avatar || '',
       aauNumber: parent.aauNumber || 'N/A',
@@ -77,6 +89,7 @@ export const transformParentData = (
     )
     .flatMap((guardian) => {
       const guardianId = guardian._id || guardian.id || '';
+      const guardianStatus = getParentStatus(guardian);
 
       const mainGuardian: ExtendedTableRecord = {
         _id: guardianId,
@@ -85,8 +98,8 @@ export const transformParentData = (
         phone: guardian.phone,
         address: guardian.address,
         role: 'guardian',
-        type: 'guardian', // Explicit type
-        status: 'Active',
+        type: 'guardian',
+        status: guardianStatus,
         DateofJoin: getSafeDate(guardian.createdAt as string | undefined),
         imgSrc: '',
         aauNumber: guardian.aauNumber || 'N/A',
@@ -109,8 +122,8 @@ export const transformParentData = (
           phone: g.phone,
           address: g.address,
           role: 'guardian',
-          type: 'guardian', // Explicit type
-          status: 'Active',
+          type: 'guardian',
+          status: getParentStatus(g),
           DateofJoin: getSafeDate(g.createdAt as string | undefined),
           imgSrc: '',
           aauNumber: g.aauNumber || 'N/A',
@@ -188,7 +201,10 @@ export const filterParentData = (
     }
 
     // Status filter
-    if (filters.statusFilter && item.status !== filters.statusFilter) {
+    if (
+      filters.statusFilter &&
+      item.status?.toLowerCase() !== filters.statusFilter.toLowerCase()
+    ) {
       return false;
     }
 

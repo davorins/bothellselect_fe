@@ -168,9 +168,13 @@ const ParentGrid = () => {
                       ? 'Coach'
                       : 'Parent'}
                     <div className='d-flex align-items-center'>
-                      <span className='badge badge-soft-success d-inline-flex align-items-center me-1'>
+                      <span
+                        className={`badge badge-soft-${
+                          parent.status === 'Active' ? 'success' : 'danger'
+                        } d-inline-flex align-items-center me-1`}
+                      >
                         <i className='ti ti-circle-filled fs-5 me-1' />
-                        {parent.status || 'Active'}
+                        {parent.status}
                       </span>
                       <div className='dropdown'>
                         <Link

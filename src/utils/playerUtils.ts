@@ -1,4 +1,8 @@
-import { PlayerTableData, PlayerFilterParams } from '../types/playerTypes';
+import {
+  PlayerTableData,
+  PlayerFilterParams,
+  Player,
+} from '../types/playerTypes';
 import moment from 'moment';
 
 type PlayerSortOrder =
@@ -31,6 +35,62 @@ export const calculateAge = (dob: string): number => {
   return age;
 };
 
+// Add this new function for converting PlayerTableData to Player
+export const convertToPlayer = (playerData: PlayerTableData): Player => {
+  // First convert the siblings recursively
+  const convertedSiblings =
+    playerData.siblings?.map((sibling) => ({
+      id: sibling.id,
+      _id: sibling.id,
+      fullName: sibling.name,
+      name: sibling.name,
+      gender: sibling.gender,
+      dob: sibling.dob,
+      age: sibling.age,
+      section: sibling.section,
+      class: sibling.class,
+      grade: sibling.class.replace(/\D/g, '') || '0',
+      status: sibling.status,
+      DateofJoin: sibling.DateofJoin,
+      createdAt: sibling.DateofJoin,
+      healthConcerns: sibling.healthConcerns,
+      aauNumber: sibling.aauNumber,
+      schoolName: sibling.section,
+      avatar: sibling.imgSrc,
+      imgSrc: sibling.imgSrc,
+      // For siblings of siblings, we can leave them empty or convert them if needed
+      siblings: [],
+      guardians: sibling.guardians || [],
+      season: sibling.season,
+      registrationYear: sibling.registrationYear,
+    })) || [];
+
+  return {
+    id: playerData.id,
+    _id: playerData.id,
+    fullName: playerData.name,
+    name: playerData.name,
+    gender: playerData.gender,
+    dob: playerData.dob,
+    age: playerData.age,
+    section: playerData.section,
+    class: playerData.class,
+    grade: playerData.class.replace(/\D/g, '') || '0',
+    status: playerData.status,
+    DateofJoin: playerData.DateofJoin,
+    createdAt: playerData.DateofJoin,
+    healthConcerns: playerData.healthConcerns,
+    aauNumber: playerData.aauNumber,
+    schoolName: playerData.section,
+    avatar: playerData.imgSrc,
+    imgSrc: playerData.imgSrc,
+    siblings: convertedSiblings,
+    guardians: playerData.guardians || [],
+    season: playerData.season,
+    registrationYear: playerData.registrationYear,
+  };
+};
+
 export const transformPlayerData = (
   players: any[],
   parent: any
@@ -46,36 +106,44 @@ export const transformPlayerData = (
         : 'https://bothell-select.onrender.com/uploads/avatars/boy.png';
     };
 
-    // Use imgSrc if provided by backend, otherwise fall back to avatar or default
     const avatarUrl =
       player.imgSrc || player.avatar || getDefaultAvatar(player.gender);
     const timestamp = Date.now();
+
+    const status =
+      player.registrationComplete && player.paymentComplete
+        ? 'Active'
+        : 'Inactive';
 
     const siblings = players
       .filter((sib) => siblingIds.includes(sib._id) && sib._id !== player._id)
       .map((sib) => ({
         id: sib._id,
         key: sib._id,
-        name: sib.fullName,
+        name: sib.fullName || sib.name,
         gender: sib.gender,
         dob: sib.dob,
         age: calculateAge(sib.dob),
-        section: sib.schoolName || 'No School',
+        section: sib.schoolName || sib.section || 'No School',
         class: formatGrade(Number(sib.grade)) || 'No Grade',
         aauNumber: sib.aauNumber || 'No AAU Number',
         healthConcerns: sib.healthConcerns || 'No Medical History',
-        status: 'Active',
+        status:
+          sib.registrationComplete && sib.paymentComplete
+            ? 'Active'
+            : 'Inactive',
         DateofJoin: sib.createdAt,
         imgSrc: sib.imgSrc || sib.avatar || getDefaultAvatar(sib.gender),
         siblings: [],
         season: sib.season,
         registrationYear: sib.registrationYear,
+        guardians: sib.guardians || [],
       }));
 
     return {
       id: player._id,
       key: player._id,
-      name: player.fullName,
+      name: player.fullName || player.name,
       gender: player.gender,
       dob: player.dob,
       age: calculateAge(player.dob),
@@ -83,16 +151,18 @@ export const transformPlayerData = (
       class: formatGrade(Number(player.grade)) || 'No Grade',
       aauNumber: player.aauNumber || 'No AAU Number',
       healthConcerns: player.healthConcerns || 'No Medical History',
-      status: 'Active',
+      status, // Use the calculated status here
       DateofJoin: player.createdAt,
-      // Use the avatar URL with cache busting if it's a Cloudinary URL
       imgSrc: avatarUrl.includes('res.cloudinary.com')
         ? `${avatarUrl}${avatarUrl.includes('?') ? '&' : '?'}ts=${timestamp}`
         : avatarUrl,
-      avatar: player.avatar, // Keep original avatar URL
+      avatar: player.avatar,
       siblings,
       season: player.season,
       registrationYear: player.registrationYear,
+      guardians: player.guardians || [],
+      registrationComplete: player.registrationComplete,
+      paymentComplete: player.paymentComplete,
     };
   });
 };
@@ -112,6 +182,7 @@ export const filterPlayerData = (
       dateRange,
       seasonParam,
       yearParam,
+      schoolFilter,
     } = filters;
 
     // Season filter
@@ -148,7 +219,18 @@ export const filterPlayerData = (
     }
 
     // Status filter
-    if (statusFilter && player.status !== statusFilter) {
+    if (
+      statusFilter &&
+      player.status?.toLowerCase() !== statusFilter.toLowerCase()
+    ) {
+      return false;
+    }
+
+    // School filter
+    if (
+      schoolFilter &&
+      !player.section.toLowerCase().includes(schoolFilter.toLowerCase())
+    ) {
       return false;
     }
 

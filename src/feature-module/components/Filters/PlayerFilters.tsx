@@ -53,25 +53,6 @@ export const PlayerFilters: React.FC<PlayerFiltersProps> = ({
           </div>
           <div className='col-md-6'>
             <div className='mb-3'>
-              <label className='form-label'>Grade</label>
-              <select
-                className='form-select'
-                value={gradeFilter || ''}
-                onChange={(e) =>
-                  onFilterChange({ gradeFilter: e.target.value || null })
-                }
-              >
-                <option value=''>All Grades</option>
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((grade) => (
-                  <option key={grade} value={formatGrade(grade)}>
-                    {formatGrade(grade)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className='col-md-6'>
-            <div className='mb-3'>
               <label className='form-label'>Age</label>
               <select
                 className='form-select'
@@ -86,6 +67,39 @@ export const PlayerFilters: React.FC<PlayerFiltersProps> = ({
                 {Array.from({ length: 18 }, (_, i) => i + 5).map((age) => (
                   <option key={age} value={age}>
                     {age}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className='col-md-12'>
+            <div className='mb-3'>
+              <label className='form-label'>School</label>
+              <input
+                type='text'
+                className='form-control'
+                value={filters.schoolFilter || ''}
+                onChange={(e) =>
+                  onFilterChange({ schoolFilter: e.target.value || null })
+                }
+                placeholder='Search by school'
+              />
+            </div>
+          </div>
+          <div className='col-md-6'>
+            <div className='mb-3'>
+              <label className='form-label'>Grade</label>
+              <select
+                className='form-select'
+                value={gradeFilter || ''}
+                onChange={(e) =>
+                  onFilterChange({ gradeFilter: e.target.value || null })
+                }
+              >
+                <option value=''>All Grades</option>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((grade) => (
+                  <option key={grade} value={formatGrade(grade)}>
+                    {formatGrade(grade)}
                   </option>
                 ))}
               </select>

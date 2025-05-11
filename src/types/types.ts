@@ -1,21 +1,29 @@
 // types.ts
 export interface SearchResult {
   id: string;
-  type: 'player' | 'school' | 'parent' | 'guardian' | 'coach';
+  type: 'player' | 'parent' | 'guardian' | 'coach' | 'school';
   name: string;
+  email?: string;
   gender?: string;
   grade?: string;
   dob?: string;
   aauNumber?: string;
-  email?: string;
-  phone?: string;
-  address?: string | Address;
+  status?: string;
+  season?: string;
+  registrationYear?: number | null;
   image?: string;
   additionalInfo?: string;
-  createdAt: string;
-  season?: string;
-  registrationYear?: number;
-  status?: string;
+  createdAt?: Date;
+  isPaymentMatch?: boolean;
+  paymentDetails?: {
+    cardBrand: string;
+    cardLastFour: string;
+    amount?: number;
+    date?: string;
+    receiptUrl?: string;
+  };
+  phone?: string;
+  address?: any;
 }
 
 export interface Address {
@@ -118,6 +126,7 @@ export interface Player {
   __v: number;
   paymentComplete?: boolean;
   avatar: string;
+  registrationComplete?: boolean;
 }
 
 export interface ParentTableData {

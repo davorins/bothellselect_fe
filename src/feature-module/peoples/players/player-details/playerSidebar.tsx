@@ -5,60 +5,37 @@ import { useAuth } from '../../../../context/AuthContext';
 import { formatDate } from '../../../../utils/dateFormatter';
 import { isPlayerActive } from '../../../../utils/season';
 import { formatPhoneNumber } from '../../../../utils/phone';
-
-export interface GuardianData {
-  id: string;
-  fullName: string;
-  phone?: string;
-  email?: string;
-  address: string;
-  relationship: string;
-  avatar?: string;
-  isPrimary?: boolean;
-}
-
-interface PlayerData {
-  id: string;
-  _id?: string;
-  key?: string;
-  name?: string;
-  fullName?: string;
-  gender?: string;
-  dob?: string | Date;
-  age?: number;
-  section?: string;
-  class?: string;
-  grade?: string | number;
-  status?: string;
-  DateofJoin?: string | Date;
-  createdAt?: string | Date;
-  avatar?: string;
-  aauNumber?: string;
-  siblings?: PlayerData[];
-  guardians?: GuardianData[];
-  parentId?: string;
-  phone?: string;
-  email?: string;
-  schoolName?: string;
-  season?: string;
-  registrationYear?: number;
-  playerStatus?: string;
-}
+import { Player, Guardian } from '../../../../types/playerTypes';
 
 interface PlayerSidebarProps {
-  player: PlayerData;
-  guardians: GuardianData[];
-  token: string | null;
-  primaryParent: GuardianData | null;
-  siblings: PlayerData[];
+  player: Player;
+  guardians: Guardian[];
+  token?: string | null;
+  primaryParent: Guardian | null;
+  siblings: Player[];
+  sharedData?: {
+    familyGuardians: Guardian[];
+    familyAddress?:
+      | string
+      | {
+          street: string;
+          street2?: string;
+          city: string;
+          state: string;
+          zip: string;
+        };
+  };
 }
 
 const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
   player,
   guardians,
-  token,
   primaryParent,
   siblings,
+  sharedData = {
+    familyGuardians: guardians,
+    familyAddress: primaryParent?.address,
+  },
 }) => {
   const { user } = useAuth();
 
@@ -112,7 +89,7 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
     } Grade`;
   };
 
-  const getPlayerStatus = (playerData: PlayerData): 'Active' | 'Inactive' => {
+  const getPlayerStatus = (playerData: Player): 'Active' | 'Inactive' => {
     const { fullName, season, registrationYear, status } = playerData;
 
     console.log('Calculating status for player:', {
@@ -155,6 +132,19 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
     registrationYear: player.registrationYear,
     finalStatus: playerStatus,
   });
+
+  const getDisplayParent = () => {
+    // If primary parent is provided and has data, use it
+    if (primaryParent && (primaryParent.phone || primaryParent.email)) {
+      return primaryParent;
+    }
+
+    // Otherwise try to find a guardian with contact info
+    const guardianWithContact = guardians.find((g) => g.phone || g.email);
+    return guardianWithContact || null;
+  };
+
+  const displayParent = getDisplayParent();
 
   return (
     <div className='col-xxl-3 col-xl-4 theiaStickySidebar'>
@@ -259,24 +249,56 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
         <div className='card border-white'>
           <div className='card-body'>
             <h5 className='mb-3'>Primary Contact Info</h5>
-            <div className='d-flex align-items-center mb-3'>
-              <span className='avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default'>
-                <i className='ti ti-phone' />
-              </span>
-              <div>
-                <span className='text-dark fw-medium mb-1'>Phone Number</span>
-                <p>{user?.phone ? formatPhoneNumber(user.phone) : 'N/A'}</p>
-              </div>
-            </div>
-            <div className='d-flex align-items-center mb-3'>
-              <span className='avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default'>
-                <i className='ti ti-mail' />
-              </span>
-              <div>
-                <span className='text-dark fw-medium mb-1'>Email Address</span>
-                <p>{user?.email ?? 'N/A'}</p>
-              </div>
-            </div>
+            {displayParent ? (
+              <>
+                <div className='d-flex align-items-center mb-3'>
+                  <span className='avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default'>
+                    <i className='ti ti-phone' />
+                  </span>
+                  <div>
+                    <span className='text-dark fw-medium mb-1'>
+                      Phone Number
+                    </span>
+                    <p>
+                      {/* Try multiple possible phone fields */}
+                      {displayParent.phone
+                        ? formatPhoneNumber(displayParent.phone)
+                        : displayParent.phone
+                        ? formatPhoneNumber(displayParent.phone)
+                        : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className='d-flex align-items-center mb-3'>
+                  <span className='avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default'>
+                    <i className='ti ti-mail' />
+                  </span>
+                  <div>
+                    <span className='text-dark fw-medium mb-1'>
+                      Email Address
+                    </span>
+                    <p>{displayParent.email || 'N/A'}</p>
+                  </div>
+                </div>
+
+                {displayParent.relationship && (
+                  <div className='d-flex align-items-center mb-3'>
+                    <span className='avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default'>
+                      <i className='ti ti-users' />
+                    </span>
+                    <div>
+                      <span className='text-dark fw-medium mb-1'>
+                        Relationship
+                      </span>
+                      <p>{displayParent.relationship}</p>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className='text-muted'>No contact information available</p>
+            )}
             <hr className='my-3' />
           </div>
         </div>
@@ -346,7 +368,7 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                                       (s) => (s.id || s._id) !== siblingId
                                     )
                                     .concat([player]),
-                                  guardians,
+                                  sharedData: sharedData,
                                 }}
                                 className='text-dark mb-0'
                               >
@@ -356,6 +378,7 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                                     'Sibling'}
                                 </h5>
                               </Link>
+
                               <p>
                                 {formatGrade(sibling.grade || sibling.class)}
                               </p>

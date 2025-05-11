@@ -1,25 +1,32 @@
 import { Moment } from 'moment';
 
 export interface Player {
-  _id: string;
-  id?: string;
+  id: string;
+  _id?: string; // For MongoDB compatibility
   fullName: string;
-  name?: string;
+  name?: string; // Alias for fullName
   gender?: string;
-  dob?: string;
-  grade?: string;
+  dob?: string | Date;
+  age?: number;
+  section?: string;
   class?: string;
+  grade?: string | number;
   schoolName?: string;
+  healthConcerns?: string;
   aauNumber?: string;
   status?: string;
+  playerStatus?: string;
   season?: string;
   registrationYear?: number;
-  playerStatus?: string;
-  DateofJoin?: string;
-  createdAt?: string;
+  DateofJoin?: string | Date;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
   avatar?: string;
+  imgSrc?: string;
   parentId?: string;
-  healthConcerns?: string;
+  siblings?: Player[];
+  guardians?: Guardian[];
+  paymentComplete?: boolean;
 }
 
 export interface Guardian {
@@ -28,14 +35,24 @@ export interface Guardian {
   fullName: string;
   phone: string;
   email?: string;
-  address: any;
+  address:
+    | string
+    | {
+        street: string;
+        street2?: string;
+        city: string;
+        state: string;
+        zip: string;
+      };
   relationship: string;
   avatar?: string;
-  aauNumber: string;
+  aauNumber?: string;
   isPrimary?: boolean;
+  isCoach?: boolean;
   additionalGuardians?: Guardian[];
+  createdAt?: string;
+  updatedAt?: string;
 }
-
 export interface PlayerSidebarProps {
   player: Player;
   guardians: Guardian[];
@@ -79,7 +96,8 @@ export interface PlayerFilterParams {
   dateRange: [Moment, Moment] | null;
   seasonParam: string | null;
   yearParam: string | null;
-  paymentStatusFilter?: 'paid' | 'pending' | 'failed'; // New filter
+  paymentStatusFilter?: 'paid' | 'pending' | 'failed';
+  schoolFilter: string | null;
 }
 
 // ==================== Enhanced Player Data ====================
@@ -101,6 +119,7 @@ export interface PlayerTableData {
   guardians?: GuardianData[];
   season?: string;
   registrationYear?: number;
+  parentId?: string;
 
   // New payment fields (all optional for backward compatibility)
   paymentInfo?: {

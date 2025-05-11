@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { all_routes } from '../../../feature-module/router/all_routes';
 import { useAuth } from '../../../context/AuthContext';
 import { SearchResult } from '../../../types/types';
+import { formatPhoneNumber } from '../../../utils/phone';
 
 const DEFAULT_PARENT_AVATAR =
   'https://bothell-select.onrender.com/uploads/avatars/parents.png';
@@ -179,7 +180,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
         result.name
       )}`;
       navigate(schoolPath, {
-        state: { searchFilter: result.name },
+        state: { searchFilter: result.name, schoolFilter: result.name },
       });
     },
     [navigate, routes.playerList]
@@ -195,21 +196,46 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
           case 'player':
             await handlePlayerNavigation(result);
             break;
+
           case 'parent':
+          case 'guardian':
+          case 'coach':
             navigate(`${routes.parentDetail}/${result.id}`, {
               state: {
                 parent: {
                   _id: result.id,
                   fullName: result.name,
+                  email: result.email,
+                  phone: result.phone,
+                  address: result.address,
+                  isCoach: result.type === 'coach',
+                  ...(result.isPaymentMatch &&
+                    result.paymentDetails && {
+                      paymentInfo: {
+                        cardBrand: result.paymentDetails.cardBrand,
+                        cardLastFour: result.paymentDetails.cardLastFour,
+                        ...(result.paymentDetails.amount && {
+                          amount: result.paymentDetails.amount,
+                        }),
+                        ...(result.paymentDetails.date && {
+                          date: result.paymentDetails.date,
+                        }),
+                        ...(result.paymentDetails.receiptUrl && {
+                          receiptUrl: result.paymentDetails.receiptUrl,
+                        }),
+                      },
+                    }),
                 },
                 key: Date.now(),
               },
               replace: true,
             });
             break;
+
           case 'school':
             await handleSchoolNavigation(result);
             break;
+
           default:
             console.warn('Unhandled search result type:', result.type);
         }
@@ -248,7 +274,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
               key={`${result.type}-${result.id}`}
               className={`search-result-item cursor-pointer ${
                 result.type === 'parent' ? 'parent-result' : ''
-              }`}
+              } ${result.isPaymentMatch ? 'payment-match' : ''}`}
               onClick={() => handleResultClick(result)}
             >
               <div className='d-flex align-items-center'>
@@ -281,9 +307,19 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
                     {result.type === 'parent' && (
                       <span className='badge bg-info ms-2'>Parent</span>
                     )}
+                    {result.isPaymentMatch && (
+                      <span className='badge bg-warning ms-2'>
+                        Payment Match
+                      </span>
+                    )}
                   </h6>
                   {result.email && (
                     <small className='text-muted'>{result.email}</small>
+                  )}
+                  {result.phone && (
+                    <small className='text-muted d-block'>
+                      {formatPhoneNumber(result.phone)}
+                    </small>
                   )}
                   {result.additionalInfo && (
                     <small className='d-block'>{result.additionalInfo}</small>
@@ -316,7 +352,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
             <div className='searchinputs' id='dropdownMenuClickable'>
               <input
                 type='text'
-                placeholder='Search players, parents, schools...'
+                placeholder='Search players, parents, schools, phone, or last 4 of card...'
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onFocus={() => searchTerm && setShowResults(true)}

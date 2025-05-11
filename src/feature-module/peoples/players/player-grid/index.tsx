@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { all_routes } from '../../../router/all_routes';
-import ImageWithBasePath from '../../../../core/common/imageWithBasePath';
 import PredefinedDateRanges from '../../../../core/common/datePicker';
 import { useAuth } from '../../../../context/AuthContext';
 import { usePlayerData } from '../../../hooks/usePlayerData';
@@ -9,12 +8,19 @@ import { usePlayerActions } from '../../../hooks/usePlayerActions';
 import {
   filterPlayerData,
   sortPlayerData,
+  convertToPlayer,
 } from '../../../../utils/playerUtils';
-import { PlayerFilterParams } from '../../../../types/playerTypes';
+import {
+  PlayerFilterParams,
+  PlayerTableData,
+} from '../../../../types/playerTypes';
+import { Player } from '../../../../types/types';
 import { PlayerListHeader } from '../../../components/Headers/PlayerListHeader';
 import { PlayerFilters } from '../../../components/Filters/PlayerFilters';
 import { PlayerSortOptions } from '../../../components/Filters/PlayerSortOptions';
 import { Moment } from 'moment';
+
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const PlayerGrid = () => {
   const routes = all_routes;
@@ -22,7 +28,7 @@ const PlayerGrid = () => {
   const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
   const { parent } = useAuth();
 
-  // Filter states - moved to the top of the component
+  // Filter states
   const [filters, setFilters] = useState<PlayerFilterParams>({
     nameFilter: '',
     genderFilter: null,
@@ -32,9 +38,9 @@ const PlayerGrid = () => {
     dateRange: null,
     seasonParam: null,
     yearParam: null,
+    schoolFilter: null,
   });
 
-  // Get season and year from filters
   const seasonParam = filters.seasonParam || null;
   const yearParam = filters.yearParam || null;
   const { loading, error, playerData } = usePlayerData(seasonParam, yearParam);
@@ -63,6 +69,7 @@ const PlayerGrid = () => {
       dateRange: null,
       seasonParam: null,
       yearParam: null,
+      schoolFilter: null,
     });
   };
 
@@ -81,6 +88,11 @@ const PlayerGrid = () => {
     0,
     currentPage * playersPerPage
   );
+
+  const handlePlayerView = (player: PlayerTableData) => {
+    const playerForNavigation = convertToPlayer(player);
+    handlePlayerClick(playerForNavigation);
+  };
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -167,9 +179,13 @@ const PlayerGrid = () => {
                   <div className='card-header d-flex align-items-center justify-content-between'>
                     AAU Number: {player.aauNumber || 'No AAU Number'}
                     <div className='d-flex align-items-center'>
-                      <span className='badge badge-soft-success d-inline-flex align-items-center me-1'>
+                      <span
+                        className={`badge badge-soft-${
+                          player.status === 'Active' ? 'success' : 'danger'
+                        } d-inline-flex align-items-center me-1`}
+                      >
                         <i className='ti ti-circle-filled fs-5 me-1' />
-                        Active
+                        {player.status}
                       </span>
                       <div className='dropdown'>
                         <Link
@@ -183,7 +199,7 @@ const PlayerGrid = () => {
                         <ul className='dropdown-menu dropdown-menu-right p-3'>
                           <div
                             className='dropdown-item rounded-1 cursor-pointer'
-                            onClick={() => handlePlayerClick(player)}
+                            onClick={() => handlePlayerView(player)}
                           >
                             <i className='ti ti-menu me-2' />
                             View
@@ -213,16 +229,32 @@ const PlayerGrid = () => {
                     <div className='bg-light-300 rounded-2 p-3 mb-3'>
                       <div className='d-flex align-items-center'>
                         <div
-                          onClick={() => handlePlayerClick(player.id)}
+                          onClick={() => handlePlayerView(player)}
                           className='avatar avatar-lg flex-shrink-0 cursor-pointer'
                         >
-                          <ImageWithBasePath src={player.imgSrc} />
+                          <img
+                            src={
+                              player.imgSrc && player.imgSrc.trim() !== ''
+                                ? player.imgSrc.startsWith('http')
+                                  ? player.imgSrc
+                                  : `${API_BASE_URL}${player.imgSrc}`
+                                : player.gender === 'Female'
+                                ? 'https://bothell-select.onrender.com/uploads/avatars/girl.png'
+                                : 'https://bothell-select.onrender.com/uploads/avatars/boy.png'
+                            }
+                            className='img-fluid rounded-circle'
+                            alt={
+                              player.name
+                                ? `${player.name}'s profile picture`
+                                : 'Guardian profile picture'
+                            }
+                          />
                         </div>
                         <div className='ms-2'>
                           <h5 className='mb-0'>
                             <Link
                               to={routes.playerDetail}
-                              onClick={() => handlePlayerClick(player.id)}
+                              onClick={() => handlePlayerView(player)}
                             >
                               {player.name}
                             </Link>
