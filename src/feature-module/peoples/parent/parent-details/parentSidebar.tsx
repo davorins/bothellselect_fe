@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { formatDate } from '../../../../utils/dateFormatter';
 import axios from 'axios';
 import { isPlayerActive } from '../../../../utils/season';
+import { useAuth } from '../../../../context/AuthContext';
 import { formatPhoneNumber } from '../../../../utils/phone';
 
 interface ParentData {
@@ -21,6 +22,15 @@ interface ParentData {
   registrationYear?: number;
 }
 
+interface PaymentData {
+  _id: string;
+  amount: number;
+  createdAt: string;
+  cardBrand?: string;
+  cardLastFour?: string;
+  receiptUrl?: string;
+}
+
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 const DEFAULT_AVATAR =
   'https://bothell-select.onrender.com/uploads/avatars/parents.png';
@@ -31,6 +41,8 @@ interface ParentSidebarProps {
 
 const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
   const [avatarSrc, setAvatarSrc] = useState<string>(DEFAULT_AVATAR);
+  const [payments, setPayments] = useState<PaymentData[]>([]);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchAvatarUrlFromBackend = async () => {
@@ -50,8 +62,6 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
 
         if (avatarUrl && avatarUrl.startsWith('http')) {
           setAvatarSrc(avatarUrl);
-        } else if (avatarUrl) {
-          setAvatarSrc(`https://bothell-select.onrender.com${avatarUrl}`);
         } else {
           setAvatarSrc(DEFAULT_AVATAR);
         }
@@ -64,12 +74,37 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
     fetchAvatarUrlFromBackend();
   }, [parent._id]);
 
+  useEffect(() => {
+    const fetchPayments = async () => {
+      const token = localStorage.getItem('token');
+      const parentId = parent._id;
+
+      if (!token || !parentId) return;
+
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/payments/parent/${parentId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        setPayments(res.data || []);
+      } catch (err) {
+        console.error('Failed to fetch payments:', err);
+      }
+    };
+
+    fetchPayments();
+  }, [parent._id]);
+
   if (!parent) {
     return <div>No parent data found.</div>;
   }
 
   const getDisplayName = () => parent.fullName || parent.name || 'N/A';
-  const getJoinDate = () => parent.DateofJoin || parent.createdAt;
 
   const formatAddress = (address: any): string => {
     if (!address) return 'N/A';
@@ -103,10 +138,6 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
                   src={avatarSrc}
                   className='img-fluid'
                   alt={`${getDisplayName()} avatar`}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = DEFAULT_AVATAR;
-                  }}
                 />
               </div>
               <div className='overflow-hidden'>
@@ -125,10 +156,6 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
                   {getParentStatus(parent)}
                 </span>
                 <h5 className='mb-1 text-truncate'>{getDisplayName()}</h5>
-                <p className='mb-1'>
-                  Member since:{' '}
-                  {getJoinDate() ? formatDate(getJoinDate()) : 'N/A'}
-                </p>
               </div>
             </div>
           </div>

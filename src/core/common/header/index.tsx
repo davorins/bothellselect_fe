@@ -229,7 +229,7 @@ const Header = () => {
 
           <div className='d-flex align-items-center'>
             {parent?.role === 'admin' && renderSeasonDropdown()}
-            <NotificationDropdown />
+            <NotificationDropdown avatarSrc={avatarSrc || DEFAULT_AVATAR} />
             <FullscreenToggle />
             {renderUserDropdown()}
           </div>

@@ -9,6 +9,7 @@ import {
   setMobileSidebar,
 } from '../../core/data/redux/sidebarSlice';
 import axios from 'axios';
+import NotificationDropdown from '../../core/common/header/NotificationDropdown';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 const DEFAULT_AVATAR =
@@ -152,9 +153,9 @@ const Header = () => {
             </li>
           </ul>
         </div>
-
         {/* User Auth / Profile (always visible in desktop) */}
         <div className='d-none d-md-flex align-items-center'>
+          <NotificationDropdown avatarSrc={avatarSrc || DEFAULT_AVATAR} />
           {isAuthenticated && parent ? (
             <div className='dropdown ms-2'>
               <Link

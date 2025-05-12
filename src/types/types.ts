@@ -60,6 +60,9 @@ export interface Parent {
   isGuardian?: boolean;
   avatar?: string;
   paymentComplete?: boolean;
+  dismissedNotifications: string[];
+  playersSeason: string[];
+  playersYear: number[];
 }
 
 export interface Coach extends Parent {
@@ -184,6 +187,9 @@ export interface DecodedToken {
   isCoach?: boolean;
   aauNumber?: string;
   additionalGuardians?: Guardian[];
+  dismissedNotifications: string[];
+  playersSeason: string[];
+  playersYear: number[];
 }
 
 export interface FormData {
@@ -263,6 +269,7 @@ export interface AuthContextType {
   setParentData: (fetchedParent: Parent | any) => Parent;
   currentSeason: string;
   currentYear: number;
+  getAuthToken: () => Promise<string | null>;
 }
 
 export interface TableRecord {
@@ -455,9 +462,18 @@ export interface Payment {
 
 export interface Notification {
   _id: string;
-  user: string;
+  user:
+    | string
+    | {
+        _id: string;
+        fullName: string;
+        avatar?: string;
+      };
   message: string;
-  avatar?: string;
-  createdAt: string;
   read: boolean;
+  dismissedBy?: string[];
+  targetType: 'all' | 'season' | 'individual';
+  parentIds?: string[];
+  seasonName?: string;
+  createdAt: string | Date;
 }

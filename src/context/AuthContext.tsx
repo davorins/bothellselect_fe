@@ -45,6 +45,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentSeason, setCurrentSeason] = useState(getCurrentSeason());
   const [currentYear, setCurrentYear] = useState(getCurrentYear());
 
+  const getAuthToken = async () => {
+    // Return the current auth token (from localStorage, cookies, etc.)
+    return localStorage.getItem('token') || null;
+  };
+
   const searchAll = useCallback(
     async (term: string): Promise<SearchResult[]> => {
       try {
@@ -196,6 +201,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isCoach: fetchedParent.isCoach || false,
         aauNumber: fetchedParent.aauNumber || '',
         additionalGuardians: fetchedParent.additionalGuardians || [],
+        dismissedNotifications: fetchedParent.dismissedNotifications || [],
+        playersSeason: fetchedParent.string || [],
+        playersYear: fetchedParent.number || [],
       };
 
       if (isViewing) {
@@ -464,6 +472,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           isCoach: false,
           aauNumber: '',
           additionalGuardians: [],
+          dismissedNotifications: [],
+          playersSeason: [],
+          playersYear: [],
         };
 
         setParent(adminData);
@@ -500,6 +511,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               isCoach: decoded.isCoach || false,
               aauNumber: decoded.aauNumber || '',
               additionalGuardians: decoded.additionalGuardians || [],
+              dismissedNotifications: decoded.dismissedNotifications || [],
+              playersSeason: decoded.playersSeason || [],
+              playersYear: decoded.playersYear || [],
             };
 
             setParent(fallbackParent);
@@ -536,6 +550,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             isCoach: decoded.isCoach || false,
             aauNumber: decoded.aauNumber || '',
             additionalGuardians: decoded.additionalGuardians || [],
+            dismissedNotifications: decoded.dismissedNotifications || [],
+            playersSeason: decoded.playersSeason || [],
+            playersYear: decoded.playersYear || [],
           };
 
           setParent(fallbackParent);
@@ -626,6 +643,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isCoach: parent.isCoach || false,
         aauNumber: parent.aauNumber || '',
         additionalGuardians: parent.additionalGuardians || [],
+        dismissedNotifications: parent.dismissedNotifications || [],
+        playersSeason: parent.string || [],
+        playersYear: parent.number || [],
       });
 
       navigate(all_routes.adminDashboard);
@@ -705,6 +725,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         additionalGuardians: data.parent.additionalGuardians || [],
         createdAt: data.parent.createdAt || new Date().toISOString(),
         updatedAt: data.parent.updatedAt || new Date().toISOString(),
+        dismissedNotifications: data.dismissedNotifications || [],
+        playersSeason: data.playersSeason || [],
+        playersYear: data.playersYear || [],
       };
       setParent(parentData);
 
@@ -913,6 +936,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setParentData,
         currentSeason,
         currentYear,
+        getAuthToken,
       }}
     >
       {children}

@@ -14,7 +14,6 @@ import {
   PlayerFilterParams,
   PlayerTableData,
 } from '../../../../types/playerTypes';
-import { Player } from '../../../../types/types';
 import { PlayerListHeader } from '../../../components/Headers/PlayerListHeader';
 import { PlayerFilters } from '../../../components/Filters/PlayerFilters';
 import { PlayerSortOptions } from '../../../components/Filters/PlayerSortOptions';
