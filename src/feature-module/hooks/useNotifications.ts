@@ -24,27 +24,26 @@ export const useNotifications = () => {
     const fetchUserNotifications = async () => {
       try {
         const token = await getAuthToken();
-        let url = `/api/notifications/user/${parentId}`;
-
-        // If the user is an admin, fetch all notifications (not just those for the specific parent)
-        if (parent?.role === 'admin') {
-          url = `/api/notifications`; // Fetch all notifications for admin
-        }
-
-        const res = await fetch(url, {
+        const res = await fetch('/api/notifications', {
           headers: {
             Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
+            Accept: 'application/json', // Explicitly request JSON
           },
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          console.log('Fetched Notifications:', data);
-          setNotifications(data);
-        } else {
-          console.error('Failed to fetch notifications, status:', res.status);
+        // Check response content type
+        const contentType = res.headers.get('content-type');
+        if (!res.ok || !contentType?.includes('application/json')) {
+          const errorText = await res.text();
+          throw new Error(
+            errorText.includes('<!doctype')
+              ? 'Server returned HTML error page'
+              : errorText || 'Failed to fetch notifications'
+          );
         }
+
+        const data = await res.json();
+        setNotifications(data);
       } catch (err) {
         console.error('Error fetching notifications:', err);
       }

@@ -43,7 +43,7 @@ const UserMultiSelect = ({
     try {
       const token = await getAuthToken();
       const res = await fetch(
-        `/api/users/search?q=${encodeURIComponent(searchTerm)}&_=${Date.now()}`,
+        `/api/users/search?q=${encodeURIComponent(searchTerm)}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -52,10 +52,15 @@ const UserMultiSelect = ({
         }
       );
 
-      if (res.ok) {
-        const data = await res.json();
-        setUsers(data);
+      // Check for HTML response
+      const text = await res.text();
+      if (text.startsWith('<!doctype') || text.startsWith('<html')) {
+        throw new Error('Server returned HTML instead of JSON');
       }
+
+      // Parse only if valid JSON
+      const data = JSON.parse(text);
+      setUsers(data);
     } catch (err) {
       console.error('User search error:', err);
     } finally {
