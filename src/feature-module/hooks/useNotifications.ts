@@ -32,7 +32,10 @@ export const useNotifications = () => {
         }
 
         const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
         });
 
         if (res.ok) {
