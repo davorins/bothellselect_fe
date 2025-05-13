@@ -24,11 +24,11 @@ export const useNotifications = () => {
     const fetchUserNotifications = async () => {
       try {
         const token = await getAuthToken();
-        let url = `/api/notifications/user/${parentId}`;
+        let url = `${process.env.REACT_APP_API_BASE_URL}/notifications/user/${parentId}`;
 
         // If the user is an admin, fetch all notifications (not just those for the specific parent)
         if (parent?.role === 'admin') {
-          url = `/api/notifications`; // Fetch all notifications for admin
+          url = `${process.env.REACT_APP_API_BASE_URL}/notifications`;
         }
 
         const res = await fetch(url, {
