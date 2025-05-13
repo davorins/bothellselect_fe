@@ -68,7 +68,10 @@ const NotificationActivities = () => {
 
   const deleteNotification = async (id: string) => {
     try {
-      const res = await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
+      const res = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL}/notifications/${id}`,
+        { method: 'DELETE' }
+      );
       if (res.ok) {
         setNotifications((prev) => prev.filter((n) => n._id !== id));
       }
@@ -79,7 +82,10 @@ const NotificationActivities = () => {
 
   const markAllAsRead = async () => {
     try {
-      await fetch('/api/notifications/read-all', { method: 'PATCH' });
+      await fetch(
+        `${process.env.REACT_APP_API_BASE_URL}/notifications/read-all`,
+        { method: 'PATCH' }
+      );
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     } catch (err) {
       console.error('Failed to mark all as read:', err);
@@ -88,7 +94,10 @@ const NotificationActivities = () => {
 
   const handleDeleteAll = async () => {
     try {
-      const res = await fetch('/api/notifications', { method: 'DELETE' });
+      const res = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL}/notifications`,
+        { method: 'DELETE' }
+      );
       if (res.ok) {
         setNotifications([]);
         setDismissedIds([]);

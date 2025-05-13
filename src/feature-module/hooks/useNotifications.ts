@@ -75,14 +75,17 @@ export const useNotifications = () => {
 
     try {
       const token = await getAuthToken();
-      const res = await fetch(`/api/notifications/dismiss/${notificationId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ userId: parentId }),
-      });
+      const res = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL}/notifications/dismiss/${notificationId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ userId: parentId }),
+        }
+      );
 
       if (!res.ok) throw new Error('Dismiss failed');
     } catch (err) {
@@ -106,11 +109,14 @@ export const useNotifications = () => {
 
   const markAsRead = async (id: string, read: boolean) => {
     try {
-      const res = await fetch(`/api/notifications/read/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ read }),
-      });
+      const res = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL}/notifications/read/${id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ read }),
+        }
+      );
 
       if (res.ok) {
         setNotifications((prev) =>

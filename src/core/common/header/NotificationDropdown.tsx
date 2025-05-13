@@ -126,12 +126,12 @@ const NotificationDropdown = ({ avatarSrc }: { avatarSrc: string }) => {
   const [processingDismissal, setProcessingDismissal] = useState<string | null>(
     null
   );
-  const { notifications } = useNotifications();
+  const { notifications, setNotifications, addNotification } =
+    useNotifications();
   const routes = all_routes;
   const [seasons, setSeasons] = useState<SeasonYear[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<SeasonYear | null>(null);
   const [loadingSeasons, setLoadingSeasons] = useState(false);
-  const { addNotification } = useNotifications();
 
   const fetchSeasons = useCallback(async () => {
     try {
@@ -145,7 +145,6 @@ const NotificationDropdown = ({ avatarSrc }: { avatarSrc: string }) => {
         },
       });
 
-      // Process seasons the same way as SeasonDropdown
       const uniqueSeasons = Array.from(
         new Set(response.data.map((s) => `${s.season}-${s.registrationYear}`))
       )
@@ -186,18 +185,25 @@ const NotificationDropdown = ({ avatarSrc }: { avatarSrc: string }) => {
       if (!token) return;
 
       if (isAdmin) {
-        await axios.delete(`/api/notifications/${notifId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await axios.delete(
+          `${process.env.REACT_APP_API_BASE_URL}/notifications/${notifId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
       } else {
         await axios.patch(
-          `/api/notifications/dismiss/${notifId}`,
+          `${process.env.REACT_APP_API_BASE_URL}/notifications/dismiss/${notifId}`,
           { userId: parent._id },
           { headers: { Authorization: `Bearer ${token}` } }
         );
       }
+
+      // Optimistically update the UI
+      setNotifications((prev) => prev.filter((n) => n._id !== notifId));
     } catch (err) {
       console.error('Failed to dismiss notification:', err);
+      // Optionally, you could revert the UI change here if the API call fails
     } finally {
       setProcessingDismissal(null);
     }
@@ -230,12 +236,18 @@ const NotificationDropdown = ({ avatarSrc }: { avatarSrc: string }) => {
         ...(targetType === 'individual' && { parentIds: selectedUsers }),
       };
 
-      const res = await axios.post('/api/notifications', payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.post(
+        `${process.env.REACT_APP_API_BASE_URL}/notifications`,
+        payload,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
+      // Optimistically update the UI with the new notification
       addNotification(res.data);
 
+      // Reset form
       setNewMessage('');
       setSelectedSeason(null);
       setSelectedUsers([]);
@@ -252,9 +264,15 @@ const NotificationDropdown = ({ avatarSrc }: { avatarSrc: string }) => {
       const token = await getAuthToken();
       if (!token) return;
 
-      await axios.delete('/api/notifications', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.delete(
+        `${process.env.REACT_APP_API_BASE_URL}/notifications`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Optimistically clear all notifications from UI
+      setNotifications([]);
     } catch (err) {
       console.error('Bulk delete error:', err);
     }
