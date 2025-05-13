@@ -6,10 +6,14 @@ import axios from 'axios';
 const NotificationActivities = () => {
   const { parent } = useAuth();
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+  const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>(
+    {}
+  );
 
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
   const DEFAULT_AVATAR =
     'https://bothell-select.onrender.com/uploads/avatars/parents.png';
+
   const {
     setNotifications,
     setDismissedIds,
@@ -21,19 +25,15 @@ const NotificationActivities = () => {
   const fetchAvatarUrlFromBackend = useCallback(async () => {
     const token = localStorage.getItem('token');
     const parentId = localStorage.getItem('parentId');
-
     if (!token || !parentId) return;
 
     try {
       const response = await axios.get(`${API_BASE_URL}/parent/${parentId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const avatarUrl = response.data.avatar;
-
-      if (avatarUrl && avatarUrl.startsWith('http')) {
+      if (avatarUrl?.startsWith('http')) {
         setAvatarSrc(avatarUrl);
         localStorage.setItem('avatarUrl', avatarUrl);
       } else {
@@ -46,7 +46,6 @@ const NotificationActivities = () => {
   }, [API_BASE_URL]);
 
   useEffect(() => {
-    // Fetch the avatar from the backend when the component mounts
     fetchAvatarUrlFromBackend();
   }, [fetchAvatarUrlFromBackend]);
 
@@ -68,10 +67,9 @@ const NotificationActivities = () => {
 
   const deleteNotification = async (id: string) => {
     try {
-      const res = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL}/notifications/${id}`,
-        { method: 'DELETE' }
-      );
+      const res = await fetch(`${API_BASE_URL}/notifications/${id}`, {
+        method: 'DELETE',
+      });
       if (res.ok) {
         setNotifications((prev) => prev.filter((n) => n._id !== id));
       }
@@ -82,10 +80,9 @@ const NotificationActivities = () => {
 
   const markAllAsRead = async () => {
     try {
-      await fetch(
-        `${process.env.REACT_APP_API_BASE_URL}/notifications/read-all`,
-        { method: 'PATCH' }
-      );
+      await fetch(`${API_BASE_URL}/notifications/read-all`, {
+        method: 'PATCH',
+      });
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     } catch (err) {
       console.error('Failed to mark all as read:', err);
@@ -94,10 +91,9 @@ const NotificationActivities = () => {
 
   const handleDeleteAll = async () => {
     try {
-      const res = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL}/notifications`,
-        { method: 'DELETE' }
-      );
+      const res = await fetch(`${API_BASE_URL}/notifications`, {
+        method: 'DELETE',
+      });
       if (res.ok) {
         setNotifications([]);
         setDismissedIds([]);
@@ -106,6 +102,13 @@ const NotificationActivities = () => {
     } catch (err) {
       console.error('Failed to delete all:', err);
     }
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedStates((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
   };
 
   return (
@@ -137,11 +140,12 @@ const NotificationActivities = () => {
                     typeof notif.user === 'object'
                       ? notif.user.fullName
                       : 'System';
+                  const isExpanded = expandedStates[notif._id] ?? false;
 
                   return (
                     <div
                       key={notif._id}
-                      className={`d-flex align-items-center justify-content-between flex-wrap shadow-sm noti-hover border p-3 pb-0 rounded mb-3 ${
+                      className={`d-flex align-items-start justify-content-between flex-nowrap shadow-sm noti-hover border p-3 pb-0 rounded mb-3 ${
                         notif.read ? 'bg-light' : ''
                       }`}
                     >
@@ -149,7 +153,7 @@ const NotificationActivities = () => {
                         type='checkbox'
                         onChange={() => markAsRead(notif._id, !notif.read)}
                         checked={notif.read}
-                        className='ms-2 me-4'
+                        className='ms-2 me-4 mt-1'
                         title={notif.read ? 'Mark as unread' : 'Mark as read'}
                       />
                       <div className='d-flex align-items-start flex-fill'>
@@ -160,34 +164,58 @@ const NotificationActivities = () => {
                             className='img-fluid rounded-circle'
                           />
                         </div>
-                        <div className='mb-3'>
-                          <p className='mb-1'>
-                            <span className='text-dark fw-semibold'>
-                              {userName}
-                            </span>{' '}
-                            {notif.message}
-                          </p>
-                          <span>
+                        <div className='flex-grow-1 mb-3'>
+                          <div className='d-flex justify-content-between align-items-start'>
+                            <p className='mb-1'>
+                              <span className='text-dark fw-semibold'>
+                                {userName}
+                              </span>{' '}
+                              <button
+                                className='btn btn-sm btn-light fw-medium d-inline-flex align-items-center ms-2'
+                                onClick={() => toggleExpand(notif._id)}
+                              >
+                                {isExpanded ? 'Show Less' : 'Read More'}
+                              </button>
+                            </p>
+                            <div className='noti-delete'>
+                              {isAdmin ? (
+                                <button
+                                  className='btn btn-danger btn-sm text-white'
+                                  onClick={() => deleteNotification(notif._id)}
+                                >
+                                  Delete
+                                </button>
+                              ) : (
+                                <button
+                                  className='btn btn-secondary btn-sm text-white'
+                                  onClick={() => dismissNotification(notif._id)}
+                                >
+                                  Dismiss
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <span className='text-muted small'>
                             {new Date(notif.createdAt).toLocaleString()}
                           </span>
+                          <div className='notification-content mt-2'>
+                            <p className='mb-2'>
+                              {isExpanded
+                                ? notif.message
+                                : `${notif.message.substring(0, 100)}...`}
+                            </p>
+                            {isExpanded && notif.link && (
+                              <a
+                                href={notif.link}
+                                className='notification-link'
+                                target='_blank'
+                                rel='noopener noreferrer'
+                              >
+                                View Details
+                              </a>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className='noti-delete mb-3'>
-                        {isAdmin ? (
-                          <button
-                            className='btn btn-danger btn-sm text-white'
-                            onClick={() => deleteNotification(notif._id)}
-                          >
-                            Delete
-                          </button>
-                        ) : (
-                          <button
-                            className='btn btn-secondary btn-sm text-white'
-                            onClick={() => dismissNotification(notif._id)}
-                          >
-                            Dismiss
-                          </button>
-                        )}
                       </div>
                     </div>
                   );

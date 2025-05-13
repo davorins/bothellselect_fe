@@ -476,4 +476,5 @@ export interface Notification {
   parentIds?: string[];
   seasonName?: string;
   createdAt: string | Date;
+  link?: string;
 }

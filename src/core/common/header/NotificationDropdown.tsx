@@ -290,6 +290,17 @@ const NotificationDropdown = ({ avatarSrc }: { avatarSrc: string }) => {
     return false;
   });
 
+  const truncateMessage = (message: string, maxLength: number) => {
+    if (message.length > maxLength) {
+      return message.slice(0, maxLength) + '...';
+    }
+    return message;
+  };
+
+  const hasUnreadNotifications = visibleNotifications.some(
+    (notif) => !notif.read
+  );
+
   return (
     <div
       className={`pe-1 ${notificationVisible ? 'notification-item-show' : ''}`}
@@ -302,7 +313,7 @@ const NotificationDropdown = ({ avatarSrc }: { avatarSrc: string }) => {
         id='notification_popup'
       >
         <i className='ti ti-bell' />
-        {visibleNotifications.length > 0 && (
+        {visibleNotifications.length > 0 && hasUnreadNotifications && (
           <span className='notification-status-dot' />
         )}
       </Link>
@@ -405,7 +416,7 @@ const NotificationDropdown = ({ avatarSrc }: { avatarSrc: string }) => {
                           ? 'System'
                           : notif.user.fullName}
                       </span>{' '}
-                      {notif.message}
+                      {truncateMessage(notif.message, 100)}
                     </p>
                     <span className='d-block'>
                       {new Date(notif.createdAt).toLocaleString()}
