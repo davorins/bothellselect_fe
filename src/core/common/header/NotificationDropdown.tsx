@@ -45,7 +45,10 @@ const UserMultiSelect = ({
       const res = await fetch(
         `/api/users/search?q=${encodeURIComponent(searchTerm)}&_=${Date.now()}`,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
         }
       );
 
