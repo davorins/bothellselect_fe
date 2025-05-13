@@ -42,9 +42,12 @@ const UserMultiSelect = ({
     setLoading(true);
     try {
       const token = await getAuthToken();
-      const res = await fetch(`/api/users/search?q=${searchTerm}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `/api/users/search?q=${encodeURIComponent(searchTerm)}&_=${Date.now()}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       if (res.ok) {
         const data = await res.json();
