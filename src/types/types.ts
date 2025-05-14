@@ -478,3 +478,34 @@ export interface Notification {
   createdAt: string | Date;
   link?: string;
 }
+
+export interface TemplateVariable {
+  name: string;
+  description: string;
+  defaultValue: string;
+}
+
+export interface EmailTemplate {
+  _id: string;
+  title: string;
+  subject: string;
+  content: string;
+  status: boolean;
+  variables: TemplateVariable[];
+  category: string;
+  tags: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ApiResponse {
+  data?: EmailTemplate[];
+  error?: string;
+}
+
+export interface ApiErrorResponse {
+  success: false;
+  message: string;
+  errors?: Record<string, string>;
+  error?: string;
+}

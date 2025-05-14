@@ -58,4 +58,20 @@ export const SidebarData = [
       },
     ],
   },
+  {
+    label: 'Email',
+    submenu: true,
+    showSubRoute: false,
+    submenuHdr: 'Email',
+    submenuItems: [
+      {
+        label: 'Templates',
+        submenu: false,
+        showSubRoute: false,
+        link: routes.emailTemplates,
+        icon: 'ti ti-file-symlink',
+        roles: ['admin'],
+      },
+    ],
+  },
 ];
