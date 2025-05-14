@@ -19,6 +19,8 @@ import {
   ApiErrorResponse,
 } from '../../../types/types';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 const QuillEditor = forwardRef<ReactQuill, ReactQuillProps>((props, ref) => (
   <ReactQuill {...props} ref={ref} />
 ));
@@ -84,11 +86,14 @@ const EmailTemplates = () => {
           return;
         }
 
-        const response = await axios.get<ApiResponse>('/api/email-templates', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await axios.get<ApiResponse>(
+          `${process.env.REACT_APP_API_BASE_URL}/api/email-templates`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         // Ensure we always set an array, even if response.data.data is undefined
         setTemplates(
@@ -170,7 +175,7 @@ const EmailTemplates = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post<EmailTemplate>(
-        '/api/email-templates',
+        `${process.env.REACT_APP_API_BASE_URL}/email-templates`,
         {
           title: newTemplate.title.trim(),
           subject: newTemplate.subject.trim(),
@@ -297,9 +302,12 @@ const EmailTemplates = () => {
         return;
       }
 
-      await axios.delete(`/api/email-templates/${templateToDelete}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.delete(
+        `${process.env.REACT_APP_API_BASE_URL}/email-templates/${templateToDelete}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       setTemplates((prev) => prev.filter((t) => t._id !== templateToDelete));
       setTemplateToDelete(null);
