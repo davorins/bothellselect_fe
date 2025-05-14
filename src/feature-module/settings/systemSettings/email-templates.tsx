@@ -87,7 +87,7 @@ const EmailTemplates = () => {
         }
 
         const response = await axios.get<ApiResponse>(
-          `${process.env.REACT_APP_API_BASE_URL}/api/email-templates`,
+          `${process.env.REACT_APP_API_BASE_URL}/email-templates`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -253,7 +253,7 @@ const EmailTemplates = () => {
       };
 
       const response = await axios.put<EmailTemplate>(
-        `/api/email-templates/${editingTemplate._id}`,
+        `${process.env.REACT_APP_API_BASE_URL}/email-templates/${editingTemplate._id}`,
         payload,
         {
           headers: {
