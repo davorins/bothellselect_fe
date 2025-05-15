@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { EmailTemplate } from '../types/types';
 
-const API_URL = '/api/email-templates';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const API_URL = `${API_BASE_URL}/email-templates`;
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
