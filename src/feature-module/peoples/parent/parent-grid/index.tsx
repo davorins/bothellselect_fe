@@ -14,6 +14,7 @@ import { ParentListHeader } from '../../../components/Headers/ParentListHeader';
 import { ParentFilters } from '../../../components/Filters/ParentFilters';
 import { ParentSortOptions } from '../../../components/Filters/ParentSortOptions';
 import { Moment } from 'moment';
+import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -79,14 +80,21 @@ const ParentGrid = () => {
     currentPage * parentsPerPage
   );
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
   if (error) return <div>Error: {error}</div>;
 
   return (
     <>
       <div className='page-wrapper'>
         <div className='content content-two'>
-          <ParentListHeader seasonParam={null} yearParam={null} />
+          <ParentListHeader
+            seasonParam={null}
+            yearParam={null}
+            parentData={sortOrder ? sortedParents : filteredParents}
+          />
           <div className='bg-white p-3 border rounded-1 d-flex align-items-center justify-content-between flex-wrap mb-4 pb-0'>
             <h4 className='mb-3'>Parents Grid</h4>
             <div className='d-flex align-items-center flex-wrap'>

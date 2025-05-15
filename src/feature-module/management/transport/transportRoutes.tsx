@@ -9,7 +9,6 @@ import {
 } from '../../../core/common/selectoption/selectoption';
 import { TableData } from '../../../core/data/interface';
 import Table from '../../../core/common/dataTable/index';
-import TooltipOption from '../../../core/common/tooltipOption';
 import { transportRouteList } from '../../../core/data/json/transport_route';
 import TransportModal from './transportModal';
 
@@ -135,7 +134,6 @@ const TransportRoutes = () => {
               </nav>
             </div>
             <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
-              <TooltipOption />
               <div className='mb-2'>
                 <Link
                   to='#'

@@ -10,7 +10,6 @@ import {
 } from '../../../core/common/selectoption/selectoption';
 import { TableData } from '../../../core/data/interface';
 import Table from '../../../core/common/dataTable/index';
-import TooltipOption from '../../../core/common/tooltipOption';
 import TransportModal from './transportModal';
 import { transportdriver } from '../../../core/data/json/transport_driver';
 import ImageWithBasePath from '../../../core/common/imageWithBasePath';
@@ -163,7 +162,6 @@ const TransportVehicleDrivers = () => {
               </nav>
             </div>
             <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
-              <TooltipOption />
               <div className='mb-2'>
                 <Link
                   to='#'

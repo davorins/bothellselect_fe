@@ -22,6 +22,7 @@ import PredefinedDateRanges from '../../../../core/common/datePicker';
 import { useAuth } from '../../../../context/AuthContext';
 import { all_routes } from '../../../router/all_routes';
 import { Moment } from 'moment';
+import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 
 const CoachList = () => {
   const [searchParams] = useSearchParams();
@@ -113,13 +114,20 @@ const CoachList = () => {
     [handleCoachClick, currentUser?.role]
   );
 
-  if (loading) return <div className='loading-spinner'>Loading coaches...</div>;
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
   if (error) return <div className='error-message'>Error: {error}</div>;
 
   return (
     <div className='page-wrapper'>
       <div className='content'>
-        <CoachListHeader seasonParam={seasonParam} yearParam={yearParam} />
+        <CoachListHeader
+          seasonParam={seasonParam}
+          yearParam={yearParam}
+          coachData={coachData}
+        />
         <div className='card'>
           <div className='card-header d-flex align-items-center justify-content-between flex-wrap pb-0'>
             <h4 className='mb-3'>Coaches List</h4>

@@ -18,6 +18,7 @@ import { PlayerListHeader } from '../../../components/Headers/PlayerListHeader';
 import { PlayerFilters } from '../../../components/Filters/PlayerFilters';
 import { PlayerSortOptions } from '../../../components/Filters/PlayerSortOptions';
 import { Moment } from 'moment';
+import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -93,14 +94,21 @@ const PlayerGrid = () => {
     handlePlayerClick(playerForNavigation);
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
   if (error) return <div>Error: {error}</div>;
 
   return (
     <>
       <div className='page-wrapper'>
         <div className='content content-two'>
-          <PlayerListHeader seasonParam={seasonParam} yearParam={yearParam} />
+          <PlayerListHeader
+            seasonParam={seasonParam}
+            yearParam={yearParam}
+            playerData={sortOrder ? sortedPlayers : filteredPlayers}
+          />
           <div className='bg-white p-3 border rounded-1 d-flex align-items-center justify-content-between flex-wrap mb-4 pb-0'>
             <h4 className='mb-3'>Players Grid</h4>
             <div className='d-flex align-items-center flex-wrap'>

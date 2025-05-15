@@ -5,7 +5,6 @@ import Table from '../../../core/common/dataTable/index';
 import PredefinedDateRanges from '../../../core/common/datePicker';
 import ImageWithBasePath from '../../../core/common/imageWithBasePath';
 import { Link } from 'react-router-dom';
-import TooltipOption from '../../../core/common/tooltipOption';
 import { all_routes } from '../../router/all_routes';
 
 const DeleteRequest = () => {
@@ -103,9 +102,6 @@ const DeleteRequest = () => {
                     </li>
                   </ol>
                 </nav>
-              </div>
-              <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
-                <TooltipOption />
               </div>
             </div>
             {/* Page Header */}

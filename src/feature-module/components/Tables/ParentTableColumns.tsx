@@ -5,6 +5,10 @@ import { formatPhoneNumber } from '../../../utils/phone';
 import { formatDate } from '../../../utils/dateFormatter';
 import { TableRecord, FormattedAddress } from '../../../types/types';
 import { isPlayerActive } from '../../../utils/season';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface ExtendedTableRecord extends TableRecord {
   type: 'parent' | 'guardian' | 'coach';
@@ -20,23 +24,167 @@ interface ExtendedTableRecord extends TableRecord {
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
+// Helper function to get parent status
+const getParentStatus = <T extends ExtendedTableRecord>(
+  record: T
+): 'active' | 'inactive' => {
+  if (record.isCoach) return 'active';
+  const hasActivePlayers = record.players?.some((player) =>
+    isPlayerActive(player)
+  );
+  return hasActivePlayers ? 'active' : 'inactive';
+};
+
+// Export to PDF function
+export const exportParentsToPDF = <T extends ExtendedTableRecord>(
+  data: T[]
+) => {
+  // Create new jsPDF instance
+  const doc = new jsPDF();
+
+  // Add title
+  doc.text('Parents List', 14, 15);
+
+  // Prepare table data
+  const tableColumn = ['Name', 'Email', 'Phone', 'Address'];
+
+  const tableRows = data.map((item) => [
+    item.fullName,
+    item.email || 'N/A',
+    item.phone ? formatPhoneNumber(item.phone) : 'N/A',
+    typeof item.address === 'string'
+      ? item.address
+      : `${item.address?.street}, ${item.address?.city}, ${item.address?.state} ${item.address?.zip}`,
+    item.isCoach ? 'Coach' : item.type === 'guardian' ? 'Guardian' : 'Parent',
+    getParentStatus(item) === 'active' ? 'Active' : 'Inactive',
+    formatDate(item.createdAt),
+  ]);
+
+  // Add table using autoTable
+  autoTable(doc, {
+    head: [tableColumn],
+    body: tableRows,
+    startY: 25,
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+      overflow: 'linebreak',
+    },
+    headStyles: {
+      fillColor: [41, 128, 185],
+      textColor: 255,
+      fontStyle: 'bold',
+    },
+    columnStyles: {
+      0: { cellWidth: 'auto' },
+      1: { cellWidth: 'auto' },
+      2: { cellWidth: 'auto' },
+      3: { cellWidth: 'auto' },
+    },
+  });
+
+  // Save the PDF
+  doc.save(`parents_${new Date().toISOString().slice(0, 10)}.pdf`);
+};
+
+// Export to Excel function
+export const exportParentsToExcel = <T extends ExtendedTableRecord>(
+  data: T[]
+) => {
+  const worksheet = XLSX.utils.json_to_sheet(
+    data.map((item) => ({
+      Name: item.fullName,
+      Email: item.email || 'N/A',
+      Phone: item.phone ? formatPhoneNumber(item.phone) : 'N/A',
+      Address:
+        typeof item.address === 'string'
+          ? item.address
+          : `${item.address?.street}, ${item.address?.city}, ${item.address?.state} ${item.address?.zip}`,
+      Type: item.isCoach
+        ? 'Coach'
+        : item.type === 'guardian'
+        ? 'Guardian'
+        : 'Parent',
+      Status: getParentStatus(item) === 'active' ? 'Active' : 'Inactive',
+      'Date Joined': formatDate(item.createdAt),
+    }))
+  );
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Parents');
+  XLSX.writeFile(
+    workbook,
+    `parents_${new Date().toISOString().slice(0, 10)}.xlsx`
+  );
+};
+
+//Export to CSV
+export const exportEmailList = <T extends ExtendedTableRecord>(data: T[]) => {
+  const uniqueEmails = Array.from(
+    new Set(
+      data
+        .map((parent) => parent.email?.trim())
+        .filter((email): email is string => !!email)
+    )
+  );
+
+  if (uniqueEmails.length === 0) {
+    alert('No valid email addresses found to export');
+    return;
+  }
+
+  const csvContent = 'data:text/csv;charset=utf-8,' + uniqueEmails.join('\n');
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute(
+    'download',
+    `parent_emails_${new Date().toISOString().slice(0, 10)}.csv`
+  );
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+export const copyEmailListToClipboard = <T extends ExtendedTableRecord>(
+  data: T[],
+  onSuccess?: (message: string) => void,
+  onError?: (message: string) => void
+) => {
+  const uniqueEmails = Array.from(
+    new Set(
+      data
+        .map((parent) => parent.email?.trim())
+        .filter((email) => email && email !== '')
+    )
+  );
+
+  if (uniqueEmails.length === 0) {
+    onError?.('No valid email addresses found to copy');
+    return false;
+  }
+
+  const emailString = uniqueEmails.join(', ');
+
+  navigator.clipboard
+    .writeText(emailString)
+    .then(() => {
+      onSuccess?.('Email list copied to clipboard!');
+    })
+    .catch((err) => {
+      console.error('Failed to copy emails: ', err);
+      onError?.('Failed to copy emails to clipboard');
+    });
+
+  return true;
+};
+
+// Main columns definition
 export const getParentTableColumns = <T extends ExtendedTableRecord>(
   handleParentClick: (record: T) => void,
   currentUserRole?: string
 ): TableProps<T>['columns'] => {
-  const getParentStatus = (record: T): 'active' | 'inactive' => {
-    // If it's a coach, always show active
-    if (record.isCoach) return 'active';
-
-    // Check if any player is active using the imported isPlayerActive
-    const hasActivePlayers = record.players?.some((player) =>
-      isPlayerActive(player)
-    );
-
-    return hasActivePlayers ? 'active' : 'inactive';
-  };
-
-  return [
+  const columns: TableProps<T>['columns'] = [
     {
       title: 'Name',
       dataIndex: 'fullName',
@@ -210,4 +358,6 @@ export const getParentTableColumns = <T extends ExtendedTableRecord>(
         ]
       : []),
   ];
+
+  return columns;
 };

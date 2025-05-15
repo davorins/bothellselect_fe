@@ -15,6 +15,7 @@ import { ParentFilterParams } from '../../../../types/parentTypes';
 import PredefinedDateRanges from '../../../../core/common/datePicker';
 import { useAuth } from '../../../../context/AuthContext';
 import { all_routes } from '../../../router/all_routes';
+import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 
 const ParentList = () => {
   const [searchParams] = useSearchParams();
@@ -63,7 +64,11 @@ const ParentList = () => {
     return (
       <div className='page-wrapper'>
         <div className='content'>
-          <ParentListHeader seasonParam={seasonParam} yearParam={yearParam} />
+          <ParentListHeader
+            seasonParam={seasonParam}
+            yearParam={yearParam}
+            parentData={parentData}
+          />
           <div className='card'>
             <Table
               dataSource={parentData}
@@ -78,13 +83,20 @@ const ParentList = () => {
     );
   }
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
   if (error) return <div>Error: {error}</div>;
 
   return (
     <div className='page-wrapper'>
       <div className='content'>
-        <ParentListHeader seasonParam={seasonParam} yearParam={yearParam} />
+        <ParentListHeader
+          seasonParam={seasonParam}
+          yearParam={yearParam}
+          parentData={sortOrder ? sortedParents : filteredParents}
+        />
         <div className='card'>
           <div className='card-header d-flex align-items-center justify-content-between flex-wrap pb-0'>
             <h4 className='mb-3'>Parents List</h4>

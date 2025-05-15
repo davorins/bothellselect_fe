@@ -12,7 +12,6 @@ import {
 import { all_routes } from '../router/all_routes';
 import CommonSelect from '../../core/common/commonSelect';
 import ImageWithBasePath from '../../core/common/imageWithBasePath';
-import TooltipOption from '../../core/common/tooltipOption';
 
 const TicketDetails = () => {
   const route = all_routes;
@@ -38,7 +37,6 @@ const TicketDetails = () => {
               </nav>
             </div>
             <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
-              <TooltipOption />
               <div className='mb-2'>
                 <Link
                   to='#'

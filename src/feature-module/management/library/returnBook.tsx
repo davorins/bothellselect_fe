@@ -10,7 +10,6 @@ import {
 } from '../../../core/common/selectoption/selectoption';
 import { TableData } from '../../../core/data/interface';
 import Table from '../../../core/common/dataTable/index';
-import TooltipOption from '../../../core/common/tooltipOption';
 import LibraryModal from './libraryModal';
 import ImageWithBasePath from '../../../core/common/imageWithBasePath';
 import { bookIssueList } from '../../../core/data/json/bookIssueList';
@@ -128,9 +127,6 @@ const ReturnBook = () => {
                   </li>
                 </ol>
               </nav>
-            </div>
-            <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
-              <TooltipOption />
             </div>
           </div>
           {/* /Page Header */}

@@ -42,7 +42,7 @@ export const EmailTemplateSelector: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-
+  const [manualEmails, setManualEmails] = useState('');
   const { isAuthenticated, getAuthToken } = useAuth();
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -231,6 +231,26 @@ export const EmailTemplateSelector: React.FC = () => {
     }
   };
 
+  const getCombinedEmails = () => {
+    // Extract emails from selected users
+    const selectedEmails = users
+      .filter((user) => selectedUsers.includes(user._id))
+      .map((user) => user.email);
+
+    // Extract and clean manually entered emails
+    const manualEmailList = manualEmails
+      .split(/[\n,]+/)
+      .map((email) => email.trim())
+      .filter((email) => email && /\S+@\S+\.\S+/.test(email)); // basic email validation
+
+    // Combine and remove duplicates
+    const allEmails = Array.from(
+      new Set([...selectedEmails, ...manualEmailList])
+    );
+
+    return allEmails;
+  };
+
   const isLoading = loading.templates || loading.seasons;
 
   return (
@@ -362,6 +382,8 @@ export const EmailTemplateSelector: React.FC = () => {
                       <Card>
                         <Card.Body>
                           <h5 className='mb-2'>Search Users</h5>
+
+                          {/* Search input */}
                           <Form.Control
                             type='text'
                             placeholder='Search users by name or email'
@@ -371,9 +393,12 @@ export const EmailTemplateSelector: React.FC = () => {
                               selectedSeason !== '' && selectedYear !== null
                             }
                           />
+
                           {loading.users && (
                             <div className='mt-2'>Loading users...</div>
                           )}
+
+                          {/* Search results with checkboxes */}
                           <div
                             className='mt-2 user-list'
                             style={{ maxHeight: '250px', overflowY: 'auto' }}
@@ -393,6 +418,7 @@ export const EmailTemplateSelector: React.FC = () => {
                             ))}
                           </div>
 
+                          {/* Select/Clear buttons */}
                           <div className='mt-2'>
                             <Button
                               variant='outline-primary'
@@ -412,21 +438,48 @@ export const EmailTemplateSelector: React.FC = () => {
                               Clear All
                             </Button>
                           </div>
+
+                          {/* Manual email entry */}
+                          <div className='mt-3'>
+                            <Form.Label>
+                              Or manually enter email addresses (comma- or
+                              newline-separated)
+                            </Form.Label>
+                            <Form.Control
+                              as='textarea'
+                              rows={3}
+                              placeholder='e.g. parent1@example.com, parent2@example.com'
+                              value={manualEmails}
+                              onChange={(e) => setManualEmails(e.target.value)}
+                            />
+                          </div>
                         </Card.Body>
                       </Card>
                     </div>
 
                     <div className='text-end mt-4'>
-                      <Button
-                        onClick={handleSendCampaign}
-                        disabled={
-                          !selectedTemplate ||
-                          (selectedUsers.length === 0 && !selectedSeason)
-                        }
-                        variant='primary'
-                      >
-                        Send Campaign
-                      </Button>
+                      <div className='text-end mt-4'>
+                        <Button
+                          onClick={handleSendCampaign}
+                          disabled={
+                            !selectedTemplate ||
+                            (selectedUsers.length === 0 &&
+                              (!selectedSeason || !selectedYear) &&
+                              getCombinedEmails().length === 0)
+                          }
+                          variant='primary'
+                        >
+                          Send Email Campaign
+                        </Button>
+                        {(selectedUsers.length > 0 ||
+                          getCombinedEmails().length > 0) && (
+                          <div className='mt-2 text-muted'>
+                            {getCombinedEmails().length} recipient
+                            {getCombinedEmails().length !== 1 ? 's' : ''}{' '}
+                            selected
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

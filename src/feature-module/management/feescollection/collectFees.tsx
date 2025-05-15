@@ -3,7 +3,6 @@ import { all_routes } from '../../router/all_routes';
 import { Link } from 'react-router-dom';
 import PredefinedDateRanges from '../../../core/common/datePicker';
 import CommonSelect from '../../../core/common/commonSelect';
-import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 import {
   AdmissionNo,
   allClass,
@@ -162,9 +161,6 @@ const CollectFees = () => {
                   </li>
                 </ol>
               </nav>
-            </div>
-            <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
-              <TooltipOption />
             </div>
           </div>
           {/* /Page Header */}

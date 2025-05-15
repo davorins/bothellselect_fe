@@ -15,7 +15,6 @@ import GuardianModal from '../guardianModal';
 import { TableData } from '../../../../core/data/interface';
 import Table from '../../../../core/common/dataTable/index';
 import { guardianListData } from '../../../../core/data/json/guardianList';
-import TooltipOption from '../../../../core/common/tooltipOption';
 
 const GuardianList = () => {
   const [show, setShow] = useState(false);
@@ -179,8 +178,6 @@ const GuardianList = () => {
               </nav>
             </div>
             <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
-              <TooltipOption />
-
               <div className='mb-2'>
                 <Link
                   to='#'

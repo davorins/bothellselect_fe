@@ -18,6 +18,7 @@ import { CoachListHeader } from '../../../components/Headers/CoachListHeader';
 import { CoachFilters } from '../../../components/Filters/CoachFilters';
 import { CoachSortOptions } from '../../../components/Filters/CoachSortOptions';
 import { Moment } from 'moment';
+import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 
 const DEFAULT_COACH_AVATAR =
   'https://bothell-select.onrender.com/uploads/avatars/coach.png';
@@ -84,14 +85,21 @@ const CoachGrid = () => {
     currentPage * coachesPerPage
   );
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
   if (error) return <div>Error: {error}</div>;
 
   return (
     <>
       <div className='page-wrapper'>
         <div className='content content-two'>
-          <CoachListHeader seasonParam={null} yearParam={null} />
+          <CoachListHeader
+            seasonParam={null}
+            yearParam={null}
+            coachData={sortOrder ? sortedCoaches : filteredCoaches}
+          />
           <div className='bg-white p-3 border rounded-1 d-flex align-items-center justify-content-between flex-wrap mb-4 pb-0'>
             <h4 className='mb-3'>Coaches Grid</h4>
             <div className='d-flex align-items-center flex-wrap'>

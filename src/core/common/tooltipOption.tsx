@@ -1,54 +1,103 @@
-import React from "react";
-import { OverlayTrigger, Tooltip } from "react-bootstrap";
-import { Link } from "react-router-dom";
-const TooltipOption = () => {
+import React from 'react';
+import { OverlayTrigger, Tooltip, Button } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+
+interface TooltipOptionProps {
+  onExportPDF: () => void;
+  onExportExcel: () => void;
+  onExportEmails?: () => void;
+  onCopyEmails?: () => void;
+  showEmailExport?: boolean;
+  showCopyEmails?: boolean;
+}
+
+const TooltipOption = ({
+  onExportPDF,
+  onExportExcel,
+  onExportEmails,
+  onCopyEmails,
+  showEmailExport = false,
+  showCopyEmails = false,
+}: TooltipOptionProps) => {
   return (
     <>
-      <div className="pe-1 mb-2">
+      <div className='pe-1 mb-2'>
         <OverlayTrigger
-          placement="top"
-          overlay={<Tooltip id="tooltip-top">Refresh</Tooltip>}
+          placement='top'
+          overlay={<Tooltip id='tooltip-top'>Refresh</Tooltip>}
         >
-          <Link to="#" className="btn btn-outline-light bg-white btn-icon me-1">
-            <i className="ti ti-refresh" />
-          </Link>
+          <Button
+            variant='outline-light'
+            className='bg-white btn-icon me-1'
+            onClick={() => window.location.reload()}
+          >
+            <i className='ti ti-refresh' />
+          </Button>
         </OverlayTrigger>
       </div>
-      <div className="pe-1 mb-2">
+      <div className='pe-1 mb-2'>
         <OverlayTrigger
-          placement="top"
-          overlay={<Tooltip id="tooltip-top">Print</Tooltip>}
+          placement='top'
+          overlay={<Tooltip id='tooltip-top'>Print</Tooltip>}
         >
           <button
-            type="button"
-            className="btn btn-outline-light bg-white btn-icon me-1"
+            type='button'
+            className='btn btn-outline-light bg-white btn-icon me-1'
           >
-            <i className="ti ti-printer" />
+            <i className='ti ti-printer' />
           </button>
         </OverlayTrigger>
       </div>
-      <div className="dropdown me-2 mb-2">
+      <div className='dropdown me-2 mb-2'>
         <Link
-          to="#"
-          className="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
-          data-bs-toggle="dropdown"
+          to='#'
+          className='dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center'
+          data-bs-toggle='dropdown'
         >
-          <i className="ti ti-file-export me-2" />
+          <i className='ti ti-file-export me-2' />
           Export
         </Link>
-        <ul className="dropdown-menu  dropdown-menu-end p-3">
+        <ul className='dropdown-menu  dropdown-menu-end p-3'>
           <li>
-            <Link to="#" className="dropdown-item rounded-1">
-              <i className="ti ti-file-type-pdf me-1" />
+            <button
+              onClick={onExportPDF}
+              className='dropdown-item rounded-1 w-100 text-start'
+            >
+              <i className='ti ti-file-type-pdf me-1' />
               Export as PDF
-            </Link>
+            </button>
           </li>
           <li>
-            <Link to="#" className="dropdown-item rounded-1">
-              <i className="ti ti-file-type-xls me-1" />
-              Export as Excel{" "}
-            </Link>
+            <button
+              onClick={onExportExcel}
+              className='dropdown-item rounded-1 w-100 text-start'
+            >
+              <i className='ti ti-file-type-xls me-1' />
+              Export as Excel
+            </button>
           </li>
+          {showEmailExport && onExportEmails && (
+            <li>
+              <button
+                onClick={onExportEmails}
+                className='dropdown-item rounded-1 w-100 text-start'
+              >
+                <i className='ti ti-mail me-1' />
+                Export Email List
+              </button>
+            </li>
+          )}
+          {showCopyEmails && onCopyEmails && (
+            <li>
+              <button
+                onClick={onCopyEmails}
+                className='dropdown-item rounded-1 w-100 text-start'
+              >
+                <i className='ti ti-copy me-1' />
+                Copy Emails to Clipboard
+              </button>
+            </li>
+          )}
         </ul>
       </div>
     </>

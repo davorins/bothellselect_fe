@@ -16,6 +16,7 @@ import PredefinedDateRanges from '../../../../core/common/datePicker';
 import { useAuth } from '../../../../context/AuthContext';
 import { all_routes } from '../../../router/all_routes';
 import { Moment } from 'moment';
+import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 
 const PlayerList = () => {
   const [searchParams] = useSearchParams();
@@ -79,14 +80,21 @@ const PlayerList = () => {
   const sortedPlayers = sortPlayerData(filteredPlayers, sortOrder);
   const columns = getPlayerTableColumns({ handlePlayerClick, location });
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
   if (error) return <div>Error: {error}</div>;
 
   return (
     <>
       <div className='page-wrapper'>
         <div className='content'>
-          <PlayerListHeader seasonParam={seasonParam} yearParam={yearParam} />
+          <PlayerListHeader
+            seasonParam={seasonParam}
+            yearParam={yearParam}
+            playerData={playerData}
+          />
           <div className='card'>
             <div className='card-header d-flex align-items-center justify-content-between flex-wrap pb-0'>
               <h4 className='mb-3'>Players List</h4>

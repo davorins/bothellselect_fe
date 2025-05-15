@@ -10,7 +10,6 @@ import {
 import CommonSelect from '../../../../core/common/commonSelect';
 import { Modal } from 'react-bootstrap';
 import GuardianModal from '../guardianModal';
-import TooltipOption from '../../../../core/common/tooltipOption';
 
 const GuardianGrid = () => {
   const [show, setShow] = useState(false);
@@ -47,8 +46,6 @@ const GuardianGrid = () => {
               </nav>
             </div>
             <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
-              <TooltipOption />
-
               <div className='mb-2'>
                 <Link
                   to='#'

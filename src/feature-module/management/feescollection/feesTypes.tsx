@@ -14,7 +14,6 @@ import { TableData } from '../../../core/data/interface';
 import Table from '../../../core/common/dataTable/index';
 import FeesModal from './feesModal';
 import { feesType } from '../../../core/data/json/feesType';
-import TooltipOption from '../../../core/common/tooltipOption';
 
 const FeesTypes = () => {
   const routes = all_routes;
@@ -149,7 +148,6 @@ const FeesTypes = () => {
               </nav>
             </div>
             <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
-              <TooltipOption />
               <div className='mb-2'>
                 <Link
                   to='#'
