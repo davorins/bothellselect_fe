@@ -498,6 +498,13 @@ export interface EmailTemplate {
   updatedAt?: string;
 }
 
+export interface EmailCampaignData {
+  templateId: string;
+  parentIds?: string[];
+  season?: string;
+  year?: number;
+}
+
 export interface ApiResponse {
   data?: EmailTemplate[];
   error?: string;
@@ -508,4 +515,9 @@ export interface ApiErrorResponse {
   message: string;
   errors?: Record<string, string>;
   error?: string;
+}
+
+export interface SeasonOption {
+  season: string;
+  year: number;
 }

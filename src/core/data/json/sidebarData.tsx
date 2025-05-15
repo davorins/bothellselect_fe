@@ -72,6 +72,14 @@ export const SidebarData = [
         icon: 'ti ti-file-symlink',
         roles: ['admin'],
       },
+      {
+        label: 'Send Email',
+        submenu: false,
+        showSubRoute: false,
+        link: routes.EmailTemplateSelector,
+        icon: 'ti ti-mail-forward',
+        roles: ['admin'],
+      },
     ],
   },
 ];

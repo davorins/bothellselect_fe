@@ -84,6 +84,7 @@ import EmailVerification2 from '../auth/emailVerification/emailVerification-2';
 import EmailVerification3 from '../auth/emailVerification/emailVerification-3';
 import NotificationActivities from '../pages/profile/activities';
 import ProtectedRoute from '../components/ProtectedRoute';
+import { EmailTemplateSelector } from '../../components/EmailTemplateSelector';
 
 const routes = all_routes;
 
@@ -108,6 +109,15 @@ export const publicRoutes = [
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
         <CoachDashboard />
+      </ProtectedRoute>
+    ),
+    route: Route,
+  },
+  {
+    path: routes.EmailTemplateSelector,
+    element: (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <EmailTemplateSelector />
       </ProtectedRoute>
     ),
     route: Route,

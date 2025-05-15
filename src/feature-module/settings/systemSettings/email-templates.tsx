@@ -18,8 +18,7 @@ import {
   ApiResponse,
   ApiErrorResponse,
 } from '../../../types/types';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+import LoadingSpinner from '../../../components/common/LoadingSpinner';
 
 const QuillEditor = forwardRef<ReactQuill, ReactQuillProps>((props, ref) => (
   <ReactQuill {...props} ref={ref} />
@@ -387,18 +386,12 @@ const EmailTemplates = () => {
   };
 
   if (loading) {
-    return (
-      <div className='d-flex justify-content-center mt-5'>
-        <Spinner animation='border' role='status'>
-          <span className='visually-hidden'>Loading...</span>
-        </Spinner>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
     <div className='page-wrapper'>
-      <div className='content bg-white'>
+      <div className='content content-two'>
         {error && (
           <Alert variant='danger' onClose={() => setError(null)} dismissible>
             {error}

@@ -137,6 +137,8 @@ export const all_routes = {
 
   emailSettings: '/system-settings/email-settings',
   emailTemplates: '/system-settings/email-templates',
+  EmailTemplateSelector: '/system-settings/email-campaigns',
+  emailCampaignRoutes: '/system-settings/email-campaign',
   gdprCookies: '/system-settings/gdpr-cookies',
   smsSettings: '/system-settings/sms-settings',
   optSettings: '/system-settings/otp-settings',
