@@ -5,7 +5,7 @@ import { OverlayTrigger, Tooltip, Alert } from 'react-bootstrap';
 import axios from 'axios';
 import { useAuth } from '../../../context/AuthContext';
 import { FormData as FormDataType } from '../../../types/types';
-import { Address, ensureAddress, formatAddress } from '../../../utils/address';
+import { Address, ensureAddress } from '../../../utils/address';
 import { formatPhoneNumber, validatePhoneNumber } from '../../../utils/phone';
 import {
   validateEmail,
@@ -158,6 +158,13 @@ const Profilesettings = () => {
       newErrors['address.zip'] = 'Please enter a valid ZIP code';
     }
 
+    if (
+      guardian.aauNumber?.trim() &&
+      !validateRequired(guardian.aauNumber.trim())
+    ) {
+      newErrors.aauNumber = 'Please enter a valid AAU number';
+    }
+
     setGuardianErrors((prev) => ({
       ...prev,
       [index]: newErrors,
@@ -172,9 +179,12 @@ const Profilesettings = () => {
         typeof parent.avatar === 'string' &&
         parent.avatar.includes('res.cloudinary.com');
 
-      const url = isCloudinaryUrl
-        ? `${parent.avatar}?${Date.now()}`
-        : 'https://bothell-select.onrender.com/uploads/avatars/parents.png';
+      // Set avatar source directly without storing in unused 'url' variable
+      setAvatarSrc(
+        isCloudinaryUrl
+          ? `${parent.avatar}?${Date.now()}`
+          : 'https://bothell-select.onrender.com/uploads/avatars/parents.png'
+      );
 
       setFormData({
         fullName: parent.fullName || '',
@@ -277,7 +287,6 @@ const Profilesettings = () => {
   const handlePersonalInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate parent form
     if (!validateForm()) {
       setSaveStatus({
         show: true,
@@ -287,7 +296,6 @@ const Profilesettings = () => {
       return;
     }
 
-    // Validate all guardians
     let allGuardiansValid = true;
     editedGuardians.forEach((_, index) => {
       if (!validateGuardianForm(index)) {
@@ -318,37 +326,63 @@ const Profilesettings = () => {
         return;
       }
 
-      // Prepare the data to send
-      const dataToSend = {
-        ...formData,
-        phone: formData.phone.replace(/\D/g, ''),
-        additionalGuardians: editedGuardians.map((guardian) => ({
-          ...guardian,
-          phone: guardian.phone.replace(/\D/g, ''),
-          address: ensureAddress(guardian.address),
-        })),
-      };
+      // Prepare guardian data
+      const guardiansToSave = editedGuardians.map((guardian) => ({
+        ...guardian,
+        phone: guardian.phone.replace(/\D/g, ''),
+        address: ensureAddress(guardian.address),
+        isCoach: guardian.isCoach || false,
+        aauNumber: guardian.isCoach ? guardian.aauNumber || '' : '',
+      }));
 
-      const response = await axios.put(
-        `${API_BASE_URL}/parent/${parentId}`,
-        dataToSend,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      // Make API calls
+      await Promise.all([
+        axios.put(
+          `${API_BASE_URL}/parent/${parentId}`,
+          {
+            ...formData,
+            phone: formData.phone.replace(/\D/g, ''),
+            address: ensureAddress(formData.address),
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        ),
+        axios.put(
+          `${API_BASE_URL}/parent/${parentId}/guardians`,
+          {
+            additionalGuardians: guardiansToSave,
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        ),
+      ]);
 
-      console.log('Update Response:', response.data);
       fetchParentData(parentId);
-
       setSaveStatus({
         show: true,
         variant: 'success',
         message: 'Profile updated successfully!',
       });
     } catch (error) {
-      console.error('Error updating personal information:', error);
+      console.error('Error updating profile:', error);
+      let message = 'Failed to update profile. Please try again.';
+
+      if (axios.isAxiosError(error)) {
+        if (error.response?.data?.error) {
+          message = error.response.data.error;
+        } else if (error.response?.data?.errors) {
+          message = error.response.data.errors
+            .map((e: any) => e.msg)
+            .join(', ');
+        }
+      }
+
       setSaveStatus({
         show: true,
         variant: 'danger',
-        message: 'Failed to update profile. Please try again.',
+        message,
       });
     }
   };
@@ -365,8 +399,8 @@ const Profilesettings = () => {
       // Create new array without the guardian to be removed
       const updatedGuardians = editedGuardians.filter((_, i) => i !== index);
 
-      // Update the parent with the new guardians list
-      const response = await axios.put(
+      // Update the parent with the new guardians list (removed unused response variable)
+      await axios.put(
         `${API_BASE_URL}/parent/${parentId}`,
         {
           additionalGuardians: updatedGuardians.map((guardian) => ({
@@ -422,6 +456,16 @@ const Profilesettings = () => {
         ...updated[index],
         [name]: type === 'checkbox' ? checked : updatedValue,
       };
+
+      // Automatically set isCoach if aauNumber is provided
+      if (name === 'aauNumber') {
+        updated[index].isCoach = !!updatedValue.trim();
+      }
+      // Clear aauNumber if isCoach is set to false
+      else if (name === 'isCoach' && !checked) {
+        updated[index].aauNumber = '';
+      }
+
       return updated;
     });
 
@@ -510,9 +554,11 @@ const Profilesettings = () => {
       formData.append('file', file);
       formData.append('upload_preset', uploadPreset);
 
-      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+      const cloudinaryResponse = await axios.post(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        formData
+      );
 
-      const cloudinaryResponse = await axios.post(cloudinaryUrl, formData);
       let avatarUrl = cloudinaryResponse.data.secure_url;
 
       if (!avatarUrl) {
@@ -523,7 +569,8 @@ const Profilesettings = () => {
         avatarUrl = avatarUrl.replace(/^https(?=\/\/)/, 'https:');
       }
 
-      const response = await axios.put(
+      // Remove unused response variable
+      await axios.put(
         `${API_BASE_URL}/parent/${parentId}/avatar`,
         { avatarUrl },
         {
@@ -594,14 +641,13 @@ const Profilesettings = () => {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.delete(
-        `${API_BASE_URL}/parent/${parentId}/avatar`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      // Remove unused response variable
+      await axios.delete(`${API_BASE_URL}/parent/${parentId}/avatar`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      updateParent(response.data.parent);
+      // Assuming updateParent is properly typed in your AuthContext
+      updateParent({ ...parent, avatar: undefined });
       localStorage.removeItem('avatarUrl');
       setAvatarSrc(
         'https://bothell-select.onrender.com/uploads/avatars/parents.png'
@@ -1058,6 +1104,7 @@ const Profilesettings = () => {
                                           handleGuardianInputChange(e, index)
                                         }
                                         name='aauNumber'
+                                        placeholder='Entering an AAU number will mark as coach'
                                       />
                                       {guardianErrors[index]?.aauNumber && (
                                         <div className='invalid-feedback d-block'>
