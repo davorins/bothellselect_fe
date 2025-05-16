@@ -70,6 +70,7 @@ export const SidebarData = [
         submenu: false,
         showSubRoute: false,
         link: routes.events,
+        roles: ['admin'],
       },
     ],
   },
