@@ -85,6 +85,7 @@ import EmailVerification3 from '../auth/emailVerification/emailVerification-3';
 import NotificationActivities from '../pages/profile/activities';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { EmailTemplateSelector } from '../../components/EmailTemplateSelector';
+import Events from '../announcements/events';
 
 const routes = all_routes;
 
@@ -319,6 +320,10 @@ export const publicRoutes = [
   {
     path: routes.transportVehicle,
     element: <TransportVehicle />,
+  },
+  {
+    path: routes.events,
+    element: <Events />,
   },
 
   //Settings

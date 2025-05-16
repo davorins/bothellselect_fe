@@ -59,6 +59,21 @@ export const SidebarData = [
     ],
   },
   {
+    label: 'Events',
+    submenuOpen: true,
+    showSubRoute: false,
+    submenuHdr: 'Events',
+    submenuItems: [
+      {
+        label: 'Schedules',
+        icon: 'ti ti-calendar-event',
+        submenu: false,
+        showSubRoute: false,
+        link: routes.events,
+      },
+    ],
+  },
+  {
     label: 'Email',
     submenu: true,
     showSubRoute: false,

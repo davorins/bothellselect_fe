@@ -1,52 +1,47 @@
-import React, { useEffect, useState } from "react";
-import Select from "react-select";
+import React from 'react';
+import Select, { MultiValue, SingleValue, ActionMeta } from 'react-select';
 
-export type Option = {
+// Define the Option type first
+type OptionType = {
   value: string;
   label: string;
 };
 
-export interface SelectProps {
-  options: Option[];
-  defaultValue?: Option;
+// Then define the interface for props
+interface SelectProps {
+  options: OptionType[];
+  value?: OptionType | MultiValue<OptionType> | null;
+  defaultValue?: OptionType | MultiValue<OptionType> | null;
   className?: string;
-  styles?: any; 
+  styles?: any;
+  isMulti?: boolean;
+  onChange?: (
+    newValue: SingleValue<OptionType> | MultiValue<OptionType>,
+    actionMeta: ActionMeta<OptionType>
+  ) => void;
 }
 
-const CommonSelect: React.FC<SelectProps> = ({ options, defaultValue, className }) => {
-  const [selectedOption, setSelectedOption] = useState<Option | undefined>(defaultValue);
-
-  // const customStyles = {
-  //   option: (base: any, state: any) => ({
-  //     ...base,
-  //     color: "#6A7287",
-  //     backgroundColor: state.isSelected ? "#ddd" : "white",
-  //     cursor: "pointer",
-  //     "&:hover": {
-  //       backgroundColor: state.isFocused ? "#3D5EE1" : "blue",
-  //       color: state.isFocused ? "#fff" : "#6A7287",
-  //     },
-  //   }),
-  // };
-
-  const handleChange = (option: Option | null) => {
-    setSelectedOption(option || undefined);
-  };
-  useEffect(() => {
-    setSelectedOption(defaultValue || undefined);
-  }, [defaultValue])
-  
+const CommonSelect: React.FC<SelectProps> = ({
+  options,
+  value,
+  defaultValue,
+  className,
+  isMulti = false,
+  onChange,
+}) => {
   return (
     <Select
-     classNamePrefix="react-select"
+      classNamePrefix='react-select'
       className={className}
-      // styles={customStyles}
       options={options}
-      value={selectedOption}
-      onChange={handleChange}
-      placeholder="Select"
+      value={value}
+      defaultValue={defaultValue}
+      onChange={onChange}
+      isMulti={isMulti}
+      placeholder='Select'
     />
   );
 };
 
 export default CommonSelect;
+export type { OptionType as Option };

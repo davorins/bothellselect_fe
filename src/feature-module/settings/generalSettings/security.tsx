@@ -7,8 +7,6 @@ type PasswordField = 'currentPassword' | 'newPassword' | 'confirmPassword';
 
 const SecuritySettings = () => {
   const routes = all_routes;
-  const [googleAuthEnabled, setGoogleAuthEnabled] = useState(true);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showPasswordChangeForm, setShowPasswordChangeForm] = useState(false);
   const [passwordVisibility, setPasswordVisibility] = useState({
     currentPassword: false,
@@ -35,16 +33,6 @@ const SecuritySettings = () => {
       ...prev,
       [field]: value,
     }));
-  };
-
-  const handleGoogleAuthToggle = () => {
-    setGoogleAuthEnabled((prev) => !prev);
-    // TODO: Add API call to update Google authentication setting
-  };
-
-  const handleDeleteAccount = () => {
-    // TODO: Add API call to delete account
-    setShowDeleteModal(false);
   };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -311,138 +299,10 @@ const SecuritySettings = () => {
                   </form>
                 </div>
               )}
-
-              {/* Google Auth */}
-              <div className='d-flex justify-content-between align-items-center flex-wrap bg-white border rounded p-3 mb-3'>
-                <div className='mb-3'>
-                  <h6>Google Authentication</h6>
-                  <p>Connect to Google</p>
-                </div>
-                <div className='d-flex align-items-center mb-3'>
-                  <span className='badge badge-soft-success me-3'>
-                    <i className='ti ti-circle-filled fs-5 me-1' />
-                    {googleAuthEnabled ? 'Connected' : 'Disconnected'}
-                  </span>
-                  <div className='form-check form-switch'>
-                    <input
-                      className='form-check-input'
-                      type='checkbox'
-                      role='switch'
-                      id='switch-sm2'
-                      checked={googleAuthEnabled}
-                      onChange={handleGoogleAuthToggle}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Other sections */}
-              {[
-                {
-                  title: 'Phone Number Verification',
-                  desc: 'The Phone Number associated with the account',
-                  value: '+1 73649 72648',
-                },
-                {
-                  title: 'Email Address',
-                  desc: 'The email address associated with the account',
-                  value: 'admin@example.com',
-                },
-                {
-                  title: 'Account Activity',
-                  desc: 'The activities of the account',
-                  btnText: 'View',
-                },
-                {
-                  title: 'Deactivate Account',
-                  desc: 'This will shutdown your account. Your account will be reactive when you sign in again',
-                  btnText: 'Deactivate',
-                },
-              ].map((item, index) => (
-                <div
-                  key={index}
-                  className='d-flex justify-content-between align-items-center flex-wrap bg-white border rounded p-3 mb-3'
-                >
-                  <div className='mb-3'>
-                    <h6>{item.title}</h6>
-                    <p>{item.desc}</p>
-                  </div>
-                  <div className='d-flex align-items-center flex-wrap'>
-                    {item.value && <p className='mb-3 me-3'>{item.value}</p>}
-                    <span className='badge badge-soft-success me-3 mb-3'>
-                      <i className='ti ti-checks me-1' />
-                      Verified
-                    </span>
-                    <Link to='#' className='btn btn-light mb-3'>
-                      <i className='ti ti-edit me-2' />
-                      Edit
-                    </Link>
-                  </div>
-                </div>
-              ))}
-
-              {/* Delete Account */}
-              <div className='d-flex justify-content-between align-items-center flex-wrap bg-white border rounded p-3 mb-3'>
-                <div className='mb-3'>
-                  <h6>Delete Account</h6>
-                  <p>Your account will be permanently deleted</p>
-                </div>
-                <div className='mb-3'>
-                  <button
-                    onClick={() => setShowDeleteModal(true)}
-                    className='btn btn-outline-danger'
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Delete Modal */}
-      {showDeleteModal && (
-        <div
-          className='modal fade show'
-          style={{ display: 'block' }}
-          role='dialog'
-        >
-          <div className='modal-dialog modal-dialog-centered'>
-            <div className='modal-content'>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleDeleteAccount();
-                }}
-              >
-                <div className='modal-body text-center'>
-                  <span className='delete-icon'>
-                    <i className='ti ti-trash-x' />
-                  </span>
-                  <h4>Confirm Deletion</h4>
-                  <p>
-                    You want to delete all the marked items. This can't be
-                    undone once deleted.
-                  </p>
-                  <div className='d-flex justify-content-center'>
-                    <button
-                      type='button'
-                      className='btn btn-light me-3'
-                      onClick={() => setShowDeleteModal(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button type='submit' className='btn btn-danger'>
-                      Yes, Delete
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
