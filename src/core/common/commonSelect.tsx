@@ -1,34 +1,32 @@
 import React from 'react';
 import Select, { MultiValue, SingleValue, ActionMeta } from 'react-select';
 
-// Define the Option type first
 type OptionType = {
   value: string;
   label: string;
 };
 
-// Then define the interface for props
-interface SelectProps {
-  options: OptionType[];
-  value?: OptionType | MultiValue<OptionType> | null;
-  defaultValue?: OptionType | MultiValue<OptionType> | null;
+interface SelectProps<T = OptionType> {
+  options: T[];
+  value?: T | MultiValue<T> | null;
+  defaultValue?: T | MultiValue<T> | null;
   className?: string;
   styles?: any;
   isMulti?: boolean;
   onChange?: (
-    newValue: SingleValue<OptionType> | MultiValue<OptionType>,
-    actionMeta: ActionMeta<OptionType>
+    newValue: SingleValue<T> | MultiValue<T>,
+    actionMeta: ActionMeta<T>
   ) => void;
 }
 
-const CommonSelect: React.FC<SelectProps> = ({
+const CommonSelect = <T extends OptionType>({
   options,
   value,
   defaultValue,
   className,
   isMulti = false,
   onChange,
-}) => {
+}: SelectProps<T>) => {
   return (
     <Select
       classNamePrefix='react-select'

@@ -100,7 +100,7 @@
 .fc-event {
   border-radius: 2px;
   border: none;
-  color: $black !important;
+  color: $white !important;
   cursor: move;
   font-size: 13px;
   margin: 1px 7px;
@@ -158,7 +158,7 @@
   border: 1px solid $white;
   @include rounded(5px);
   background: $white;
-  color: $black;
+  color: $black !important;
   padding: 5px;
   &.progress-danger {
     border-color: $danger;

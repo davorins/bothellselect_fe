@@ -10,11 +10,12 @@ const AdminDashboardModal = () => {
     setActiveContent(event.target.value);
   };
   const eventoption = [
-    { value: 'Select', label: 'Select' },
-    { value: 'Celebration', label: 'Celebration' },
     { value: 'Training', label: 'Training' },
-    { value: 'Meeting', label: 'Meeting' },
+    { value: 'Game', label: 'Game' },
     { value: 'Holidays', label: 'Holidays' },
+    { value: 'Celebration', label: 'Celebration' },
+    { value: 'Camp', label: 'Camp' },
+    { value: 'Tryout', label: 'Tryout' },
   ];
   const allCoach = [
     { value: 'All Coach', label: 'All Coach' },

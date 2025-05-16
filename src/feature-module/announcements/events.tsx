@@ -13,6 +13,7 @@ import { Modal } from 'react-bootstrap';
 import ImageWithBasePath from '../../core/common/imageWithBasePath';
 import { Link } from 'react-router-dom';
 import { eventCategory } from '../../core/common/selectoption/selectoption';
+import CommonSelect, { Option } from '../../core/common/commonSelect';
 import { DatePicker } from 'antd';
 import { all_routes } from '../router/all_routes';
 import type { Dayjs } from 'dayjs';
@@ -30,17 +31,25 @@ interface EventDetails {
   category?: string;
   attendees?: string[];
   allDay?: boolean;
-  sections?: string[];
   attachment?: string;
 }
 
 const categoryColorMap: Record<string, string> = {
-  practice: 'info',
-  tryout: 'danger',
   training: 'success',
+  game: 'danger',
+  holidays: 'info',
   celebration: 'warning',
   camp: 'secondary',
-  default: 'primary',
+  tryout: 'primary',
+};
+
+const calendarCategoryColorMap: Record<string, string> = {
+  training: '#1abe17',
+  game: '#dc3545',
+  holidays: '#0dcaf0',
+  celebration: '#ffc107',
+  camp: '#6c757d',
+  tryout: '#0d6efd',
 };
 
 const Events = () => {
@@ -53,6 +62,7 @@ const Events = () => {
   });
   const [events, setEvents] = useState<EventDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const calendarRef = useRef<FullCalendar>(null);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -97,6 +107,14 @@ const Events = () => {
     fetchEvents();
   }, [fetchEvents]);
 
+  const filteredEvents = useMemo(() => {
+    return events.filter((event) => {
+      if (selectedCategory === 'all') return true;
+      if (!event.category) return false;
+      return event.category.toLowerCase() === selectedCategory.toLowerCase();
+    });
+  }, [events, selectedCategory]);
+
   const handleDateClick = () => {
     setEventDetails({
       title: '',
@@ -124,18 +142,22 @@ const Events = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const category = eventDetails.category || 'training';
+      const eventToSave = {
+        ...eventDetails,
+        backgroundColor: calendarCategoryColorMap[category] || '#adb5bd',
+      };
+
       if (eventDetails._id) {
-        await api.put(`/events/${eventDetails._id}`, eventDetails);
+        await api.put(`/events/${eventDetails._id}`, eventToSave);
       } else {
-        await api.post('/events', eventDetails);
+        await api.post('/events', eventToSave);
       }
 
-      const response = await api.get('/events');
-      setEvents(response.data);
+      await fetchEvents();
       setShowAddEventModal(false);
     } catch (error) {
       console.error('Error saving event:', error);
-
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         console.error('Please login again');
         localStorage.removeItem('token');
@@ -147,8 +169,7 @@ const Events = () => {
     if (!eventDetails._id) return;
     try {
       await api.delete(`/events/${eventDetails._id}`);
-      const response = await api.get('/events');
-      setEvents(response.data);
+      await fetchEvents();
       setShowEventDetailsModal(false);
     } catch (error) {
       console.error('Error deleting event:', error);
@@ -202,11 +223,7 @@ const Events = () => {
       end: event.end,
       backgroundColor:
         event.backgroundColor ||
-        (event.category
-          ? `var(--${
-              categoryColorMap[event.category] || categoryColorMap.default
-            })`
-          : undefined),
+        (event.category ? calendarCategoryColorMap[event.category] : '#adb5bd'),
       extendedProps: {
         description: event.description,
         category: event.category,
@@ -214,8 +231,9 @@ const Events = () => {
     }));
   };
 
-  const getCategoryColor = (category?: string) => {
-    return categoryColorMap[category || 'default'];
+  const getCategoryColor = (category?: string): string => {
+    if (!category) return 'secondary';
+    return categoryColorMap[category.toLowerCase()] || 'secondary';
   };
 
   if (isLoading) {
@@ -290,7 +308,7 @@ const Events = () => {
                   <FullCalendar
                     plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                     initialView='dayGridMonth'
-                    events={formatEventsForCalendar(events)}
+                    events={formatEventsForCalendar(filteredEvents)}
                     headerToolbar={{
                       start: 'title',
                       center: 'dayGridMonth,dayGridWeek,dayGridDay',
@@ -320,12 +338,27 @@ const Events = () => {
                     className='btn btn-outline-light dropdown-toggle'
                     data-bs-toggle='dropdown'
                   >
-                    All Category
+                    {selectedCategory === 'all'
+                      ? 'All Categories'
+                      : eventCategory.find((c) => c.value === selectedCategory)
+                          ?.label || 'Selected Category'}
                   </button>
                   <ul className='dropdown-menu p-3'>
+                    <li>
+                      <button
+                        className='dropdown-item rounded-1 d-flex align-items-center'
+                        onClick={() => setSelectedCategory('all')}
+                      >
+                        <i className='ti ti-circle-filled fs-8 text-secondary me-2' />
+                        All Categories
+                      </button>
+                    </li>
                     {eventCategory.map((category) => (
                       <li key={category.value}>
-                        <button className='dropdown-item rounded-1 d-flex align-items-center'>
+                        <button
+                          className='dropdown-item rounded-1 d-flex align-items-center'
+                          onClick={() => setSelectedCategory(category.value)}
+                        >
                           <i
                             className={`ti ti-circle-filled fs-8 text-${getCategoryColor(
                               category.value
@@ -339,54 +372,91 @@ const Events = () => {
                 </div>
               </div>
 
-              {events.slice(0, 5).map((event, index) => {
-                const categoryColor = getCategoryColor(event.category);
-                return (
-                  <div
-                    key={index}
-                    className={`border-start border-${categoryColor} border-3 shadow-sm p-3 mb-3 bg-white`}
+              {filteredEvents.length === 0 ? (
+                <div className='text-center py-4'>
+                  <i className='ti ti-calendar-off fs-20 text-muted mb-2' />
+                  <p className='text-muted'>
+                    {selectedCategory === 'all'
+                      ? 'No upcoming events found'
+                      : `No ${selectedCategory} events found`}
+                  </p>
+                  <button
+                    className='btn btn-primary btn-sm'
+                    onClick={handleDateClick}
                   >
-                    <div className='d-flex align-items-center mb-3 pb-3 border-bottom'>
-                      <span
-                        className={`avatar p-1 me-3 bg-${categoryColor}-transparent flex-shrink-0`}
-                      >
-                        <i
-                          className={`ti ti-users-group text-${categoryColor} fs-20`}
-                        />
-                      </span>
-                      <div className='flex-fill'>
-                        <h6 className='mb-1'>{event.title}</h6>
-                        <p className='fs-12'>
-                          <i className='ti ti-calendar me-1' />
-                          {dayjs(event.start).format('DD MMM YYYY')}
-                          {event.end &&
-                            ` - ${dayjs(event.end).format('DD MMM YYYY')}`}
+                    <i className='ti ti-plus me-1' />
+                    Add New Event
+                  </button>
+                </div>
+              ) : (
+                filteredEvents.slice(0, 5).map((event, index) => {
+                  const categoryColor = getCategoryColor(event.category);
+                  return (
+                    <div
+                      key={index}
+                      className={`border-start border-${categoryColor} border-3 shadow-sm p-3 mb-3 bg-white cursor-pointer`}
+                      onClick={() => {
+                        setEventDetails({
+                          _id: event._id,
+                          title: event.title,
+                          start: event.start,
+                          end: event.end,
+                          backgroundColor:
+                            event.backgroundColor ||
+                            (event.category
+                              ? calendarCategoryColorMap[event.category]
+                              : '#adb5bd'),
+                          description: event.description,
+                          category: event.category,
+                          attendees: event.attendees,
+                          attachment: event.attachment,
+                        });
+                        setShowEventDetailsModal(true);
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div className='d-flex align-items-center mb-3 pb-3 border-bottom'>
+                        <span
+                          className={`avatar p-1 me-3 bg-${categoryColor}-transparent flex-shrink-0`}
+                        >
+                          <i
+                            className={`ti ti-users-group text-${categoryColor} fs-20`}
+                          />
+                        </span>
+                        <div className='flex-fill'>
+                          <h6 className='mb-1'>{event.title}</h6>
+                          <p className='fs-12'>
+                            <i className='ti ti-calendar me-1' />
+                            {dayjs(event.start).format('DD MMM YYYY')}
+                            {event.end &&
+                              ` - ${dayjs(event.end).format('DD MMM YYYY')}`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className='d-flex align-items-center justify-content-between'>
+                        <p className='fs-12 mb-0'>
+                          <i className='ti ti-clock me-1' />
+                          {dayjs(event.start).format('hh:mm A')} -{' '}
+                          {dayjs(event.end || event.start).format('hh:mm A')}
                         </p>
+                        {event.attendees && event.attendees.length > 0 && (
+                          <div className='avatar-list-stacked avatar-group-sm'>
+                            {event.attendees.slice(0, 3).map((attendee, i) => (
+                              <span key={i} className='avatar border-0'>
+                                <ImageWithBasePath
+                                  src={`assets/img/${attendee}`}
+                                  className='rounded'
+                                  alt='img'
+                                />
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className='d-flex align-items-center justify-content-between'>
-                      <p className='fs-12 mb-0'>
-                        <i className='ti ti-clock me-1' />
-                        {dayjs(event.start).format('hh:mm A')} -{' '}
-                        {dayjs(event.end || event.start).format('hh:mm A')}
-                      </p>
-                      {event.attendees && event.attendees.length > 0 && (
-                        <div className='avatar-list-stacked avatar-group-sm'>
-                          {event.attendees.slice(0, 3).map((attendee, i) => (
-                            <span key={i} className='avatar border-0'>
-                              <ImageWithBasePath
-                                src={`assets/img/${attendee}`}
-                                className='rounded'
-                                alt='img'
-                              />
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
@@ -412,6 +482,31 @@ const Events = () => {
                   value={eventDetails.title}
                   onChange={handleInputChange}
                   required
+                />
+              </div>
+
+              <div className='mb-3'>
+                <label className='form-label'>Event Category</label>
+                <CommonSelect<Option>
+                  className='select'
+                  options={eventCategory}
+                  defaultValue={
+                    eventCategory.find(
+                      (opt) => opt.value.toLowerCase() === eventDetails.category
+                    ) || eventCategory[0]
+                  }
+                  onChange={(selectedOption) => {
+                    if (!selectedOption || Array.isArray(selectedOption))
+                      return;
+
+                    const singleOption = selectedOption as Option;
+
+                    setEventDetails((prev) => ({
+                      ...prev,
+                      category:
+                        singleOption.value.toLowerCase() as EventDetails['category'],
+                    }));
+                  }}
                 />
               </div>
 
@@ -561,7 +656,7 @@ const Events = () => {
             </span>
             <div>
               <button
-                className='btn btn-link me-1 fs-5'
+                className='btn btn-link me-1'
                 onClick={() => {
                   setShowEventDetailsModal(false);
                   setShowAddEventModal(true);
@@ -571,7 +666,7 @@ const Events = () => {
                 <i className='ti ti-edit-circle' />
               </button>
               <button
-                className='btn btn-link me-1 fs-5 text-danger'
+                className='btn btn-link me-1 text-danger'
                 onClick={handleDeleteEvent}
                 title='Delete'
               >
