@@ -20,19 +20,7 @@ import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { TimePicker } from 'antd';
 import axios from 'axios';
-
-interface EventDetails {
-  _id?: string;
-  title: string;
-  start: string;
-  end?: string;
-  backgroundColor?: string;
-  description?: string;
-  category?: string;
-  attendees?: string[];
-  allDay?: boolean;
-  attachment?: string;
-}
+import { EventDetails, SchoolInfo } from '../../types/types';
 
 const categoryColorMap: Record<string, string> = {
   training: 'success',
@@ -46,8 +34,8 @@ const categoryColorMap: Record<string, string> = {
 const calendarCategoryColorMap: Record<string, string> = {
   training: '#1abe17',
   game: '#dc3545',
-  holidays: '#0dcaf0',
-  celebration: '#ffc107',
+  holidays: '#0f65cd',
+  celebration: '#eab300',
   camp: '#6c757d',
   tryout: '#0d6efd',
 };
@@ -56,15 +44,21 @@ const Events = () => {
   const routes = all_routes;
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [showEventDetailsModal, setShowEventDetailsModal] = useState(false);
-  const [eventDetails, setEventDetails] = useState<EventDetails>({
-    title: '',
-    start: new Date().toISOString(),
-  });
   const [events, setEvents] = useState<EventDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const calendarRef = useRef<FullCalendar>(null);
+  const [schools, setSchools] = useState<SchoolInfo[]>([]);
+  const [showSchoolFields, setShowSchoolFields] = useState(false);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+  const [eventDetails, setEventDetails] = useState<EventDetails>({
+    title: '',
+    caption: '',
+    start: new Date().toISOString(), // Includes current time
+    end: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour later with time
+    school: { name: '', address: '', website: '' },
+  });
 
   const api = useMemo(() => {
     const instance = axios.create({
@@ -108,17 +102,26 @@ const Events = () => {
   }, [fetchEvents]);
 
   const filteredEvents = useMemo(() => {
-    return events.filter((event) => {
+    const filtered = events.filter((event) => {
       if (selectedCategory === 'all') return true;
       if (!event.category) return false;
       return event.category.toLowerCase() === selectedCategory.toLowerCase();
     });
+
+    // Sort events by start date (ascending)
+    return filtered.sort((a, b) => {
+      return new Date(a.start).getTime() - new Date(b.start).getTime();
+    });
   }, [events, selectedCategory]);
 
   const handleDateClick = () => {
+    const now = new Date();
     setEventDetails({
       title: '',
-      start: new Date().toISOString(),
+      caption: '',
+      start: now.toISOString(),
+      end: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
+      school: { name: '', address: '', website: '' },
     });
     setShowAddEventModal(true);
   };
@@ -127,11 +130,14 @@ const Events = () => {
     setEventDetails({
       _id: info.event.id,
       title: info.event.title,
+      caption: info.event.extendedProps.caption || '',
       start: info.event.startStr,
       end: info.event.endStr,
       backgroundColor: info.event.backgroundColor,
       description: info.event.extendedProps.description,
       category: info.event.extendedProps.category,
+      school: info.event.extendedProps.school,
+      attendees: info.event.extendedProps.attendees,
     });
     setShowEventDetailsModal(true);
   };
@@ -139,14 +145,55 @@ const Events = () => {
   const handleAddEventClose = () => setShowAddEventModal(false);
   const handleEventDetailsClose = () => setShowEventDetailsModal(false);
 
+  const loadSchools = useCallback(async () => {
+    try {
+      const response = await api.get('/events/schools');
+      setSchools(response.data);
+    } catch (error) {
+      console.error('Error loading schools:', error);
+    }
+  }, [api]);
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      await fetchEvents();
+      await loadSchools();
+    };
+
+    loadInitialData();
+  }, [api, fetchEvents, loadSchools]);
+
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+    if (category === 'game') {
+      loadSchools();
+      setShowSchoolFields(true);
+    } else {
+      setShowSchoolFields(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const category = eventDetails.category || 'training';
+      const isGame = category === 'game';
+
       const eventToSave = {
         ...eventDetails,
         backgroundColor: calendarCategoryColorMap[category] || '#adb5bd',
+        school:
+          isGame && eventDetails.school?.name ? eventDetails.school : undefined,
       };
+
+      // Save new school if it doesn't exist
+      if (
+        isGame &&
+        eventDetails.school?.name &&
+        !schools.some((s) => s.name === eventDetails.school?.name)
+      ) {
+        setSchools((prev) => [...prev, eventDetails.school!]);
+      }
 
       if (eventDetails._id) {
         await api.put(`/events/${eventDetails._id}`, eventToSave);
@@ -193,24 +240,54 @@ const Events = () => {
 
   const handleDateChange = (date: Dayjs | null, field: 'start' | 'end') => {
     if (date) {
+      // Get current date value or use now if undefined
+      const currentValue =
+        field === 'start' || eventDetails[field]
+          ? new Date(eventDetails[field]!)
+          : new Date();
+
+      const newDate = date.toDate();
+
+      // Combine new date with existing time
+      const updatedDate = new Date(
+        newDate.getFullYear(),
+        newDate.getMonth(),
+        newDate.getDate(),
+        currentValue.getHours(),
+        currentValue.getMinutes(),
+        0,
+        0
+      );
+
       setEventDetails((prev) => ({
         ...prev,
-        [field]: date.toISOString(),
+        [field]: updatedDate.toISOString(),
       }));
     }
   };
 
   const handleTimeChange = (time: Dayjs | null, field: 'start' | 'end') => {
     if (time) {
-      const currentDate = dayjs(eventDetails[field]);
-      const newDateTime = currentDate
-        .hour(time.hour())
-        .minute(time.minute())
-        .toISOString();
+      // Get current date value or use now if undefined
+      const currentValue =
+        field === 'start' || eventDetails[field]
+          ? new Date(eventDetails[field]!)
+          : new Date();
+
+      // Combine existing date with new time
+      const updatedDate = new Date(
+        currentValue.getFullYear(),
+        currentValue.getMonth(),
+        currentValue.getDate(),
+        time.hour(),
+        time.minute(),
+        0,
+        0
+      );
 
       setEventDetails((prev) => ({
         ...prev,
-        [field]: newDateTime,
+        [field]: updatedDate.toISOString(),
       }));
     }
   };
@@ -219,6 +296,7 @@ const Events = () => {
     return events.map((event) => ({
       id: event._id,
       title: event.title,
+      caption: event.caption,
       start: event.start,
       end: event.end,
       backgroundColor:
@@ -227,6 +305,8 @@ const Events = () => {
       extendedProps: {
         description: event.description,
         category: event.category,
+        school: event.school,
+        attendees: event.attendees,
       },
     }));
   };
@@ -322,9 +402,9 @@ const Events = () => {
                     }}
                     eventClick={handleEventClick}
                     ref={calendarRef}
-                    height='900px' // This makes the calendar adjust its height automatically
+                    height='900px'
                     contentHeight='120px'
-                    aspectRatio={1.7} // Adjust this value as needed
+                    aspectRatio={1.7}
                     dayMaxEventRows={3} // Limits how many events are shown per day
                     views={{
                       dayGridMonth: {
@@ -346,7 +426,41 @@ const Events = () => {
               <div className='d-flex align-items-center justify-content-between'>
                 <h5 className='mb-3'>Upcoming Events</h5>
                 <div className='dropdown mb-3'>
-                  {/* ... existing dropdown code remains the same ... */}
+                  <button
+                    className='btn btn-outline-light dropdown-toggle'
+                    data-bs-toggle='dropdown'
+                  >
+                    {selectedCategory === 'all'
+                      ? 'All Categories'
+                      : eventCategory.find((c) => c.value === selectedCategory)
+                          ?.label || 'Selected Category'}
+                  </button>
+                  <ul className='dropdown-menu p-3'>
+                    <li>
+                      <button
+                        className='dropdown-item rounded-1 d-flex align-items-center'
+                        onClick={() => setSelectedCategory('all')}
+                      >
+                        <i className='ti ti-circle-filled fs-8 text-secondary me-2' />
+                        All Categories
+                      </button>
+                    </li>
+                    {eventCategory.map((category) => (
+                      <li key={category.value}>
+                        <button
+                          className='dropdown-item rounded-1 d-flex align-items-center'
+                          onClick={() => handleCategorySelect(category.value)}
+                        >
+                          <i
+                            className={`ti ti-circle-filled fs-8 text-${getCategoryColor(
+                              category.value
+                            )} me-2`}
+                          />
+                          {category.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
 
@@ -377,6 +491,7 @@ const Events = () => {
                         setEventDetails({
                           _id: event._id,
                           title: event.title,
+                          caption: event.caption,
                           start: event.start,
                           end: event.end,
                           backgroundColor:
@@ -386,6 +501,7 @@ const Events = () => {
                               : '#adb5bd'),
                           description: event.description,
                           category: event.category,
+                          school: event.school,
                           attendees: event.attendees,
                           attachment: event.attachment,
                         });
@@ -478,15 +594,149 @@ const Events = () => {
                       return;
 
                     const singleOption = selectedOption as Option;
+                    const isGame = singleOption.value.toLowerCase() === 'game';
 
                     setEventDetails((prev) => ({
                       ...prev,
                       category:
                         singleOption.value.toLowerCase() as EventDetails['category'],
+                      school: isGame
+                        ? prev.school || { name: '', address: '', website: '' }
+                        : undefined,
                     }));
+
+                    setShowSchoolFields(isGame);
                   }}
                 />
               </div>
+
+              {/* Show school fields only for game events */}
+              {showSchoolFields && (
+                <>
+                  <div className='col-md-12 mb-3'>
+                    <label className='form-label'>Caption</label>
+                    <input
+                      type='text'
+                      className='form-control'
+                      placeholder='Enter event caption'
+                      name='caption' // This must match the state property name
+                      value={eventDetails.caption || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div className='col-md-12 mb-3'>
+                    <label className='form-label'>School</label>
+                    <select
+                      className='form-select'
+                      value={eventDetails.school?.name || ''}
+                      onChange={(e) => {
+                        if (e.target.value === '__new__') {
+                          setEventDetails((prev) => ({
+                            ...prev,
+                            school: { name: '', address: '', website: '' },
+                          }));
+                        } else {
+                          const selectedSchool = schools.find(
+                            (s) => s.name === e.target.value
+                          );
+                          setEventDetails((prev) => ({
+                            ...prev,
+                            school: selectedSchool || {
+                              name: '',
+                              address: '',
+                              website: '',
+                            },
+                          }));
+                        }
+                      }}
+                    >
+                      <option value=''>Select a school</option>
+                      {schools.map((school, index) => (
+                        <option key={index} value={school.name}>
+                          {school.name}
+                        </option>
+                      ))}
+                      <option value='__new__'>Add new school</option>
+                    </select>
+                  </div>
+
+                  {/* Show these fields when a school is selected or new school is being added */}
+                  {(eventDetails.school?.name ||
+                    eventDetails.school?.name === '') && (
+                    <>
+                      <div className='col-md-12 mb-3'>
+                        <label className='form-label'>School Name</label>
+                        <input
+                          type='text'
+                          className='form-control'
+                          placeholder='Enter school name'
+                          value={eventDetails.school?.name || ''}
+                          onChange={(e) =>
+                            setEventDetails((prev) => ({
+                              ...prev,
+                              school: {
+                                ...(prev.school || {
+                                  name: '',
+                                  address: '',
+                                  website: '',
+                                }),
+                                name: e.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className='col-md-12 mb-3'>
+                        <label className='form-label'>School Address</label>
+                        <input
+                          type='text'
+                          className='form-control'
+                          placeholder='Enter school address'
+                          value={eventDetails.school?.address || ''}
+                          onChange={(e) =>
+                            setEventDetails((prev) => ({
+                              ...prev,
+                              school: {
+                                ...(prev.school || {
+                                  name: '',
+                                  address: '',
+                                  website: '',
+                                }),
+                                address: e.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className='col-md-12 mb-3'>
+                        <label className='form-label'>School Website</label>
+                        <input
+                          type='url'
+                          className='form-control'
+                          placeholder='Enter school website'
+                          value={eventDetails.school?.website || ''}
+                          onChange={(e) =>
+                            setEventDetails((prev) => ({
+                              ...prev,
+                              school: {
+                                ...(prev.school || {
+                                  name: '',
+                                  address: '',
+                                  website: '',
+                                }),
+                                website: e.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
 
               <div className='col-md-6'>
                 <div className='mb-3'>
@@ -495,7 +745,10 @@ const Events = () => {
                     <DatePicker
                       className='form-control datetimepicker'
                       placeholder='Select Date'
-                      value={dayjs(eventDetails.start)}
+                      value={
+                        eventDetails.start ? dayjs(eventDetails.start) : null
+                      }
+                      format='MM/DD/YYYY'
                       onChange={(date) => handleDateChange(date, 'start')}
                     />
                     <span className='cal-icon'>
@@ -513,6 +766,7 @@ const Events = () => {
                       className='form-control datetimepicker'
                       placeholder='Select Date'
                       value={eventDetails.end ? dayjs(eventDetails.end) : null}
+                      format='MM/DD/YYYY'
                       onChange={(date) => handleDateChange(date, 'end')}
                     />
                     <span className='cal-icon'>
@@ -529,7 +783,12 @@ const Events = () => {
                     <TimePicker
                       placeholder='11:00 AM'
                       className='form-control timepicker'
-                      value={dayjs(eventDetails.start)}
+                      use12Hours
+                      format='hh:mm A'
+                      showSecond={false}
+                      value={
+                        eventDetails.start ? dayjs(eventDetails.start) : null
+                      }
                       onChange={(time) => handleTimeChange(time, 'start')}
                     />
                     <span className='cal-icon'>
@@ -546,11 +805,10 @@ const Events = () => {
                     <TimePicker
                       placeholder='11:00 AM'
                       className='form-control timepicker'
-                      value={
-                        eventDetails.end
-                          ? dayjs(eventDetails.end)
-                          : dayjs(eventDetails.start)
-                      }
+                      use12Hours
+                      format='hh:mm A'
+                      showSecond={false}
+                      value={eventDetails.end ? dayjs(eventDetails.end) : null}
                       onChange={(time) => handleTimeChange(time, 'end')}
                     />
                     <span className='cal-icon'>
@@ -667,9 +925,9 @@ const Events = () => {
               <div className='d-flex align-items-center flex-wrap'>
                 <p className='me-3 mb-0'>
                   <i className='ti ti-calendar me-1' />
-                  {dayjs(eventDetails.start).format('DD MMM YYYY')}
+                  {dayjs(eventDetails.start).format('MM/DD/YYYY')}
                   {eventDetails.end &&
-                    ` - ${dayjs(eventDetails.end).format('DD MMM YYYY')}`}
+                    ` - ${dayjs(eventDetails.end).format('MM/DD/YYYY')}`}
                 </p>
                 <p>
                   <i className='ti ti-clock me-1' />
@@ -681,6 +939,35 @@ const Events = () => {
               </div>
             </div>
           </div>
+
+          {eventDetails.category === 'game' && eventDetails.school && (
+            <div className='mb-3'>
+              <h6 className='mb-2'>
+                <i className='ti ti-map-pin' /> Event Location
+              </h6>
+              <div className='bg-light p-3 rounded'>
+                <p className='mb-1'>
+                  <strong>Name:</strong> {eventDetails.school.name}
+                </p>
+                <p className='mb-1'>
+                  <strong>Address:</strong> {eventDetails.school.address}
+                </p>
+                {eventDetails.school.website && (
+                  <p className='mb-0'>
+                    <strong>Website:</strong>
+                    <a
+                      href={eventDetails.school.website}
+                      target='_blank'
+                      rel='noreferrer'
+                      className='ms-1'
+                    >
+                      {eventDetails.school.website}
+                    </a>
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {eventDetails.description && (
             <div className='bg-light-400 p-3 rounded mb-3'>

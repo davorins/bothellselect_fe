@@ -521,3 +521,24 @@ export interface SeasonOption {
   season: string;
   year: number;
 }
+
+export interface SchoolInfo {
+  name: string;
+  address: string;
+  website: string;
+}
+
+export interface EventDetails {
+  _id?: string;
+  title: string;
+  caption?: string;
+  start: string;
+  end?: string;
+  backgroundColor?: string;
+  description?: string;
+  category?: string;
+  attendees?: string[];
+  allDay?: boolean;
+  attachment?: string;
+  school?: SchoolInfo;
+}
