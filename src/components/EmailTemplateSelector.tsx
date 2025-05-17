@@ -9,7 +9,12 @@ import {
 } from 'react-bootstrap';
 import { emailTemplateService } from '../services/emailTemplateService';
 import { useAuth } from '../context/AuthContext';
-import { SeasonOption, EmailTemplate, EmailCampaignData } from '../types/types';
+import {
+  SeasonOption,
+  EmailTemplate,
+  EmailCampaignData,
+  ManualEmailRequest,
+} from '../types/types';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 interface User {
@@ -45,6 +50,18 @@ export const EmailTemplateSelector: React.FC = () => {
   const [manualEmails, setManualEmails] = useState('');
   const { isAuthenticated, getAuthToken } = useAuth();
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+  const [sendingStatus, setSendingStatus] = useState<{
+    manual: 'idle' | 'sending' | 'success' | 'error';
+    campaign: 'idle' | 'sending' | 'success' | 'error';
+  }>({
+    manual: 'idle',
+    campaign: 'idle',
+  });
+
+  const isValidEmail = (email: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
 
   useEffect(() => {
     const loadTemplates = async () => {
@@ -185,21 +202,82 @@ export const EmailTemplateSelector: React.FC = () => {
     setSelectedUsers([]);
   };
 
-  const handleSendCampaign = async () => {
-    if (!selectedTemplate || (selectedUsers.length === 0 && !selectedSeason)) {
-      alert('Please select a template and at least one recipient or a season.');
-      return;
-    }
+  const getCombinedEmails = (): string[] => {
+    const selectedEmails = users
+      .filter((user) => selectedUsers.includes(user._id))
+      .map((user) => user.email);
 
-    const campaignData: EmailCampaignData = {
-      templateId: selectedTemplate._id,
-      parentIds: selectedUsers.length > 0 ? selectedUsers : [],
-      ...(selectedSeason && selectedYear
-        ? { season: selectedSeason, year: selectedYear }
-        : {}),
-    };
+    const manualEmailList = manualEmails
+      .split(/[\n,;]+/)
+      .map((email) => email.trim())
+      .filter((email) => email && isValidEmail(email));
+
+    return Array.from(new Set([...selectedEmails, ...manualEmailList]));
+  };
+
+  const getManualEmailsOnly = (): string[] => {
+    const selectedUserEmails = users
+      .filter((user) => selectedUsers.includes(user._id))
+      .map((user) => user.email);
+
+    return getCombinedEmails().filter(
+      (email) => !selectedUserEmails.includes(email)
+    );
+  };
+
+  const sendManualEmails = async (emails: string[]): Promise<boolean> => {
+    if (!selectedTemplate) return false;
+
+    setSendingStatus((prev) => ({ ...prev, manual: 'sending' }));
 
     try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/email/send-manual`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          templateId: selectedTemplate._id,
+          emails: emails,
+        } as ManualEmailRequest),
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      setSendingStatus((prev) => ({ ...prev, manual: 'success' }));
+      return true;
+    } catch (error) {
+      console.error('Manual email send error:', error);
+      setSendingStatus((prev) => ({ ...prev, manual: 'error' }));
+      setError(
+        `Failed to send manual emails: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
+      return false;
+    }
+  };
+
+  const sendRegularCampaign = async (): Promise<boolean> => {
+    if (!selectedTemplate) return false;
+
+    setSendingStatus((prev) => ({ ...prev, campaign: 'sending' }));
+
+    try {
+      const campaignData: EmailCampaignData = {
+        templateId: selectedTemplate._id,
+        ...(selectedUsers.length > 0 && { parentIds: selectedUsers }),
+        ...(selectedSeason &&
+          selectedYear && {
+            season: selectedSeason,
+            year: selectedYear,
+          }),
+      };
+
       const token = await getAuthToken();
       const response = await fetch(`${API_BASE_URL}/email/send-campaign`, {
         method: 'POST',
@@ -211,44 +289,80 @@ export const EmailTemplateSelector: React.FC = () => {
       });
 
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Send failed: ${response.status} ${text}`);
+        throw new Error(await response.text());
       }
 
-      setSuccessMessage('Email campaign sent successfully!');
-      setTimeout(() => setSuccessMessage(null), 4000);
-
-      // Reset selections
-      setSelectedTemplate(null);
-      setSelectedSeason('');
-      setSelectedYear(null);
-      setSelectedUsers([]);
-      setUsers([]);
-      setSearchTerm('');
+      setSendingStatus((prev) => ({ ...prev, campaign: 'success' }));
+      return true;
     } catch (error) {
-      console.error(error);
-      alert('Failed to send emails.');
+      console.error('Campaign send error:', error);
+      setSendingStatus((prev) => ({ ...prev, campaign: 'error' }));
+      setError(
+        `Failed to send campaign: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
+      return false;
     }
   };
 
-  const getCombinedEmails = () => {
-    // Extract emails from selected users
-    const selectedEmails = users
-      .filter((user) => selectedUsers.includes(user._id))
-      .map((user) => user.email);
+  const handleSendCampaign = async () => {
+    if (!selectedTemplate) {
+      alert('Please select an email template');
+      return;
+    }
 
-    // Extract and clean manually entered emails
-    const manualEmailList = manualEmails
-      .split(/[\n,]+/)
-      .map((email) => email.trim())
-      .filter((email) => email && /\S+@\S+\.\S+/.test(email)); // basic email validation
+    setError(null);
+    setSuccessMessage(null);
 
-    // Combine and remove duplicates
-    const allEmails = Array.from(
-      new Set([...selectedEmails, ...manualEmailList])
-    );
+    const manualEmailsToSend = getManualEmailsOnly();
+    const hasManualEmails = manualEmailsToSend.length > 0;
+    const hasRegularRecipients =
+      selectedUsers.length > 0 || (selectedSeason && selectedYear);
 
-    return allEmails;
+    if (!hasManualEmails && !hasRegularRecipients) {
+      alert('Please select recipients or enter manual emails');
+      return;
+    }
+
+    let manualSuccess = true;
+    let campaignSuccess = true;
+
+    // Send manual emails first if they exist
+    if (hasManualEmails) {
+      manualSuccess = await sendManualEmails(manualEmailsToSend);
+    }
+
+    // Send to regular recipients if they exist
+    if (hasRegularRecipients) {
+      campaignSuccess = await sendRegularCampaign();
+    }
+
+    // Show success message if all sends were successful
+    if (manualSuccess && campaignSuccess) {
+      setSuccessMessage(
+        `${
+          hasManualEmails && hasRegularRecipients
+            ? 'All emails'
+            : hasManualEmails
+            ? 'Manual emails'
+            : 'Campaign emails'
+        } sent successfully!`
+      );
+
+      // Reset form
+      setSelectedTemplate(null);
+      setSelectedUsers([]);
+      setManualEmails('');
+      setSearchTerm('');
+      setSelectedSeason('');
+      setSelectedYear(null);
+    }
+
+    // Reset sending status after 3 seconds
+    setTimeout(() => {
+      setSendingStatus({ manual: 'idle', campaign: 'idle' });
+    }, 3000);
   };
 
   const isLoading = loading.templates || loading.seasons;
@@ -464,20 +578,59 @@ export const EmailTemplateSelector: React.FC = () => {
                           disabled={
                             !selectedTemplate ||
                             (selectedUsers.length === 0 &&
-                              (!selectedSeason || !selectedYear) &&
-                              getCombinedEmails().length === 0)
+                              !selectedSeason &&
+                              getManualEmailsOnly().length === 0) ||
+                            sendingStatus.manual === 'sending' ||
+                            sendingStatus.campaign === 'sending'
                           }
                           variant='primary'
                         >
-                          Send Email Campaign
+                          {sendingStatus.manual === 'sending' ||
+                          sendingStatus.campaign === 'sending'
+                            ? 'Sending...'
+                            : 'Send Email Campaign'}
                         </Button>
+
                         {(selectedUsers.length > 0 ||
-                          getCombinedEmails().length > 0) && (
-                          <div className='mt-2 text-muted'>
-                            {getCombinedEmails().length} recipient
-                            {getCombinedEmails().length !== 1 ? 's' : ''}{' '}
-                            selected
+                          getManualEmailsOnly().length > 0) && (
+                          <div className='mt-2'>
+                            {selectedUsers.length > 0 && (
+                              <div className='text-muted small'>
+                                {selectedUsers.length} user
+                                {selectedUsers.length !== 1 ? 's' : ''} selected
+                              </div>
+                            )}
+                            {getManualEmailsOnly().length > 0 && (
+                              <div className='text-muted small'>
+                                {getManualEmailsOnly().length} manual email
+                                {getManualEmailsOnly().length !== 1
+                                  ? 's'
+                                  : ''}{' '}
+                                entered
+                              </div>
+                            )}
                           </div>
+                        )}
+
+                        {sendingStatus.manual === 'success' && (
+                          <Alert variant='success' className='mt-2 p-2'>
+                            Manual emails sent successfully!
+                          </Alert>
+                        )}
+                        {sendingStatus.campaign === 'success' && (
+                          <Alert variant='success' className='mt-2 p-2'>
+                            Campaign emails sent successfully!
+                          </Alert>
+                        )}
+                        {sendingStatus.manual === 'error' && (
+                          <Alert variant='danger' className='mt-2 p-2'>
+                            Failed to send manual emails
+                          </Alert>
+                        )}
+                        {sendingStatus.campaign === 'error' && (
+                          <Alert variant='danger' className='mt-2 p-2'>
+                            Failed to send campaign emails
+                          </Alert>
                         )}
                       </div>
                     </div>

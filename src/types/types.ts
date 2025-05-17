@@ -505,6 +505,11 @@ export interface EmailCampaignData {
   year?: number;
 }
 
+export interface ManualEmailRequest {
+  templateId: string;
+  emails: string[];
+}
+
 export interface ApiResponse {
   data?: EmailTemplate[];
   error?: string;
