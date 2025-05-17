@@ -55,7 +55,8 @@ const Events = () => {
   const [eventDetails, setEventDetails] = useState<EventDetails>({
     title: '',
     caption: '',
-    start: new Date().toISOString(), // Includes current time
+    price: 0,
+    start: new Date().toISOString(),
     end: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour later with time
     school: { name: '', address: '', website: '' },
   });
@@ -119,6 +120,7 @@ const Events = () => {
     setEventDetails({
       title: '',
       caption: '',
+      price: 0,
       start: now.toISOString(),
       end: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
       school: { name: '', address: '', website: '' },
@@ -131,13 +133,18 @@ const Events = () => {
       _id: info.event.id,
       title: info.event.title,
       caption: info.event.extendedProps.caption || '',
+      price: info.event.extendedProps.price || 0,
       start: info.event.startStr,
       end: info.event.endStr,
       backgroundColor: info.event.backgroundColor,
-      description: info.event.extendedProps.description,
-      category: info.event.extendedProps.category,
-      school: info.event.extendedProps.school,
-      attendees: info.event.extendedProps.attendees,
+      description: info.event.extendedProps.description || '',
+      category: info.event.extendedProps.category || 'training',
+      school: info.event.extendedProps.school || {
+        name: '',
+        address: '',
+        website: '',
+      },
+      attendees: info.event.extendedProps.attendees || [],
     });
     setShowEventDetailsModal(true);
   };
@@ -179,11 +186,27 @@ const Events = () => {
       const category = eventDetails.category || 'training';
       const isGame = category === 'game';
 
+      const price =
+        typeof eventDetails.price === 'number'
+          ? eventDetails.price
+          : parseFloat(eventDetails.price) || 0;
+
       const eventToSave = {
-        ...eventDetails,
-        backgroundColor: calendarCategoryColorMap[category] || '#adb5bd',
+        title: eventDetails.title,
+        caption: eventDetails.caption || '',
+        price: Math.max(0, price),
+        description: eventDetails.description,
+        start: eventDetails.start,
+        end: eventDetails.end,
+        category: eventDetails.category || 'training',
+        backgroundColor: eventDetails.category
+          ? calendarCategoryColorMap[eventDetails.category]
+          : '#adb5bd',
         school:
-          isGame && eventDetails.school?.name ? eventDetails.school : undefined,
+          eventDetails.category === 'game' && eventDetails.school?.name
+            ? eventDetails.school
+            : undefined,
+        ...(eventDetails._id && { _id: eventDetails._id }),
       };
 
       // Save new school if it doesn't exist
@@ -296,13 +319,14 @@ const Events = () => {
     return events.map((event) => ({
       id: event._id,
       title: event.title,
-      caption: event.caption,
       start: event.start,
       end: event.end,
       backgroundColor:
         event.backgroundColor ||
         (event.category ? calendarCategoryColorMap[event.category] : '#adb5bd'),
       extendedProps: {
+        caption: event.caption,
+        price: event.price,
         description: event.description,
         category: event.category,
         school: event.school,
@@ -492,6 +516,7 @@ const Events = () => {
                           _id: event._id,
                           title: event.title,
                           caption: event.caption,
+                          price: event.price,
                           start: event.start,
                           end: event.end,
                           backgroundColor:
@@ -579,6 +604,19 @@ const Events = () => {
                 />
               </div>
 
+              <div className='col-md-12 mb-3'>
+                <label className='form-label'>Caption</label>
+                <input
+                  type='text'
+                  className='form-control'
+                  placeholder='Enter event caption'
+                  name='caption'
+                  value={eventDetails.caption || ''}
+                  onChange={handleInputChange}
+                  style={{ pointerEvents: 'auto' }}
+                />
+              </div>
+
               <div className='mb-3'>
                 <label className='form-label'>Event Category</label>
                 <CommonSelect<Option>
@@ -613,15 +651,20 @@ const Events = () => {
               {/* Show school fields only for game events */}
               {showSchoolFields && (
                 <>
-                  <div className='col-md-12 mb-3'>
-                    <label className='form-label'>Caption</label>
+                  <div className='mb-3'>
+                    <label className='form-label'>Price ($)</label>
                     <input
-                      type='text'
+                      type='number'
                       className='form-control'
-                      placeholder='Enter event caption'
-                      name='caption' // This must match the state property name
-                      value={eventDetails.caption || ''}
-                      onChange={handleInputChange}
+                      placeholder='Enter price'
+                      name='price'
+                      value={eventDetails.price || 0}
+                      onChange={(e) =>
+                        setEventDetails((prev) => ({
+                          ...prev,
+                          price: parseFloat(e.target.value) || 0,
+                        }))
+                      }
                     />
                   </div>
 
@@ -922,6 +965,9 @@ const Events = () => {
             </span>
             <div>
               <h3 className='mb-1'>{eventDetails.title}</h3>
+              {eventDetails.caption && (
+                <h5 className='text-muted mb-2'>{eventDetails.caption}</h5>
+              )}
               <div className='d-flex align-items-center flex-wrap'>
                 <p className='me-3 mb-0'>
                   <i className='ti ti-calendar me-1' />
@@ -939,6 +985,16 @@ const Events = () => {
               </div>
             </div>
           </div>
+
+          {eventDetails.price > 0 && (
+            <div className='d-flex align-items-center flex-wrap mb-4'>
+              <span className='fw-bold me-1'>Price:</span>{' '}
+              <span className='text-primary me-1'>
+                ${eventDetails.price.toFixed(2)}
+              </span>{' '}
+              <span className='text-muted'>per person</span>
+            </div>
+          )}
 
           {eventDetails.category === 'game' && eventDetails.school && (
             <div className='mb-3'>

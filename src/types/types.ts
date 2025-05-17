@@ -532,6 +532,7 @@ export interface EventDetails {
   _id?: string;
   title: string;
   caption?: string;
+  price: number;
   start: string;
   end?: string;
   backgroundColor?: string;
