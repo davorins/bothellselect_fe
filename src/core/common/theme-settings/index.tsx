@@ -175,6 +175,33 @@ const ThemeSettings = () => {
                   Holidays
                 </button>
               </li>
+              <li>
+                <button
+                  className='dropdown-item rounded-1 d-flex align-items-center'
+                  onClick={() => setSelectedCategory('celebration')}
+                >
+                  <i className='ti ti-circle-filled fs-8 text-info me-2' />
+                  Celebration
+                </button>
+              </li>
+              <li>
+                <button
+                  className='dropdown-item rounded-1 d-flex align-items-center'
+                  onClick={() => setSelectedCategory('camp')}
+                >
+                  <i className='ti ti-circle-filled fs-8 text-info me-2' />
+                  Camp
+                </button>
+              </li>
+              <li>
+                <button
+                  className='dropdown-item rounded-1 d-flex align-items-center'
+                  onClick={() => setSelectedCategory('Tryout')}
+                >
+                  <i className='ti ti-circle-filled fs-8 text-info me-2' />
+                  Tryout
+                </button>
+              </li>
             </ul>
           </div>
         </div>
