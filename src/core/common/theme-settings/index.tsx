@@ -309,7 +309,7 @@ const ThemeSettings = () => {
                 eventDetails.category
               )}-transparent me-3 flex-shrink-0`}
             >
-              <i className='ti ti-users-group fs-30' />
+              <i className='ti ti ti-calendar-event fs-30' />
             </span>
             <div>
               <h3 className='mb-1'>{eventDetails.title}</h3>
@@ -344,34 +344,36 @@ const ThemeSettings = () => {
             </div>
           )}
 
-          {eventDetails.category === 'game' && eventDetails.school && (
-            <div className='mb-3'>
-              <h6 className='mb-2'>
-                <i className='ti ti-map-pin' /> Event Location
-              </h6>
-              <div className='bg-light p-3 rounded'>
-                <p className='mb-1'>
-                  <strong>Name:</strong> {eventDetails.school.name}
-                </p>
-                <p className='mb-1'>
-                  <strong>Address:</strong> {eventDetails.school.address}
-                </p>
-                {eventDetails.school.website && (
-                  <p className='mb-0'>
-                    <strong>Website:</strong>
-                    <a
-                      href={eventDetails.school.website}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='ms-1'
-                    >
-                      {eventDetails.school.website}
-                    </a>
+          {(eventDetails.category === 'game' ||
+            eventDetails.category === 'training') &&
+            eventDetails.school && (
+              <div className='mb-3'>
+                <h6 className='mb-2'>
+                  <i className='ti ti-map-pin' /> Event Location
+                </h6>
+                <div className='bg-light p-3 rounded'>
+                  <p className='mb-1'>
+                    <strong>Name:</strong> {eventDetails.school.name}
                   </p>
-                )}
+                  <p className='mb-1'>
+                    <strong>Address:</strong> {eventDetails.school.address}
+                  </p>
+                  {eventDetails.school.website && (
+                    <p className='mb-0'>
+                      <strong>Website:</strong>
+                      <a
+                        href={eventDetails.school.website}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='ms-1'
+                      >
+                        {eventDetails.school.website}
+                      </a>
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {eventDetails.description && (
             <div className='bg-light-400 p-3 rounded mb-3'>
