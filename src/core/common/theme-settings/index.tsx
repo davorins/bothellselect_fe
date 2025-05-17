@@ -180,7 +180,7 @@ const ThemeSettings = () => {
                   className='dropdown-item rounded-1 d-flex align-items-center'
                   onClick={() => setSelectedCategory('celebration')}
                 >
-                  <i className='ti ti-circle-filled fs-8 text-info me-2' />
+                  <i className='ti ti-circle-filled fs-8 text-warning me-2' />
                   Celebration
                 </button>
               </li>
@@ -189,16 +189,16 @@ const ThemeSettings = () => {
                   className='dropdown-item rounded-1 d-flex align-items-center'
                   onClick={() => setSelectedCategory('camp')}
                 >
-                  <i className='ti ti-circle-filled fs-8 text-info me-2' />
+                  <i className='ti ti-circle-filled fs-8 text-secondary me-2' />
                   Camp
                 </button>
               </li>
               <li>
                 <button
                   className='dropdown-item rounded-1 d-flex align-items-center'
-                  onClick={() => setSelectedCategory('Tryout')}
+                  onClick={() => setSelectedCategory('tryout')}
                 >
-                  <i className='ti ti-circle-filled fs-8 text-info me-2' />
+                  <i className='ti ti-circle-filled fs-8 text-primary me-2' />
                   Tryout
                 </button>
               </li>
