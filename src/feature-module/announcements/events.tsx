@@ -505,7 +505,7 @@ const Events = () => {
                   </button>
                 </div>
               ) : (
-                filteredEvents.map((event, index) => {
+                filteredEvents.slice(0, 5).map((event, index) => {
                   const categoryColor = getCategoryColor(event.category);
                   return (
                     <div
