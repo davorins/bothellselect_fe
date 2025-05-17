@@ -150,6 +150,55 @@ const EmailTemplates = () => {
     }
   };
 
+  const headerHTML = `
+  <div style="text-align:left; padding:20px 0;">
+    <img src="http://localhost:3000/assets/img/logo.png" alt="Bothell Select Logo" height="38" style="display:block; margin:0; height:38px;" />
+  </div>
+`;
+
+  const footerHTML = `
+  <div style="text-align:center; font-size:13px; color:#999; padding:30px 0 10px;">
+    <p style="margin:0;">You're receiving this email because you're part of <strong>Bothell Select</strong>.</p>
+    <p style="margin:6px 0 0;"><a href="https://bothellselect.com/unsubscribe" style="color:#999; text-decoration:underline;">Unsubscribe</a></p>
+  </div>
+`;
+
+  function addInlineParagraphStyles(html: string): string {
+    return html.replace(
+      /<p(\s[^>]*)?>/g,
+      '<p style="margin:0 0 12px; padding:0;"$1>'
+    );
+  }
+
+  // Then before rendering:
+  const cleanedContent = addInlineParagraphStyles(newTemplate.content);
+
+  const getWrappedContent = () => `
+  <div style="background-color:#f6f6f6; padding:40px 20px; text-align:center;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" align="center" style="max-width:600px; margin:0 auto;">
+      <tr>
+        <td style="
+          background-color:#ffffff;
+          border-radius:10px;
+          padding:32px 28px;
+          box-shadow:0 2px 10px rgba(0,0,0,0.05);
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          color:#333;
+          font-size:15px;
+          line-height:1.6;
+          text-align:left;
+        ">
+          ${headerHTML}
+          <div style="margin-top:20px; text-align:left;">
+            ${cleanedContent}
+          </div>
+          ${footerHTML}
+        </td>
+      </tr>
+    </table>
+  </div>
+  `;
+
   // API operations with proper error handling
   const addTemplate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,7 +227,7 @@ const EmailTemplates = () => {
         {
           title: newTemplate.title.trim(),
           subject: newTemplate.subject.trim(),
-          content: newTemplate.content,
+          content: getWrappedContent(),
           status: newTemplate.status,
           category: newTemplate.category,
           tags: newTemplate.tags.filter((tag) => tag.trim() !== ''),
