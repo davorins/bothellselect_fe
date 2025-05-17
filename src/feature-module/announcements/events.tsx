@@ -104,6 +104,23 @@ const Events = () => {
     fetchEvents();
   }, [fetchEvents]);
 
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      const infoButton = document.querySelector('.fc-helpbtn-button');
+      if (infoButton) {
+        infoButton.innerHTML = '<span class="ti ti-info-circle fs-4"></span>';
+        observer.disconnect();
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   const filteredEvents = useMemo(() => {
     const filtered = events.filter((event) => {
       if (selectedCategory === 'all') return true;
@@ -359,13 +376,6 @@ const Events = () => {
     if (!category) return 'secondary';
     return categoryColorMap[category.toLowerCase()] || 'secondary';
   };
-
-  useEffect(() => {
-    const infoButton = document.querySelector('.fc-helpbtn-button');
-    if (infoButton) {
-      infoButton.innerHTML = '<span class="ti ti-info-circle fs-4"></span>';
-    }
-  }, []);
 
   if (isLoading) {
     return (
