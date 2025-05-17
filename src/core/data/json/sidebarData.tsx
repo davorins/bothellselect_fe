@@ -65,7 +65,7 @@ export const SidebarData = [
     submenuHdr: 'Events',
     submenuItems: [
       {
-        label: 'Schedules',
+        label: 'Schedule',
         icon: 'ti ti-calendar-event',
         submenu: false,
         showSubRoute: false,

@@ -172,7 +172,7 @@ const Events = () => {
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
-    if (category === 'game') {
+    if (category === 'game' || category === 'training') {
       loadSchools();
       setShowSchoolFields(true);
     } else {
@@ -185,11 +185,13 @@ const Events = () => {
     try {
       const category = eventDetails.category || 'training';
       const isGame = category === 'game';
+      const isGameOrTraining = isGame || category === 'training';
 
-      const price =
-        typeof eventDetails.price === 'number'
+      const price = isGame
+        ? typeof eventDetails.price === 'number'
           ? eventDetails.price
-          : parseFloat(eventDetails.price) || 0;
+          : parseFloat(eventDetails.price) || 0
+        : 0;
 
       const eventToSave = {
         title: eventDetails.title,
@@ -198,12 +200,10 @@ const Events = () => {
         description: eventDetails.description,
         start: eventDetails.start,
         end: eventDetails.end,
-        category: eventDetails.category || 'training',
-        backgroundColor: eventDetails.category
-          ? calendarCategoryColorMap[eventDetails.category]
-          : '#adb5bd',
+        category: category,
+        backgroundColor: calendarCategoryColorMap[category] || '#adb5bd',
         school:
-          eventDetails.category === 'game' && eventDetails.school?.name
+          isGameOrTraining && eventDetails.school?.name
             ? eventDetails.school
             : undefined,
         ...(eventDetails._id && { _id: eventDetails._id }),
@@ -632,18 +632,20 @@ const Events = () => {
                       return;
 
                     const singleOption = selectedOption as Option;
-                    const isGame = singleOption.value.toLowerCase() === 'game';
+                    const category = singleOption.value.toLowerCase();
+                    const showFields =
+                      category === 'game' || category === 'training';
 
                     setEventDetails((prev) => ({
                       ...prev,
-                      category:
-                        singleOption.value.toLowerCase() as EventDetails['category'],
-                      school: isGame
+                      category: category as EventDetails['category'],
+                      school: showFields
                         ? prev.school || { name: '', address: '', website: '' }
                         : undefined,
                     }));
 
-                    setShowSchoolFields(isGame);
+                    setShowSchoolFields(showFields);
+                    if (showFields) loadSchools();
                   }}
                 />
               </div>
@@ -651,22 +653,25 @@ const Events = () => {
               {/* Show school fields only for game events */}
               {showSchoolFields && (
                 <>
-                  <div className='mb-3'>
-                    <label className='form-label'>Price ($)</label>
-                    <input
-                      type='number'
-                      className='form-control'
-                      placeholder='Enter price'
-                      name='price'
-                      value={eventDetails.price || 0}
-                      onChange={(e) =>
-                        setEventDetails((prev) => ({
-                          ...prev,
-                          price: parseFloat(e.target.value) || 0,
-                        }))
-                      }
-                    />
-                  </div>
+                  {/* Show price field only for game category */}
+                  {eventDetails.category === 'game' && (
+                    <div className='mb-3'>
+                      <label className='form-label'>Price ($)</label>
+                      <input
+                        type='number'
+                        className='form-control'
+                        placeholder='Enter price'
+                        name='price'
+                        value={eventDetails.price || 0}
+                        onChange={(e) =>
+                          setEventDetails((prev) => ({
+                            ...prev,
+                            price: parseFloat(e.target.value) || 0,
+                          }))
+                        }
+                      />
+                    </div>
+                  )}
 
                   <div className='col-md-12 mb-3'>
                     <label className='form-label'>School</label>
@@ -961,7 +966,7 @@ const Events = () => {
                 eventDetails.category
               )}-transparent me-3 flex-shrink-0`}
             >
-              <i className='ti ti-users-group fs-30' />
+              <i className='ti ti ti-calendar-event fs-30' />
             </span>
             <div>
               <h3 className='mb-1'>{eventDetails.title}</h3>
@@ -996,34 +1001,36 @@ const Events = () => {
             </div>
           )}
 
-          {eventDetails.category === 'game' && eventDetails.school && (
-            <div className='mb-3'>
-              <h6 className='mb-2'>
-                <i className='ti ti-map-pin' /> Event Location
-              </h6>
-              <div className='bg-light p-3 rounded'>
-                <p className='mb-1'>
-                  <strong>Name:</strong> {eventDetails.school.name}
-                </p>
-                <p className='mb-1'>
-                  <strong>Address:</strong> {eventDetails.school.address}
-                </p>
-                {eventDetails.school.website && (
-                  <p className='mb-0'>
-                    <strong>Website:</strong>
-                    <a
-                      href={eventDetails.school.website}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='ms-1'
-                    >
-                      {eventDetails.school.website}
-                    </a>
+          {(eventDetails.category === 'game' ||
+            eventDetails.category === 'training') &&
+            eventDetails.school && (
+              <div className='mb-3'>
+                <h6 className='mb-2'>
+                  <i className='ti ti-map-pin' /> Event Location
+                </h6>
+                <div className='bg-light p-3 rounded'>
+                  <p className='mb-1'>
+                    <strong>Name:</strong> {eventDetails.school.name}
                   </p>
-                )}
+                  <p className='mb-1'>
+                    <strong>Address:</strong> {eventDetails.school.address}
+                  </p>
+                  {eventDetails.school.website && (
+                    <p className='mb-0'>
+                      <strong>Website:</strong>
+                      <a
+                        href={eventDetails.school.website}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='ms-1'
+                      >
+                        {eventDetails.school.website}
+                      </a>
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {eventDetails.description && (
             <div className='bg-light-400 p-3 rounded mb-3'>
