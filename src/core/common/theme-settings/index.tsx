@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { Modal } from 'react-bootstrap';
 import ImageWithBasePath from '../../../core/common/imageWithBasePath';
 import dayjs from 'dayjs';
@@ -119,6 +120,13 @@ const ThemeSettings = () => {
         id='theme-setting'
       >
         <div className='offcanvas-header d-flex align-items-center justify-content-between bg-light-500'>
+          <Link
+            to='#'
+            className='custom-btn-close d-flex align-items-center justify-content-center text-white'
+            data-bs-dismiss='offcanvas'
+          >
+            <i className='ti ti-x' />
+          </Link>
           <h5 className='offcanvas-title'>Upcoming Events</h5>
           <div className='dropdown'>
             <button
