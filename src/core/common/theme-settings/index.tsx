@@ -190,7 +190,7 @@ const ThemeSettings = () => {
             </div>
           ) : (
             <div className='event-list'>
-              {filteredEvents.slice(0, 5).map((event, index) => {
+              {filteredEvents.map((event, index) => {
                 const categoryColor = getCategoryColor(event.category);
                 return (
                   <div
