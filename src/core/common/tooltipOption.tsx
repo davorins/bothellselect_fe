@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { OverlayTrigger, Tooltip, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+import HelpModal from './HelpModal';
 
 interface TooltipOptionProps {
   onExportPDF: () => void;
@@ -9,6 +10,7 @@ interface TooltipOptionProps {
   onCopyEmails?: () => void;
   showEmailExport?: boolean;
   showCopyEmails?: boolean;
+  showCalendarHelp?: boolean;
 }
 
 const TooltipOption = ({
@@ -18,9 +20,31 @@ const TooltipOption = ({
   onCopyEmails,
   showEmailExport = false,
   showCopyEmails = false,
+  showCalendarHelp = false,
 }: TooltipOptionProps) => {
+  const [showHelpModal, setShowHelpModal] = useState(false);
   return (
     <>
+      {showCalendarHelp && (
+        <div className='pe-1 mb-2'>
+          <OverlayTrigger
+            placement='top'
+            overlay={<Tooltip id='tooltip-help'>Calendar Tips</Tooltip>}
+          >
+            <Button
+              variant='outline-light'
+              className='bg-white btn-icon me-1'
+              onClick={() => setShowHelpModal(true)}
+            >
+              <i className='ti ti-info-circle' />
+            </Button>
+          </OverlayTrigger>
+          <HelpModal
+            show={showHelpModal}
+            onHide={() => setShowHelpModal(false)}
+          />
+        </div>
+      )}
       <div className='pe-1 mb-2'>
         <OverlayTrigger
           placement='top'

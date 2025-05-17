@@ -20,7 +20,8 @@ import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { TimePicker } from 'antd';
 import axios from 'axios';
-import { EventDetails, SchoolInfo } from '../../types/types';
+import { EventDetails, SchoolInfo, CalendarEvent } from '../../types/types';
+import HelpModal from '../../core/common/HelpModal';
 
 const categoryColorMap: Record<string, string> = {
   training: 'success',
@@ -50,6 +51,7 @@ const Events = () => {
   const calendarRef = useRef<FullCalendar>(null);
   const [schools, setSchools] = useState<SchoolInfo[]>([]);
   const [showSchoolFields, setShowSchoolFields] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   const [eventDetails, setEventDetails] = useState<EventDetails>({
@@ -335,10 +337,35 @@ const Events = () => {
     }));
   };
 
+  const handleEventUpdate = async (calendarEvent: CalendarEvent) => {
+    try {
+      const eventToUpdate = {
+        _id: calendarEvent.id,
+        title: calendarEvent.title,
+        start: calendarEvent.startStr,
+        end: calendarEvent.endStr,
+        ...calendarEvent.extendedProps,
+      };
+
+      await api.put(`/events/${calendarEvent.id}`, eventToUpdate);
+      await fetchEvents();
+    } catch (error) {
+      console.error('Error updating event:', error);
+      calendarEvent.revert();
+    }
+  };
+
   const getCategoryColor = (category?: string): string => {
     if (!category) return 'secondary';
     return categoryColorMap[category.toLowerCase()] || 'secondary';
   };
+
+  useEffect(() => {
+    const infoButton = document.querySelector('.fc-helpbtn-button');
+    if (infoButton) {
+      infoButton.innerHTML = '<span class="ti ti-info-circle fs-4"></span>';
+    }
+  }, []);
 
   if (isLoading) {
     return (
@@ -416,12 +443,17 @@ const Events = () => {
                     headerToolbar={{
                       start: 'title',
                       center: 'dayGridMonth,timeGridWeek,timeGridDay',
-                      end: 'custombtn',
+                      end: 'custombtn helpbtn',
                     }}
                     customButtons={{
                       custombtn: {
                         text: 'Add New Event',
                         click: handleDateClick,
+                      },
+                      helpbtn: {
+                        text: '',
+                        hint: 'Calendar tips',
+                        click: () => setShowHelpModal(true),
                       },
                     }}
                     eventClick={handleEventClick}
@@ -429,14 +461,71 @@ const Events = () => {
                     height='900px'
                     contentHeight='120px'
                     aspectRatio={1.7}
-                    dayMaxEventRows={3} // Limits how many events are shown per day
+                    dayMaxEventRows={3}
                     views={{
                       dayGridMonth: {
-                        dayMaxEventRows: 3, // Show max 3 events per day in month view
+                        dayMaxEventRows: 3,
                       },
                       timeGridWeek: {
-                        dayMaxEventRows: 6, // Show more events in week view
+                        dayMaxEventRows: 6,
                       },
+                    }}
+                    editable={true}
+                    selectable={true}
+                    eventDragStart={(info) => {
+                      const originalEvent = {
+                        id: info.event.id,
+                        title: info.event.title,
+                        start: info.event.startStr,
+                        end: info.event.endStr,
+                        extendedProps: {
+                          caption: info.event.extendedProps.caption || '',
+                          price: info.event.extendedProps.price || 0,
+                          description:
+                            info.event.extendedProps.description || '',
+                          category:
+                            info.event.extendedProps.category || 'training',
+                          school: info.event.extendedProps.school || undefined,
+                          attendees: info.event.extendedProps.attendees || [],
+                        },
+                      };
+                      info.el.setAttribute(
+                        'data-original-event',
+                        JSON.stringify(originalEvent)
+                      );
+                      info.el.style.cursor = 'grabbing';
+                    }}
+                    eventDragStop={(info) => {
+                      info.el.style.cursor = '';
+                    }}
+                    eventDrop={(info) => {
+                      const isCopy =
+                        info.jsEvent.ctrlKey || info.jsEvent.metaKey;
+                      const originalEventStr = info.el.getAttribute(
+                        'data-original-event'
+                      );
+
+                      if (isCopy && originalEventStr) {
+                        const originalEvent = JSON.parse(originalEventStr);
+
+                        const newEvent = {
+                          ...originalEvent,
+                          start: info.event.startStr,
+                          end: info.event.endStr,
+                          _id: undefined,
+                        };
+
+                        setEventDetails(newEvent);
+                        setShowAddEventModal(true);
+                        info.revert();
+                      } else {
+                        handleEventUpdate(
+                          info.event as unknown as CalendarEvent
+                        );
+                      }
+                    }}
+                    eventResize={(info) => {
+                      handleEventUpdate(info.event as unknown as CalendarEvent);
                     }}
                   />
                 </div>
@@ -1060,6 +1149,7 @@ const Events = () => {
           </div>
         </Modal.Body>
       </Modal>
+      <HelpModal show={showHelpModal} onHide={() => setShowHelpModal(false)} />
     </div>
   );
 };

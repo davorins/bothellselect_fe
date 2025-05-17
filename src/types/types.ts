@@ -543,3 +543,19 @@ export interface EventDetails {
   attachment?: string;
   school?: SchoolInfo;
 }
+
+export type CalendarEvent = {
+  id: string;
+  title: string;
+  startStr: string;
+  endStr: string;
+  extendedProps: {
+    caption: string;
+    price: number;
+    description: string;
+    category: string;
+    school?: SchoolInfo;
+    attendees: string[];
+  };
+  revert: () => void;
+};
