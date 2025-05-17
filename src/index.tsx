@@ -17,6 +17,7 @@ import '../src/style/icon/tabler-icons/webfont/tabler-icons.css';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import '../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js';
+import ThemeSettings from './core/common/theme-settings';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -28,6 +29,7 @@ root.render(
       <BrowserRouter basename={base_path}>
         <AuthProvider>
           <App />
+          <ThemeSettings />
         </AuthProvider>
       </BrowserRouter>
     </Provider>

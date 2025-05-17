@@ -436,7 +436,7 @@ const EmailTemplates = () => {
               <div className='d-flex align-items-center justify-content-between flex-wrap border-bottom pt-3 mb-3'>
                 <div className='mb-3'>
                   <h5 className='mb-1'>Email Templates</h5>
-                  <p>Email Templates Configuration</p>
+                  <p>Create Email Templates</p>
                 </div>
                 <div className='mb-3'>
                   <Button

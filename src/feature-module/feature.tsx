@@ -134,7 +134,7 @@ const Feature: React.FC<FeatureProps> = ({ children }) => {
             <Sidebar />
             {children || <Outlet />}{' '}
             {/* Render children if provided, otherwise render Outlet */}
-            {!location.pathname.includes('layout') && <ThemeSettings />}
+            {/* {!location.pathname.includes('layout') && <ThemeSettings />} */}
           </div>
         </>
       ) : (
@@ -147,7 +147,7 @@ const Feature: React.FC<FeatureProps> = ({ children }) => {
             <Sidebar />
             {children || <Outlet />}{' '}
             {/* Render children if provided, otherwise render Outlet */}
-            {!location.pathname.includes('layout') && <ThemeSettings />}
+            {/* {!location.pathname.includes('layout') && <ThemeSettings />} */}
           </div>
         </>
       )}

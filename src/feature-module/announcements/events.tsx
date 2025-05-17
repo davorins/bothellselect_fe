@@ -539,7 +539,7 @@ const Events = () => {
                           className={`avatar p-1 me-3 bg-${categoryColor}-transparent flex-shrink-0`}
                         >
                           <i
-                            className={`ti ti-users-group text-${categoryColor} fs-20`}
+                            className={`ti ti-calendar-event text-${categoryColor} fs-20`}
                           />
                         </span>
                         <div className='flex-fill'>
