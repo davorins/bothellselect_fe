@@ -167,7 +167,6 @@ const PlayerList = () => {
               <Table
                 dataSource={sortOrder ? sortedPlayers : filteredPlayers}
                 columns={columns}
-                rowSelection={{}}
                 loading={loading}
               />
             </div>

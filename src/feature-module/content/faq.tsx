@@ -1,453 +1,711 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import * as XLSX from 'xlsx';
-import PredefinedDateRanges from '../../core/common/datePicker';
-import CommonSelect from '../../core/common/commonSelect';
-import {
-  category3,
-  questions,
-  sections,
-} from '../../core/common/selectoption/selectoption';
-import { faq_data } from '../../core/data/json/faq_data';
-import { TableData } from '../../core/data/interface';
+import { faq } from '../../core/common/selectoption/selectoption';
 import Table from '../../core/common/dataTable/index';
-import { all_routes } from '../router/all_routes';
-import TooltipOption from '../../core/common/tooltipOption';
+import axios from 'axios';
+import {
+  OverlayTrigger,
+  Tooltip,
+  Button,
+  Alert,
+  Modal,
+  Row,
+  Form,
+} from 'react-bootstrap';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { useAuth } from '../../context/AuthContext';
+
+interface TableData {
+  _id: string;
+  questions: string;
+  answers: string | string[];
+  category: string;
+}
+
+interface FilterValues {
+  question: string;
+  section: string;
+  category: string;
+}
 
 const Faq = () => {
-  const data = faq_data;
-  const routes = all_routes;
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
-  // Export to PDF function
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    const tableColumn = ['ID', 'Questions', 'Answers', 'Category'];
-    const tableRows: any[] = [];
+  const [loading, setLoading] = useState(true);
+  const [category, setCategory] = useState('');
+  const [question, setQuestion] = useState('');
+  const [answer, setAnswer] = useState('');
+  const [editingFaq, setEditingFaq] = useState<TableData | null>(null);
+  const [deletingFaq, setDeletingFaq] = useState<TableData | null>(null);
+  const [editCategory, setEditCategory] = useState('');
+  const [editQuestion, setEditQuestion] = useState('');
+  const [editAnswer, setEditAnswer] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [filteredData, setFilteredData] = useState<TableData[]>([]);
+  const [filters, setFilters] = useState<FilterValues>({
+    question: '',
+    section: '',
+    category: '',
+  });
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-    data.forEach((item) => {
-      const rowData = [item.id, item.questions, item.answers, item.category];
-      tableRows.push(rowData);
-    });
+  const fetchFaqs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = {
+        category: filters.category,
+        question: filters.question,
+      };
+      const res = await axios.get(`${API_BASE_URL}/faqs`, { params });
+      setFilteredData(res.data);
+    } catch (err) {
+      console.error('Error fetching FAQs:', err);
+      setError('Failed to load FAQs.');
+    } finally {
+      setLoading(false);
+    }
+  }, [filters, API_BASE_URL]);
 
-    (doc as any).autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 20,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-    });
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchFaqs();
+    }, 300);
 
-    doc.text('FAQ List', 14, 15);
-    doc.save(`faq_${new Date().toISOString().slice(0, 10)}.pdf`);
+    return () => clearTimeout(timer);
+  }, [fetchFaqs]);
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  const handleFilterChange = (
+    filterName: keyof FilterValues,
+    value: string
+  ) => {
+    setFilters((prev) => ({
+      ...prev,
+      [filterName]: value,
+    }));
   };
 
-  // Export to Excel function
-  const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      data.map((item) => ({
-        ID: item.id,
-        Questions: item.questions,
-        Answers: item.answers,
-        Category: item.category,
-      }))
-    );
+  const resetFilters = () => {
+    setFilters({
+      question: '',
+      section: '',
+      category: '',
+    });
+  };
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'FAQ');
-    XLSX.writeFile(
-      workbook,
-      `faq_${new Date().toISOString().slice(0, 10)}.xlsx`
+  const MobileFilterButton = () => (
+    <Button
+      variant='outline-secondary'
+      className='d-lg-none mb-3'
+      onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+    >
+      <i className='ti ti-filter me-2' />
+      {mobileFiltersOpen ? 'Hide Filters' : 'Show Filters'}
+    </Button>
+  );
+
+  const FilterDropdown = () => (
+    <>
+      <div className='dropdown mb-3 me-2 d-none d-lg-block'>
+        <Link
+          to='#'
+          className='btn btn-outline-light bg-white dropdown-toggle'
+          data-bs-toggle='dropdown'
+          data-bs-auto-close='outside'
+        >
+          <i className='ti ti-filter me-2' />
+          Filter
+        </Link>
+        <div className='dropdown-menu drop-width'>
+          <form onSubmit={(e) => e.preventDefault()}>
+            <div className='d-flex align-items-center border-bottom p-3'>
+              <h4>Filter</h4>
+            </div>
+            <div className='p-3 border-bottom'>
+              <div className='row'>
+                <div className='col-md-12'>
+                  <div className='mb-0'>
+                    <label className='form-label'>Category</label>
+                    <select
+                      className='form-select'
+                      value={filters.category}
+                      onChange={(e) =>
+                        handleFilterChange('category', e.target.value)
+                      }
+                    >
+                      <option value=''>All Categories</option>
+                      {faq.map((cat) => (
+                        <option key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className='p-3 d-flex align-items-center justify-content-end'>
+              <button
+                type='button'
+                className='btn btn-light me-3'
+                onClick={resetFilters}
+              >
+                Reset
+              </button>
+              <button
+                type='button'
+                className='btn btn-primary'
+                onClick={() => {}}
+              >
+                Apply
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Mobile filter panel */}
+      {mobileFiltersOpen && (
+        <div className='card mb-3 d-lg-none'>
+          <div className='card-body'>
+            <Form.Group className='mb-3'>
+              <Form.Label>Category</Form.Label>
+              <Form.Select
+                value={filters.category}
+                onChange={(e) => handleFilterChange('category', e.target.value)}
+              >
+                <option value=''>All Categories</option>
+                {faq.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            <div className='d-flex justify-content-between'>
+              <Button variant='light' onClick={resetFilters}>
+                Reset
+              </Button>
+              <Button
+                variant='primary'
+                onClick={() => setMobileFiltersOpen(false)}
+              >
+                Apply
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  const SortDropdown = () => {
+    const [sortOption, setSortOption] = useState<'asc' | 'desc'>('asc');
+
+    const handleSort = async (option: 'asc' | 'desc') => {
+      setSortOption(option);
+      setLoading(true);
+      try {
+        const res = await axios.get(`${API_BASE_URL}/faqs`, {
+          params: {
+            ...filters,
+            sort: 'questions',
+            order: option === 'asc' ? 'asc' : 'desc',
+          },
+        });
+        setFilteredData(res.data);
+      } catch (err) {
+        console.error('Error sorting FAQs:', err);
+        setError('Failed to sort FAQs.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    return (
+      <div className='dropdown mb-3'>
+        <Link
+          to='#'
+          className='btn btn-outline-light bg-white dropdown-toggle'
+          data-bs-toggle='dropdown'
+        >
+          <i className='ti ti-sort-ascending-2 me-2' />
+          {sortOption === 'asc' ? 'Sort A-Z' : 'Sort Z-A'}
+        </Link>
+        <ul className='dropdown-menu p-3'>
+          <li>
+            <Link
+              to='#'
+              className={`dropdown-item rounded-1 ${
+                sortOption === 'asc' ? 'active' : ''
+              }`}
+              onClick={() => handleSort('asc')}
+            >
+              Ascending (A-Z)
+            </Link>
+          </li>
+          <li>
+            <Link
+              to='#'
+              className={`dropdown-item rounded-1 ${
+                sortOption === 'desc' ? 'active' : ''
+              }`}
+              onClick={() => handleSort('desc')}
+            >
+              Descending (Z-A)
+            </Link>
+          </li>
+        </ul>
+      </div>
     );
   };
 
   const columns = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      sorter: (a: TableData, b: TableData) => a.id.length - b.id.length,
-      render: (text: any) => (
-        <Link to='#' className='link-primary'>
-          {text}
-        </Link>
-      ),
-    },
-    {
       title: 'Questions',
       dataIndex: 'questions',
-      key: 'questions',
-      sorter: (a: TableData, b: TableData) =>
-        a.questions.length - b.questions.length,
+      width: '30%',
+      ellipsis: true,
+      render: (text: string) => (
+        <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
+          {text}
+        </div>
+      ),
     },
     {
       title: 'Answers',
       dataIndex: 'answers',
       key: 'answers',
-      sorter: (a: TableData, b: TableData) =>
-        a.answers.length - b.answers.length,
+      width: '53%',
+      ellipsis: true,
+      render: (text: string) => (
+        <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
+          {text}
+        </div>
+      ),
     },
     {
       title: 'Category',
       dataIndex: 'category',
       key: 'category',
-      sorter: (a: TableData, b: TableData) =>
-        a.category.length - b.category.length,
+      width: '12%',
     },
-    {
-      title: 'Action',
-      dataIndex: 'action',
-      key: 'action',
-      render: () => (
-        <div className='d-flex align-items-center'>
-          <div className='dropdown'>
-            <Link
-              to='#'
-              className='btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0'
-              data-bs-toggle='dropdown'
-              aria-expanded='false'
-            >
-              <i className='ti ti-dots-vertical fs-14' />
-            </Link>
-            <ul className='dropdown-menu dropdown-menu-right p-3'>
-              <li>
-                <Link
-                  className='dropdown-item rounded-1'
-                  to='#'
-                  data-bs-toggle='modal'
-                  data-bs-target='#edit_faq'
-                >
-                  <i className='ti ti-edit-circle me-2' />
-                  Edit
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className='dropdown-item rounded-1'
-                  to='#'
-                  data-bs-toggle='modal'
-                  data-bs-target='#delete-modal'
-                >
-                  <i className='ti ti-trash-x me-2' />
-                  Delete
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-      ),
-    },
-  ];
-
-  return (
-    <div>
-      {/* Page Wrapper */}
-      <div className='page-wrapper'>
-        <div className='content'>
-          {/* Page Header */}
-          <div className='d-md-flex d-block align-items-center justify-content-between mb-3'>
-            <div className='my-auto mb-2'>
-              <h3 className='page-title mb-1'>FAQ</h3>
-              <nav>
-                <ol className='breadcrumb mb-0'>
-                  <li className='breadcrumb-item'>
-                    <Link to={routes.adminDashboard}>Dashboard</Link>
-                  </li>
-                  <li className='breadcrumb-item'>
-                    <Link to='#'>Content</Link>
-                  </li>
-                  <li className='breadcrumb-item active' aria-current='page'>
-                    FAQ
-                  </li>
-                </ol>
-              </nav>
-            </div>
-            <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
-              <TooltipOption
-                onExportPDF={exportToPDF}
-                onExportExcel={exportToExcel}
-              />
-              <div className='mb-2'>
-                <Link
-                  to='#'
-                  className='btn btn-primary d-flex align-items-center'
-                  data-bs-toggle='modal'
-                  data-bs-target='#add_faq'
-                >
-                  <i className='ti ti-square-rounded-plus me-2' />
-                  Add FAQ
-                </Link>
-              </div>
-            </div>
-          </div>
-          {/* /Page Header */}
-          <div className='card'>
-            <div className='card-header d-flex align-items-center justify-content-between flex-wrap pb-0'>
-              <h4 className='mb-3'>FAQ List</h4>
-              <div className='d-flex align-items-center flex-wrap'>
-                <div className='input-icon-start mb-3 me-2 position-relative'>
-                  <PredefinedDateRanges />
-                </div>
-                <div className='dropdown mb-3 me-2'>
+    ...(isAdmin
+      ? [
+          {
+            title: 'Action',
+            key: 'action',
+            width: '5%',
+            render: (_: any, record: TableData) => (
+              <div className='d-flex align-items-center'>
+                <div className='dropdown'>
                   <Link
                     to='#'
-                    className='btn btn-outline-light bg-white dropdown-toggle'
+                    className='btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0'
                     data-bs-toggle='dropdown'
-                    data-bs-auto-close='outside'
+                    aria-expanded='false'
                   >
-                    <i className='ti ti-filter me-2' />
-                    Filter
+                    <i className='ti ti-dots-vertical fs-14' />
                   </Link>
-                  <div className='dropdown-menu drop-width'>
-                    <form>
-                      <div className='d-flex align-items-center border-bottom p-3'>
-                        <h4>Filter</h4>
-                      </div>
-                      <div className='p-3 border-bottom'>
-                        <div className='row'>
-                          <div className='col-md-6'>
-                            <div className='mb-3'>
-                              <label className='form-label'>Questions</label>
-                              <CommonSelect
-                                className='select'
-                                options={questions}
-                                defaultValue={questions[0]}
-                              />
-                            </div>
-                          </div>
-                          <div className='col-md-6'>
-                            <div className='mb-3'>
-                              <label className='form-label'>Section</label>
-                              <CommonSelect
-                                className='select'
-                                options={sections}
-                                defaultValue={sections[0]}
-                              />
-                            </div>
-                          </div>
-                          <div className='col-md-12'>
-                            <div className='mb-0'>
-                              <label className='form-label'>Category</label>
-                              <CommonSelect
-                                className='select'
-                                options={category3}
-                                defaultValue={category3[0]}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className='p-3 d-flex align-items-center justify-content-end'>
-                        <Link to='#' className='btn btn-light me-3'>
-                          Reset
-                        </Link>
-                        <button type='submit' className='btn btn-primary'>
-                          Apply
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-                <div className='dropdown mb-3'>
-                  <Link
-                    to='#'
-                    className='btn btn-outline-light bg-white dropdown-toggle'
-                    data-bs-toggle='dropdown'
-                  >
-                    <i className='ti ti-sort-ascending-2 me-2' />
-                    Sort by A-Z
-                  </Link>
-                  <ul className='dropdown-menu p-3'>
+                  <ul className='dropdown-menu dropdown-menu-right p-3'>
                     <li>
-                      <Link to='#' className='dropdown-item rounded-1 active'>
-                        Ascending
+                      <Link
+                        className='dropdown-item rounded-1'
+                        to='#'
+                        onClick={() => {
+                          console.log('Editing record:', record);
+                          setEditingFaq(record);
+                          setEditCategory(record.category || '');
+                          setEditQuestion(record.questions || '');
+                          setEditAnswer(() => {
+                            if (typeof record.answers === 'string')
+                              return record.answers;
+                            if (Array.isArray(record.answers))
+                              return record.answers.join('\n');
+                            return '';
+                          });
+                          setShowEditModal(true);
+                        }}
+                      >
+                        <i className='ti ti-edit-circle me-2' /> Edit
                       </Link>
                     </li>
                     <li>
-                      <Link to='#' className='dropdown-item rounded-1'>
-                        Descending
-                      </Link>
-                    </li>
-                    <li>
-                      <Link to='#' className='dropdown-item rounded-1'>
-                        Recently Viewed
-                      </Link>
-                    </li>
-                    <li>
-                      <Link to='#' className='dropdown-item rounded-1'>
-                        Recently Added
+                      <Link
+                        className='dropdown-item rounded-1'
+                        to='#'
+                        onClick={() => {
+                          setDeletingFaq(record);
+                          setShowDeleteModal(true);
+                        }}
+                      >
+                        <i className='ti ti-trash-x me-2' /> Delete
                       </Link>
                     </li>
                   </ul>
                 </div>
               </div>
-            </div>
-            <div className='card-body p-0 py-3'>
-              {/* Faq List */}
-              <Table dataSource={data} columns={columns} Selection={true} />
-              {/* /Faq List */}
-            </div>
+            ),
+          },
+        ]
+      : []),
+  ];
+
+  const handleAddFaqSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!category.trim() || !question.trim() || !answer.trim()) {
+      alert('Please fill all fields.');
+      return;
+    }
+
+    try {
+      const postData = {
+        category,
+        questions: question,
+        answers: answer,
+      };
+
+      const res = await axios.post(`${API_BASE_URL}/faqs`, postData);
+      console.log('FAQ added:', res.data);
+
+      await fetchFaqs();
+
+      setCategory('');
+      setQuestion('');
+      setAnswer('');
+      setShowAddModal(false);
+
+      setSuccessMessage('FAQ added successfully!');
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      console.error('Error adding FAQ:', err);
+      setError('Failed to add FAQ.');
+    }
+  };
+
+  const handleEditFaqSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingFaq) return;
+
+    if (!editCategory.trim() || !editQuestion.trim() || !editAnswer.trim()) {
+      alert('Please fill all fields.');
+      return;
+    }
+
+    try {
+      const putData = {
+        category: editCategory,
+        questions: editQuestion,
+        answers: editAnswer,
+      };
+
+      await axios.put(`${API_BASE_URL}/faqs/${editingFaq._id}`, putData);
+
+      await fetchFaqs();
+
+      setEditingFaq(null);
+      setEditCategory('');
+      setEditQuestion('');
+      setEditAnswer('');
+      setShowEditModal(false);
+
+      setSuccessMessage('FAQ updated successfully!');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      console.error('Error updating FAQ:', err);
+      setError('Failed to update FAQ.');
+    }
+  };
+
+  const handleDeleteFaq = async () => {
+    if (!deletingFaq) return;
+
+    try {
+      await axios.delete(`${API_BASE_URL}/faqs/${deletingFaq._id}`);
+      await fetchFaqs();
+      setDeletingFaq(null);
+      setShowDeleteModal(false);
+
+      setSuccessMessage('FAQ deleted successfully!');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      console.error('Error deleting FAQ:', err);
+      setError('Failed to delete FAQ.');
+    }
+  };
+
+  if (loading) return <LoadingSpinner />;
+
+  return (
+    <div className='page-wrapper'>
+      <div className='content content-two'>
+        {error && (
+          <Alert variant='danger' onClose={() => setError(null)} dismissible>
+            {error}
+          </Alert>
+        )}
+
+        {successMessage && (
+          <Alert
+            variant='success'
+            onClose={() => setSuccessMessage(null)}
+            dismissible
+          >
+            {successMessage}
+          </Alert>
+        )}
+
+        <div className='d-md-flex d-block align-items-center justify-content-between border-bottom pb-3'>
+          <div className='my-auto mb-2'>
+            <h3 className='page-title mb-1'>FAQ</h3>
           </div>
-        </div>
-      </div>
-      {/* /Page Wrapper */}
-      {/* Add FAQ */}
-      <div className='modal fade' id='add_faq'>
-        <div className='modal-dialog modal-dialog-centered'>
-          <div className='modal-content'>
-            <div className='modal-header'>
-              <h4 className='modal-title'>Add FAQ</h4>
-              <button
-                type='button'
-                className='btn-close custom-btn-close'
-                data-bs-dismiss='modal'
-                aria-label='Close'
+          <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
+            <OverlayTrigger
+              overlay={<Tooltip id='tooltip-top'>Refresh</Tooltip>}
+            >
+              <Button
+                variant='outline-light'
+                className='bg-white btn-icon me-2'
+                onClick={() => fetchFaqs()}
               >
-                <i className='ti ti-x' />
-              </button>
-            </div>
-            <form>
-              <div className='modal-body'>
-                <div className='row'>
-                  <div className='col-md-12'>
-                    <div className='mb-3'>
-                      <label className='form-label'>Category</label>
-                      <input type='text' className='form-control' />
-                    </div>
-                    <div className='mb-3'>
-                      <label className='form-label'>Question</label>
-                      <textarea
-                        className='form-control'
-                        rows={4}
-                        defaultValue={''}
-                      />
-                    </div>
-                    <div className='mb-0'>
-                      <label className='form-label'>Answer</label>
-                      <textarea
-                        className='form-control'
-                        rows={4}
-                        defaultValue={''}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className='modal-footer'>
-                <Link
-                  to='#'
-                  className='btn btn-light me-2'
-                  data-bs-dismiss='modal'
-                >
-                  Cancel
-                </Link>
-                <button type='submit' className='btn btn-primary'>
-                  Add FAQ
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-      {/* /Add FAQ */}
-      {/* Edit FAQ */}
-      <div className='modal fade' id='edit_faq'>
-        <div className='modal-dialog modal-dialog-centered'>
-          <div className='modal-content'>
-            <div className='modal-header'>
-              <h4 className='modal-title'>Edit FAQ</h4>
-              <button
-                type='button'
-                className='btn-close custom-btn-close'
-                data-bs-dismiss='modal'
-                aria-label='Close'
+                <i className='ti ti-refresh' />
+              </Button>
+            </OverlayTrigger>
+            {isAdmin && (
+              <Button
+                className='btn btn-primary d-flex align-items-center'
+                onClick={() => setShowAddModal(true)}
               >
-                <i className='ti ti-x' />
-              </button>
+                <i className='ti ti-square-rounded-plus me-2' />
+                Add FAQ
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className='card'>
+          <div className='card-header d-flex align-items-center justify-content-between flex-wrap pb-0'>
+            <h4 className='mb-3'>FAQ List</h4>
+            <div className='d-flex align-items-center flex-wrap'>
+              <MobileFilterButton />
+              <FilterDropdown />
+              <SortDropdown />
             </div>
-            <form>
-              <div className='modal-body'>
-                <div className='row'>
-                  <div className='col-md-12'>
-                    <div className='mb-3'>
-                      <label className='form-label'>Category</label>
-                      <input
-                        type='text'
-                        className='form-control'
-                        placeholder='Enter Category'
-                      />
-                    </div>
-                    <div className='mb-3'>
-                      <label className='form-label'>Question</label>
-                      <textarea
-                        className='form-control'
-                        placeholder='How do I reset my password?'
-                        rows={4}
-                        defaultValue={''}
-                      />
-                    </div>
-                    <div className='mb-0'>
-                      <label className='form-label'>Answer</label>
-                      <textarea
-                        placeholder='You can reset your password from the login page.'
-                        className='form-control'
-                        rows={4}
-                        defaultValue={''}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className='modal-footer'>
-                <Link
-                  to='#'
-                  className='btn btn-light me-2'
-                  data-bs-dismiss='modal'
+          </div>
+          <div className='card-body'>
+            <div className='table-responsive'>
+              <Table columns={columns} dataSource={filteredData} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Add FAQ Modal */}
+      <Modal
+        show={showAddModal}
+        onHide={() => setShowAddModal(false)}
+        size='xl'
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Add FAQ</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Row>
+            <div className='modal-body'>
+              <div className='mb-3'>
+                <label htmlFor='category' className='form-label'>
+                  Category
+                </label>
+                <select
+                  id='category'
+                  className='form-select'
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  required
                 >
-                  Cancel
-                </Link>
-                <button type='submit' className='btn btn-primary'>
-                  Save Changes
-                </button>
+                  <option value=''>Select category</option>
+                  {faq.map((cat) => (
+                    <option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </form>
-          </div>
-        </div>
-      </div>
-      {/* /Edit FAQ */}
-      {/* Delete Modal */}
-      <div className='modal fade' id='delete-modal'>
-        <div className='modal-dialog modal-dialog-centered'>
-          <div className='modal-content'>
-            <form>
-              <div className='modal-body text-center'>
-                <span className='delete-icon'>
-                  <i className='ti ti-trash-x' />
-                </span>
-                <h4>Confirm Deletion</h4>
-                <p>
-                  You want to delete all the marked items, this cant be undone
-                  once you delete.
-                </p>
-                <div className='d-flex justify-content-center'>
-                  <Link
-                    to='#'
-                    className='btn btn-light me-3'
-                    data-bs-dismiss='modal'
-                  >
-                    Cancel
-                  </Link>
-                  <button type='submit' className='btn btn-danger'>
-                    Yes, Delete
-                  </button>
-                </div>
+              <div className='mb-3'>
+                <label htmlFor='question' className='form-label'>
+                  Question
+                </label>
+                <input
+                  type='text'
+                  id='question'
+                  className='form-control'
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  required
+                />
               </div>
-            </form>
-          </div>
-        </div>
-      </div>
-      {/* /Delete Modal */}
+              <div className='mb-3'>
+                <label htmlFor='answer' className='form-label'>
+                  Answer
+                </label>
+                <textarea
+                  id='answer'
+                  className='form-control'
+                  rows={3}
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+          </Row>
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            type='button'
+            className='btn btn-secondary me-2'
+            data-bs-dismiss='modal'
+            onClick={() => {
+              setCategory('');
+              setQuestion('');
+              setAnswer('');
+              setShowAddModal(false);
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type='submit'
+            className='btn btn-primary'
+            onClick={handleAddFaqSubmit}
+          >
+            Add FAQ
+          </button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Edit FAQ Modal */}
+      <Modal
+        show={showEditModal}
+        onHide={() => setShowEditModal(false)}
+        size='xl'
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Edit FAQ</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Row>
+            <div className='modal-body'>
+              <div className='mb-3'>
+                <label htmlFor='editCategory' className='form-label'>
+                  Category
+                </label>
+                <select
+                  id='editCategory'
+                  className='form-select'
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value)}
+                  required
+                >
+                  <option value=''>Select category</option>
+                  {faq.map((cat) => (
+                    <option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className='mb-3'>
+                <label htmlFor='editQuestion' className='form-label'>
+                  Question
+                </label>
+                <input
+                  type='text'
+                  id='editQuestion'
+                  className='form-control'
+                  value={editQuestion}
+                  onChange={(e) => setEditQuestion(e.target.value)}
+                  required
+                />
+              </div>
+              <div className='mb-3'>
+                <label htmlFor='editAnswer' className='form-label'>
+                  Answer
+                </label>
+                <textarea
+                  id='editAnswer'
+                  className='form-control'
+                  rows={3}
+                  value={editAnswer}
+                  onChange={(e) => setEditAnswer(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+          </Row>
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            type='button'
+            className='btn btn-secondary me-2'
+            data-bs-dismiss='modal'
+            onClick={() => setShowEditModal(false)}
+          >
+            Cancel
+          </button>
+          <button
+            type='submit'
+            className='btn btn-success'
+            onClick={handleEditFaqSubmit}
+          >
+            Update FAQ
+          </button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Delete Modal (Basic Skeleton) */}
+      <Modal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Delete</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Are you sure you want to delete this FAQ?</Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant='secondary'
+            onClick={() => setShowDeleteModal(false)}
+            className='me-2'
+          >
+            Cancel
+          </Button>
+          <Button
+            variant='danger'
+            onClick={() => {
+              handleDeleteFaq();
+              setShowDeleteModal(false);
+            }}
+          >
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

@@ -86,6 +86,7 @@ import NotificationActivities from '../pages/profile/activities';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { EmailTemplateSelector } from '../../components/EmailTemplateSelector';
 import Events from '../announcements/events';
+import FormBuilder from '../settings/systemSettings/form/form-builder';
 
 const routes = all_routes;
 
@@ -379,6 +380,10 @@ export const publicRoutes = [
   {
     path: routes.emailTemplates,
     element: <Emailtemplates />,
+  },
+  {
+    path: routes.formBuilder,
+    element: <FormBuilder />,
   },
   {
     path: routes.smsSettings,

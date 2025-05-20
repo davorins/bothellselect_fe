@@ -389,14 +389,26 @@ export const EmailTemplateSelector: React.FC = () => {
         <>
           {successMessage && (
             <div className='page-wrapper'>
-              <Alert
-                variant='success'
-                onClose={() => setSuccessMessage(null)}
-                dismissible
-                className='mt-4'
-              >
-                {successMessage}
-              </Alert>
+              {sendingStatus.manual === 'success' && (
+                <Alert variant='success' className='mt-2 p-2'>
+                  Manual emails sent successfully!
+                </Alert>
+              )}
+              {sendingStatus.campaign === 'success' && (
+                <Alert variant='success' className='mt-2 p-2'>
+                  Campaign emails sent successfully!
+                </Alert>
+              )}
+              {sendingStatus.manual === 'error' && (
+                <Alert variant='danger' className='mt-2 p-2'>
+                  Failed to send manual emails
+                </Alert>
+              )}
+              {sendingStatus.campaign === 'error' && (
+                <Alert variant='danger' className='mt-2 p-2'>
+                  Failed to send campaign emails
+                </Alert>
+              )}
             </div>
           )}
 
@@ -610,27 +622,6 @@ export const EmailTemplateSelector: React.FC = () => {
                               </div>
                             )}
                           </div>
-                        )}
-
-                        {sendingStatus.manual === 'success' && (
-                          <Alert variant='success' className='mt-2 p-2'>
-                            Manual emails sent successfully!
-                          </Alert>
-                        )}
-                        {sendingStatus.campaign === 'success' && (
-                          <Alert variant='success' className='mt-2 p-2'>
-                            Campaign emails sent successfully!
-                          </Alert>
-                        )}
-                        {sendingStatus.manual === 'error' && (
-                          <Alert variant='danger' className='mt-2 p-2'>
-                            Failed to send manual emails
-                          </Alert>
-                        )}
-                        {sendingStatus.campaign === 'error' && (
-                          <Alert variant='danger' className='mt-2 p-2'>
-                            Failed to send campaign emails
-                          </Alert>
                         )}
                       </div>
                     </div>

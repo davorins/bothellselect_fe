@@ -17,7 +17,6 @@ import { useNavigate } from 'react-router-dom';
 import { getNextSeason } from '../../utils/season';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
-// Set API base URL - use environment variable if available, otherwise default to local development
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 // Square configuration

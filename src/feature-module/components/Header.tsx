@@ -151,6 +151,11 @@ const Header = () => {
                 Contact Us
               </Link>
             </li>
+            <li className='nav-item'>
+              <Link className='nav-link' to='/faq'>
+                FAQ
+              </Link>
+            </li>
           </ul>
         </div>
         {/* User Auth / Profile (always visible in desktop) */}
@@ -246,6 +251,15 @@ const Header = () => {
                 onClick={toggleMobileSidebar}
               >
                 <i className='ti ti-mail' /> Contact Us
+              </Link>
+            </li>
+            <li className='nav-item'>
+              <Link
+                className='nav-link'
+                to='/faq'
+                onClick={toggleMobileSidebar}
+              >
+                <i className='ti ti-mail' /> FAQ
               </Link>
             </li>
             <li>

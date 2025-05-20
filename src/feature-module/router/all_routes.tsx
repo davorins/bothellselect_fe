@@ -142,6 +142,7 @@ export const all_routes = {
   gdprCookies: '/system-settings/gdpr-cookies',
   smsSettings: '/system-settings/sms-settings',
   optSettings: '/system-settings/otp-settings',
+  formBuilder: '/system-settings/form-builder',
 
   socialAuthentication: '/website-settings/social-authentication',
   companySettings: '/website-settings/company-settings',

@@ -1129,11 +1129,15 @@ export const questions = [
     label: "What are the school's hours of operation?",
   },
 ];
-export const category3 = [
-  { value: 'Select', label: 'Select' },
-  { value: 'Account', label: 'Account' },
-  { value: 'Support', label: 'Support' },
-  { value: 'Finance', label: 'Finance' },
+export const faq = [
+  { value: 'Summer Camp', label: 'Summer Camp' },
+  { value: 'Training Programs', label: 'Training Programs' },
+  { value: 'Registration & Payments', label: 'Registration & Payments' },
+  { value: 'Facilities & Equipment', label: 'Facilities & Equipment' },
+  { value: 'Health & Safety', label: 'Health & Safety' },
+  { value: 'Coaching Staff', label: 'Coaching Staff' },
+  { value: 'Tournaments & Competitions', label: 'Tournaments & Competitions' },
+  { value: 'Merchandise & Apparel', label: 'Merchandise & Apparel' },
 ];
 export const city = [
   { value: 'Select', label: 'Select' },

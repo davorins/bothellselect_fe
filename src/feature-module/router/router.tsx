@@ -8,6 +8,7 @@ import HomePage from '../pages/HomePage';
 import ContactUsPage from '../pages/ContactUsPage';
 import AboutUsPage from '../pages/AboutUsPage';
 import OurTeamPage from '../pages/OurTeamPage';
+import FAQUserView from '../content/FAQUserView';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -61,6 +62,16 @@ const ALLRoutes = () => {
         element={
           <MainLayout>
             <OurTeamPage />
+          </MainLayout>
+        }
+      />
+
+      {/* Our Team Page (Public) */}
+      <Route
+        path='/faq'
+        element={
+          <MainLayout>
+            <FAQUserView />
           </MainLayout>
         }
       />

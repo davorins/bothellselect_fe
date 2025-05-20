@@ -98,4 +98,35 @@ export const SidebarData = [
       },
     ],
   },
+  {
+    label: 'Forms',
+    submenu: true,
+    showSubRoute: false,
+    submenuHdr: 'Forms',
+    submenuItems: [
+      {
+        label: 'Templates',
+        submenu: false,
+        showSubRoute: false,
+        link: routes.formBuilder,
+        icon: 'ti ti-checkup-list',
+        roles: ['admin'],
+      },
+    ],
+  },
+  {
+    label: 'FAQ',
+    submenu: true,
+    showSubRoute: false,
+    submenuHdr: 'FAQ',
+    submenuItems: [
+      {
+        label: 'FAQ',
+        submenu: false,
+        showSubRoute: false,
+        link: routes.faq,
+        icon: 'ti ti-question-mark',
+      },
+    ],
+  },
 ];

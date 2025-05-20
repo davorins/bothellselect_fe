@@ -22,6 +22,9 @@ import { TimePicker } from 'antd';
 import axios from 'axios';
 import { EventDetails, SchoolInfo, CalendarEvent } from '../../types/types';
 import HelpModal from '../../core/common/HelpModal';
+import FormTemplateSelector from '../settings/systemSettings/form/FormTemplateSelector';
+import EventRegistrationForm from '../settings/systemSettings/form/EventRegistrationForm';
+import { Form, PaymentFormField } from '../../types/form';
 
 const categoryColorMap: Record<string, string> = {
   training: 'success',
@@ -52,6 +55,7 @@ const Events = () => {
   const [schools, setSchools] = useState<SchoolInfo[]>([]);
   const [showSchoolFields, setShowSchoolFields] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [availableForms, setAvailableForms] = useState<Form[]>([]);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   const [eventDetails, setEventDetails] = useState<EventDetails>({
@@ -199,6 +203,18 @@ const Events = () => {
     }
   };
 
+  useEffect(() => {
+    const loadForms = async () => {
+      try {
+        const response = await api.get('/forms');
+        setAvailableForms(response.data.data || []);
+      } catch (error) {
+        console.error('Error loading forms:', error);
+      }
+    };
+    loadForms();
+  }, [api]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -211,6 +227,13 @@ const Events = () => {
           ? eventDetails.price
           : parseFloat(eventDetails.price) || 0
         : 0;
+
+      const selectedForm = availableForms.find(
+        (f) => f._id === eventDetails.formId
+      );
+      const paymentField = selectedForm?.fields.find(
+        (f) => f.type === 'payment'
+      ) as PaymentFormField | undefined;
 
       const eventToSave = {
         title: eventDetails.title,
@@ -226,6 +249,8 @@ const Events = () => {
             ? eventDetails.school
             : undefined,
         ...(eventDetails._id && { _id: eventDetails._id }),
+        formId: eventDetails.formId,
+        paymentConfig: paymentField?.paymentConfig,
       };
 
       // Save new school if it doesn't exist
@@ -997,7 +1022,7 @@ const Events = () => {
                   </div>
                 </div>
 
-                <div className='mb-0'>
+                <div className='mb-3'>
                   <label className='form-label'>Description</label>
                   <textarea
                     className='form-control'
@@ -1007,6 +1032,14 @@ const Events = () => {
                     onChange={handleInputChange}
                   />
                 </div>
+
+                <FormTemplateSelector
+                  forms={availableForms}
+                  selectedFormId={eventDetails.formId}
+                  onSelectForm={(formId) =>
+                    setEventDetails((prev) => ({ ...prev, formId }))
+                  }
+                />
               </div>
             </div>
           </Modal.Body>
@@ -1157,6 +1190,51 @@ const Events = () => {
               </div>
             )}
           </div>
+
+          {eventDetails.formId && (
+            <div className='mt-4'>
+              <h5>Registration Form</h5>
+              <EventRegistrationForm
+                formFields={
+                  availableForms.find((f) => f._id === eventDetails.formId)
+                    ?.fields || []
+                }
+                eventId={eventDetails._id}
+                onSubmit={async (formData: Record<string, any>) => {
+                  try {
+                    // Find the payment field using proper type narrowing
+                    const paymentField = availableForms
+                      .find((f) => f._id === eventDetails.formId)
+                      ?.fields.find(
+                        (f): f is PaymentFormField => f.type === 'payment'
+                      );
+
+                    if (paymentField) {
+                      // Now TypeScript knows this is a PaymentFormField
+                      console.log(
+                        'Processing payment:',
+                        paymentField.paymentConfig
+                      );
+                      // You can safely access paymentConfig here
+                    }
+
+                    // Save form submission
+                    await api.post('/form-submissions', {
+                      eventId: eventDetails._id,
+                      formId: eventDetails.formId,
+                      formData,
+                    });
+
+                    // Show success message
+                    alert('Registration submitted successfully!');
+                  } catch (error) {
+                    console.error('Error submitting form:', error);
+                    alert('Error submitting form. Please try again.');
+                  }
+                }}
+              />
+            </div>
+          )}
         </Modal.Body>
       </Modal>
       <HelpModal show={showHelpModal} onHide={() => setShowHelpModal(false)} />

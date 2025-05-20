@@ -1,4 +1,6 @@
 // types.ts
+import { FormField } from './form';
+
 export interface SearchResult {
   id: string;
   type: 'player' | 'parent' | 'guardian' | 'coach' | 'school';
@@ -547,6 +549,8 @@ export interface EventDetails {
   allDay?: boolean;
   attachment?: string;
   school?: SchoolInfo;
+  formId?: string;
+  formFields?: FormField[];
 }
 
 export type CalendarEvent = {

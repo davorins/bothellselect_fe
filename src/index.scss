@@ -1587,7 +1587,8 @@ main {
 .home-page,
 .about-page,
 .ourteam-page,
-.contact-page {
+.contact-page,
+.faq-page {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -1597,7 +1598,8 @@ main {
 .home-page,
 .about-page,
 .ourteam-page,
-.contact-page {
+.contact-page,
+.faq-page {
   padding: 6rem 2rem !important;
   max-width: 900px;
 }
@@ -1765,4 +1767,8 @@ input[type='text'] {
     transform: translate(0, 0) rotate(1080deg) scale(1);
     opacity: 0;
   }
+}
+
+.list-group-item.active {
+  background-color: #506ee4;
 }

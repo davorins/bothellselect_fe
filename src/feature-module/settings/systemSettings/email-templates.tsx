@@ -152,7 +152,7 @@ const EmailTemplates = () => {
 
   const headerHTML = `
   <div style="text-align:left; padding:20px 0;">
-    <img src="http://localhost:3000/assets/img/logo.png" alt="Bothell Select Logo" height="38" style="display:block; margin:0; height:38px;" />
+    <img src="http://localhost:3000/assets/img/logo.png" alt="Bothell Select Logo" height="30" style="display:block; margin:0; height:30px;" />
   </div>
 `;
 
