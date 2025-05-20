@@ -1,4 +1,5 @@
 // types/form.ts
+
 export interface PaymentConfig {
   amount: number;
   description: string;

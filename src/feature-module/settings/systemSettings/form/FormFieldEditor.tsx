@@ -7,16 +7,6 @@ interface PaymentConfig {
   currency?: 'USD' | 'CAD' | 'EUR' | 'GBP';
 }
 
-type FieldType =
-  | 'text'
-  | 'email'
-  | 'number'
-  | 'select'
-  | 'checkbox'
-  | 'radio'
-  | 'payment'
-  | 'section';
-
 interface BaseFormField {
   id: string;
   label: string;

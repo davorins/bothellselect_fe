@@ -535,6 +535,12 @@ export interface SchoolInfo {
   website: string;
 }
 
+interface PaymentConfig {
+  amount: number;
+  description: string;
+  currency?: 'USD' | 'CAD' | 'EUR' | 'GBP';
+}
+
 export interface EventDetails {
   _id?: string;
   title: string;
@@ -551,6 +557,7 @@ export interface EventDetails {
   school?: SchoolInfo;
   formId?: string;
   formFields?: FormField[];
+  paymentConfig?: PaymentConfig;
 }
 
 export type CalendarEvent = {

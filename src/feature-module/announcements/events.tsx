@@ -1200,32 +1200,29 @@ const Events = () => {
                     ?.fields || []
                 }
                 eventId={eventDetails._id}
+                formId={eventDetails.formId}
                 onSubmit={async (formData: Record<string, any>) => {
                   try {
-                    // Find the payment field using proper type narrowing
-                    const paymentField = availableForms
-                      .find((f) => f._id === eventDetails.formId)
-                      ?.fields.find(
-                        (f): f is PaymentFormField => f.type === 'payment'
-                      );
+                    const form = availableForms.find(
+                      (f) => f._id === eventDetails.formId
+                    );
+                    if (!form) throw new Error('Form template not found');
 
+                    const paymentField = form.fields.find(
+                      (f): f is PaymentFormField => f.type === 'payment'
+                    );
                     if (paymentField) {
-                      // Now TypeScript knows this is a PaymentFormField
                       console.log(
                         'Processing payment:',
                         paymentField.paymentConfig
                       );
-                      // You can safely access paymentConfig here
                     }
 
-                    // Save form submission
                     await api.post('/form-submissions', {
                       eventId: eventDetails._id,
                       formId: eventDetails.formId,
                       formData,
                     });
-
-                    // Show success message
                     alert('Registration submitted successfully!');
                   } catch (error) {
                     console.error('Error submitting form:', error);
