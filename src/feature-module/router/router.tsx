@@ -11,6 +11,7 @@ import OurTeamPage from '../pages/OurTeamPage';
 import FAQUserView from '../content/FAQUserView';
 import PrivacyPolicy from '../pages/PrivacyPolicy';
 import Terms from '../pages/Terms';
+import EventCards from '../announcements/eventCards';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -57,6 +58,14 @@ const ALLRoutes = () => {
         element={
           <MainLayout>
             <OurTeamPage />
+          </MainLayout>
+        }
+      />
+      <Route
+        path='/events'
+        element={
+          <MainLayout>
+            <EventCards />
           </MainLayout>
         }
       />

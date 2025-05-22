@@ -147,6 +147,11 @@ const Header = () => {
               </Link>
             </li>
             <li className='nav-item'>
+              <Link className='nav-link' to='/events'>
+                Events
+              </Link>
+            </li>
+            <li className='nav-item'>
               <Link className='nav-link' to='/contact-us'>
                 Contact Us
               </Link>
@@ -242,6 +247,15 @@ const Header = () => {
                 onClick={toggleMobileSidebar}
               >
                 <i className='ti ti-ball-basketball' /> Our Team
+              </Link>
+            </li>
+            <li className='nav-item'>
+              <Link
+                className='nav-link'
+                to='/events'
+                onClick={toggleMobileSidebar}
+              >
+                <i className='ti ti-mail' /> Events
               </Link>
             </li>
             <li className='nav-item'>
