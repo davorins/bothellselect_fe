@@ -83,8 +83,9 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
     return { ...field };
   });
 
+  // Deep clone field on prop changes to avoid mutation bugs
   useEffect(() => {
-    setEditedField({ ...field });
+    setEditedField(JSON.parse(JSON.stringify(field)));
   }, [field]);
 
   const handleChange = (
@@ -92,12 +93,19 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >
   ) => {
-    const { name, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
+    const target = e.target;
+
+    let value: string | boolean;
+
+    if (target instanceof HTMLInputElement && target.type === 'checkbox') {
+      value = target.checked;
+    } else {
+      value = target.value;
+    }
 
     setEditedField((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [target.name]: value,
     }));
   };
 
@@ -155,31 +163,43 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
     });
   };
 
+  const validateField = (field: FormField): string | null => {
+    if (isPaymentField(field)) {
+      const { amount, description } = field.paymentConfig;
+      if (!description || description.trim() === '') {
+        return 'Please enter a payment description';
+      }
+      if (isNaN(amount) || amount <= 0) {
+        return 'Payment amount must be greater than 0';
+      }
+    }
+    return null;
+  };
+
   const handleSave = () => {
-    if (isPaymentField(editedField)) {
-      if (isNaN(editedField.paymentConfig.amount)) {
-        alert('Payment amount must be a valid number');
-        return;
-      }
-      if (editedField.paymentConfig.amount <= 0) {
-        alert('Payment amount must be greater than 0');
-        return;
-      }
-      if (!editedField.paymentConfig.description) {
-        alert('Please enter a payment description');
-        return;
-      }
+    const error = validateField(editedField);
+    if (error) {
+      alert(error);
+      return;
     }
     onUpdate(editedField);
   };
+
+  // Conditional logic: find the field referenced by conditional.fieldId
+  const conditionalField = otherFields.find(
+    (f) => f.id === editedField.conditional?.fieldId
+  );
 
   const renderPaymentFields = () => {
     if (!isPaymentField(editedField)) return null;
 
     return (
       <>
-        <Form.Group className='mb-3'>
-          <Form.Label>Amount (in cents)*</Form.Label>
+        <Form.Group className='mb-3' controlId='paymentAmount'>
+          <Form.Label>
+            Amount (in cents){' '}
+            <small className='text-muted'>(e.g., 1500 = $15.00)</small>*
+          </Form.Label>
           <Form.Control
             type='number'
             value={editedField.paymentConfig.amount}
@@ -187,11 +207,11 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
               handlePaymentConfigChange('amount', parseInt(e.target.value) || 0)
             }
             required
-            min='0'
-            step='1'
+            min={0}
+            step={1}
             isInvalid={
               isNaN(editedField.paymentConfig.amount) ||
-              editedField.paymentConfig.amount < 0
+              editedField.paymentConfig.amount <= 0
             }
           />
           <Form.Control.Feedback type='invalid'>
@@ -199,7 +219,7 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
           </Form.Control.Feedback>
         </Form.Group>
 
-        <Form.Group className='mb-3'>
+        <Form.Group className='mb-3' controlId='paymentDescription'>
           <Form.Label>Description*</Form.Label>
           <Form.Control
             type='text'
@@ -215,7 +235,7 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
           </Form.Control.Feedback>
         </Form.Group>
 
-        <Form.Group className='mb-3'>
+        <Form.Group className='mb-3' controlId='paymentCurrency'>
           <Form.Label>Currency</Form.Label>
           <Form.Control
             as='select'
@@ -240,7 +260,7 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
   return (
     <div className='border p-3 rounded mb-3'>
       <h5>Field Settings</h5>
-      <Form.Group className='mb-3'>
+      <Form.Group className='mb-3' controlId='fieldType'>
         <Form.Label>Field Type</Form.Label>
         <Form.Control
           as='select'
@@ -248,6 +268,7 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
           value={editedField.type}
           onChange={handleChange}
           disabled
+          aria-describedby='fieldTypeHelp'
         >
           <option value='text'>Text</option>
           <option value='email'>Email</option>
@@ -258,9 +279,12 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
           <option value='payment'>Payment</option>
           <option value='section'>Section</option>
         </Form.Control>
+        <Form.Text id='fieldTypeHelp' muted>
+          Field type cannot be changed after creation.
+        </Form.Text>
       </Form.Group>
 
-      <Form.Group className='mb-3'>
+      <Form.Group className='mb-3' controlId='fieldLabel'>
         <Form.Label>Label</Form.Label>
         <Form.Control
           type='text'
@@ -270,7 +294,7 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
         />
       </Form.Group>
 
-      <Form.Group className='mb-3'>
+      <Form.Group className='mb-3' controlId='fieldRequired'>
         <Form.Check
           type='checkbox'
           label='Required'
@@ -281,7 +305,7 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
       </Form.Group>
 
       {['text', 'email', 'number'].includes(editedField.type) && (
-        <Form.Group className='mb-3'>
+        <Form.Group className='mb-3' controlId='fieldPlaceholder'>
           <Form.Label>Placeholder</Form.Label>
           <Form.Control
             type='text'
@@ -295,183 +319,205 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
       )}
 
       {editedField.type === 'number' && (
-        <>
-          <Row>
-            <Col>
-              <Form.Group className='mb-3'>
-                <Form.Label>Minimum Value</Form.Label>
-                <Form.Control
-                  type='number'
-                  name='min'
-                  value={
-                    'validation' in editedField
-                      ? editedField.validation?.min ?? ''
-                      : ''
-                  }
-                  onChange={(e) => {
-                    setEditedField({
-                      ...editedField,
-                      validation: {
-                        ...('validation' in editedField
-                          ? editedField.validation || {}
-                          : {}),
-                        min: e.target.value
-                          ? parseInt(e.target.value)
-                          : undefined,
-                      },
-                    });
-                  }}
-                />
-              </Form.Group>
-            </Col>
-            <Col>
-              <Form.Group className='mb-3'>
-                <Form.Label>Maximum Value</Form.Label>
-                <Form.Control
-                  type='number'
-                  name='max'
-                  value={
-                    'validation' in editedField
-                      ? editedField.validation?.max ?? ''
-                      : ''
-                  }
-                  onChange={(e) => {
-                    setEditedField({
-                      ...editedField,
-                      validation: {
-                        ...('validation' in editedField
-                          ? editedField.validation || {}
-                          : {}),
-                        max: e.target.value
-                          ? parseInt(e.target.value)
-                          : undefined,
-                      },
-                    });
-                  }}
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-        </>
+        <Row>
+          <Col>
+            <Form.Group className='mb-3' controlId='validationMin'>
+              <Form.Label>Minimum Value</Form.Label>
+              <Form.Control
+                type='number'
+                name='min'
+                value={
+                  'validation' in editedField
+                    ? editedField.validation?.min ?? ''
+                    : ''
+                }
+                onChange={(e) => {
+                  setEditedField({
+                    ...editedField,
+                    validation: {
+                      ...('validation' in editedField
+                        ? editedField.validation || {}
+                        : {}),
+                      min: e.target.value
+                        ? parseInt(e.target.value)
+                        : undefined,
+                    },
+                  });
+                }}
+              />
+            </Form.Group>
+          </Col>
+          <Col>
+            <Form.Group className='mb-3' controlId='validationMax'>
+              <Form.Label>Maximum Value</Form.Label>
+              <Form.Control
+                type='number'
+                name='max'
+                value={
+                  'validation' in editedField
+                    ? editedField.validation?.max ?? ''
+                    : ''
+                }
+                onChange={(e) => {
+                  setEditedField({
+                    ...editedField,
+                    validation: {
+                      ...('validation' in editedField
+                        ? editedField.validation || {}
+                        : {}),
+                      max: e.target.value
+                        ? parseInt(e.target.value)
+                        : undefined,
+                    },
+                  });
+                }}
+              />
+            </Form.Group>
+          </Col>
+        </Row>
       )}
 
       {['select', 'radio'].includes(editedField.type) && (
-        <Form.Group className='mb-3'>
-          <Form.Label className=''>Options</Form.Label>
-          {('options' in editedField ? editedField.options || [] : []).map(
-            (option, index) => (
-              <div key={index} className='d-flex mb-2'>
+        <Form.Group>
+          <Form.Label>Options</Form.Label>
+          {(editedField.options || []).map((option, idx) => (
+            <Row key={idx} className='mb-2'>
+              <Col>
                 <Form.Control
                   type='text'
                   placeholder='Label'
                   value={option.label}
                   onChange={(e) =>
-                    handleOptionChange(index, 'label', e.target.value)
+                    handleOptionChange(idx, 'label', e.target.value)
                   }
-                  className='me-2'
                 />
+              </Col>
+              <Col>
                 <Form.Control
                   type='text'
                   placeholder='Value'
                   value={option.value}
                   onChange={(e) =>
-                    handleOptionChange(index, 'value', e.target.value)
+                    handleOptionChange(idx, 'value', e.target.value)
                   }
-                  className='me-2'
                 />
-                <Button variant='danger' onClick={() => removeOption(index)}>
-                  <i className='ti ti-trash' />
+              </Col>
+              <Col xs='auto'>
+                <Button
+                  variant='danger'
+                  size='sm'
+                  onClick={() => removeOption(idx)}
+                  aria-label={`Remove option ${idx + 1}`}
+                >
+                  &times;
                 </Button>
-              </div>
-            )
-          )}
-          <Button variant='outline-secondary' onClick={addOption}>
+              </Col>
+            </Row>
+          ))}
+          <Button variant='secondary' size='sm' onClick={addOption}>
             Add Option
           </Button>
         </Form.Group>
       )}
 
-      {editedField.type === 'checkbox' && (
-        <Form.Group className='mb-3'>
-          <Form.Check
-            type='checkbox'
-            label='Checked by default'
-            name='defaultValue'
-            checked={
-              'defaultValue' in editedField ? !!editedField.defaultValue : false
-            }
-            onChange={(e) => {
-              setEditedField({
-                ...editedField,
-                defaultValue: e.target.checked,
-              });
-            }}
-          />
-        </Form.Group>
-      )}
+      {isPaymentField(editedField) && renderPaymentFields()}
 
-      {editedField.type === 'payment' && renderPaymentFields()}
-
-      <Form.Group className='mb-3'>
-        <Form.Label>Conditional Logic</Form.Label>
+      {/* Conditional Logic */}
+      <h6 className='mt-4'>Conditional Visibility</h6>
+      <Form.Group className='mb-3' controlId='conditionalFieldId'>
+        <Form.Label>Show this field only if</Form.Label>
         <Form.Control
           as='select'
-          value={
-            'conditional' in editedField
-              ? editedField.conditional?.fieldId ?? ''
-              : ''
-          }
+          name='conditional.fieldId'
+          value={editedField.conditional?.fieldId || ''}
           onChange={(e) => {
-            const fieldId = e.target.value;
-            setEditedField({
-              ...editedField,
-              conditional: fieldId
+            const val = e.target.value;
+            setEditedField((prev) => ({
+              ...prev,
+              conditional: val
                 ? {
-                    fieldId,
-                    value:
-                      ('conditional' in editedField
-                        ? editedField.conditional?.value
-                        : undefined) ?? '',
+                    fieldId: val,
+                    value: prev.conditional?.value || '',
                   }
                 : undefined,
-            });
+            }));
           }}
         >
-          <option value=''>No conditional logic</option>
-          {otherFields.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.label}
-            </option>
-          ))}
+          <option value=''>No condition</option>
+          {otherFields
+            .filter((f) => f.id !== editedField.id)
+            .map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.label} ({f.type})
+              </option>
+            ))}
         </Form.Control>
       </Form.Group>
 
-      {'conditional' in editedField && editedField.conditional && (
-        <Form.Group className='mb-3'>
-          <Form.Label>Show this field when:</Form.Label>
-          <div className='d-flex align-items-center'>
-            <span className='me-2'>{editedField.conditional.fieldId} is</span>
+      {editedField.conditional?.fieldId && conditionalField && (
+        <Form.Group className='mb-3' controlId='conditionalValue'>
+          <Form.Label>Value equals</Form.Label>
+          {conditionalField.options && conditionalField.options.length > 0 ? (
             <Form.Control
-              type='text'
-              value={editedField.conditional.value.toString()}
+              as='select'
+              value={editedField.conditional.value?.toString() || ''}
               onChange={(e) => {
-                setEditedField({
-                  ...editedField,
-                  conditional: {
-                    ...editedField.conditional!,
-                    value: e.target.value,
-                  },
-                });
+                const val = e.target.value;
+                setEditedField((prev) => ({
+                  ...prev,
+                  conditional: prev.conditional
+                    ? { ...prev.conditional, value: val }
+                    : undefined,
+                }));
               }}
-              placeholder='Enter value'
+            >
+              <option value=''>Select a value</option>
+              {conditionalField.options.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </Form.Control>
+          ) : (
+            <Form.Control
+              type={
+                ['checkbox'].includes(conditionalField.type)
+                  ? 'checkbox'
+                  : 'text'
+              }
+              checked={
+                conditionalField.type === 'checkbox'
+                  ? Boolean(editedField.conditional?.value)
+                  : undefined
+              }
+              value={
+                conditionalField.type === 'checkbox'
+                  ? undefined
+                  : editedField.conditional?.value?.toString() || ''
+              }
+              onChange={(e) => {
+                const target = e.target as HTMLInputElement;
+                const val =
+                  conditionalField.type === 'checkbox'
+                    ? target.checked
+                    : target.value;
+                setEditedField((prev) => ({
+                  ...prev,
+                  conditional: prev.conditional
+                    ? { ...prev.conditional, value: val }
+                    : undefined,
+                }));
+              }}
             />
-          </div>
+          )}
         </Form.Group>
       )}
 
-      <Button variant='primary' onClick={handleSave}>
-        Save Changes
-      </Button>
+      <div className='d-flex justify-content-end'>
+        <Button variant='primary' onClick={handleSave}>
+          Save Field
+        </Button>
+      </div>
     </div>
   );
 };

@@ -9,6 +9,8 @@ import ContactUsPage from '../pages/ContactUsPage';
 import AboutUsPage from '../pages/AboutUsPage';
 import OurTeamPage from '../pages/OurTeamPage';
 import FAQUserView from '../content/FAQUserView';
+import PrivacyPolicy from '../pages/PrivacyPolicy';
+import Terms from '../pages/Terms';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -26,7 +28,6 @@ const ALLRoutes = () => {
 
   return (
     <Routes>
-      {/* Home Page (Public) */}
       <Route
         path='/'
         element={
@@ -35,8 +36,6 @@ const ALLRoutes = () => {
           </MainLayout>
         }
       />
-
-      {/* Contact Us Page (Public) */}
       <Route
         path='/contact-us'
         element={
@@ -45,8 +44,6 @@ const ALLRoutes = () => {
           </MainLayout>
         }
       />
-
-      {/* About Us Page (Public) */}
       <Route
         path='/about-us'
         element={
@@ -55,8 +52,6 @@ const ALLRoutes = () => {
           </MainLayout>
         }
       />
-
-      {/* Our Team Page (Public) */}
       <Route
         path='/our-team'
         element={
@@ -65,13 +60,27 @@ const ALLRoutes = () => {
           </MainLayout>
         }
       />
-
-      {/* Our Team Page (Public) */}
       <Route
         path='/faq'
         element={
           <MainLayout>
             <FAQUserView />
+          </MainLayout>
+        }
+      />
+      <Route
+        path='/privacy-policy'
+        element={
+          <MainLayout>
+            <PrivacyPolicy />
+          </MainLayout>
+        }
+      />
+      <Route
+        path='/terms-conditions'
+        element={
+          <MainLayout>
+            <Terms />
           </MainLayout>
         }
       />

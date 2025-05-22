@@ -12,8 +12,14 @@ export const ParentFilters: React.FC<ParentFiltersProps> = ({
   onFilterChange,
   onReset,
 }) => {
-  const { nameFilter, emailFilter, phoneFilter, statusFilter, roleFilter } =
-    filters;
+  const {
+    nameFilter,
+    emailFilter,
+    phoneFilter,
+    statusFilter,
+    roleFilter,
+    paymentStatusFilter,
+  } = filters;
 
   return (
     <form>
@@ -79,6 +85,27 @@ export const ParentFilters: React.FC<ParentFiltersProps> = ({
               </select>
             </div>
           </div>
+
+          <div className='col-md-6'>
+            <div className='mb-3'>
+              <label className='form-label'>Payment Status</label>
+              <select
+                className='form-select'
+                value={paymentStatusFilter || ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const paymentStatus =
+                    val === 'paid' || val === 'notPaid' ? val : null;
+                  onFilterChange({ paymentStatusFilter: paymentStatus });
+                }}
+              >
+                <option value=''>All Payments</option>
+                <option value='paid'>Paid</option>
+                <option value='notPaid'>Not Paid</option>
+              </select>
+            </div>
+          </div>
+
           <div className='col-md-6'>
             <div className='mb-3'>
               <label className='form-label'>Type</label>

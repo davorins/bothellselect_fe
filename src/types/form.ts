@@ -53,6 +53,7 @@ export interface PaymentFormField extends BaseFormField {
 
 export interface SectionFormField extends BaseFormField {
   type: 'section';
+  description?: string;
 }
 
 export type FormField =

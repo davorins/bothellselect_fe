@@ -7,6 +7,7 @@ export type ParentFilterParams = {
   statusFilter: string | null;
   roleFilter: string | null;
   dateRange: [Moment, Moment] | null;
+  paymentStatusFilter?: 'paid' | 'notPaid' | null;
 };
 
 export type SortOrder =

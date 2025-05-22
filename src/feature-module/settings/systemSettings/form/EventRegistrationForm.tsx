@@ -1,12 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FormField, PaymentFormField } from '../../../../types/form';
+import {
+  FormField,
+  PaymentFormField,
+  SectionFormField,
+} from '../../../../types/form';
+import { PaymentForm, CreditCard } from 'react-square-web-payments-sdk';
+import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 
 interface EventRegistrationFormProps {
   formFields: FormField[];
   onSubmit: (formData: Record<string, any>) => Promise<void>;
   eventId?: string;
   formId?: string;
+  userEmail?: string;
+  userName?: string;
 }
 
 interface PaymentResult {
@@ -27,56 +35,75 @@ interface ProcessPaymentParams {
   };
 }
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${localStorage.getItem('token')}`,
   },
 });
 
-const processPayment = async (
-  params: ProcessPaymentParams
-): Promise<PaymentResult> => {
-  try {
-    const { data } = await api.post('/api/process-payment', params);
-    return {
-      success: true,
-      paymentId: data.id,
-      status: data.status,
-      receiptUrl: data.receiptUrl,
-    };
-  } catch (error) {
-    console.error('Payment processing error:', error);
-    throw new Error(
-      axios.isAxiosError(error)
-        ? error.response?.data?.message || 'Payment processing failed'
-        : 'Payment processing failed'
-    );
-  }
-};
-
 const EventRegistrationForm: React.FC<EventRegistrationFormProps> = ({
   formFields,
   eventId,
   onSubmit,
   formId,
+  userEmail = '',
+  userName = '',
 }) => {
-  const [formData, setFormData] = React.useState<Record<string, any>>({});
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [paymentComplete, setPaymentComplete] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const hasPaymentField = formFields.some((f) => f.type === 'payment');
+
+  useEffect(() => {
+    if (userEmail) setFormData((prev) => ({ ...prev, email: userEmail }));
+    if (userName) setFormData((prev) => ({ ...prev, name: userName }));
+  }, [userEmail, userName]);
 
   const handleChange = (fieldId: string, value: any) => {
     setFormData((prev) => ({ ...prev, [fieldId]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const processPayment = async (
+    params: ProcessPaymentParams
+  ): Promise<PaymentResult> => {
+    try {
+      setPaymentProcessing(true);
+      const { data } = await api.post('/payments/process', params);
+      return {
+        success: true,
+        paymentId: data.id,
+        status: data.status,
+        receiptUrl: data.receiptUrl,
+      };
+    } catch (error) {
+      console.error('Payment processing error:', error);
+      throw new Error(
+        axios.isAxiosError(error)
+          ? error.response?.data?.message || 'Payment processing failed'
+          : 'Payment processing failed'
+      );
+    } finally {
+      setPaymentProcessing(false);
+    }
+  };
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
+    // Validate required fields
     const missingFields = formFields
-      .filter((field) => field.required && !formData[field.id])
+      .filter(
+        (field) =>
+          field.required && !formData[field.id] && field.type !== 'payment'
+      )
       .map((field) => field.label || field.id);
 
     if (missingFields.length > 0) {
@@ -92,9 +119,10 @@ const EventRegistrationForm: React.FC<EventRegistrationFormProps> = ({
 
       let paymentResult: PaymentResult | null = null;
 
+      // Process payment if this form has a payment field
       if (paymentField?.paymentConfig) {
         if (!formData.paymentToken) {
-          throw new Error('Payment token is required for this form');
+          throw new Error('Payment processing incomplete');
         }
 
         paymentResult = await processPayment({
@@ -103,7 +131,7 @@ const EventRegistrationForm: React.FC<EventRegistrationFormProps> = ({
           token: formData.paymentToken,
           description:
             paymentField.paymentConfig.description ||
-            'Event registration payment',
+            `Payment for event registration`,
           metadata: {
             eventId: eventId || 'unknown',
             formFieldId: paymentField.id,
@@ -115,6 +143,7 @@ const EventRegistrationForm: React.FC<EventRegistrationFormProps> = ({
         }
       }
 
+      // Prepare submission data
       const submissionData = {
         eventId,
         formId,
@@ -132,10 +161,15 @@ const EventRegistrationForm: React.FC<EventRegistrationFormProps> = ({
             : undefined,
       };
 
+      // Submit the form data
       await api.post('/form-submissions', submissionData);
       await onSubmit(formData);
-      alert('Registration submitted successfully!');
+
+      // Reset form after successful submission
       setFormData({});
+      setPaymentComplete(false);
+
+      alert('Registration submitted successfully!');
     } catch (err) {
       console.error('Form submission error:', err);
       setError(
@@ -149,63 +183,131 @@ const EventRegistrationForm: React.FC<EventRegistrationFormProps> = ({
   };
 
   const renderPaymentFields = (field: PaymentFormField) => {
+    const SQUARE_APP_ID =
+      process.env.REACT_APP_SQUARE_APP_ID ||
+      'sandbox-sq0idb-I4PAJ1f1XKYqYSwLovq0xQ';
+    const SQUARE_LOCATION_ID =
+      process.env.REACT_APP_SQUARE_LOCATION_ID || 'LCW4GM814GWXK';
+
+    const handleCardTokenized = async (tokenResult: any) => {
+      try {
+        if (tokenResult.status === 'OK') {
+          setPaymentProcessing(true);
+
+          // Get card details from the tokenization response
+          const cardDetails = tokenResult.details?.card || {};
+
+          const paymentResult = await api.post('/events/payments/process', {
+            token: tokenResult.token,
+            amount: field.paymentConfig?.amount,
+            currency: field.paymentConfig?.currency || 'USD',
+            eventId,
+            formId,
+            buyerEmail: formData.email || userEmail,
+            buyerName: formData.name || userName,
+            description:
+              field.paymentConfig?.description || 'Event registration',
+            cardDetails: {
+              last_4: cardDetails.last4,
+              card_brand: cardDetails.cardBrand,
+              exp_month: cardDetails.expMonth,
+              exp_year: cardDetails.expYear,
+            },
+          });
+
+          if (paymentResult.data.success) {
+            handleChange('paymentToken', tokenResult.token);
+            setPaymentComplete(true);
+            await handleSubmit();
+          } else {
+            throw new Error(
+              paymentResult.data.error || 'Payment processing failed'
+            );
+          }
+        } else {
+          let errorMessage = 'Payment failed';
+          if (tokenResult.errors) {
+            errorMessage = tokenResult.errors
+              .map((error: any) => error.detail)
+              .join(', ');
+          }
+          throw new Error(errorMessage);
+        }
+      } catch (error) {
+        console.error('Payment error:', error);
+        setError(
+          error instanceof Error ? error.message : 'Payment processing failed'
+        );
+        setPaymentComplete(false);
+      } finally {
+        setPaymentProcessing(false);
+      }
+    };
+
     return (
-      <div className='border p-3 rounded bg-light'>
-        <h6>Payment Information</h6>
+      <div className='border p-3 rounded bg-light mb-3'>
+        <h5>Payment Information</h5>
         {field.paymentConfig && (
-          <>
-            <p className='mb-2'>
-              <strong>Amount:</strong> ${field.paymentConfig.amount.toFixed(2)}{' '}
-              {field.paymentConfig.currency || 'USD'}
+          <div className='mb-3'>
+            <p>
+              <strong>Amount:</strong> $
+              {(field.paymentConfig.amount / 100).toFixed(2)}{' '}
+              {field.paymentConfig.currency &&
+                ` ${field.paymentConfig.currency}`}
             </p>
             {field.paymentConfig.description && (
-              <p className='mb-3'>{field.paymentConfig.description}</p>
+              <p className='text-muted'>{field.paymentConfig.description}</p>
             )}
-          </>
+          </div>
         )}
 
-        <div className='form-group mb-3'>
-          <label className='form-label'>Card Number</label>
+        <div className='mb-3'>
+          <label className='form-label'>Name on Card</label>
           <input
             type='text'
             className='form-control'
-            placeholder='1234 5678 9012 3456'
-            value={formData.cardNumber || ''}
-            onChange={(e) => handleChange('cardNumber', e.target.value)}
+            value={formData.name || ''}
+            onChange={(e) => handleChange('name', e.target.value)}
             required
           />
         </div>
 
-        <div className='row'>
-          <div className='col-md-6 form-group mb-3'>
-            <label className='form-label'>Expiration Date</label>
-            <input
-              type='text'
-              className='form-control'
-              placeholder='MM/YY'
-              value={formData.expDate || ''}
-              onChange={(e) => handleChange('expDate', e.target.value)}
-              required
-            />
-          </div>
-          <div className='col-md-6 form-group mb-3'>
-            <label className='form-label'>CVV</label>
-            <input
-              type='text'
-              className='form-control'
-              placeholder='123'
-              value={formData.cvv || ''}
-              onChange={(e) => handleChange('cvv', e.target.value)}
-              required
-            />
-          </div>
+        <div className='mb-3'>
+          <label className='form-label'>Email for Receipt</label>
+          <input
+            type='email'
+            className='form-control'
+            value={formData.email || ''}
+            onChange={(e) => handleChange('email', e.target.value)}
+            required
+          />
         </div>
 
-        <input
-          type='hidden'
-          value={formData.paymentToken || ''}
-          onChange={(e) => handleChange('paymentToken', e.target.value)}
-        />
+        {paymentProcessing ? (
+          <LoadingSpinner />
+        ) : !paymentComplete ? (
+          <PaymentForm
+            applicationId={SQUARE_APP_ID}
+            locationId={SQUARE_LOCATION_ID}
+            cardTokenizeResponseReceived={handleCardTokenized}
+            createPaymentRequest={() => ({
+              countryCode: 'US',
+              currencyCode: field.paymentConfig?.currency || 'USD',
+              total: {
+                amount: field.paymentConfig?.amount.toString() || '0',
+                label: 'Total',
+              },
+              buyerEmailAddress: formData.email || userEmail,
+            })}
+          >
+            <CreditCard />
+          </PaymentForm>
+        ) : (
+          <div className='alert alert-success'>
+            <i className='ti ti-check me-2' />
+            Payment processed successfully
+          </div>
+        )}
       </div>
     );
   };
@@ -219,7 +321,7 @@ const EventRegistrationForm: React.FC<EventRegistrationFormProps> = ({
           <input
             type={field.type === 'number' ? 'number' : field.type}
             className='form-control'
-            placeholder={field.placeholder}
+            placeholder={field.placeholder || ''}
             value={formData[field.id] || ''}
             onChange={(e) => handleChange(field.id, e.target.value)}
             required={field.required}
@@ -227,8 +329,8 @@ const EventRegistrationForm: React.FC<EventRegistrationFormProps> = ({
             max={field.type === 'number' ? field.validation?.max : undefined}
           />
         );
+
       case 'select':
-      case 'radio':
         return (
           <select
             className='form-select'
@@ -237,67 +339,127 @@ const EventRegistrationForm: React.FC<EventRegistrationFormProps> = ({
             required={field.required}
           >
             <option value=''>Select an option</option>
-            {field.options?.map((option) => (
+            {(field.options || []).map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
           </select>
         );
+
+      case 'radio':
+        return (
+          <div className='form-radio-group'>
+            {(field.options || []).map((option) => (
+              <div key={option.value} className='form-check'>
+                <input
+                  className='form-check-input'
+                  type='radio'
+                  name={field.id}
+                  id={`${field.id}-${option.value}`}
+                  value={option.value}
+                  checked={formData[field.id] === option.value}
+                  onChange={() => handleChange(field.id, option.value)}
+                  required={field.required}
+                />
+                <label
+                  className='form-check-label'
+                  htmlFor={`${field.id}-${option.value}`}
+                >
+                  {option.label}
+                </label>
+              </div>
+            ))}
+          </div>
+        );
+
       case 'checkbox':
         return (
           <div className='form-check'>
             <input
               className='form-check-input'
               type='checkbox'
+              id={field.id}
               checked={!!formData[field.id]}
               onChange={(e) => handleChange(field.id, e.target.checked)}
               required={field.required}
             />
-            <label className='form-check-label'>{field.label}</label>
+            <label className='form-check-label' htmlFor={field.id}>
+              {field.label}
+            </label>
           </div>
         );
+
       case 'payment':
-        return renderPaymentFields(field);
+        return renderPaymentFields(field as PaymentFormField);
+
+      case 'section':
+        // Type-safe section field rendering
+        const sectionField = field as SectionFormField;
+        return (
+          <div className='form-section mb-4'>
+            <h5 className='border-bottom pb-2'>{sectionField.label}</h5>
+            {'description' in sectionField && sectionField.description && (
+              <p className='text-muted'>{sectionField.description}</p>
+            )}
+          </div>
+        );
+
       default:
+        console.warn(`Unsupported field type: ${(field as any).type}`);
         return null;
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      {formFields.map((field) => (
-        <div key={field.id} className='mb-3'>
-          <label className='form-label'>
-            {field.label}
-            {field.required && <span className='text-danger'>*</span>}
-          </label>
-          {renderField(field)}
-        </div>
-      ))}
-
-      {error && (
-        <div className='alert alert-danger mb-3'>
-          <i className='ti ti-alert-circle me-2' />
-          {error}
-        </div>
-      )}
-
-      <button type='submit' className='btn btn-primary' disabled={isSubmitting}>
-        {isSubmitting ? (
-          <>
-            <span
-              className='spinner-border spinner-border-sm me-2'
-              role='status'
-              aria-hidden='true'
-            />
-            Submitting...
-          </>
+    <div className='event-registration-form'>
+      <form onSubmit={handleSubmit}>
+        {formFields.length === 0 ? (
+          <div className='alert alert-info'>No form fields configured</div>
         ) : (
-          'Submit Registration'
+          formFields.map((field) => (
+            <div
+              key={field.id}
+              className={`mb-3 ${field.type === 'section' ? 'mt-4' : ''}`}
+            >
+              {field.type !== 'checkbox' &&
+                field.type !== 'radio' &&
+                field.type !== 'section' && (
+                  <label className='form-label'>
+                    {/* {field.label} */}
+                    {field.required && <span className='text-danger'>*</span>}
+                  </label>
+                )}
+              {renderField(field)}
+            </div>
+          ))
         )}
-      </button>
-    </form>
+
+        {error && (
+          <div className='alert alert-danger mb-3'>
+            <i className='ti ti-alert-circle me-2' />
+            {error}
+          </div>
+        )}
+
+        {!hasPaymentField && (
+          <button
+            type='submit'
+            className='btn btn-primary'
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <span className='spinner-border spinner-border-sm me-2' />
+                Submitting...
+              </>
+            ) : (
+              'Submit Registration'
+            )}
+          </button>
+        )}
+      </form>
+    </div>
   );
 };
 

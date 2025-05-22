@@ -1,9 +1,11 @@
 import moment, { Moment } from 'moment';
 import { Player, Parent, Guardian, TableRecord } from '../types/types';
+import { isPlayerActive } from '../utils/season';
 
 interface ExtendedTableRecord extends TableRecord {
   type: 'parent' | 'guardian' | 'coach';
-  status: string;
+  status: 'Active' | 'Inactive';
+  paymentStatus?: 'paid' | 'notPaid' | null;
   DateofJoin: string;
   imgSrc: string;
   canView: boolean;
@@ -14,16 +16,22 @@ interface ExtendedTableRecord extends TableRecord {
   isCoach?: boolean;
 }
 
+// Helper to get parent/guardian status
 const getParentStatus = (parent: Parent | Guardian): 'Active' | 'Inactive' => {
-  // For coaches, always consider active
   if (parent.isCoach) return 'Active';
 
-  // Check if parent has any active players
-  const hasActivePlayers = parent.players?.some(
-    (player) => player.registrationComplete && player.paymentComplete
-  );
-
+  const hasActivePlayers = parent.players?.some(isPlayerActive);
   return hasActivePlayers ? 'Active' : 'Inactive';
+};
+
+// Helper to get payment status for a parent/guardian
+const getPaymentStatus = (
+  parent: Parent | Guardian
+): 'paid' | 'notPaid' | null => {
+  if (!parent.players || parent.players.length === 0) return null;
+
+  const anyPaid = parent.players.some((player) => player.paymentComplete);
+  return anyPaid ? 'paid' : 'notPaid';
 };
 
 export const transformParentData = (
@@ -37,7 +45,6 @@ export const transformParentData = (
     return date || new Date().toISOString();
   };
 
-  // For non-admin/coach users, only show their own data
   if (currentUser.role === 'user') {
     return [
       {
@@ -49,6 +56,7 @@ export const transformParentData = (
         role: currentUser.role,
         type: 'parent',
         status: getParentStatus(currentUser),
+        paymentStatus: getPaymentStatus(currentUser),
         DateofJoin: getSafeDate(currentUser.createdAt),
         imgSrc: currentUser.avatar || '',
         aauNumber: currentUser.aauNumber || 'N/A',
@@ -73,6 +81,7 @@ export const transformParentData = (
       role: parent.role,
       type: parent.isCoach ? 'coach' : 'parent',
       status: getParentStatus(parent),
+      paymentStatus: getPaymentStatus(parent),
       DateofJoin: getSafeDate(parent.createdAt),
       imgSrc: parent.avatar || '',
       aauNumber: parent.aauNumber || 'N/A',
@@ -90,6 +99,7 @@ export const transformParentData = (
     .flatMap((guardian) => {
       const guardianId = guardian._id || guardian.id || '';
       const guardianStatus = getParentStatus(guardian);
+      const guardianPaymentStatus = getPaymentStatus(guardian);
 
       const mainGuardian: ExtendedTableRecord = {
         _id: guardianId,
@@ -100,6 +110,7 @@ export const transformParentData = (
         role: 'guardian',
         type: 'guardian',
         status: guardianStatus,
+        paymentStatus: guardianPaymentStatus,
         DateofJoin: getSafeDate(guardian.createdAt as string | undefined),
         imgSrc: '',
         aauNumber: guardian.aauNumber || 'N/A',
@@ -109,7 +120,7 @@ export const transformParentData = (
         isCoach: guardian.isCoach,
       };
 
-      // Handle additional guardians from parent objects
+      // Additional guardians from parent
       const parentWithAdditional = parents.find((p) => p._id === guardianId);
       const additionalFromParent =
         parentWithAdditional?.additionalGuardians || [];
@@ -124,6 +135,7 @@ export const transformParentData = (
           role: 'guardian',
           type: 'guardian',
           status: getParentStatus(g),
+          paymentStatus: getPaymentStatus(g),
           DateofJoin: getSafeDate(g.createdAt as string | undefined),
           imgSrc: '',
           aauNumber: g.aauNumber || 'N/A',
@@ -148,6 +160,7 @@ export const filterParentData = (
     phoneFilter: string;
     statusFilter: string | null;
     roleFilter: string | null;
+    paymentStatusFilter?: 'paid' | 'notPaid' | null;
     dateRange: [Moment, Moment] | null;
   },
   currentUserRole: string
@@ -155,21 +168,17 @@ export const filterParentData = (
   const seenIds = new Set<string>();
 
   return data.filter((item) => {
-    // Create a unique key for this record
     const recordKey = `${item._id}-${item.type}`;
 
-    // Skip if we've already seen this record
     if (seenIds.has(recordKey)) {
       return false;
     }
     seenIds.add(recordKey);
 
-    // Apply role-based filtering first
     if (currentUserRole === 'user' && !item.canView) {
       return false;
     }
 
-    // Name filter
     if (
       filters.nameFilter &&
       !item.fullName.toLowerCase().includes(filters.nameFilter.toLowerCase())
@@ -177,7 +186,6 @@ export const filterParentData = (
       return false;
     }
 
-    // Email filter
     if (
       filters.emailFilter &&
       !(
@@ -188,7 +196,6 @@ export const filterParentData = (
       return false;
     }
 
-    // Phone filter
     if (
       filters.phoneFilter &&
       !(
@@ -200,7 +207,6 @@ export const filterParentData = (
       return false;
     }
 
-    // Status filter
     if (
       filters.statusFilter &&
       item.status?.toLowerCase() !== filters.statusFilter.toLowerCase()
@@ -208,7 +214,6 @@ export const filterParentData = (
       return false;
     }
 
-    // Role filter (updated to handle coaches)
     if (filters.roleFilter) {
       if (filters.roleFilter === 'parent' && item.type !== 'parent') {
         return false;
@@ -217,7 +222,6 @@ export const filterParentData = (
         return false;
       }
       if (filters.roleFilter === 'coach') {
-        // Check both role and isCoach fields
         if (item.role !== 'coach' && !item.isCoach) {
           return false;
         }
@@ -230,7 +234,15 @@ export const filterParentData = (
       }
     }
 
-    // Date range filter
+    // New paymentStatus filter
+    if (
+      filters.paymentStatusFilter !== undefined &&
+      filters.paymentStatusFilter !== null &&
+      item.paymentStatus !== filters.paymentStatusFilter
+    ) {
+      return false;
+    }
+
     if (filters.dateRange) {
       const [start, end] = filters.dateRange;
       const itemDate = moment(item.DateofJoin);
@@ -243,7 +255,7 @@ export const filterParentData = (
   });
 };
 
-// Sort function remains the same
+// Sort function (unchanged)
 export const sortParentData = (
   data: ExtendedTableRecord[],
   sortOrder: 'asc' | 'desc' | 'recentlyViewed' | 'recentlyAdded' | null

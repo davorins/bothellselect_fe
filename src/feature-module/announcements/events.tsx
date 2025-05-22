@@ -58,14 +58,17 @@ const Events = () => {
   const [availableForms, setAvailableForms] = useState<Form[]>([]);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-  const [eventDetails, setEventDetails] = useState<EventDetails>({
+  const defaultEventDetails: EventDetails = {
     title: '',
     caption: '',
     price: 0,
     start: new Date().toISOString(),
-    end: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour later with time
+    end: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     school: { name: '', address: '', website: '' },
-  });
+  };
+
+  const [eventDetails, setEventDetails] =
+    useState<EventDetails>(defaultEventDetails);
 
   const api = useMemo(() => {
     const instance = axios.create({
@@ -168,6 +171,10 @@ const Events = () => {
         website: '',
       },
       attendees: info.event.extendedProps.attendees || [],
+      formId:
+        typeof info.event.extendedProps.formId === 'object'
+          ? info.event.extendedProps.formId._id
+          : info.event.extendedProps.formId,
     });
     setShowEventDetailsModal(true);
   };
@@ -375,6 +382,7 @@ const Events = () => {
         category: event.category,
         school: event.school,
         attendees: event.attendees,
+        formId: event.formId,
       },
     }));
   };
@@ -401,6 +409,27 @@ const Events = () => {
     if (!category) return 'secondary';
     return categoryColorMap[category.toLowerCase()] || 'secondary';
   };
+
+  useEffect(() => {
+    const loadFormData = async () => {
+      if (showEventDetailsModal && eventDetails.formId) {
+        try {
+          console.log('eventDetails.formId:', eventDetails.formId);
+          const response = await api.get(`/forms/${eventDetails.formId}`);
+          const formData = response.data;
+
+          setAvailableForms((prevForms) => {
+            const existing = prevForms.find((f) => f._id === formData._id);
+            return existing ? prevForms : [...prevForms, formData];
+          });
+        } catch (error) {
+          console.error('Error loading form:', error);
+        }
+      }
+    };
+
+    loadFormData();
+  }, [showEventDetailsModal, eventDetails.formId, api]);
 
   if (isLoading) {
     return (
@@ -550,6 +579,7 @@ const Events = () => {
                           _id: undefined,
                         };
 
+                        setEventDetails(defaultEventDetails);
                         setEventDetails(newEvent);
                         setShowAddEventModal(true);
                         info.revert();
@@ -1193,43 +1223,45 @@ const Events = () => {
 
           {eventDetails.formId && (
             <div className='mt-4'>
-              <h5>Registration Form</h5>
-              <EventRegistrationForm
-                formFields={
-                  availableForms.find((f) => f._id === eventDetails.formId)
-                    ?.fields || []
+              {(() => {
+                const selectedForm = availableForms.find(
+                  (f) => f._id === eventDetails.formId
+                );
+                if (!selectedForm) {
+                  return (
+                    <div className='alert alert-warning'>
+                      Form template not found. Please refresh the page.
+                    </div>
+                  );
                 }
-                eventId={eventDetails._id}
-                formId={eventDetails.formId}
-                onSubmit={async (formData: Record<string, any>) => {
-                  try {
-                    const form = availableForms.find(
-                      (f) => f._id === eventDetails.formId
-                    );
-                    if (!form) throw new Error('Form template not found');
-
-                    const paymentField = form.fields.find(
-                      (f): f is PaymentFormField => f.type === 'payment'
-                    );
-                    if (paymentField) {
-                      console.log(
-                        'Processing payment:',
-                        paymentField.paymentConfig
-                      );
-                    }
-
-                    await api.post('/form-submissions', {
-                      eventId: eventDetails._id,
-                      formId: eventDetails.formId,
-                      formData,
-                    });
-                    alert('Registration submitted successfully!');
-                  } catch (error) {
-                    console.error('Error submitting form:', error);
-                    alert('Error submitting form. Please try again.');
-                  }
-                }}
-              />
+                if (!selectedForm.fields || selectedForm.fields.length === 0) {
+                  return (
+                    <div className='alert alert-warning'>
+                      This form has no fields configured.
+                    </div>
+                  );
+                }
+                return (
+                  <EventRegistrationForm
+                    formFields={selectedForm.fields}
+                    eventId={eventDetails._id}
+                    formId={eventDetails.formId}
+                    onSubmit={async (formData: Record<string, any>) => {
+                      try {
+                        await api.post('/form-submissions', {
+                          eventId: eventDetails._id,
+                          formId: eventDetails.formId,
+                          formData,
+                        });
+                        alert('Registration submitted successfully!');
+                      } catch (error) {
+                        console.error('Error submitting form:', error);
+                        alert('Error submitting form. Please try again.');
+                      }
+                    }}
+                  />
+                );
+              })()}
             </div>
           )}
         </Modal.Body>

@@ -22,15 +22,12 @@ const ParentList = () => {
   const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
   const seasonParam = searchParams.get('season');
   const yearParam = searchParams.get('year');
+
   const { currentUser } = useAuth();
 
-  // Data management
-  const {
-    loading,
-    error,
-    combinedData: parentData,
-  } = useParentData(seasonParam, yearParam);
-  const { handleParentClick } = useParentActions();
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Filter states
   const [filters, setFilters] = useState<ParentFilterParams>({
@@ -42,24 +39,49 @@ const ParentList = () => {
     dateRange: null,
   });
 
+  // Sort order state
   const [sortOrder, setSortOrder] = useState<
     'asc' | 'desc' | 'recentlyViewed' | 'recentlyAdded' | null
   >(null);
 
-  // Memoized filtered and sorted data
+  // Data fetching
+  const {
+    loading,
+    error,
+    combinedData: parentData,
+  } = useParentData(seasonParam, yearParam);
+
+  const { handleParentClick } = useParentActions();
+
+  // Filtered parents based on filters and role
   const filteredParents = useMemo(() => {
     return filterParentData(parentData, filters, currentUser?.role || 'user');
   }, [parentData, filters, currentUser?.role]);
 
+  // Sorted parents based on sort order
   const sortedParents = useMemo(() => {
     return sortParentData(filteredParents, sortOrder);
   }, [filteredParents, sortOrder]);
 
+  // Table columns depending on role and click handler
   const columns = useMemo(() => {
     return getParentTableColumns(handleParentClick, currentUser?.role);
   }, [handleParentClick, currentUser?.role]);
 
-  // Early return for regular users (single record view)
+  // Decide which data to show (sorted or filtered)
+  const data = sortOrder ? sortedParents : filteredParents;
+
+  // Total records count for pagination
+  const totalRecords = data.length;
+
+  // Paginate data slice for current page & page size
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return data.slice(startIndex, endIndex);
+  }, [data, currentPage, pageSize]);
+
+  // Early return: for regular users showing single record, no pagination, no header
   if (currentUser?.role === 'user' && parentData.length === 1) {
     return (
       <div className='page-wrapper'>
@@ -83,10 +105,7 @@ const ParentList = () => {
     );
   }
 
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
+  if (loading) return <LoadingSpinner />;
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -95,7 +114,7 @@ const ParentList = () => {
         <ParentListHeader
           seasonParam={seasonParam}
           yearParam={yearParam}
-          parentData={sortOrder ? sortedParents : filteredParents}
+          parentData={data}
         />
         <div className='card'>
           <div className='card-header d-flex align-items-center justify-content-between flex-wrap pb-0'>
@@ -180,16 +199,20 @@ const ParentList = () => {
           </div>
           <div className='card-body p-0 py-3'>
             <Table
-              dataSource={sortOrder ? sortedParents : filteredParents}
               columns={columns}
-              rowKey={(record) => `${record._id}-${record.type}`}
-              loading={loading}
+              dataSource={paginatedData}
+              rowKey='_id'
               pagination={{
-                pageSize: 10,
+                current: currentPage,
+                pageSize,
+                total: totalRecords,
                 showSizeChanger: true,
-                pageSizeOptions: ['10', '25', '50', '100'],
+                pageSizeOptions: ['10', '20', '50', '100'],
+                onChange: (page, pageSize) => {
+                  setCurrentPage(page);
+                  setPageSize(pageSize);
+                },
               }}
-              scroll={{ x: true }}
             />
           </div>
         </div>
