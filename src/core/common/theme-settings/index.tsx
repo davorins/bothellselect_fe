@@ -72,7 +72,14 @@ const ThemeSettings = () => {
   }, [fetchEvents]);
 
   const filteredEvents = useMemo(() => {
+    const now = new Date(); // Current time for comparison
+
     const filtered = events.filter((event) => {
+      // Filter out past events (events whose end time has passed)
+      const eventEnd = event.end ? new Date(event.end) : new Date(event.start);
+      if (eventEnd < now) return false;
+
+      // Filter by category (case-insensitive)
       if (selectedCategory === 'all') return true;
       if (!event.category) return false;
       return event.category.toLowerCase() === selectedCategory.toLowerCase();
@@ -212,7 +219,7 @@ const ThemeSettings = () => {
               <p className='text-muted'>
                 {selectedCategory === 'all'
                   ? 'No upcoming events found'
-                  : `No ${selectedCategory} events found`}
+                  : `No upcoming ${selectedCategory} events found`}
               </p>
             </div>
           ) : (
