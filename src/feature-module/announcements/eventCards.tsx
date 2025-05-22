@@ -138,10 +138,7 @@ const EventCards: React.FC<EventCardsProps> = ({
           <div className='col-lg-6'>
             <div className='d-lg-flex align-items-center justify-content-center bg-light-300 d-lg-block d-none flex-wrap vh-100 overflowy-auto bg-01'>
               <div>
-                <ImageWithBasePath
-                  src='assets/img/authentication/authentication.png'
-                  alt='Img'
-                />
+                <ImageWithBasePath src='assets/img/aboutus.png' alt='Img' />
               </div>
             </div>
           </div>
