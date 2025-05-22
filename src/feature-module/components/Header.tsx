@@ -255,7 +255,7 @@ const Header = () => {
                 to='/events'
                 onClick={toggleMobileSidebar}
               >
-                <i className='ti ti-mail' /> Events
+                <i className='ti ti-calendar-event' /> Events
               </Link>
             </li>
             <li className='nav-item'>
@@ -273,7 +273,7 @@ const Header = () => {
                 to='/faq'
                 onClick={toggleMobileSidebar}
               >
-                <i className='ti ti-mail' /> FAQ
+                <i className='ti ti-question-mark' /> FAQ
               </Link>
             </li>
             <li>
