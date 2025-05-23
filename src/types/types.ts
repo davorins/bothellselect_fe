@@ -510,6 +510,7 @@ export interface EmailCampaignData {
 export interface ManualEmailRequest {
   templateId: string;
   emails: string[];
+  variables?: Record<string, any>;
 }
 
 export interface ApiResponse {

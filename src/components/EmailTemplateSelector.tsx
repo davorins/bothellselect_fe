@@ -241,6 +241,14 @@ export const EmailTemplateSelector: React.FC = () => {
         body: JSON.stringify({
           templateId: selectedTemplate._id,
           emails: emails,
+          variables: {
+            ...(selectedUsers.length > 0 && { parentIds: selectedUsers }),
+            ...(selectedSeason &&
+              selectedYear && {
+                season: selectedSeason,
+                year: selectedYear,
+              }),
+          },
         } as ManualEmailRequest),
       });
 

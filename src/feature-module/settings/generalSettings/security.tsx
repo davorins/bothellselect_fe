@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { all_routes } from '../../router/all_routes';
 import { Link } from 'react-router-dom';
-import { OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { OverlayTrigger, Tooltip, Alert } from 'react-bootstrap';
 
 type PasswordField = 'currentPassword' | 'newPassword' | 'confirmPassword';
 
@@ -19,7 +19,9 @@ const SecuritySettings = () => {
     confirmPassword: '',
   });
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   const togglePasswordVisibility = (field: PasswordField) => {
     setPasswordVisibility((prev) => ({
@@ -38,6 +40,7 @@ const SecuritySettings = () => {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
 
     // Validation
     if (passwords.newPassword !== passwords.confirmPassword) {
@@ -63,21 +66,30 @@ const SecuritySettings = () => {
         throw new Error('Authentication token not found');
       }
 
-      const res = await fetch('/api/change-password', {
+      const res = await fetch(`${API_BASE_URL}/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json',
           Authorization: `Bearer ${token}`,
+          'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify({
           currentPassword: passwords.currentPassword,
           newPassword: passwords.newPassword,
         }),
+        credentials: 'include',
+        cache: 'no-store',
       });
 
       if (!res.ok) {
         const errorText = await res.text();
-        throw new Error(errorText || 'Something went wrong.');
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.message || 'Something went wrong.');
+        } catch {
+          throw new Error(errorText || 'Something went wrong.');
+        }
       }
 
       // Reset form on success
@@ -87,7 +99,7 @@ const SecuritySettings = () => {
         confirmPassword: '',
       });
       setShowPasswordChangeForm(false);
-      alert('Password updated successfully!');
+      setSuccessMessage('Password updated successfully!');
     } catch (err: any) {
       console.error('Password change error:', err);
       setError(err.message || 'Error changing password');
@@ -132,6 +144,22 @@ const SecuritySettings = () => {
           </div>
         </div>
 
+        {/* Alerts */}
+        {(error || successMessage) && (
+          <div className='mt-3'>
+            {error && (
+              <Alert variant='danger' className='p-2'>
+                {error}
+              </Alert>
+            )}
+            {successMessage && (
+              <Alert variant='success' className='p-2'>
+                {successMessage}
+              </Alert>
+            )}
+          </div>
+        )}
+
         {/* Main Settings */}
         <div className='row'>
           <div className='col-xxl-2 col-xl-3'>
@@ -158,7 +186,7 @@ const SecuritySettings = () => {
             <div className='border-start ps-3 flex-fill'>
               <h5 className='pt-3 mb-3 border-bottom'>Security Settings</h5>
 
-              {/* Password */}
+              {/* Password Section */}
               <div className='d-flex justify-content-between align-items-center flex-wrap bg-white border rounded p-3 mb-3'>
                 <div className='mb-3'>
                   <h6>Password</h6>
@@ -270,8 +298,6 @@ const SecuritySettings = () => {
                       </div>
                     </div>
 
-                    {error && <div className='alert alert-danger'>{error}</div>}
-
                     <div className='d-flex mb-3'>
                       <button
                         type='submit'
@@ -286,6 +312,7 @@ const SecuritySettings = () => {
                         onClick={() => {
                           setShowPasswordChangeForm(false);
                           setError('');
+                          setSuccessMessage('');
                           setPasswords({
                             currentPassword: '',
                             newPassword: '',
