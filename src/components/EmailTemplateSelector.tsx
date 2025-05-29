@@ -6,15 +6,11 @@ import {
   Card,
   Form,
   Alert,
+  ProgressBar,
 } from 'react-bootstrap';
 import { emailTemplateService } from '../services/emailTemplateService';
 import { useAuth } from '../context/AuthContext';
-import {
-  SeasonOption,
-  EmailTemplate,
-  EmailCampaignData,
-  ManualEmailRequest,
-} from '../types/types';
+import { SeasonOption, EmailTemplate, EmailCampaignData } from '../types/types';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 interface User {
@@ -28,6 +24,12 @@ interface User {
 interface RawSeason {
   season: string;
   registrationYear: number;
+}
+
+interface EmailSendResult {
+  success: boolean;
+  email?: string;
+  error?: string;
 }
 
 export const EmailTemplateSelector: React.FC = () => {
@@ -59,8 +61,27 @@ export const EmailTemplateSelector: React.FC = () => {
     campaign: 'idle',
   });
 
+  const [sendProgress, setSendProgress] = useState({
+    total: 0,
+    sent: 0,
+    failed: 0,
+  });
+
   const isValidEmail = (email: string): boolean => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const parseManualEmails = (input: string): string[] => {
+    return input
+      .split(/[\n,;]+/)
+      .map((email) => email.trim())
+      .filter((email) => {
+        const isValid = isValidEmail(email);
+        if (!isValid && email) {
+          console.warn(`Invalid email skipped: ${email}`);
+        }
+        return isValid;
+      });
   };
 
   useEffect(() => {
@@ -182,7 +203,6 @@ export const EmailTemplateSelector: React.FC = () => {
   const toggleUserSelection = (userId: string) => {
     setSelectedSeason('');
     setSelectedYear(null);
-
     setSelectedUsers((prev) =>
       prev.includes(userId)
         ? prev.filter((id) => id !== userId)
@@ -193,9 +213,7 @@ export const EmailTemplateSelector: React.FC = () => {
   const selectAllUsers = () => {
     setSelectedSeason('');
     setSelectedYear(null);
-
-    const allUserIds = users.map((u) => u._id);
-    setSelectedUsers(allUserIds);
+    setSelectedUsers(users.map((u) => u._id));
   };
 
   const clearAllSelections = () => {
@@ -207,10 +225,7 @@ export const EmailTemplateSelector: React.FC = () => {
       .filter((user) => selectedUsers.includes(user._id))
       .map((user) => user.email);
 
-    const manualEmailList = manualEmails
-      .split(/[\n,;]+/)
-      .map((email) => email.trim())
-      .filter((email) => email && isValidEmail(email));
+    const manualEmailList = parseManualEmails(manualEmails);
 
     return Array.from(new Set([...selectedEmails, ...manualEmailList]));
   };
@@ -229,31 +244,96 @@ export const EmailTemplateSelector: React.FC = () => {
     if (!selectedTemplate) return false;
 
     setSendingStatus((prev) => ({ ...prev, manual: 'sending' }));
+    setSendProgress({
+      total: emails.length,
+      sent: 0,
+      failed: 0,
+    });
 
     try {
       const token = await getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/email/send-manual`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          templateId: selectedTemplate._id,
-          emails: emails,
-          variables: {
-            ...(selectedUsers.length > 0 && { parentIds: selectedUsers }),
-            ...(selectedSeason &&
-              selectedYear && {
-                season: selectedSeason,
-                year: selectedYear,
-              }),
-          },
-        } as ManualEmailRequest),
-      });
+      const batchSize = 1; // Send 1 email per request
+      const delayBetweenRequests = 1500; // 1.5 second delay between requests
+      const maxRetries = 3;
+      const allResults: EmailSendResult[] = [];
 
-      if (!response.ok) {
-        throw new Error(await response.text());
+      for (let i = 0; i < emails.length; i += batchSize) {
+        const batch = emails.slice(i, i + batchSize);
+        let retryCount = 0;
+        let success = false;
+
+        while (retryCount < maxRetries && !success) {
+          try {
+            const response = await fetch(`${API_BASE_URL}/email/send-manual`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                templateId: selectedTemplate._id,
+                emails: batch,
+                variables: {
+                  parent: {
+                    fullName: 'Recipient',
+                    email: batch.join(', '),
+                  },
+                  isManual: true,
+                },
+              }),
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              if (response.status === 429 && retryCount < maxRetries - 1) {
+                const waitTime = 2000 * (retryCount + 1);
+                await new Promise((resolve) => setTimeout(resolve, waitTime));
+                retryCount++;
+                continue;
+              }
+              throw new Error(errorText);
+            }
+
+            const batchResults = await response.json();
+            allResults.push(...batchResults.results);
+            success = true;
+          } catch (error) {
+            if (retryCount >= maxRetries - 1) {
+              allResults.push({
+                success: false,
+                email: batch[0],
+                error: error instanceof Error ? error.message : 'Unknown error',
+              });
+            }
+            retryCount++;
+          }
+        }
+
+        // Update progress
+        const successfulSends = allResults.filter((r) => r.success).length;
+        const failedSends = allResults.filter((r) => !r.success).length;
+        setSendProgress({
+          total: emails.length,
+          sent: successfulSends,
+          failed: failedSends,
+        });
+
+        // Wait before next request unless it's the last one
+        if (i + batchSize < emails.length) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, delayBetweenRequests)
+          );
+        }
+      }
+
+      const failedSends = allResults.filter((r) => !r.success);
+      if (failedSends.length > 0) {
+        const errorDetails = failedSends
+          .map((f) => `${f.email}: ${f.error}`)
+          .join('\n');
+        throw new Error(
+          `${failedSends.length} emails failed to send after retries:\n${errorDetails}`
+        );
       }
 
       setSendingStatus((prev) => ({ ...prev, manual: 'success' }));
@@ -262,7 +342,7 @@ export const EmailTemplateSelector: React.FC = () => {
       console.error('Manual email send error:', error);
       setSendingStatus((prev) => ({ ...prev, manual: 'error' }));
       setError(
-        `Failed to send manual emails: ${
+        `Failed to send all manual emails: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`
       );
@@ -333,44 +413,44 @@ export const EmailTemplateSelector: React.FC = () => {
       return;
     }
 
-    let manualSuccess = true;
-    let campaignSuccess = true;
+    try {
+      let manualSuccess = true;
+      let campaignSuccess = true;
 
-    // Send manual emails first if they exist
-    if (hasManualEmails) {
-      manualSuccess = await sendManualEmails(manualEmailsToSend);
+      if (hasManualEmails) {
+        manualSuccess = await sendManualEmails(manualEmailsToSend);
+      }
+
+      if (hasRegularRecipients) {
+        campaignSuccess = await sendRegularCampaign();
+      }
+
+      if (manualSuccess && campaignSuccess) {
+        setSuccessMessage(
+          `${
+            hasManualEmails && hasRegularRecipients
+              ? 'All emails'
+              : hasManualEmails
+              ? 'Manual emails'
+              : 'Campaign emails'
+          } sent successfully!`
+        );
+
+        setSelectedTemplate(null);
+        setSelectedUsers([]);
+        setManualEmails('');
+        setSearchTerm('');
+        setSelectedSeason('');
+        setSelectedYear(null);
+        setSendProgress({ total: 0, sent: 0, failed: 0 });
+      }
+    } catch (error) {
+      console.error('Sending error:', error);
+    } finally {
+      setTimeout(() => {
+        setSendingStatus({ manual: 'idle', campaign: 'idle' });
+      }, 3000);
     }
-
-    // Send to regular recipients if they exist
-    if (hasRegularRecipients) {
-      campaignSuccess = await sendRegularCampaign();
-    }
-
-    // Show success message if all sends were successful
-    if (manualSuccess && campaignSuccess) {
-      setSuccessMessage(
-        `${
-          hasManualEmails && hasRegularRecipients
-            ? 'All emails'
-            : hasManualEmails
-            ? 'Manual emails'
-            : 'Campaign emails'
-        } sent successfully!`
-      );
-
-      // Reset form
-      setSelectedTemplate(null);
-      setSelectedUsers([]);
-      setManualEmails('');
-      setSearchTerm('');
-      setSelectedSeason('');
-      setSelectedYear(null);
-    }
-
-    // Reset sending status after 3 seconds
-    setTimeout(() => {
-      setSendingStatus({ manual: 'idle', campaign: 'idle' });
-    }, 3000);
   };
 
   const isLoading = loading.templates || loading.seasons;
@@ -397,26 +477,9 @@ export const EmailTemplateSelector: React.FC = () => {
         <>
           {successMessage && (
             <div className='page-wrapper'>
-              {sendingStatus.manual === 'success' && (
-                <Alert variant='success' className='mt-2 p-2'>
-                  Manual emails sent successfully!
-                </Alert>
-              )}
-              {sendingStatus.campaign === 'success' && (
-                <Alert variant='success' className='mt-2 p-2'>
-                  Campaign emails sent successfully!
-                </Alert>
-              )}
-              {sendingStatus.manual === 'error' && (
-                <Alert variant='danger' className='mt-2 p-2'>
-                  Failed to send manual emails
-                </Alert>
-              )}
-              {sendingStatus.campaign === 'error' && (
-                <Alert variant='danger' className='mt-2 p-2'>
-                  Failed to send campaign emails
-                </Alert>
-              )}
+              <Alert variant='success' className='mt-2 p-2'>
+                {successMessage}
+              </Alert>
             </div>
           )}
 
@@ -463,7 +526,7 @@ export const EmailTemplateSelector: React.FC = () => {
                                 {template.title} ({template.category})
                               </option>
                             ))}
-                          </Form.Select>{' '}
+                          </Form.Select>
                           {selectedTemplate && (
                             <Card>
                               <Card.Body>
