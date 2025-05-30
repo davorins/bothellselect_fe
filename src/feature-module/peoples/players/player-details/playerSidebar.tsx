@@ -89,34 +89,33 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
     } Grade`;
   };
 
-  const getPlayerStatus = (playerData: Player): 'Active' | 'Inactive' => {
-    const { fullName, season, registrationYear, status } = playerData;
+  const getPlayerStatus = (
+    playerData: Player
+  ): 'Active' | 'Inactive' | 'Pending Payment' => {
+    const { registrationComplete, paymentComplete } = playerData;
 
-    console.log('Calculating status for player:', {
-      name: fullName,
-      season,
-      year: registrationYear,
-      existingStatus: status,
-    });
-
-    // If status is set, check if the player is actually active
-    if (status?.trim() && season && registrationYear !== undefined) {
-      const active = isPlayerActive({ season, registrationYear });
-      console.log('Status provided, recalculated activity:', active);
-      return active ? 'Active' : 'Inactive';
+    // If properties don't exist, try to determine status from other fields
+    if (
+      typeof registrationComplete === 'undefined' ||
+      typeof paymentComplete === 'undefined'
+    ) {
+      // Fallback to checking season/registration year if available
+      if (playerData.season && playerData.registrationYear !== undefined) {
+        const active = isPlayerActive({
+          season: playerData.season,
+          registrationYear: playerData.registrationYear,
+        });
+        return active ? 'Active' : 'Inactive';
+      }
+      return 'Inactive';
     }
 
-    // If no explicit status but enough data to determine activity
-    if (season && registrationYear !== undefined) {
-      const active = isPlayerActive({ season, registrationYear });
-      console.log('Calculated active status (no explicit status):', active);
-      return active ? 'Active' : 'Inactive';
+    if (registrationComplete && paymentComplete) {
+      return 'Active';
     }
-
-    // Fallback
-    console.log(
-      'Insufficient data to determine status. Defaulting to Inactive.'
-    );
+    if (registrationComplete && !paymentComplete) {
+      return 'Pending Payment';
+    }
     return 'Inactive';
   };
 
@@ -179,13 +178,19 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
               <div className='overflow-hidden'>
                 <span
                   className={`badge badge-soft-${
-                    getPlayerStatus(player) === 'Active' ? 'success' : 'danger'
+                    getPlayerStatus(player) === 'Active'
+                      ? 'success'
+                      : getPlayerStatus(player) === 'Pending Payment'
+                      ? 'warning'
+                      : 'danger'
                   } d-inline-flex align-items-center mb-1`}
                 >
                   <i
                     className={`ti ti-circle-filled fs-5 me-1 ${
                       getPlayerStatus(player) === 'Active'
                         ? 'text-success'
+                        : getPlayerStatus(player) === 'Pending Payment'
+                        ? 'text-warning'
                         : 'text-danger'
                     }`}
                   />

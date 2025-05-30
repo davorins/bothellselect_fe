@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { formatDate } from '../../../../utils/dateFormatter';
 import axios from 'axios';
-import { isPlayerActive } from '../../../../utils/season';
+import {
+  isPlayerActive,
+  getCurrentSeason,
+  getNextSeason,
+  getCurrentYear,
+} from '../../../../utils/season';
 import { useAuth } from '../../../../context/AuthContext';
 import { formatPhoneNumber } from '../../../../utils/phone';
 
@@ -20,6 +25,8 @@ interface ParentData {
   players?: any[];
   season?: string;
   registrationYear?: number;
+  registrationComplete?: boolean;
+  paymentComplete?: boolean;
 }
 
 interface PaymentData {
@@ -119,12 +126,51 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
     return parts.join(', ');
   };
 
-  const getParentStatus = (parentData: ParentData): 'Active' | 'Inactive' => {
-    const hasActivePlayers = parentData.players?.some((player) =>
-      isPlayerActive(player)
+  const getParentStatus = (
+    parentData: ParentData
+  ): 'Active' | 'Inactive' | 'Pending Payment' => {
+    const currentSeason = getCurrentSeason();
+    const currentYear = getCurrentYear();
+    const nextSeason = getNextSeason();
+    const nextSeasonYear =
+      currentSeason === 'Winter' ? currentYear + 1 : currentYear;
+
+    // Check players for current/next season registrations
+    const hasCurrentSeasonPlayers = parentData.players?.some(
+      (player) =>
+        player.season === currentSeason &&
+        player.registrationYear === currentYear
+    );
+    const hasNextSeasonPlayers = parentData.players?.some(
+      (player) =>
+        player.season === nextSeason &&
+        player.registrationYear === nextSeasonYear
     );
 
-    return hasActivePlayers ? 'Active' : 'Inactive';
+    // Check payment status for current/next season players
+    const hasPendingPayments = parentData.players?.some((player) => {
+      const isCurrentOrNext =
+        (player.season === currentSeason &&
+          player.registrationYear === currentYear) ||
+        (player.season === nextSeason &&
+          player.registrationYear === nextSeasonYear);
+
+      return (
+        isCurrentOrNext &&
+        player.registrationComplete &&
+        !player.paymentComplete
+      );
+    });
+
+    const hasActivePlayers = parentData.players?.some(
+      (player) => isPlayerActive(player) && player.paymentComplete
+    );
+
+    if (hasActivePlayers) return 'Active';
+    if (hasPendingPayments) return 'Pending Payment';
+    if (hasCurrentSeasonPlayers || hasNextSeasonPlayers)
+      return 'Pending Payment'; // Fallback if payment status not available
+    return 'Inactive';
   };
 
   return (
@@ -143,13 +189,19 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
               <div className='overflow-hidden'>
                 <span
                   className={`badge badge-soft-${
-                    getParentStatus(parent) === 'Active' ? 'success' : 'danger'
+                    getParentStatus(parent) === 'Active'
+                      ? 'success'
+                      : getParentStatus(parent) === 'Pending Payment'
+                      ? 'warning'
+                      : 'danger'
                   } d-inline-flex align-items-center mb-1`}
                 >
                   <i
                     className={`ti ti-circle-filled fs-5 me-1 ${
                       getParentStatus(parent) === 'Active'
                         ? 'text-success'
+                        : getParentStatus(parent) === 'Pending Payment'
+                        ? 'text-warning'
                         : 'text-danger'
                     }`}
                   />

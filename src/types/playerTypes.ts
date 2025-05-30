@@ -2,9 +2,9 @@ import { Moment } from 'moment';
 
 export interface Player {
   id: string;
-  _id?: string; // For MongoDB compatibility
+  _id?: string;
   fullName: string;
-  name?: string; // Alias for fullName
+  name?: string;
   gender?: string;
   dob?: string | Date;
   age?: number;
@@ -27,6 +27,7 @@ export interface Player {
   siblings?: Player[];
   guardians?: Guardian[];
   paymentComplete?: boolean;
+  registrationComplete?: boolean;
 }
 
 export interface Guardian {

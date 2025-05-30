@@ -4,7 +4,7 @@ import { isPlayerActive } from '../utils/season';
 
 interface ExtendedTableRecord extends TableRecord {
   type: 'parent' | 'guardian' | 'coach';
-  status: 'Active' | 'Inactive';
+  status: 'Active' | 'Inactive' | 'Pending Payment';
   paymentStatus?: 'paid' | 'notPaid' | null;
   DateofJoin: string;
   imgSrc: string;
@@ -17,11 +17,19 @@ interface ExtendedTableRecord extends TableRecord {
 }
 
 // Helper to get parent/guardian status
-const getParentStatus = (parent: Parent | Guardian): 'Active' | 'Inactive' => {
+const getParentStatus = (
+  parent: Parent | Guardian
+): 'Active' | 'Inactive' | 'Pending Payment' => {
   if (parent.isCoach) return 'Active';
 
   const hasActivePlayers = parent.players?.some(isPlayerActive);
-  return hasActivePlayers ? 'Active' : 'Inactive';
+  const hasPendingPayments = parent.players?.some(
+    (player) => player.registrationComplete && !player.paymentComplete
+  );
+
+  if (hasActivePlayers) return 'Active';
+  if (hasPendingPayments) return 'Pending Payment';
+  return 'Inactive';
 };
 
 // Helper to get payment status for a parent/guardian

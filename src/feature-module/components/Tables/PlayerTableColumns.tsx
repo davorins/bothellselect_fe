@@ -2,7 +2,12 @@ import React from 'react';
 import { TableProps } from 'antd';
 import { Link } from 'react-router-dom';
 import { all_routes } from '../../router/all_routes';
-import { isPlayerActive } from '../../../utils/season';
+import {
+  isPlayerActive,
+  getCurrentSeason,
+  getNextSeason,
+  getCurrentYear,
+} from '../../../utils/season';
 import { formatDate, formatDateForStorage } from '../../../utils/dateFormatter';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -22,6 +27,8 @@ interface PlayerData {
   aauNumber?: string;
   season: string;
   registrationYear: number;
+  registrationComplete?: boolean;
+  paymentComplete?: boolean;
 }
 
 interface PlayerTableColumnsProps {
@@ -29,7 +36,32 @@ interface PlayerTableColumnsProps {
   location: any;
 }
 
-const getPlayerStatus = (player: PlayerData): 'Active' | 'Inactive' => {
+const getPlayerStatus = (
+  player: PlayerData
+): 'Active' | 'Inactive' | 'Pending Payment' => {
+  const currentSeason = getCurrentSeason();
+  const currentYear = getCurrentYear();
+  const nextSeason = getNextSeason();
+  const nextSeasonYear =
+    currentSeason === 'Winter' ? currentYear + 1 : currentYear;
+
+  // Check if registered for current/next season
+  const isCurrentSeason =
+    player.season === currentSeason && player.registrationYear === currentYear;
+  const isNextSeason =
+    player.season === nextSeason && player.registrationYear === nextSeasonYear;
+
+  if (isCurrentSeason || isNextSeason) {
+    if (player.registrationComplete && !player.paymentComplete) {
+      return 'Pending Payment';
+    }
+    if (player.registrationComplete && player.paymentComplete) {
+      return 'Active';
+    }
+    return 'Inactive'; // Not fully registered
+  }
+
+  // For other seasons, use standard active check
   return isPlayerActive(player) ? 'Active' : 'Inactive';
 };
 
@@ -38,7 +70,15 @@ export const exportPlayersToPDF = <T extends PlayerData>(data: T[]) => {
   const doc = new jsPDF();
   doc.text('Players List', 14, 15);
 
-  const tableColumn = ['Name', 'Gender', 'Age', 'School', 'Grade', 'AAU#'];
+  const tableColumn = [
+    'Name',
+    'Gender',
+    'Age',
+    'School',
+    'Grade',
+    'AAU#',
+    'Status',
+  ];
 
   const tableRows = data.map((item) => [
     item.fullName ?? item.name ?? 'N/A',
@@ -47,7 +87,7 @@ export const exportPlayersToPDF = <T extends PlayerData>(data: T[]) => {
     item.section ?? 'N/A',
     item.class ?? 'N/A',
     item.aauNumber ?? 'N/A',
-    getPlayerStatus(item),
+    isPlayerActive(item) ? 'Active' : 'Inactive', // Simplified status for exports
   ]);
 
   autoTable(doc, {
@@ -71,6 +111,7 @@ export const exportPlayersToPDF = <T extends PlayerData>(data: T[]) => {
       3: { cellWidth: 'auto' },
       4: { cellWidth: 'auto' },
       5: { cellWidth: 'auto' },
+      6: { cellWidth: 'auto' },
     },
   });
 
@@ -87,11 +128,12 @@ export const exportPlayersToExcel = <T extends PlayerData>(data: T[]) => {
       School: item.section ?? 'N/A',
       Grade: item.class ?? 'N/A',
       AAU: item.aauNumber ?? 'N/A',
+      Status: isPlayerActive(item) ? 'Active' : 'Inactive', // Simplified status for exports
     }))
   );
 
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Parents');
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Players');
   XLSX.writeFile(
     workbook,
     `players_${new Date().toISOString().slice(0, 10)}.xlsx`
@@ -222,12 +264,20 @@ export const getPlayerTableColumns = ({
         return (
           <span
             className={`badge badge-soft-${
-              status === 'Active' ? 'success' : 'danger'
+              status === 'Active'
+                ? 'success'
+                : status === 'Pending Payment'
+                ? 'warning'
+                : 'danger'
             } d-inline-flex align-items-center`}
           >
             <i
               className={`ti ti-circle-filled fs-5 me-1 ${
-                status === 'Active' ? 'text-success' : 'text-danger'
+                status === 'Active'
+                  ? 'text-success'
+                  : status === 'Pending Payment'
+                  ? 'text-warning'
+                  : 'text-danger'
               }`}
             ></i>
             {status}

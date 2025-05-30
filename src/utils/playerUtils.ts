@@ -113,6 +113,8 @@ export const transformPlayerData = (
     const status =
       player.registrationComplete && player.paymentComplete
         ? 'Active'
+        : player.registrationComplete && !player.paymentComplete
+        ? 'Pending Payment'
         : 'Inactive';
 
     const siblings = players

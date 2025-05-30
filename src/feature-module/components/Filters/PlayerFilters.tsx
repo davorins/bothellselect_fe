@@ -117,6 +117,7 @@ export const PlayerFilters: React.FC<PlayerFiltersProps> = ({
               >
                 <option value=''>All Statuses</option>
                 <option value='Active'>Active</option>
+                <option value='Pending Payment'>Pending Payment</option>
                 <option value='Inactive'>Inactive</option>
               </select>
             </div>

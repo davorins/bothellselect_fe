@@ -4,7 +4,12 @@ import { Link } from 'react-router-dom';
 import { formatPhoneNumber } from '../../../utils/phone';
 import { formatDate } from '../../../utils/dateFormatter';
 import { TableRecord, FormattedAddress } from '../../../types/types';
-import { isPlayerActive } from '../../../utils/season';
+import {
+  isPlayerActive,
+  getCurrentSeason,
+  getNextSeason,
+  getCurrentYear,
+} from '../../../utils/season';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import 'jspdf-autotable';
@@ -27,26 +32,56 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 // Helper function to get parent status
 const getParentStatus = <T extends ExtendedTableRecord>(
   record: T
-): 'active' | 'inactive' => {
+): 'active' | 'inactive' | 'pending' => {
   if (record.isCoach) return 'active';
-  const hasActivePlayers = record.players?.some((player) =>
-    isPlayerActive(player)
+
+  const currentSeason = getCurrentSeason();
+  const currentYear = getCurrentYear();
+  const nextSeason = getNextSeason();
+  const nextSeasonYear =
+    currentSeason === 'Winter' ? currentYear + 1 : currentYear;
+
+  // Check players for current/next season registrations
+  const hasCurrentSeasonPlayers = record.players?.some(
+    (player) =>
+      player.season === currentSeason && player.registrationYear === currentYear
   );
-  return hasActivePlayers ? 'active' : 'inactive';
+  const hasNextSeasonPlayers = record.players?.some(
+    (player) =>
+      player.season === nextSeason && player.registrationYear === nextSeasonYear
+  );
+
+  // Check payment status for current/next season players
+  const hasPendingPayments = record.players?.some((player) => {
+    const isCurrentOrNext =
+      (player.season === currentSeason &&
+        player.registrationYear === currentYear) ||
+      (player.season === nextSeason &&
+        player.registrationYear === nextSeasonYear);
+
+    return (
+      isCurrentOrNext && player.registrationComplete && !player.paymentComplete
+    );
+  });
+
+  const hasActivePlayers = record.players?.some(
+    (player) => isPlayerActive(player) && player.paymentComplete
+  );
+
+  if (hasActivePlayers) return 'active';
+  if (hasPendingPayments) return 'pending';
+  if (hasCurrentSeasonPlayers || hasNextSeasonPlayers) return 'pending'; // Fallback if payment status not available
+  return 'inactive';
 };
 
 // Export to PDF function
 export const exportParentsToPDF = <T extends ExtendedTableRecord>(
   data: T[]
 ) => {
-  // Create new jsPDF instance
   const doc = new jsPDF();
-
-  // Add title
   doc.text('Parents List', 14, 15);
 
-  // Prepare table data
-  const tableColumn = ['Name', 'Email', 'Phone', 'Address'];
+  const tableColumn = ['Name', 'Email', 'Phone', 'Address', 'Type', 'Status'];
 
   const tableRows = data.map((item) => [
     item.fullName,
@@ -56,11 +91,9 @@ export const exportParentsToPDF = <T extends ExtendedTableRecord>(
       ? item.address
       : `${item.address?.street}, ${item.address?.city}, ${item.address?.state} ${item.address?.zip}`,
     item.isCoach ? 'Coach' : item.type === 'guardian' ? 'Guardian' : 'Parent',
-    getParentStatus(item) === 'active' ? 'Active' : 'Inactive',
-    formatDate(item.createdAt),
+    getParentStatus(item) === 'active' ? 'Active' : 'Inactive', // Simplified for exports
   ]);
 
-  // Add table using autoTable
   autoTable(doc, {
     head: [tableColumn],
     body: tableRows,
@@ -80,10 +113,11 @@ export const exportParentsToPDF = <T extends ExtendedTableRecord>(
       1: { cellWidth: 'auto' },
       2: { cellWidth: 'auto' },
       3: { cellWidth: 'auto' },
+      4: { cellWidth: 'auto' },
+      5: { cellWidth: 'auto' },
     },
   });
 
-  // Save the PDF
   doc.save(`parents_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
 
@@ -105,7 +139,7 @@ export const exportParentsToExcel = <T extends ExtendedTableRecord>(
         : item.type === 'guardian'
         ? 'Guardian'
         : 'Parent',
-      Status: getParentStatus(item) === 'active' ? 'Active' : 'Inactive',
+      Status: getParentStatus(item) === 'active' ? 'Active' : 'Inactive', // Simplified for exports
       'Date Joined': formatDate(item.createdAt),
     }))
   );
@@ -118,7 +152,7 @@ export const exportParentsToExcel = <T extends ExtendedTableRecord>(
   );
 };
 
-//Export to CSV
+// Export to CSV function (unchanged)
 export const exportEmailList = <T extends ExtendedTableRecord>(data: T[]) => {
   const uniqueEmails = Array.from(
     new Set(
@@ -146,6 +180,7 @@ export const exportEmailList = <T extends ExtendedTableRecord>(data: T[]) => {
   document.body.removeChild(link);
 };
 
+// Copy to clipboard function (unchanged)
 export const copyEmailListToClipboard = <T extends ExtendedTableRecord>(
   data: T[],
   onSuccess?: (message: string) => void,
@@ -283,15 +318,27 @@ export const getParentTableColumns = <T extends ExtendedTableRecord>(
         return (
           <span
             className={`badge badge-soft-${
-              status === 'active' ? 'success' : 'danger'
+              status === 'active'
+                ? 'success'
+                : status === 'pending'
+                ? 'warning'
+                : 'danger'
             } d-inline-flex align-items-center`}
           >
             <i
               className={`ti ti-circle-filled fs-5 me-1 ${
-                status === 'active' ? 'text-success' : 'text-danger'
+                status === 'active'
+                  ? 'text-success'
+                  : status === 'pending'
+                  ? 'text-warning'
+                  : 'text-danger'
               }`}
             ></i>
-            {status === 'active' ? 'Active' : 'Inactive'}
+            {status === 'active'
+              ? 'Active'
+              : status === 'pending'
+              ? 'Pending Payment'
+              : 'Inactive'}
           </span>
         );
       },
