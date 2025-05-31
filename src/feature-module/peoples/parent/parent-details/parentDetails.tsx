@@ -54,7 +54,7 @@ const ParentDetails = () => {
   const location = useLocation();
   const { parentId } = useParams<{ parentId?: string }>();
   const navigate = useNavigate();
-  const { user, fetchParentData } = useAuth();
+  const { fetchParentData } = useAuth();
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   const [parent, setParent] = useState(location.state?.parent || null);

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { formatDate } from '../../../../utils/dateFormatter';
 import axios from 'axios';
 import {
   isPlayerActive,
@@ -7,7 +6,6 @@ import {
   getNextSeason,
   getCurrentYear,
 } from '../../../../utils/season';
-import { useAuth } from '../../../../context/AuthContext';
 import { formatPhoneNumber } from '../../../../utils/phone';
 
 interface ParentData {
@@ -49,7 +47,6 @@ interface ParentSidebarProps {
 const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
   const [avatarSrc, setAvatarSrc] = useState<string>(DEFAULT_AVATAR);
   const [payments, setPayments] = useState<PaymentData[]>([]);
-  const { user } = useAuth();
 
   useEffect(() => {
     const fetchAvatarUrlFromBackend = async () => {

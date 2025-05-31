@@ -132,6 +132,11 @@ export interface Player {
   paymentComplete?: boolean;
   avatar: string;
   registrationComplete?: boolean;
+  seasons?: Array<{
+    season: string;
+    year: number;
+    paymentStatus?: string;
+  }>;
 }
 
 export interface ParentTableData {
