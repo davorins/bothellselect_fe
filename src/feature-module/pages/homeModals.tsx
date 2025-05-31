@@ -112,7 +112,7 @@ const HomeModals = () => {
                       <th>Times / Week</th>
                       <th>Duration</th>
                       <th>Price</th>
-                      <th>Early-Bird Special</th>
+                      {/* <th>Early-Bird Special</th> */}
                     </tr>
                   </thead>
                   <tbody>
@@ -120,19 +120,19 @@ const HomeModals = () => {
                       <td>3 times per week</td>
                       <td>9 weeks</td>
                       <td>$625.00</td>
-                      <td>$550.00 (Available untill May 30th)</td>
+                      {/* <td>$550.00 (Available untill May 30th)</td> */}
                     </tr>
                     <tr>
                       <td>4 times per week</td>
                       <td>9 weeks</td>
                       <td>$835.00</td>
-                      <td>$760.00 (Available untill May 30th)</td>
+                      {/* <td>$760.00 (Available untill May 30th)</td> */}
                     </tr>
                     <tr>
                       <td>5 times per week</td>
                       <td>9 weeks</td>
                       <td>$1045.00</td>
-                      <td>$970.00 (Available untill May 30th)</td>
+                      {/* <td>$970.00 (Available untill May 30th)</td> */}
                     </tr>
                   </tbody>
                 </table>
