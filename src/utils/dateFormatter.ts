@@ -3,69 +3,43 @@ export const formatDate = (dateString: string | Date | undefined): string => {
   if (!dateString) return 'N/A';
 
   try {
-    // Handle Date objects directly
-    if (dateString instanceof Date) {
-      if (isNaN(dateString.getTime())) return 'Invalid Date';
-      return dateString.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        timeZone: 'UTC', // Add this to prevent timezone conversion
-      });
-    }
+    let date: Date;
 
-    // Handle string input
-    if (typeof dateString === 'string') {
-      // For ISO strings (from MongoDB), extract just the date part
+    if (dateString instanceof Date) {
+      date = dateString;
+    } else if (typeof dateString === 'string') {
+      // Handle ISO strings (from MongoDB)
       if (dateString.includes('T')) {
+        // Extract just the date part and create in local timezone
         const [datePart] = dateString.split('T');
         const [year, month, day] = datePart.split('-').map(Number);
-        // Create date in UTC to prevent timezone shift
-        const date = new Date(Date.UTC(year, month - 1, day));
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          timeZone: 'UTC',
-        });
+        date = new Date(year, month - 1, day);
       }
-
-      // For YYYY-MM-DD format
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      // Handle YYYY-MM-DD format
+      else if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
         const [year, month, day] = dateString.split('-').map(Number);
-        const date = new Date(Date.UTC(year, month - 1, day));
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          timeZone: 'UTC',
-        });
+        date = new Date(year, month - 1, day);
       }
-
-      // For MM/DD/YYYY format
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+      // Handle MM/DD/YYYY format
+      else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
         const [month, day, year] = dateString.split('/').map(Number);
-        const date = new Date(Date.UTC(year, month - 1, day));
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          timeZone: 'UTC',
-        });
+        date = new Date(year, month - 1, day);
       }
-
-      // Fallback for other string formats
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return 'Invalid Date';
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        timeZone: 'UTC',
-      });
+      // Fallback
+      else {
+        date = new Date(dateString);
+      }
+    } else {
+      return 'Invalid Date';
     }
 
-    return 'Invalid Date';
+    if (isNaN(date.getTime())) return 'Invalid Date';
+
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   } catch (error) {
     console.error('Error formatting date:', error);
     return 'Invalid Date';
@@ -141,26 +115,51 @@ export const formatDateInput = (input: string): string => {
   return cleaned;
 };
 
-export const validateDateOfBirth = (dob: string): boolean => {
-  // First check if it's already an ISO string
-  if (dob.includes('T')) {
-    const date = new Date(dob);
-    return !isNaN(date.getTime()) && date <= new Date();
+export const validateDateOfBirth = (
+  dob: string
+): { isValid: boolean; message?: string } => {
+  if (!dob) return { isValid: false, message: 'Date of birth is required' };
+
+  // Check format
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dob)) {
+    return { isValid: false, message: 'Please use MM/DD/YYYY format' };
   }
 
-  // MM/DD/YYYY format validation
-  const pattern = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
-  if (!pattern.test(dob)) return false;
-
   const [month, day, year] = dob.split('/').map(Number);
-  // Create date in local time for validation
   const date = new Date(year, month - 1, day);
 
-  // Check if the date is valid and not in the future
-  return (
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day &&
-    date <= new Date()
-  );
+  // Check if date components match input (handles invalid dates like 02/30/2020)
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return { isValid: false, message: 'Invalid date' };
+  }
+
+  // Check if date is in the future
+  if (date > new Date()) {
+    return { isValid: false, message: 'Date cannot be in the future' };
+  }
+
+  // Check if age is reasonable (e.g., between 5 and 18 for youth sports)
+  const age = new Date().getFullYear() - year;
+  if (age < 5 || age > 18) {
+    return { isValid: false, message: 'Age must be between 5 and 18' };
+  }
+
+  return { isValid: true };
+};
+
+export const storeDateAsUTC = (date: Date): string => {
+  // Get date components in local time
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+
+  // Create a new date in UTC
+  const utcDate = new Date(Date.UTC(year, month, day));
+
+  // Return as ISO string (time will be 00:00:00Z)
+  return utcDate.toISOString();
 };

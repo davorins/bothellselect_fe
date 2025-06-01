@@ -27,7 +27,9 @@ import { getNextSeason } from '../../utils/season';
 import { useAuth } from '../../context/AuthContext';
 import HomeModals from '../pages/homeModals';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { isoToMMDDYYYY, formatDateInput } from '../../utils/dateFormatter';
+import { formatDate, storeDateAsUTC } from '../../utils/dateFormatter';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 // Square configuration
 const appId = 'sq0idp-jUCxKnO_i8i7vccQjVj_0g';
@@ -562,7 +564,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const handleBlur = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name === 'email' && !validateEmail(value)) {
-      alert('Please enter a valid email address.');
+      // Use a custom modal or toast for alerts instead of window.alert
+      console.error('Please enter a valid email address.');
     }
   };
 
@@ -614,6 +617,40 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
     const updatedPlayers = [...formData.players];
     updatedPlayers[index] = { ...updatedPlayers[index], [name]: value };
     setFormData({ ...formData, players: updatedPlayers });
+  };
+
+  // New handler for DatePicker
+  const handlePlayerDobChange = (index: number, date: Date | null) => {
+    if (!date) return;
+
+    // Store the date in UTC format
+    const isoString = storeDateAsUTC(date);
+
+    const updatedPlayers = [...formData.players];
+    updatedPlayers[index] = {
+      ...updatedPlayers[index],
+      dob: isoString,
+    };
+    setFormData({ ...formData, players: updatedPlayers });
+  };
+
+  // For displaying in DatePicker
+  const getLocalDateFromUTCString = (utcString: string): Date | null => {
+    if (!utcString) return null;
+
+    try {
+      const date = new Date(utcString);
+      if (isNaN(date.getTime())) return null;
+
+      // Create a new date using the UTC values but in local time context
+      return new Date(
+        date.getUTCFullYear(),
+        date.getUTCMonth(),
+        date.getUTCDate()
+      );
+    } catch {
+      return null;
+    }
   };
 
   const [validationErrors, setValidationErrors] = useState<
@@ -714,6 +751,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
             errors[`${playerPrefix}Gender`] = 'Gender is required';
           }
 
+          // Validate DOB using the stored ISO string
           if (!validateDateOfBirth(player.dob)) {
             errors[`${playerPrefix}Dob`] = 'Please enter a valid date of birth';
           }
@@ -1510,50 +1548,35 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 <div className='col-md-6'>
                   <div className='mb-3'>
                     <label className='form-label'>Date of Birth</label>
-                    <input
-                      type='text'
-                      name='dob'
-                      className='form-control'
-                      value={isoToMMDDYYYY(player.dob)}
-                      onChange={(e) => {
-                        // Format the input as the user types
-                        const formattedValue = formatDateInput(e.target.value);
-                        handlePlayerChange(index, {
-                          ...e,
-                          target: {
-                            ...e.target,
-                            value: formattedValue,
-                          },
-                        });
-                      }}
-                      onBlur={(e) => {
-                        // When field loses focus, validate and ensure proper format
-                        if (validateDateOfBirth(e.target.value)) {
-                          // Convert MM/DD/YYYY to ISO string for storage
-                          const [month, day, year] = e.target.value
-                            .split('/')
-                            .map(Number);
-                          // Create date in local time, then convert to ISO string
-                          const date = new Date(year, month - 1, day);
-                          handlePlayerChange(index, {
-                            ...e,
-                            target: {
-                              ...e.target,
-                              value: date.toISOString(),
-                            },
-                          });
-                        }
-                      }}
-                      placeholder='MM/DD/YYYY'
+                    <DatePicker
+                      selected={
+                        player.dob
+                          ? getLocalDateFromUTCString(player.dob)
+                          : null
+                      }
+                      onChange={(date) => handlePlayerDobChange(index, date)}
+                      dateFormat='MM/dd/yyyy'
+                      placeholderText='MM/DD/YYYY'
+                      className={`form-control ${
+                        validationErrors[`player${index}Dob`]
+                          ? 'is-invalid'
+                          : ''
+                      }`}
+                      showYearDropdown
+                      dropdownMode='select'
+                      maxDate={new Date()}
                       required
                     />
-                    {player.dob &&
-                      !validateDateOfBirth(isoToMMDDYYYY(player.dob)) && (
-                        <div className='text-danger small'>
-                          Please enter a valid date of birth in MM/DD/YYYY
-                          format
-                        </div>
-                      )}
+                    {validationErrors[`player${index}Dob`] && (
+                      <div className='invalid-feedback'>
+                        {validationErrors[`player${index}Dob`]}
+                      </div>
+                    )}
+                    {player.dob && !validationErrors[`player${index}Dob`] && (
+                      <div className='text-muted small mt-1'>
+                        {formatDate(player.dob)}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className='col-md-6'>
