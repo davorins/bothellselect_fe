@@ -1,7 +1,10 @@
 export function getCurrentSeason(): string {
   const now = new Date();
   const month = now.getMonth() + 1;
+  const day = now.getDate();
+
   if (month >= 3 && month <= 5) return 'Spring';
+  if (month === 6 && day <= 30) return 'Summer'; // June 1-30 is Summer
   if (month >= 6 && month <= 8) return 'Summer';
   if (month >= 9 && month <= 11) return 'Fall';
   return 'Winter';
@@ -9,8 +12,11 @@ export function getCurrentSeason(): string {
 
 export function getNextSeason(): string {
   const now = new Date();
-  const month = now.getMonth() + 1;
+  const month = now.getMonth() + 1; // January is 0
+  const day = now.getDate();
+
   if (month >= 3 && month <= 5) return 'Summer';
+  if (month === 6 && day <= 30) return 'Summer'; // June 1-30 is Summer
   if (month >= 6 && month <= 8) return 'Fall';
   if (month >= 9 && month <= 11) return 'Winter';
   return 'Spring';
