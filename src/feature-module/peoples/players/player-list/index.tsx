@@ -93,7 +93,7 @@ const PlayerList = () => {
           <PlayerListHeader
             seasonParam={seasonParam}
             yearParam={yearParam}
-            playerData={playerData}
+            playerData={sortOrder ? sortedPlayers : filteredPlayers}
           />
           <div className='card'>
             <div className='card-header d-flex align-items-center justify-content-between flex-wrap pb-0'>
