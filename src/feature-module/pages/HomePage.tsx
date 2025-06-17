@@ -215,7 +215,7 @@ const HomePage = () => {
                     preparation and competition.
                   </p>
                   <h2 className='mb-3'>
-                    🏀 2025 Summer Basketball Camp Schedule is Live!
+                    📅 2025 Summer Basketball Camp Schedule is Live!
                   </h2>
                   <p className='mb-3'>
                     Join us this summer for skills, fun, and unforgettable
@@ -228,7 +228,7 @@ const HomePage = () => {
                       data-bs-toggle='modal'
                       data-bs-target='#schedule'
                     >
-                      👉 View Camp Details
+                      👉 View Camp Schedule
                     </Link>
                   </h5>
                   <h2 className='mb-3'>🔥 8 Weeks Summer Camp 🔥</h2>

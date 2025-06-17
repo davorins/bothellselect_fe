@@ -170,7 +170,7 @@ const HomeModals = () => {
               </button>
             </div>
             <div className='modal-body'>
-              <div className='home-detail-info'>
+              <div className='home-detail-info mt-2'>
                 <div className='name-info me-4'>
                   <h4 className='mb-2'>📅 WEEK 1</h4>
                   <ul>
