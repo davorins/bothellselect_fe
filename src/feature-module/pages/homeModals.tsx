@@ -171,7 +171,7 @@ const HomeModals = () => {
             </div>
             <div className='modal-body'>
               <div className='home-detail-info'>
-                <div className='name-info'>
+                <div className='name-info me-4'>
                   <h4 className='mb-2'>📅 WEEK 1</h4>
                   <ul>
                     <li className='mb-2'>
@@ -243,7 +243,7 @@ const HomeModals = () => {
                 </div>
               </div>
               <div className='home-detail-info'>
-                <div className='name-info'>
+                <div className='name-info me-4'>
                   <h4 className='mb-2'>📅 WEEK 3</h4>
                   <ul>
                     <li className='mb-2'>
@@ -315,7 +315,7 @@ const HomeModals = () => {
                 </div>
               </div>
               <div className='home-detail-info'>
-                <div className='name-info'>
+                <div className='name-info me-4'>
                   <h4 className='mb-2'>📅 WEEK 5</h4>
                   <ul>
                     <li className='mb-2'>
@@ -387,7 +387,7 @@ const HomeModals = () => {
                 </div>
               </div>
               <div className='home-detail-info'>
-                <div className='name-info'>
+                <div className='name-info me-4'>
                   <h4 className='mb-2'>📅 WEEK 7</h4>
                   <ul>
                     <li className='mb-2'>
