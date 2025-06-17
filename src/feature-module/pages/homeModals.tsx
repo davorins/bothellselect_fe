@@ -179,13 +179,14 @@ const HomeModals = () => {
                     </li>
                     <li>
                       <strong>Time:</strong>
-                      <h4>4th thru 6th grade (boys & girls)</h4>
+                      <br />
+                      4th thru 6th grade (boys & girls)
                       <ol className='ms-4 mb-1'>
                         <i className='ti ti-clock me-1'></i>11am till 12:30pm
                         <br />
                         Optional: leave kids till 1:30pm for extra play
                       </ol>
-                      <h4>7th thru 11th grade (boys & girls).</h4>
+                      7th thru 11th grade (boys & girls)
                       <ol className='ms-4'>
                         <i className='ti ti-clock me-1'></i>12:30pm till 2pm
                         <br />
