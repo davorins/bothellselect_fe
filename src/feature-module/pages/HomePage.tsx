@@ -214,6 +214,21 @@ const HomePage = () => {
                     themselves to an increased level of participation,
                     preparation and competition.
                   </p>
+                  <h2 className='mb-3'>
+                    🏀 2025 Summer Basketball Camp Schedule is Live!
+                  </h2>
+                  <p className='mb-3'>
+                    Join us this summer for skills, fun, and unforgettable
+                    memories on the court. Check out our full camp schedule by
+                    clicking below:
+                  </p>
+                  <Link
+                    to='#'
+                    data-bs-toggle='modal'
+                    data-bs-target='#schedule'
+                  >
+                    👉 View Camp Details
+                  </Link>
                   <h2 className='mb-3'>🔥 8 Weeks Summer Camp 🔥</h2>
                   <p className='mb-3'>
                     ☀️ The 2025 Summer Basketball Camp is here, and the courts

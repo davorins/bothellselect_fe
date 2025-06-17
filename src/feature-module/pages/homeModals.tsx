@@ -152,6 +152,66 @@ const HomeModals = () => {
       </div>
       {/* /Pricing Details */}
 
+      {/* Schedule */}
+      <div className='modal fade' id='schedule'>
+        <div className='modal-dialog modal-dialog-centered  modal-lg'>
+          <div className='modal-content'>
+            <div className='modal-header'>
+              <h4 className='modal-title'>
+                Bothell Select Basketball 2025 Camp Schedule
+              </h4>
+              <button
+                type='button'
+                className='btn-close custom-btn-close'
+                data-bs-dismiss='modal'
+                aria-label='Close'
+              >
+                <i className='ti ti-x' />
+              </button>
+            </div>
+            <div className='modal-body'>
+              <div className='home-detail-info'>
+                <span className='d-block me-4 mb-2 layout-img'>
+                  <ImageWithBasePath
+                    src='assets/img/logo-small.png'
+                    alt='Img'
+                  />
+                </span>
+              </div>
+              <div className='home-detail-info'>
+                <div className='name-info'>
+                  📅 WEEK 1
+                  <ul>
+                    <li>Dates: June 30th, July 1st, July 2nd</li>
+                    <li>
+                      Time:
+                      <ol>
+                        11am till 12:30pm - 4th thru 6th grade (boys & girls).
+                        Optional: leave kids till 1:30pm for extra play
+                      </ol>
+                      <ol>
+                        12:30pm till 2pm - 7th thru 11th grade (boys & girls).
+                        Optional: leave kids till 3:00pm for extra play
+                      </ol>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div className='modal-footer'>
+              <Link
+                to='#'
+                className='btn btn-light me-2'
+                data-bs-dismiss='modal'
+              >
+                Close
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* /Waiver */}
+
       {/* Waiver */}
       <div className='modal fade' id='waiver'>
         <div className='modal-dialog modal-dialog-centered  modal-lg'>
@@ -238,7 +298,7 @@ const HomeModals = () => {
           </div>
         </div>
       </div>
-      {/* /Waiver */}
+      {/* /Schedule */}
     </>
   );
 };
