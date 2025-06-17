@@ -222,7 +222,7 @@ const HomePage = () => {
                     memories on the court. Check out our full camp schedule by
                     clicking below:
                   </p>
-                  <h4>
+                  <h5 className='mb-5'>
                     <Link
                       to='#'
                       data-bs-toggle='modal'
@@ -230,7 +230,7 @@ const HomePage = () => {
                     >
                       👉 View Camp Details
                     </Link>
-                  </h4>
+                  </h5>
                   <h2 className='mb-3'>🔥 8 Weeks Summer Camp 🔥</h2>
                   <p className='mb-3'>
                     ☀️ The 2025 Summer Basketball Camp is here, and the courts
