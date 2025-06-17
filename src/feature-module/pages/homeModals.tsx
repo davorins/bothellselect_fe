@@ -171,34 +171,29 @@ const HomeModals = () => {
             </div>
             <div className='modal-body'>
               <div className='home-detail-info'>
-                <span className='d-block me-4 mb-2 layout-img'>
-                  <ImageWithBasePath
-                    src='assets/img/logo-small.png'
-                    alt='Img'
-                  />
-                </span>
-              </div>
-              <div className='home-detail-info'>
                 <div className='name-info'>
                   <h4 className='mb-2'>📅 WEEK 1</h4>
                   <ul>
                     <li>Dates: June 30th, July 1st, July 2nd</li>
                     <li>
                       <strong>Time:</strong>
-                      <ol className='ms-4'>
-                        11am till 12:30pm - 4th thru 6th grade (boys & girls).
-                        Optional: leave kids till 1:30pm for extra play
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-clock me-1'></i> 11am till 12:30pm -
+                        4th thru 6th grade (boys & girls). Optional: leave kids
+                        till 1:30pm for extra play
                       </ol>
                       <ol className='ms-4'>
-                        12:30pm till 2pm - 7th thru 11th grade (boys & girls).
-                        Optional: leave kids till 3:00pm for extra play
+                        <i className='ti ti-clock me-1'></i> 12:30pm till 2pm -
+                        7th thru 11th grade (boys & girls). Optional: leave kids
+                        till 3:00pm for extra play
                       </ol>
                     </li>
                     <li>
                       <strong>Location:</strong>
-                      <ol className='ms-4'>Kenmore Middle School</ol>
+                      <ol className='ms-4 mb-1'>Kenmore Middle School</ol>
                       <ol className='ms-4'>
-                        20323 66th Ave NE, Kenmore, WA 98028
+                        <i className='ti ti-map-pin'></i>20323 66th Ave NE,
+                        Kenmore, WA 98028
                       </ol>
                     </li>
                   </ul>
@@ -211,18 +206,20 @@ const HomeModals = () => {
                     </li>
                     <li>
                       <strong>Time:</strong>
-                      <ol className='ms-4'>
-                        11am till 12:30pm - 4th thru 6th grade (boys & girls).
-                        Optional: leave kids till 1:30pm for extra play
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-clock me-1'></i> 11am till 12:30pm -
+                        4th thru 6th grade (boys & girls). Optional: leave kids
+                        till 1:30pm for extra play
                       </ol>
                       <ol className='ms-4'>
-                        12:30pm till 2pm - 7th thru 11th grade (boys & girls).
-                        Optional: leave kids till 3:00pm for extra play
+                        <i className='ti ti-clock me-1'></i> 12:30pm till 2pm -
+                        7th thru 11th grade (boys & girls). Optional: leave kids
+                        till 3:00pm for extra play
                       </ol>
                     </li>
                     <li>
                       <strong>Location:</strong>
-                      <ol className='ms-4'>Kenmore Middle School</ol>
+                      <ol className='ms-4 mb-1'>Kenmore Middle School</ol>
                       <ol className='ms-4'>
                         20323 66th Ave NE, Kenmore, WA 98028
                       </ol>
@@ -237,18 +234,20 @@ const HomeModals = () => {
                     <li>Dates: July 14th - July 17th</li>
                     <li>
                       <strong>Time:</strong>
-                      <ol className='ms-4'>
-                        11am till 12:30pm - 4th thru 6th grade (boys & girls).
-                        Optional: leave kids till 1:30pm for extra play
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-clock me-1'></i> 11am till 12:30pm -
+                        4th thru 6th grade (boys & girls). Optional: leave kids
+                        till 1:30pm for extra play
                       </ol>
                       <ol className='ms-4'>
-                        12:30pm till 2pm - 7th thru 11th grade (boys & girls).
-                        Optional: leave kids till 3:00pm for extra play
+                        <i className='ti ti-clock me-1'></i> 12:30pm till 2pm -
+                        7th thru 11th grade (boys & girls). Optional: leave kids
+                        till 3:00pm for extra play
                       </ol>
                     </li>
                     <li>
                       <strong>Location:</strong>
-                      <ol className='ms-4'>Canyon Park Middle School</ol>
+                      <ol className='ms-4 mb-1'>Canyon Park Middle School</ol>
                       <ol className='ms-4'>
                         23723 23rd Ave SE, Bothell, WA 98021
                       </ol>
