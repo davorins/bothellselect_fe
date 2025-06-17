@@ -180,7 +180,7 @@ const HomeModals = () => {
               </div>
               <div className='home-detail-info'>
                 <div className='name-info'>
-                  📅 WEEK 1
+                  <h4>📅 WEEK 1</h4>
                   <ul>
                     <li>Dates: June 30th, July 1st, July 2nd</li>
                     <li>
@@ -193,6 +193,10 @@ const HomeModals = () => {
                         12:30pm till 2pm - 7th thru 11th grade (boys & girls).
                         Optional: leave kids till 3:00pm for extra play
                       </ol>
+                    </li>
+                    <li>
+                      Location:<ol>Kenmore Middle School</ol>
+                      <ol>20323 66th Ave NE, Kenmore, WA 98028</ol>
                     </li>
                   </ul>
                 </div>
