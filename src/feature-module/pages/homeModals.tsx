@@ -236,7 +236,9 @@ const HomeModals = () => {
                 <div className='name-info'>
                   <h4 className='mb-2'>📅 WEEK 3</h4>
                   <ul>
-                    <li>Dates: July 14th - July 17th</li>
+                    <li className='mb-2'>
+                      <strong>Dates:</strong> July 14th - July 17th
+                    </li>
                     <li>
                       <strong>Time:</strong>
                       <ol className='ms-4 mb-1'>
@@ -258,6 +260,37 @@ const HomeModals = () => {
                       </ol>
                       <ol className='ms-4'>
                         <i className='ti ti-map-pin'></i>23723 23rd Ave SE,
+                        Bothell, WA 98021
+                      </ol>
+                    </li>
+                  </ul>
+                </div>
+                <div className='name-info'>
+                  <h4 className='mb-2'>📅 WEEK 4</h4>
+                  <ul>
+                    <li className='mb-2'>
+                      <strong>Dates:</strong> July 21st - July 24th
+                    </li>
+                    <li>
+                      <strong>Time:</strong>
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-clock me-1'></i>11am till 12:30pm -
+                        4th thru 6th grade (boys & girls). Optional: leave kids
+                        till 1:30pm for extra play
+                      </ol>
+                      <ol className='ms-4'>
+                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm -
+                        7th thru 11th grade (boys & girls). Optional: leave kids
+                        till 3:00pm for extra play
+                      </ol>
+                    </li>
+                    <li>
+                      <strong>Location:</strong>
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-school'></i>Skyview Middle School
+                      </ol>
+                      <ol className='ms-4'>
+                        <i className='ti ti-map-pin'></i>21404 35th Ave SE,
                         Bothell, WA 98021
                       </ol>
                     </li>
