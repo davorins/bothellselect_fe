@@ -214,7 +214,7 @@ const HomePage = () => {
                     themselves to an increased level of participation,
                     preparation and competition.
                   </p>
-                  <h2 className='mb-3'>🔥 9 Weeks Summer Camp 🔥</h2>
+                  <h2 className='mb-3'>🔥 8 Weeks Summer Camp 🔥</h2>
                   <p className='mb-3'>
                     ☀️ The 2025 Summer Basketball Camp is here, and the courts
                     are waiting for your young athlete! Whether your child is a
