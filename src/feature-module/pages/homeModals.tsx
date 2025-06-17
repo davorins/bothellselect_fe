@@ -195,8 +195,53 @@ const HomeModals = () => {
                       </ol>
                     </li>
                     <li>
-                      Location:<ol>Kenmore Middle School</ol>
+                      Location:
+                      <ol>Kenmore Middle School</ol>
                       <ol>20323 66th Ave NE, Kenmore, WA 98028</ol>
+                    </li>
+                  </ul>
+                </div>
+                <div className='name-info'>
+                  <h4>📅 WEEK 2</h4>
+                  <ul>
+                    <li>Dates: July 7th - July 10th</li>
+                    <li>
+                      Time:
+                      <ol>
+                        11am till 12:30pm - 4th thru 6th grade (boys & girls).
+                        Optional: leave kids till 1:30pm for extra play
+                      </ol>
+                      <ol>
+                        12:30pm till 2pm - 7th thru 11th grade (boys & girls).
+                        Optional: leave kids till 3:00pm for extra play
+                      </ol>
+                    </li>
+                    <li>
+                      Location:
+                      <ol>Kenmore Middle School</ol>
+                      <ol>20323 66th Ave NE, Kenmore, WA 98028</ol>
+                    </li>
+                  </ul>
+                </div>
+                <div className='name-info'>
+                  <h4>📅 WEEK 3</h4>
+                  <ul>
+                    <li>Dates: July 14th - July 17th</li>
+                    <li>
+                      Time:
+                      <ol>
+                        11am till 12:30pm - 4th thru 6th grade (boys & girls).
+                        Optional: leave kids till 1:30pm for extra play
+                      </ol>
+                      <ol>
+                        12:30pm till 2pm - 7th thru 11th grade (boys & girls).
+                        Optional: leave kids till 3:00pm for extra play
+                      </ol>
+                    </li>
+                    <li>
+                      Location:
+                      <ol>Canyon Park Middle School</ol>
+                      <ol>23723 23rd Ave SE, Bothell, WA 98021</ol>
                     </li>
                   </ul>
                 </div>
