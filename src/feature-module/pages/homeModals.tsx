@@ -174,27 +174,32 @@ const HomeModals = () => {
                 <div className='name-info'>
                   <h4 className='mb-2'>📅 WEEK 1</h4>
                   <ul>
-                    <li>Dates: June 30th, July 1st, July 2nd</li>
+                    <li className='mb-2'>
+                      <strong>Dates:</strong> June 30th, July 1st, July 2nd
+                    </li>
                     <li>
                       <strong>Time:</strong>
+                      <h4>4th thru 6th grade (boys & girls)</h4>
                       <ol className='ms-4 mb-1'>
-                        <i className='ti ti-clock me-1'></i>11am till 12:30pm -
-                        4th thru 6th grade (boys & girls). Optional: leave kids
-                        till 1:30pm for extra play
+                        <i className='ti ti-clock me-1'></i>11am till 12:30pm
+                        <br />
+                        Optional: leave kids till 1:30pm for extra play
                       </ol>
+                      <h4>7th thru 11th grade (boys & girls).</h4>
                       <ol className='ms-4'>
-                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm -
-                        7th thru 11th grade (boys & girls). Optional: leave kids
-                        till 3:00pm for extra play
+                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm
+                        <br />
+                        Optional: leave kids till 3:00pm for extra play
                       </ol>
                     </li>
                     <li>
                       <strong>Location:</strong>
                       <ol className='ms-4 mb-1'>
-                        <i className='ti ti-school'></i>Kenmore Middle School
+                        <i className='ti ti-school me-1'></i>Kenmore Middle
+                        School
                       </ol>
                       <ol className='ms-4'>
-                        <i className='ti ti-map-pin'></i>20323 66th Ave NE,
+                        <i className='ti ti-map-pin me-1'></i>20323 66th Ave NE,
                         Kenmore, WA 98028
                       </ol>
                     </li>
@@ -222,10 +227,11 @@ const HomeModals = () => {
                     <li>
                       <strong>Location:</strong>
                       <ol className='ms-4 mb-1'>
-                        <i className='ti ti-school'></i>Kenmore Middle School
+                        <i className='ti ti-school me-1'></i>Kenmore Middle
+                        School
                       </ol>
                       <ol className='ms-4'>
-                        <i className='ti ti-map-pin'></i>20323 66th Ave NE,
+                        <i className='ti ti-map-pin me-1'></i>20323 66th Ave NE,
                         Kenmore, WA 98028
                       </ol>
                     </li>
@@ -255,11 +261,11 @@ const HomeModals = () => {
                     <li>
                       <strong>Location:</strong>
                       <ol className='ms-4 mb-1'>
-                        <i className='ti ti-school'></i>Canyon Park Middle
+                        <i className='ti ti-school me-1'></i>Canyon Park Middle
                         School
                       </ol>
                       <ol className='ms-4'>
-                        <i className='ti ti-map-pin'></i>23723 23rd Ave SE,
+                        <i className='ti ti-map-pin me-1'></i>23723 23rd Ave SE,
                         Bothell, WA 98021
                       </ol>
                     </li>
@@ -287,10 +293,11 @@ const HomeModals = () => {
                     <li>
                       <strong>Location:</strong>
                       <ol className='ms-4 mb-1'>
-                        <i className='ti ti-school'></i>Skyview Middle School
+                        <i className='ti ti-school me-1'></i>Skyview Middle
+                        School
                       </ol>
                       <ol className='ms-4'>
-                        <i className='ti ti-map-pin'></i>21404 35th Ave SE,
+                        <i className='ti ti-map-pin me-1'></i>21404 35th Ave SE,
                         Bothell, WA 98021
                       </ol>
                     </li>
