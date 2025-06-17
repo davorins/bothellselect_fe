@@ -180,68 +180,76 @@ const HomeModals = () => {
               </div>
               <div className='home-detail-info'>
                 <div className='name-info'>
-                  <h4>📅 WEEK 1</h4>
+                  <h4 className='mb-2'>📅 WEEK 1</h4>
                   <ul>
                     <li>Dates: June 30th, July 1st, July 2nd</li>
                     <li>
-                      Time:
-                      <ol>
+                      <strong>Time:</strong>
+                      <ol className='ms-4'>
                         11am till 12:30pm - 4th thru 6th grade (boys & girls).
                         Optional: leave kids till 1:30pm for extra play
                       </ol>
-                      <ol>
+                      <ol className='ms-4'>
                         12:30pm till 2pm - 7th thru 11th grade (boys & girls).
                         Optional: leave kids till 3:00pm for extra play
                       </ol>
                     </li>
                     <li>
-                      Location:
-                      <ol>Kenmore Middle School</ol>
-                      <ol>20323 66th Ave NE, Kenmore, WA 98028</ol>
+                      <strong>Location:</strong>
+                      <ol className='ms-4'>Kenmore Middle School</ol>
+                      <ol className='ms-4'>
+                        20323 66th Ave NE, Kenmore, WA 98028
+                      </ol>
                     </li>
                   </ul>
                 </div>
                 <div className='name-info'>
-                  <h4>📅 WEEK 2</h4>
+                  <h4 className='mb-2'>📅 WEEK 2</h4>
                   <ul>
-                    <li>Dates: July 7th - July 10th</li>
+                    <li className='mb-2'>
+                      <strong>Dates:</strong> July 7th - July 10th
+                    </li>
                     <li>
-                      Time:
-                      <ol>
+                      <strong>Time:</strong>
+                      <ol className='ms-4'>
                         11am till 12:30pm - 4th thru 6th grade (boys & girls).
                         Optional: leave kids till 1:30pm for extra play
                       </ol>
-                      <ol>
+                      <ol className='ms-4'>
                         12:30pm till 2pm - 7th thru 11th grade (boys & girls).
                         Optional: leave kids till 3:00pm for extra play
                       </ol>
                     </li>
                     <li>
-                      Location:
-                      <ol>Kenmore Middle School</ol>
-                      <ol>20323 66th Ave NE, Kenmore, WA 98028</ol>
+                      <strong>Location:</strong>
+                      <ol className='ms-4'>Kenmore Middle School</ol>
+                      <ol className='ms-4'>
+                        20323 66th Ave NE, Kenmore, WA 98028
+                      </ol>
                     </li>
                   </ul>
                 </div>
                 <div className='name-info'>
-                  <h4>📅 WEEK 3</h4>
+                  <h4 className='mb-2'>📅 WEEK 3</h4>
                   <ul>
                     <li>Dates: July 14th - July 17th</li>
                     <li>
-                      Time:
-                      <ol>
+                      <strong>Time:</strong>
+                      <ol className='ms-4'>
                         11am till 12:30pm - 4th thru 6th grade (boys & girls).
                         Optional: leave kids till 1:30pm for extra play
                       </ol>
-                      <ol>
+                      <ol className='ms-4'>
                         12:30pm till 2pm - 7th thru 11th grade (boys & girls).
                         Optional: leave kids till 3:00pm for extra play
                       </ol>
                     </li>
                     <li>
-                      Location:
-                      <ol>Canyon Park Middle School</ol>
-                      <ol>23723 23rd Ave SE, Bothell, WA 98021</ol>
+                      <strong>Location:</strong>
+                      <ol className='ms-4'>Canyon Park Middle School</ol>
+                      <ol className='ms-4'>
+                        23723 23rd Ave SE, Bothell, WA 98021
+                      </ol>
                     </li>
                   </ul>
                 </div>
