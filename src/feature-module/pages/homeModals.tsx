@@ -229,6 +229,8 @@ const HomeModals = () => {
                     </li>
                   </ul>
                 </div>
+              </div>
+              <div className='home-detail-info'>
                 <div className='name-info'>
                   <h4 className='mb-2'>📅 WEEK 3</h4>
                   <ul>
