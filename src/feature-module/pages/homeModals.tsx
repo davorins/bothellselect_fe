@@ -178,19 +178,21 @@ const HomeModals = () => {
                     <li>
                       <strong>Time:</strong>
                       <ol className='ms-4 mb-1'>
-                        <i className='ti ti-clock me-1'></i> 11am till 12:30pm -
+                        <i className='ti ti-clock me-1'></i>11am till 12:30pm -
                         4th thru 6th grade (boys & girls). Optional: leave kids
                         till 1:30pm for extra play
                       </ol>
                       <ol className='ms-4'>
-                        <i className='ti ti-clock me-1'></i> 12:30pm till 2pm -
+                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm -
                         7th thru 11th grade (boys & girls). Optional: leave kids
                         till 3:00pm for extra play
                       </ol>
                     </li>
                     <li>
                       <strong>Location:</strong>
-                      <ol className='ms-4 mb-1'>Kenmore Middle School</ol>
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-school'></i>Kenmore Middle School
+                      </ol>
                       <ol className='ms-4'>
                         <i className='ti ti-map-pin'></i>20323 66th Ave NE,
                         Kenmore, WA 98028
@@ -207,21 +209,24 @@ const HomeModals = () => {
                     <li>
                       <strong>Time:</strong>
                       <ol className='ms-4 mb-1'>
-                        <i className='ti ti-clock me-1'></i> 11am till 12:30pm -
+                        <i className='ti ti-clock me-1'></i>11am till 12:30pm -
                         4th thru 6th grade (boys & girls). Optional: leave kids
                         till 1:30pm for extra play
                       </ol>
                       <ol className='ms-4'>
-                        <i className='ti ti-clock me-1'></i> 12:30pm till 2pm -
+                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm -
                         7th thru 11th grade (boys & girls). Optional: leave kids
                         till 3:00pm for extra play
                       </ol>
                     </li>
                     <li>
                       <strong>Location:</strong>
-                      <ol className='ms-4 mb-1'>Kenmore Middle School</ol>
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-school'></i>Kenmore Middle School
+                      </ol>
                       <ol className='ms-4'>
-                        20323 66th Ave NE, Kenmore, WA 98028
+                        <i className='ti ti-map-pin'></i>20323 66th Ave NE,
+                        Kenmore, WA 98028
                       </ol>
                     </li>
                   </ul>
@@ -235,21 +240,25 @@ const HomeModals = () => {
                     <li>
                       <strong>Time:</strong>
                       <ol className='ms-4 mb-1'>
-                        <i className='ti ti-clock me-1'></i> 11am till 12:30pm -
+                        <i className='ti ti-clock me-1'></i>11am till 12:30pm -
                         4th thru 6th grade (boys & girls). Optional: leave kids
                         till 1:30pm for extra play
                       </ol>
                       <ol className='ms-4'>
-                        <i className='ti ti-clock me-1'></i> 12:30pm till 2pm -
+                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm -
                         7th thru 11th grade (boys & girls). Optional: leave kids
                         till 3:00pm for extra play
                       </ol>
                     </li>
                     <li>
                       <strong>Location:</strong>
-                      <ol className='ms-4 mb-1'>Canyon Park Middle School</ol>
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-school'></i>Canyon Park Middle
+                        School
+                      </ol>
                       <ol className='ms-4'>
-                        23723 23rd Ave SE, Bothell, WA 98021
+                        <i className='ti ti-map-pin'></i>23723 23rd Ave SE,
+                        Bothell, WA 98021
                       </ol>
                     </li>
                   </ul>
