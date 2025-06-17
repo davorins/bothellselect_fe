@@ -214,15 +214,18 @@ const HomeModals = () => {
                     </li>
                     <li>
                       <strong>Time:</strong>
+                      <br />
+                      4th thru 6th grade (boys & girls)
                       <ol className='ms-4 mb-1'>
-                        <i className='ti ti-clock me-1'></i>11am till 12:30pm -
-                        4th thru 6th grade (boys & girls). Optional: leave kids
-                        till 1:30pm for extra play
+                        <i className='ti ti-clock me-1'></i>11am till 12:30pm
+                        <br />
+                        Optional: leave kids till 1:30pm for extra play
                       </ol>
+                      7th thru 11th grade (boys & girls)
                       <ol className='ms-4'>
-                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm -
-                        7th thru 11th grade (boys & girls). Optional: leave kids
-                        till 3:00pm for extra play
+                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm
+                        <br />
+                        Optional: leave kids till 3:00pm for extra play
                       </ol>
                     </li>
                     <li>
@@ -248,15 +251,18 @@ const HomeModals = () => {
                     </li>
                     <li>
                       <strong>Time:</strong>
+                      <br />
+                      4th thru 6th grade (boys & girls)
                       <ol className='ms-4 mb-1'>
-                        <i className='ti ti-clock me-1'></i>11am till 12:30pm -
-                        4th thru 6th grade (boys & girls). Optional: leave kids
-                        till 1:30pm for extra play
+                        <i className='ti ti-clock me-1'></i>11am till 12:30pm
+                        <br />
+                        Optional: leave kids till 1:30pm for extra play
                       </ol>
+                      7th thru 11th grade (boys & girls)
                       <ol className='ms-4'>
-                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm -
-                        7th thru 11th grade (boys & girls). Optional: leave kids
-                        till 3:00pm for extra play
+                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm
+                        <br />
+                        Optional: leave kids till 3:00pm for extra play
                       </ol>
                     </li>
                     <li>
@@ -280,15 +286,18 @@ const HomeModals = () => {
                     </li>
                     <li>
                       <strong>Time:</strong>
+                      <br />
+                      4th thru 6th grade (boys & girls)
                       <ol className='ms-4 mb-1'>
-                        <i className='ti ti-clock me-1'></i>11am till 12:30pm -
-                        4th thru 6th grade (boys & girls). Optional: leave kids
-                        till 1:30pm for extra play
+                        <i className='ti ti-clock me-1'></i>11am till 12:30pm
+                        <br />
+                        Optional: leave kids till 1:30pm for extra play
                       </ol>
+                      7th thru 11th grade (boys & girls)
                       <ol className='ms-4'>
-                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm -
-                        7th thru 11th grade (boys & girls). Optional: leave kids
-                        till 3:00pm for extra play
+                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm
+                        <br />
+                        Optional: leave kids till 3:00pm for extra play
                       </ol>
                     </li>
                     <li>
@@ -300,6 +309,150 @@ const HomeModals = () => {
                       <ol className='ms-4'>
                         <i className='ti ti-map-pin me-1'></i>21404 35th Ave SE,
                         Bothell, WA 98021
+                      </ol>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div className='home-detail-info'>
+                <div className='name-info'>
+                  <h4 className='mb-2'>📅 WEEK 5</h4>
+                  <ul>
+                    <li className='mb-2'>
+                      <strong>Dates:</strong> July 28th - July 31st
+                    </li>
+                    <li>
+                      <strong>Time:</strong>
+                      <br />
+                      4th thru 6th grade (boys & girls)
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-clock me-1'></i>11am till 12:30pm
+                        <br />
+                        Optional: leave kids till 1:30pm for extra play
+                      </ol>
+                      7th thru 11th grade (boys & girls)
+                      <ol className='ms-4'>
+                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm
+                        <br />
+                        Optional: leave kids till 3:00pm for extra play
+                      </ol>
+                    </li>
+                    <li>
+                      <strong>Location:</strong>
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-school me-1'></i>Kenmore Middle
+                        School
+                      </ol>
+                      <ol className='ms-4'>
+                        <i className='ti ti-map-pin me-1'></i>20323 66th Ave NE,
+                        Kenmore, WA 98028
+                      </ol>
+                    </li>
+                  </ul>
+                </div>
+                <div className='name-info'>
+                  <h4 className='mb-2'>📅 WEEK 6</h4>
+                  <ul>
+                    <li className='mb-2'>
+                      <strong>Dates:</strong> August 4th - August 7th
+                    </li>
+                    <li>
+                      <strong>Time:</strong>
+                      <br />
+                      4th thru 6th grade (boys & girls)
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-clock me-1'></i>11am till 12:30pm
+                        <br />
+                        Optional: leave kids till 1:30pm for extra play
+                      </ol>
+                      7th thru 11th grade (boys & girls)
+                      <ol className='ms-4'>
+                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm
+                        <br />
+                        Optional: leave kids till 3:00pm for extra play
+                      </ol>
+                    </li>
+                    <li>
+                      <strong>Location:</strong>
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-school me-1'></i>Kenmore Middle
+                        School
+                      </ol>
+                      <ol className='ms-4'>
+                        <i className='ti ti-map-pin me-1'></i>20323 66th Ave NE,
+                        Kenmore, WA 98028
+                      </ol>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div className='home-detail-info'>
+                <div className='name-info'>
+                  <h4 className='mb-2'>📅 WEEK 7</h4>
+                  <ul>
+                    <li className='mb-2'>
+                      <strong>Dates:</strong> August 11th - August 14th
+                    </li>
+                    <li>
+                      <strong>Time:</strong>
+                      <br />
+                      4th thru 6th grade (boys & girls)
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-clock me-1'></i>11am till 12:30pm
+                        <br />
+                        Optional: leave kids till 1:30pm for extra play
+                      </ol>
+                      7th thru 11th grade (boys & girls)
+                      <ol className='ms-4'>
+                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm
+                        <br />
+                        Optional: leave kids till 3:00pm for extra play
+                      </ol>
+                    </li>
+                    <li>
+                      <strong>Location:</strong>
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-school me-1'></i>Kenmore Middle
+                        School
+                      </ol>
+                      <ol className='ms-4'>
+                        <i className='ti ti-map-pin me-1'></i>20323 66th Ave NE,
+                        Kenmore, WA 98028
+                      </ol>
+                    </li>
+                  </ul>
+                </div>
+                <div className='name-info'>
+                  <h4 className='mb-2'>📅 WEEK 8</h4>
+                  <ul>
+                    <li className='mb-2'>
+                      <strong>Dates:</strong> August 18th - August 21st
+                    </li>
+                    <li>
+                      <strong>Time:</strong>
+                      <br />
+                      4th thru 6th grade (boys & girls)
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-clock me-1'></i>11am till 12:30pm
+                        <br />
+                        Optional: leave kids till 1:30pm for extra play
+                      </ol>
+                      7th thru 11th grade (boys & girls)
+                      <ol className='ms-4'>
+                        <i className='ti ti-clock me-1'></i>12:30pm till 2pm
+                        <br />
+                        Optional: leave kids till 3:00pm for extra play
+                      </ol>
+                    </li>
+                    <li>
+                      <strong>Location:</strong>
+                      <ol className='ms-4 mb-1'>
+                        <i className='ti ti-school me-1'></i>Kenmore Middle
+                        School
+                      </ol>
+                      <ol className='ms-4'>
+                        <i className='ti ti-map-pin me-1'></i>20323 66th Ave NE,
+                        Kenmore, WA 98028
                       </ol>
                     </li>
                   </ul>
