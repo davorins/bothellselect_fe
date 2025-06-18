@@ -171,6 +171,58 @@ const HomeModals = () => {
             </div>
             <div className='modal-body'>
               <div className='home-detail-info mt-2'>
+                <h5>Important Camp Update – Please Read Carefully</h5>
+                <p>
+                  <strong>
+                    We have not been able to reserve a basketball gym for Week 9
+                    due to school activities.
+                  </strong>
+                </p>
+                <p>
+                  We suggest the following course of action based on your
+                  child’s training schedule:
+                </p>
+
+                <ul>
+                  <li>
+                    <strong>3x/week trainees:</strong> You may attend{' '}
+                    <u>one extra session</u> during any of the four available
+                    weeks (for a total of 4 sessions/week). This will make up
+                    for the missed Week 9.
+                  </li>
+
+                  <li>
+                    <strong>4x/week trainees:</strong> You will receive a{' '}
+                    <strong>15% refund</strong> via Zelle. Please send us your
+                    Zelle info (email or phone number), or provide your mailing
+                    address if you prefer a check.
+                  </li>
+
+                  <li>
+                    <strong>5x/week trainees:</strong> You will receive a{' '}
+                    <strong>32% refund</strong> via Zelle. Please send us your
+                    Zelle info (email or phone number), or provide your mailing
+                    address if you prefer a check.
+                  </li>
+                </ul>
+                <h6>✅ Reminders</h6>
+                <ul>
+                  <li>
+                    Please arrive <strong>5 minutes before</strong> the official
+                    start time. Do not drop kids off earlier.
+                  </li>
+                  <li>
+                    Bring only a <strong>water bottle</strong> – no sports
+                    drinks or food allowed.
+                  </li>
+                  <li>
+                    Each participant must bring a <strong>basketball</strong>{' '}
+                    and a <strong>reversible jersey</strong>.
+                  </li>
+                </ul>
+                <p>Thank you for your understanding and cooperation!</p>
+              </div>
+              <div className='home-detail-info mt-2'>
                 <div className='name-info me-5'>
                   <h4 className='mb-2'>📅 WEEK 1</h4>
                   <ul>
