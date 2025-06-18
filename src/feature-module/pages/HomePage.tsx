@@ -218,9 +218,16 @@ const HomePage = () => {
                     📅 2025 Summer Basketball Camp Schedule is Live!
                   </h2>
                   <p className='mb-3'>
-                    Join us this summer for skills, fun, and unforgettable
-                    memories on the court. Check out our full camp schedule by
-                    clicking below:
+                    Join us this summer for skill-building, fun, and
+                    unforgettable memories on the court! We’re excited to
+                    welcome your child to our 2025 Summer Basketball Camp.{' '}
+                    <strong>
+                      We’d like to share a few important updates regarding the
+                      camp schedule—particularly changes affecting Week 9.
+                      Please take a moment to review the details carefully so we
+                      can ensure the best possible experience for your child.
+                    </strong>{' '}
+                    Check out our full camp schedule by clicking below:
                   </p>
                   <h5 className='mb-5'>
                     <Link
