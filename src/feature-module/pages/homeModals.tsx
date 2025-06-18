@@ -173,10 +173,10 @@ const HomeModals = () => {
               <div className='home-detail-info mt-3'>
                 <div className='name-info ms-5 me-5'>
                   <div className='content content-two'>
-                    <div className='card-header bg-light'>
+                    <div className='card-header'>
                       <h4 className='mb-4 bg-warning'>
-                        <i className='ti ti-exclamation-circle'></i> Important
-                        Camp Update – Please Read Carefully
+                        <i className='ti ti-exclamation-circle ms-1'></i>{' '}
+                        Important Camp Update – Please Read Carefully
                       </h4>
                       <p>
                         <strong>
