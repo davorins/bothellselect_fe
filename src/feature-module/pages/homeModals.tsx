@@ -39,16 +39,17 @@ const HomeModals = () => {
                 <div className='name-info'>
                   <h5 className='mb-2'>
                     <i className='ti ti-calendar-bolt me-2' />
-                    Camp Dates: June 30th – August 29th -- 9 action-packed weeks
+                    Camp Dates: June 30th – August 21st -- 8 action-packed weeks
                     of training!
                   </h5>
                   <h5 className='mb-2'>
                     <i className='ti ti-calendar-smile me-2' />
-                    Days: Monday thru Friday
+                    Days: Monday thru Thursday
                   </h5>
                   <h5 className='mb-2'>
                     <i className='ti ti-location me-2' />
-                    Where: Bothell HS, Canyon Park MS, and/or Kenmore MS
+                    Where: Kenmore Middle School, Canyon Park Middle School,
+                    Skyview Middle School
                   </h5>
                   <h5 className='mb-2'>
                     <i className='ti ti-clock me-2' />
@@ -62,10 +63,7 @@ const HomeModals = () => {
                         display: 'inline-block',
                       }}
                     >
-                      Note: we will try to provide organized basketball from
-                      12:30pm till 1:30pm after the training session; so parents
-                      can leave kids from 11am till 2pm to play basketball or
-                      choose to pick them up at 12:30pm
+                      Optional: leave kids till 1:30pm for extra play
                     </span>
                   </h5>
                   <h5 className='mb-2'>
@@ -80,10 +78,7 @@ const HomeModals = () => {
                         display: 'inline-block',
                       }}
                     >
-                      Note: we will try to provide organized basketball from 2pm
-                      till 3pm after the training session; so parents can leave
-                      kids from 12:30pm till 3pm or choose to pick them up at
-                      2pm
+                      Optional: leave kids till 3:00pm for extra play
                     </span>
                   </h5>
                   <h5 className='mb-2'>
@@ -112,27 +107,18 @@ const HomeModals = () => {
                       <th>Times / Week</th>
                       <th>Duration</th>
                       <th>Price</th>
-                      {/* <th>Early-Bird Special</th> */}
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
                       <td>3 times per week</td>
-                      <td>9 weeks</td>
-                      <td>$625.00</td>
-                      {/* <td>$550.00 (Available untill May 30th)</td> */}
+                      <td>8 weeks</td>
+                      <td>$575.00</td>
                     </tr>
                     <tr>
                       <td>4 times per week</td>
-                      <td>9 weeks</td>
-                      <td>$835.00</td>
-                      {/* <td>$760.00 (Available untill May 30th)</td> */}
-                    </tr>
-                    <tr>
-                      <td>5 times per week</td>
-                      <td>9 weeks</td>
-                      <td>$1045.00</td>
-                      {/* <td>$970.00 (Available untill May 30th)</td> */}
+                      <td>8 weeks</td>
+                      <td>$785.00</td>
                     </tr>
                   </tbody>
                 </table>

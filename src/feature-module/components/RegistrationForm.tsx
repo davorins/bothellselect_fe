@@ -395,15 +395,13 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
   }, [isExistingUser, currentUser]);
 
   const calculateTotalAmount = (packageType: string = selectedPackage) => {
-    const basePrice =
-      packageType === '1' ? 625 : packageType === '2' ? 835 : 1045;
+    const basePrice = packageType === '1' ? 575 : 785;
 
     return basePrice * formData.players.length;
   };
 
   const calculatePayments = (playerCount: number, packageType: string) => {
-    const perPlayerAmount =
-      packageType === '1' ? 625 : packageType === '2' ? 835 : 1045;
+    const perPlayerAmount = packageType === '1' ? 575 : 785;
 
     const basePrice = perPlayerAmount * playerCount;
 
@@ -1771,14 +1769,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
         }
 
         // Calculate amount based on selected package
-        const amountPerPlayer =
-          selectedPackage === '1'
-            ? 62500
-            : selectedPackage === '2'
-            ? 83500
-            : 104500; // amounts in cents
+        const amountPerPlayer = selectedPackage === '1' ? 57500 : 78500;
         const totalAmount = amountPerPlayer * playerIds.length;
-
         const tokenCard = tokenResult.details?.card;
 
         // Prepare payment data with season information
@@ -1939,12 +1931,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 <p className='text-muted'>
                   Total: ${calculateTotalAmount(selectedPackage)} (
                   {formData.players.length} × $
-                  {selectedPackage === '1'
-                    ? '625'
-                    : selectedPackage === '2'
-                    ? '835'
-                    : '1045'}
-                  )
+                  {selectedPackage === '1' ? '575' : '785'})
                 </p>
               </div>
               <div className='col-md-4'>
@@ -1959,7 +1946,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     onChange={(e) => setSelectedPackage(e.target.value)}
                   />
                   <label className='form-check-label' htmlFor='threeTimes'>
-                    3 Times/Week - ${625 * formData.players.length}.00
+                    3 Times/Week - ${575 * formData.players.length}.00
                   </label>
                 </div>
               </div>
@@ -1975,23 +1962,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     onChange={(e) => setSelectedPackage(e.target.value)}
                   />
                   <label className='form-check-label' htmlFor='fourTimes'>
-                    4 Times/Week - ${835 * formData.players.length}.00
-                  </label>
-                </div>
-              </div>
-              <div className='col-md-4'>
-                <div className='form-check form-check-lg mb-3'>
-                  <input
-                    type='radio'
-                    id='fiveTimes'
-                    name='package'
-                    value='3'
-                    className='form-check-input'
-                    checked={selectedPackage === '3'}
-                    onChange={(e) => setSelectedPackage(e.target.value)}
-                  />
-                  <label className='form-check-label' htmlFor='fiveTimes'>
-                    5 Times/Week - ${1045 * formData.players.length}.00
+                    4 Times/Week - ${785 * formData.players.length}.00
                   </label>
                 </div>
               </div>
@@ -2055,19 +2026,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
             </p>
             <p>
               <strong>Package:</strong>{' '}
-              {selectedPackage === '1'
-                ? '3 Times/Week'
-                : selectedPackage === '2'
-                ? '4 Times/Week'
-                : '5 Times/Week'}
+              {selectedPackage === '1' ? '3 Times/Week' : '4 Times/Week'}
             </p>
             <p>
               <strong>Price per player:</strong> $
-              {selectedPackage === '1'
-                ? '625'
-                : selectedPackage === '2'
-                ? '835'
-                : '1045'}
+              {selectedPackage === '1' ? '575' : '785'}
             </p>
             <p>
               <strong>Number of players:</strong>{' '}
@@ -2075,11 +2038,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
             </p>
             <p>
               <strong>Total amount:</strong> $
-              {(selectedPackage === '1'
-                ? 625
-                : selectedPackage === '2'
-                ? 835
-                : 1045) * (formData.players?.length || 0)}
+              {(selectedPackage === '1' ? 575 : 785) *
+                (formData.players?.length || 0)}
             </p>
           </div>
           <button
@@ -2107,11 +2067,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
           <div className='d-flex justify-content-between mb-4'>
             <div className={`step ${currentStep >= 1 ? 'active' : ''}`}>
-              <span className='step-number'>1</span>
               <span className='step-title'>Registration</span>
             </div>
             <div className={`step ${currentStep >= 2 ? 'active' : ''}`}>
-              <span className='step-number'>2</span>
               <span className='step-title'>Payment</span>
             </div>
           </div>
