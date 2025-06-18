@@ -171,10 +171,10 @@ const HomeModals = () => {
             </div>
             <div className='modal-body'>
               <div className='home-detail-info mt-3'>
-                <div className='name-info ms-4 me-4'>
-                  <h5 className='mb-2'>
+                <div className='name-info ms-5 me-5'>
+                  <h4 className='mb-4'>
                     Important Camp Update – Please Read Carefully
-                  </h5>
+                  </h4>
                   <p>
                     <strong>
                       We have not been able to reserve a basketball gym for Week
@@ -204,7 +204,7 @@ const HomeModals = () => {
                       mailing address if you prefer a check.
                     </li>
                   </ul>
-                  <h6 className='mt-2'>✅ Reminders</h6>
+                  <h5 className='mt-2'>✅ Reminders</h5>
                   <ul className='ms-4 mb-3'>
                     <li>
                       Please arrive <strong>5 minutes before</strong> the
@@ -219,7 +219,9 @@ const HomeModals = () => {
                       and a <strong>reversible jersey</strong>.
                     </li>
                   </ul>
-                  <p>Thank you for your understanding and cooperation!</p>
+                  <p className='mb-3'>
+                    Thank you for your understanding and cooperation!
+                  </p>
                 </div>
               </div>
               <div className='home-detail-info mt-2'>
