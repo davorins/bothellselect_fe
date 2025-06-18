@@ -172,7 +172,7 @@ const HomeModals = () => {
             <div className='modal-body'>
               <div className='home-detail-info mt-3'>
                 <div className='name-info ms-5 me-5'>
-                  <h4 className='mb-4'>
+                  <h4 className='mb-4 bg-outline-warning d-flex'>
                     Important Camp Update – Please Read Carefully
                   </h4>
                   <p>
