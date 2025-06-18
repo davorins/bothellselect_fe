@@ -235,7 +235,7 @@ const HomePage = () => {
                       data-bs-toggle='modal'
                       data-bs-target='#schedule'
                     >
-                      👉 View Camp Schedule
+                      👉 View Camp Schedule and Important Updates
                     </Link>
                   </h5>
                   <h2 className='mb-3'>🔥 8 Weeks Summer Camp 🔥</h2>
