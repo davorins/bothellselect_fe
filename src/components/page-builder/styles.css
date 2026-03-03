@@ -1,0 +1,435 @@
+/* src/components/page-builder/styles.css */
+.page-builder-container {
+  height: calc(100vh - 60px);
+  display: flex;
+  flex-direction: column;
+}
+
+.builder-header {
+  flex-shrink: 0;
+  background: transparent;
+  border-bottom: 1px solid #cccccc;
+  border-radius: 0;
+}
+
+.builder-content {
+  flex: 1;
+  overflow: auto;
+}
+
+/* Preview Mode */
+.preview-container {
+  height: 100%;
+  overflow: auto;
+  background-color: #f8f9fa;
+  padding: 20px;
+}
+
+/* Sections List */
+.sections-list {
+  min-height: 300px;
+}
+
+.section-item {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.section-item:hover {
+  transform: translateY(-2px);
+}
+
+.section-item.active {
+  border-left-color: rgba(89, 66, 48, 1);
+  background-color: rgba(89, 66, 48, 0.05);
+}
+
+.section-actions {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.section-item:hover .section-actions {
+  opacity: 1;
+}
+
+/* Section Types */
+.section-types-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.section-type-card {
+  padding: 0.75rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  border: 1px solid #dee2e6;
+  background: white;
+}
+
+.section-type-card:hover {
+  background-color: rgba(0, 123, 255, 0.1);
+  border-color: rgba(89, 66, 48, 1);
+  transform: translateY(-1px);
+}
+
+/* Dynamic Page Styling */
+.dynamic-page .page-section {
+  transition: all 0.3s ease;
+}
+
+.dynamic-page .editable-section {
+  position: relative;
+  border: 2px dashed transparent;
+  min-height: 50px;
+}
+
+.dynamic-page .editable-section:hover {
+  border-color: rgba(89, 66, 48, 1);
+  background-color: rgba(89, 66, 48, 0.05);
+}
+
+.dynamic-page .editable-section::before {
+  content: 'Click to edit';
+  position: absolute;
+  top: -20px;
+  right: 0;
+  background: rgba(89, 66, 48, 1);
+  color: white;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  border-radius: 4px 4px 0 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.dynamic-page .editable-section:hover::before {
+  opacity: 1;
+}
+
+/* Form Selector Tabs */
+.form-selector-tabs .nav-link {
+  color: rgba(89, 66, 48, 0.75);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.form-selector-tabs .nav-link.active {
+  color: rgba(89, 66, 48, 1);
+  border-bottom-color: rgba(89, 66, 48, 1);
+  background: transparent;
+}
+
+.form-selector-tabs .nav-link:hover:not(.active) {
+  color: #495057;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Template Cards */
+.template-card {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.template-card:hover {
+  transform: translateY(-2px);
+}
+
+.template-card.selected {
+  border-color: rgba(89, 66, 48, 1);
+  background-color: rgba(89, 66, 48, 0.05);
+}
+
+/* Page List Table */
+.page-list-table .badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-builder-container .row {
+    flex-direction: column;
+  }
+
+  .page-builder-container .col-md-3,
+  .page-builder-container .col-md-6 {
+    width: 100%;
+  }
+
+  .form-selector-tabs .nav-link {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Sponsors Editor Styles */
+.sponsors-list .sponsor-item {
+  border-left: 4px solid rgba(89, 66, 48, 1);
+}
+
+.sponsors-list .sponsor-item:nth-child(4n + 1) {
+  border-left-color: #dc3545; /* Red for platinum? */
+}
+
+.sponsors-list .sponsor-item:nth-child(4n + 2) {
+  border-left-color: #ffc107; /* Yellow for gold */
+}
+
+.sponsors-list .sponsor-item:nth-child(4n + 3) {
+  border-left-color: rgba(89, 66, 48, 0.75); /* Gray for silver */
+}
+
+.sponsors-list .sponsor-item:nth-child(4n + 4) {
+  border-left-color: #cd7f32; /* Bronze color */
+}
+
+/* Tab styling */
+.btn-tab {
+  border: none;
+  border-radius: 0;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: rgba(89, 66, 48, 0.75);
+}
+
+.btn-tab.active {
+  color: rgba(89, 66, 48, 1);
+  border-bottom: 2px solid rgba(89, 66, 48, 1);
+  background: rgba(89, 66, 48, 0.05);
+}
+
+.rich-text-editor .markdown-textarea {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  tab-size: 2;
+}
+
+.rich-text-editor .preview-area h1,
+.rich-text-editor .preview-area h2,
+.rich-text-editor .preview-area h3,
+.rich-text-editor .preview-area h4,
+.rich-text-editor .preview-area h5,
+.rich-text-editor .preview-area h6 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.rich-text-editor .preview-area h1 {
+  font-size: 2rem;
+}
+.rich-text-editor .preview-area h2 {
+  font-size: 1.75rem;
+}
+.rich-text-editor .preview-area h3 {
+  font-size: 1.5rem;
+}
+
+.rich-text-editor .preview-area strong {
+  font-weight: bold;
+}
+
+.rich-text-editor .preview-area em {
+  font-style: italic;
+}
+
+.rich-text-editor .preview-area a {
+  color: #0d6efd;
+  text-decoration: underline;
+}
+
+.rich-text-editor .preview-area a:hover {
+  color: #0a58ca;
+}
+
+.rich-text-editor .preview-area ul,
+.rich-text-editor .preview-area ol {
+  padding-left: 2rem;
+  margin-bottom: 1rem;
+}
+
+.rich-text-editor .preview-area li {
+  margin-bottom: 0.25rem;
+}
+
+.rich-text-editor .preview-area blockquote {
+  border-left: 3px solid #dee2e6;
+  padding-left: 1rem;
+  margin-left: 0;
+  color: #6c757d;
+}
+
+.rich-text-editor .preview-area code {
+  background-color: #f8f9fa;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.875em;
+}
+
+.rich-text-editor .toolbar .btn-group-sm .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* CTA Section Styles */
+.cta-section {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  margin: 0;
+}
+
+.cta-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: inherit;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.cta-subtitle {
+  font-size: 1.25rem;
+  margin-bottom: 2rem;
+  color: inherit;
+  opacity: 0.9;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Button styles */
+.cta-section .btn {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.cta-section .btn:hover {
+  /* transform: translateY(-2px); */
+}
+
+/* Button sizes */
+.cta-section .btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  min-width: 150px;
+}
+
+.cta-section .btn-md {
+  padding: 0.625rem 1.25rem;
+  font-size: 1rem;
+  min-width: 180px;
+}
+
+.cta-section .btn-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.125rem;
+  min-width: 200px;
+}
+
+.cta-section .btn-xl {
+  padding: 1rem 1.75rem;
+  font-size: 1.25rem;
+  min-width: 220px;
+}
+
+/* Alignment variations */
+.cta-section[style*='text-align: left'] .cta-subtitle {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.cta-section[style*='text-align: right'] .cta-subtitle {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .cta-title {
+    font-size: 2rem;
+  }
+
+  .cta-subtitle {
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .cta-section .btn-lg {
+    padding: 0.6rem 1.5rem;
+    font-size: 1rem;
+    min-width: 180px;
+  }
+
+  .cta-section .btn-xl {
+    padding: 0.75rem 2rem;
+    font-size: 1.125rem;
+    min-width: 200px;
+  }
+
+  /* Stack buttons on mobile */
+  .cta-section .btn + .btn {
+    margin-left: 0;
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .cta-title {
+    font-size: 1.75rem;
+  }
+
+  .cta-subtitle {
+    font-size: 1rem;
+  }
+
+  .cta-section .btn {
+    display: block;
+    width: 100%;
+    margin: 0.5rem 0;
+  }
+
+  .cta-section .btn + .btn {
+    margin-left: 0;
+  }
+}
+
+/* Animation for CTA entrance */
+@keyframes ctaFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cta-section > div {
+  animation: ctaFadeIn 0.6s ease-out;
+}
+
+/* Background overlay animation */
+.cta-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.cta-section:hover::before {
+  opacity: 0.7;
+}

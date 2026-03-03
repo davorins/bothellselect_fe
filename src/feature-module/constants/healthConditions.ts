@@ -1,0 +1,17 @@
+export const commonHealthConditions = [
+  { value: 'asthma', label: 'Asthma' },
+  { value: 'allergies', label: 'Allergies (seasonal)' },
+  { value: 'foodAllergies', label: 'Food Allergies' },
+  { value: 'adhd', label: 'ADHD' },
+  { value: 'anxiety', label: 'Anxiety' },
+  { value: 'diabetes', label: 'Diabetes' },
+  { value: 'eczema', label: 'Eczema/Skin Conditions' },
+  { value: 'seizures', label: 'Seizures/Epilepsy' },
+  { value: 'heartCondition', label: 'Heart Condition' },
+  { value: 'visionProblems', label: 'Vision Problems' },
+  { value: 'hearingProblems', label: 'Hearing Problems' },
+  { value: 'migraines', label: 'Migraines/Headaches' },
+  { value: 'orthopedic', label: 'Orthopedic Issues' },
+  { value: 'giIssues', label: 'GI Issues' },
+  { value: 'custom', label: 'Other (specify below)' },
+];

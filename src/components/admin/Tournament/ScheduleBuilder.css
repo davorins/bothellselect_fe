@@ -1,0 +1,115 @@
+/* ScheduleBuilder.css */
+.schedule-time-slot {
+  border: 2px dashed #d9d9d9;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.schedule-time-slot:hover {
+  border-color: #1890ff;
+  background-color: #f0f8ff;
+}
+
+.schedule-time-slot.selected {
+  border-color: #52c41a;
+  background-color: #f6ffed;
+}
+
+.schedule-time-slot.booked {
+  border-color: #ff4d4f;
+  background-color: #fff2f0;
+  cursor: not-allowed;
+}
+
+.court-schedule-card {
+  height: 100%;
+}
+
+.court-schedule-card .ant-card-head {
+  background-color: #fafafa;
+}
+
+.court-schedule-timeline {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.match-schedule-item {
+  padding: 8px;
+  margin-bottom: 8px;
+  border-left: 3px solid #1890ff;
+  background-color: #fafafa;
+}
+
+.match-schedule-item.completed {
+  border-left-color: #52c41a;
+}
+
+.match-schedule-item.cancelled {
+  border-left-color: #ff4d4f;
+}
+
+.match-schedule-item.bye {
+  border-left-color: #faad14;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .schedule-print-view {
+    font-size: 12px;
+  }
+
+  .ant-card {
+    break-inside: avoid;
+  }
+}
+
+/* Drag and drop for schedule */
+.droppable-schedule-area {
+  min-height: 200px;
+  border: 2px dashed #d9d9d9;
+  border-radius: 6px;
+  padding: 16px;
+  background-color: #fafafa;
+}
+
+.droppable-schedule-area.drag-over {
+  border-color: #1890ff;
+  background-color: #f0f8ff;
+}
+
+/* Time grid */
+.time-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.time-cell {
+  border: 1px solid #f0f0f0;
+  padding: 8px;
+  text-align: center;
+  border-radius: 4px;
+}
+
+.time-cell.available {
+  background-color: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.time-cell.booked {
+  background-color: #fff2f0;
+  border-color: #ffccc7;
+}
+
+.time-cell.conflict {
+  background-color: #fffbe6;
+  border-color: #ffe58f;
+}

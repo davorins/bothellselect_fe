@@ -1,0 +1,211 @@
+.registration-wizard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.wizard-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.wizard-header h2 {
+  color: #2c3e50;
+  margin-bottom: 30px;
+}
+
+.progress-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.progress-step.active {
+  opacity: 1;
+}
+
+.progress-step.current .step-number {
+  background-color: #594230;
+  color: white;
+  transform: scale(1.1);
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #e9ecef;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.step-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6c757d;
+  text-align: center;
+}
+
+.progress-step.active .step-label {
+  color: #594230;
+}
+
+.wizard-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  position: relative;
+}
+
+.processing-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.wizard-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .registration-wizard {
+    padding: 10px;
+  }
+
+  .progress-indicator {
+    gap: 10px;
+  }
+
+  .step-label {
+    font-size: 0.75rem;
+  }
+
+  .wizard-content {
+    padding: 20px;
+  }
+
+  .wizard-navigation {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .wizard-navigation button {
+    width: 100%;
+  }
+}
+
+/* Card styles for modules */
+.card {
+  margin-bottom: 20px;
+  border: 1px solid #e3e6f0;
+  border-radius: 0.35rem;
+}
+
+.card-header {
+  background-color: #f8f9fc;
+  border-bottom: 1px solid #e3e6f0;
+  padding: 0.75rem 1.25rem;
+}
+
+.card-body {
+  padding: 1.25rem;
+}
+
+/* Form styles */
+.form-label {
+  font-weight: 600;
+  color: #5a5c69;
+  margin-bottom: 0.5rem;
+}
+
+.form-control {
+  border: 1px solid #d1d3e2;
+  border-radius: 0.35rem;
+  padding: 0.75rem;
+}
+
+.form-control:focus {
+  border-color: #594230;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.invalid-feedback {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #e74a3b;
+}
+
+.is-invalid {
+  border-color: #e74a3b;
+}
+
+/* Button styles */
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.35rem;
+  font-weight: 600;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn-primary {
+  background-color: #594230;
+  border-color: #594230;
+}
+
+.btn-primary:hover {
+  background-color: #0069d9;
+  border-color: #0062cc;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+
+.btn-success {
+  background-color: #1cc88a;
+  border-color: #1cc88a;
+}
+
+.btn-danger {
+  background-color: #e74a3b;
+  border-color: #e74a3b;
+}
+
+/* Payment form styles */
+.payment-form-container {
+  margin: 20px 0;
+}
+
+/* Loading spinner */
+.spinner-border {
+  width: 1rem;
+  height: 1rem;
+}

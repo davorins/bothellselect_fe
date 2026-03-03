@@ -1,0 +1,48 @@
+# dependencies
+node_modules
+/.pnp
+.pnp.js
+
+# Vite and build output
+dist
+build
+
+# local env files
+.env.local
+.env.*.local
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# macOS
+.DS_Store
+
+# Vercel/Netlify deployments
+.vercel
+.netlify
+
+# IDEs
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Optional: skip local debug cache
+.cache
+node_modules/
+.cache/
+node_modules/.cache/
+
+# Explicitly un-ignore backend folder
+!/backend/
+
+# Ignore everything in videos by default
+public/assets/videos/*
+
+# Allow mp4 files (handled by Git LFS)
+#!public/assets/videos/*.mp4

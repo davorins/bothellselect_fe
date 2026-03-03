@@ -1,0 +1,122 @@
+// components/Teams/TeamDetail.scss
+
+// Move tabs to the right side
+.team-detail-tabs {
+  &.ant-tabs {
+    .ant-tabs-nav {
+      margin-bottom: 16px;
+      border-bottom: 1px solid #e8e8e8;
+
+      // Position tabs on the right
+      .ant-tabs-nav-wrap {
+        justify-content: flex-end;
+      }
+
+      // Style for the tab list
+      .ant-tabs-tab {
+        padding: 12px 16px;
+        transition: all 0.3s;
+
+        &:hover {
+          color: #0d6efd;
+        }
+
+        &.ant-tabs-tab-active {
+          .ant-tabs-tab-btn {
+            color: #0d6efd;
+            font-weight: 500;
+          }
+        }
+      }
+
+      // Active tab indicator
+      .ant-tabs-ink-bar {
+        background: #0d6efd;
+      }
+    }
+  }
+}
+
+// Table row per page fix - moves per page selector to the right
+.ant-table-pagination {
+  &.ant-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin: 16px 0 !important;
+
+    .ant-pagination-options {
+      order: 2;
+      margin-left: 8px;
+    }
+
+    .ant-pagination-item,
+    .ant-pagination-prev,
+    .ant-pagination-next {
+      order: 1;
+    }
+
+    .ant-pagination-total-text {
+      order: 0;
+      margin-right: auto;
+      color: #6c757d;
+    }
+  }
+}
+
+// Team info cards styling
+.team-info-cards {
+  .card {
+    border-radius: 8px;
+    transition: all 0.3s;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .card-header {
+      padding: 16px 16px 8px;
+
+      h6 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #495057;
+      }
+    }
+
+    .card-body {
+      padding: 16px;
+    }
+  }
+}
+
+// Avatar hover effects
+.avatar {
+  transition: transform 0.3s;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+// Dropdown menu styling
+.dropdown-menu {
+  &.p-3 {
+    min-width: 160px;
+
+    .dropdown-item {
+      padding: 8px 12px;
+      border-radius: 4px;
+
+      &:hover {
+        background-color: #f8f9fa;
+      }
+
+      i,
+      .anticon {
+        margin-right: 8px;
+        font-size: 14px;
+      }
+    }
+  }
+}
