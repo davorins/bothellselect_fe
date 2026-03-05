@@ -211,10 +211,10 @@ const SecuritySettings = () => {
             <nav>
               <ol className='breadcrumb mb-0'>
                 <li className='breadcrumb-item'>
-                  <Link to='/'>Dashboard</Link>
+                  <Link to={routes.adminDashboard}>Dashboard</Link>
                 </li>
                 <li className='breadcrumb-item'>
-                  <span>Settings</span>
+                  <Link to={routes.profilesettings}>Settings</Link>
                 </li>
                 <li className='breadcrumb-item active' aria-current='page'>
                   General Settings

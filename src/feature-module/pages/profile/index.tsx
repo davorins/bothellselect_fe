@@ -1163,7 +1163,7 @@ const Profile: React.FC = () => {
                   <Link to={route.adminDashboard}>Dashboard</Link>
                 </li>
                 <li className='breadcrumb-item'>
-                  <Link to='#'>Settings</Link>
+                  <Link to={route.profilesettings}>Settings</Link>
                 </li>
                 <li className='breadcrumb-item active' aria-current='page'>
                   Profile

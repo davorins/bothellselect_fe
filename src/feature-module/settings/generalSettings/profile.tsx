@@ -1513,7 +1513,7 @@ const Profilesettings = () => {
                   <Link to={routes.adminDashboard}>Dashboard</Link>
                 </li>
                 <li className='breadcrumb-item'>
-                  <Link to='#'>Settings</Link>
+                  <Link to={routes.profilesettings}>Settings</Link>
                 </li>
                 <li className='breadcrumb-item active' aria-current='page'>
                   General Settings
