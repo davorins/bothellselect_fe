@@ -65,7 +65,7 @@ export const parseAddress = (fullAddress: string): Address => {
     // Parse city, state, and ZIP from second part
     const cityStateZip = parts[1] || '';
     const stateZipMatch = cityStateZip.match(
-      /([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/
+      /([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/,
     );
 
     if (stateZipMatch) {
@@ -106,7 +106,7 @@ export const parseAddress = (fullAddress: string): Address => {
       // Parse state and ZIP from last part
       const lastPart = parts[2] || '';
       const stateZipMatch = lastPart.match(
-        /([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/
+        /([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/,
       );
 
       if (stateZipMatch) {
@@ -117,7 +117,7 @@ export const parseAddress = (fullAddress: string): Address => {
         if (zipMatch) {
           result.zip = zipMatch[0];
           result.state = normalizeState(
-            lastPart.replace(zipMatch[0], '').trim()
+            lastPart.replace(zipMatch[0], '').trim(),
           );
         } else {
           result.state = normalizeState(lastPart);
@@ -130,7 +130,7 @@ export const parseAddress = (fullAddress: string): Address => {
 
       const lastPart = parts[parts.length - 1] || '';
       const stateZipMatch = lastPart.match(
-        /([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/
+        /([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/,
       );
 
       if (stateZipMatch) {
@@ -141,7 +141,7 @@ export const parseAddress = (fullAddress: string): Address => {
         if (zipMatch) {
           result.zip = zipMatch[0];
           result.state = normalizeState(
-            lastPart.replace(zipMatch[0], '').trim()
+            lastPart.replace(zipMatch[0], '').trim(),
           );
         } else {
           result.state = normalizeState(lastPart);
@@ -240,7 +240,7 @@ export const formatPhoneNumber = (value: string): string => {
 };
 
 export const validateAddress = (
-  address: Address
+  address: Address,
 ): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
@@ -272,7 +272,7 @@ export const validateAddress = (
 
 export const calculatePayments = (
   playerCount: number,
-  perPlayerAmount: number = 20
+  perPlayerAmount: number = 20,
 ) => {
   const basePrice = perPlayerAmount * playerCount;
   return {
@@ -290,7 +290,7 @@ export const calculatePayments = (
 
 export const validatePlayer = (
   player: Player,
-  index: number = 0
+  index: number = 0,
 ): Record<string, string> => {
   const errors: Record<string, string> = {};
 
@@ -325,7 +325,7 @@ export const validatePlayer = (
 
 export const validateGuardian = (
   guardian: Guardian,
-  isAdditional: boolean = false
+  isAdditional: boolean = false,
 ): Record<string, string> => {
   const errors: Record<string, string> = {};
 
@@ -382,58 +382,60 @@ export const validateTeam = (team: Team): Record<string, string> => {
   return errors;
 };
 
-// Updated calculateGradeFromDOB function in registration-utils.ts
-// Updated calculateGradeFromDOB function in registration-utils.ts
+// calculateGradeFromDOB function
 export const calculateGradeFromDOB = (
   dob: string,
-  registrationYear: number
+  registrationYear: number,
 ): string => {
   if (!dob) return '';
 
   const birthDate = new Date(dob);
-  const birthYear = birthDate.getFullYear();
-  const birthMonth = birthDate.getMonth() + 1; // Convert to 1-indexed month
-  const birthDay = birthDate.getDate();
+  if (isNaN(birthDate.getTime())) return '';
 
-  // Washington state cutoff: Students must be 5 by August 31st to start Kindergarten
-  // Cutoff month is September (month 9), so cutoff is August 31st
-  const cutoffMonth = 8; // September (0-indexed would be 8, but we're using 1-indexed)
+  // Use UTC to avoid timezone-caused date shifts
+  const birthYear = birthDate.getUTCFullYear();
+  const birthMonth = birthDate.getUTCMonth() + 1; // 1-indexed
+  const birthDay = birthDate.getUTCDate();
+
+  // Washington state cutoff: August 31
+  const cutoffMonth = 8;
   const cutoffDay = 31;
 
-  // Debug logging
+  // Correct for school year: if today is before September, the active school
+  // year started in the PREVIOUS calendar year (e.g. March 2026 → SY 2025-26 → start = 2025)
+  const today = new Date();
+  const currentMonth = today.getMonth() + 1; // 1-indexed
+  const academicYearStartMonth = 9; // September
+  const schoolYearStart =
+    currentMonth < academicYearStartMonth
+      ? registrationYear - 1
+      : registrationYear;
+
+  const isBeforeCutoff =
+    birthMonth < cutoffMonth ||
+    (birthMonth === cutoffMonth && birthDay <= cutoffDay);
+
+  const kindergartenStartYear = isBeforeCutoff ? birthYear + 5 : birthYear + 6;
+
+  const gradeLevel = schoolYearStart - kindergartenStartYear;
+
   console.log('🔍 Grade Calculation Debug:', {
     dob,
     birthYear,
     birthMonth,
     birthDay,
     registrationYear,
+    schoolYearStart,
     cutoffMonth,
     cutoffDay,
-  });
-
-  // Determine if the child was born before the cutoff for the school year
-  // Child is eligible if born on or before August 31st
-  const isBeforeCutoff =
-    birthMonth < cutoffMonth ||
-    (birthMonth === cutoffMonth && birthDay <= cutoffDay);
-
-  // If born before cutoff (August 31st or earlier), they start Kindergarten the year they turn 5
-  // If born after cutoff (September 1st or later), they start Kindergarten the following year
-  const kindergartenStartYear = isBeforeCutoff ? birthYear + 5 : birthYear + 6;
-
-  // Calculate grade based on kindergarten start year
-  const gradeLevel = registrationYear - kindergartenStartYear;
-
-  console.log('🔍 Grade Calculation Result:', {
     isBeforeCutoff,
     kindergartenStartYear,
     gradeLevel,
   });
 
-  // Handle edge cases
-  if (gradeLevel < 0) return 'PK'; // Pre-K (before kindergarten)
-  if (gradeLevel === 0) return 'K'; // Kindergarten
-  if (gradeLevel > 12) return '12'; // Maximum 12th grade
+  if (gradeLevel < 0) return 'PK';
+  if (gradeLevel === 0) return 'K';
+  if (gradeLevel > 12) return '12';
 
   return gradeLevel.toString();
 };

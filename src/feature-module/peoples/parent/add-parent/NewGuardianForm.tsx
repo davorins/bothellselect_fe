@@ -166,7 +166,7 @@ const NewGuardianForm: React.FC<NewGuardianFormProps> = ({
         </div>
       </div>
       <div className='row row-cols-xxl-5 row-cols-md-6'>
-        <div className='col-xxl col-xl-3 col-md-6'>
+        <div className='col-xxl col-xl-3 col-amd-6'>
           <div className='mb-3'>
             <label className='form-label'>Email</label>
             <input

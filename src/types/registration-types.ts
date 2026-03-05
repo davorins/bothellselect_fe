@@ -38,6 +38,8 @@ export interface Player {
   seasons?: SeasonRegistration[];
   parentId?: string;
   _saving?: boolean;
+  age?: number;
+  [key: string]: any;
 }
 
 export interface Guardian {

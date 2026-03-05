@@ -1,3 +1,5 @@
+// src/utils/gradeUtils.ts
+
 /**
  * Grade Calculation Utility (Frontend – TypeScript)
  *
@@ -76,6 +78,34 @@ export const ACADEMIC_YEAR_START_MONTH: Record<string, number> = {
 };
 
 /**
+ * Calculate age from date of birth
+ * @param dob - Date of birth (string or Date)
+ * @returns Age in years
+ */
+export const calculateAge = (dob: string | Date): number => {
+  if (!dob) return 0;
+
+  try {
+    const birthDate = typeof dob === 'string' ? new Date(dob) : dob;
+    if (isNaN(birthDate.getTime())) return 0;
+
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      age--;
+    }
+    return age;
+  } catch {
+    return 0;
+  }
+};
+
+/**
  * Returns the calendar year in which the currently active school year began.
  *
  * e.g. today = Feb 22, 2026, school starts in September
@@ -120,8 +150,6 @@ export const calculateGradeFromDOB = (
     const { month: cutoffMonth, day: cutoffDay } = cutoff;
 
     // ── 2. Determine school year START ──────────────────────────────────────
-    //    Fix: currentYear is the calendar year of registration (e.g. 2026),
-    //    but the school year 2025-2026 started in 2025. We must account for this.
     const academicStartMonth =
       ACADEMIC_YEAR_START_MONTH[region] ??
       ACADEMIC_YEAR_START_MONTH['US_DEFAULT'];

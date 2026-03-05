@@ -235,7 +235,10 @@ const PlayerRegistrationModule: React.FC<PlayerRegistrationModuleProps> = ({
     if (field === 'dob' && !updatedPlayer.isGradeOverridden) {
       const dob = value;
       if (dob && dob.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const calculatedGrade = calculateGradeFromDOB(dob, registrationYear);
+        const calculatedGrade = calculateGradeFromDOB(
+          dob,
+          parseInt(String(registrationYear), 10),
+        );
         console.log('📊 Grade calculation for player:', {
           name: updatedPlayer.fullName,
           dob,

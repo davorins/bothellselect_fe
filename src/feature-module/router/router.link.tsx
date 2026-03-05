@@ -77,6 +77,7 @@ import CreateNewPage from '../../components/page-builder/CreateNewPage';
 import PageList from '../../components/page-builder/PageList';
 import PageRenderer from '../../components/page-builder/PageRenderer';
 import PaymentConfiguration from '../../components/admin/paymentSettings/PaymentConfiguration';
+import FormFieldConfigPage from '../settings/systemSettings/formFieldConfig/FormFieldConfig';
 
 const routes = all_routes;
 
@@ -561,6 +562,15 @@ export const protectedRoutes = [
   {
     path: routes.resetPassword,
     element: <ResetPassword />,
+    route: Route,
+  },
+  {
+    path: routes.adminFormConfigs,
+    element: (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <FormFieldConfigPage />
+      </ProtectedRoute>
+    ),
     route: Route,
   },
 

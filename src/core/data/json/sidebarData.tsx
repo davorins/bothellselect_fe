@@ -227,6 +227,14 @@ export const SidebarData = [
         icon: 'ti ti-calendar',
         roles: ['admin'],
       },
+      {
+        label: 'Form Fields',
+        submenu: false,
+        showSubRoute: false,
+        link: routes.adminFormConfigs,
+        icon: 'ti ti-settings-cog',
+        roles: ['admin'],
+      },
     ],
   },
   {
