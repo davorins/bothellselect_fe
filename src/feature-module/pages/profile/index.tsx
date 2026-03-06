@@ -1,4 +1,4 @@
-// index.tsx - Profile page with profilesettings-equivalent functionality
+// index.tsx
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { OverlayTrigger, Tooltip, Alert } from 'react-bootstrap';

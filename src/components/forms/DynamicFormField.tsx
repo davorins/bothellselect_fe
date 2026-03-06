@@ -81,8 +81,11 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({
             styles={{
               control: (base) => ({
                 ...base,
-                borderColor: isInvalid ? '#dc3545' : '#ced4da',
-                '&:hover': { borderColor: isInvalid ? '#dc3545' : '#80bdff' },
+                borderColor: isInvalid ? '#dc3545 !important' : '#ced4da',
+                borderWidth: '1px',
+                '&:hover': {
+                  borderColor: isInvalid ? '#dc3545 !important' : '#80bdff',
+                },
               }),
             }}
           />

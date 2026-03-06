@@ -1,3 +1,4 @@
+// src/feature-module/settings/players/AddPlayer.tsx
 import React, {
   useEffect,
   useState,
@@ -17,10 +18,8 @@ import {
   ValidationErrors,
 } from '../../../../types/types';
 import {
-  validateRequired,
   validateName,
   validateDateOfBirth,
-  validateGrade,
 } from '../../../../utils/validation';
 import { getAvatarUrl, getDefaultAvatar } from '../../../../utils/r2Utils';
 import { calculateGradeFromDOB } from '../../../../utils/gradeUtils';
@@ -28,15 +27,36 @@ import SchoolAutocomplete from '../../../../components/SchoolAutocomplete';
 import NameInput from '../../../../components/NameInput';
 import { debounce } from 'lodash';
 import { commonHealthConditions } from '../../../constants/healthConditions';
+import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
+import { Player as RegistrationPlayer } from '../../../../types/registration-types';
+import { VisibleField } from '../../../../types/form-config.types';
+import DynamicFormField from '../../../../components/forms/DynamicFormField';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-const gradeOptions = Array.from({ length: 12 }, (_, i) => ({
-  value: `${i + 1}`,
-  label: `${i + 1}${i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th'} Grade`,
-}));
+// ─── Type conversion utilities ────────────────────────────────────────────────
+const convertToRegistrationPlayer = (
+  formData: PlayerFormData,
+): RegistrationPlayer => {
+  return {
+    _id: formData.playerId || '',
+    fullName: formData.fullName || '',
+    gender: formData.gender || '',
+    dob: formData.dob || '',
+    schoolName: formData.schoolName || '',
+    healthConcerns: formData.healthConcerns || '',
+    aauNumber: formData.aauNumber || '',
+    registrationYear: formData.registrationYear
+      ? Number(formData.registrationYear)
+      : new Date().getFullYear(),
+    season: formData.season || '',
+    grade: formData.grade || '',
+    isGradeOverridden: formData.isGradeOverridden || false,
+    avatar: formData.avatar || '',
+  };
+};
 
-// ─── Inline error message component — same style used by Parent field ─────────
+// ─── Inline error message component ───────────────────────────────────────────
 const FieldError = ({ message }: { message?: string }) =>
   message ? <div className='invalid-feedback d-block'>{message}</div> : null;
 
@@ -46,6 +66,16 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
   const playerState = location.state as PlayerState | undefined;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Dynamic form fields hook ──────────────────────────────────────────────
+  const {
+    getVisibleFields,
+    validateField,
+    loading: fieldsLoading,
+  } = useDynamicFormFields('player', {
+    registrationYear: new Date().getFullYear(),
+  });
+
+  // ── Parent search state ───────────────────────────────────────────────────
   const [parents, setParents] = useState<ParentData[]>([]);
   const [loadingParents, setLoadingParents] = useState(false);
   const [parentSearchTerm, setParentSearchTerm] = useState('');
@@ -60,6 +90,7 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
     pages: 0,
   });
 
+  // ── Form state ────────────────────────────────────────────────────────────
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isUploading, setIsUploading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -69,6 +100,7 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
     message: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [visibleFields, setVisibleFields] = useState<VisibleField[]>([]);
 
   // Health conditions state
   const [selectedConditions, setSelectedConditions] = useState<any[]>([]);
@@ -81,7 +113,77 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
     playerState?.player?._id ||
     '';
 
-  // ✅ Debounced search
+  const getCurrentSeason = () => {
+    const month = new Date().getMonth() + 1;
+    const day = new Date().getDate();
+    if (
+      (month === 12 && day >= 21) ||
+      month === 1 ||
+      month === 2 ||
+      (month === 3 && day <= 20)
+    )
+      return 'Winter';
+    if (
+      (month === 3 && day >= 21) ||
+      month === 4 ||
+      month === 5 ||
+      (month === 6 && day <= 20)
+    )
+      return 'Spring';
+    if (
+      (month === 6 && day >= 21) ||
+      month === 7 ||
+      month === 8 ||
+      (month === 9 && day <= 22)
+    )
+      return 'Summer';
+    return 'Fall';
+  };
+
+  const [formData, setFormData] = useState<PlayerFormData>({
+    playerId: playerId || '',
+    fullName: '',
+    gender: '',
+    dob: '',
+    schoolName: '',
+    grade: '',
+    healthConcerns: '',
+    aauNumber: '',
+    registrationYear: new Date().getFullYear().toString(),
+    season: getCurrentSeason(),
+    parentId: '',
+    avatar: '',
+    isGradeOverridden: false,
+  });
+
+  // ── Update visible fields when form data changes ───────────────────────────
+  useEffect(() => {
+    const registrationPlayer = convertToRegistrationPlayer(formData);
+    console.log('🔄 Converting formData to RegistrationPlayer:', {
+      formData,
+      registrationPlayer,
+    });
+
+    const fields = getVisibleFields(registrationPlayer);
+    console.log(
+      '📋 Fields from getVisibleFields:',
+      fields.map((f) => ({
+        name: f.fieldName,
+        label: f.label,
+        isRequired: f.isRequired,
+        isEnabled: f.isEnabled,
+      })),
+    );
+
+    setVisibleFields((prevFields) => {
+      if (JSON.stringify(prevFields) === JSON.stringify(fields)) {
+        return prevFields;
+      }
+      return fields;
+    });
+  }, [formData, getVisibleFields]);
+
+  // ── Debounced parent search ───────────────────────────────────────────────
   const debouncedSearch = useMemo(
     () =>
       debounce((searchTerm: string) => {
@@ -169,7 +271,6 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
     clearFieldError('parentId');
   };
 
-  // ✅ Unified: clear one field's error
   const clearFieldError = (fieldName: string) => {
     setErrors((prev) => {
       if (!prev[fieldName]) return prev;
@@ -179,7 +280,6 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
     });
   };
 
-  // ✅ Set one field's error (used by onBlur handlers)
   const setFieldError = (fieldName: string, message: string) => {
     setErrors((prev) => ({ ...prev, [fieldName]: message }));
   };
@@ -211,49 +311,6 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
       return null;
     }
   };
-
-  const getCurrentSeason = () => {
-    const month = new Date().getMonth() + 1;
-    const day = new Date().getDate();
-    if (
-      (month === 12 && day >= 21) ||
-      month === 1 ||
-      month === 2 ||
-      (month === 3 && day <= 20)
-    )
-      return 'Winter';
-    if (
-      (month === 3 && day >= 21) ||
-      month === 4 ||
-      month === 5 ||
-      (month === 6 && day <= 20)
-    )
-      return 'Spring';
-    if (
-      (month === 6 && day >= 21) ||
-      month === 7 ||
-      month === 8 ||
-      (month === 9 && day <= 22)
-    )
-      return 'Summer';
-    return 'Fall';
-  };
-
-  const [formData, setFormData] = useState<PlayerFormData>({
-    playerId: playerId || '',
-    fullName: '',
-    gender: '',
-    dob: '',
-    schoolName: '',
-    grade: '',
-    healthConcerns: '',
-    aauNumber: '',
-    registrationYear: new Date().getFullYear().toString(),
-    season: getCurrentSeason(),
-    parentId: '',
-    avatar: '',
-    isGradeOverridden: false,
-  });
 
   useEffect(() => {
     return () => {
@@ -355,100 +412,114 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
     fetchData();
   }, [isEdit, playerId, playerState]);
 
-  // ✅ validateForm now RETURNS the error map so callers can use it immediately
-  //    (avoids the stale-state race condition in the original)
+  // ── Validation using dynamic fields ───────────────────────────────────────
   const validateForm = (): ValidationErrors => {
     const newErrors: ValidationErrors = {};
+    const registrationPlayer = convertToRegistrationPlayer(formData);
 
-    if (!validateName(formData.fullName)) {
-      newErrors.fullName = 'Please enter a valid name (min 2 characters)';
-    }
-    if (!validateDateOfBirth(formData.dob)) {
-      newErrors.dob = 'Please enter a valid date of birth';
-    }
-    if (!validateRequired(formData.gender)) {
-      newErrors.gender = 'Gender is required';
-    }
+    // Only validate fields that are actually visible in the form
+    visibleFields.forEach((field) => {
+      // Skip validation for fields that aren't displayed
+      // This ensures disabled fields don't cause validation errors
+      const value =
+        registrationPlayer[field.fieldName as keyof RegistrationPlayer];
+
+      // Handle different value types properly
+      let stringValue = '';
+      if (value !== undefined && value !== null) {
+        // Convert numbers to strings, keep strings as is
+        stringValue =
+          typeof value === 'number' ? value.toString() : String(value);
+      }
+
+      const error = validateField(field, stringValue);
+      if (error) {
+        newErrors[field.fieldName] = error;
+      }
+    });
+
+    // Only validate parent if we're in add mode AND the parent field is visible
+    // In your layout, parent is always visible in add mode, so we keep this
     if (!isEdit && !formData.parentId) {
       newErrors.parentId = 'Parent is required';
-    }
-
-    if (!validateRequired(formData.schoolName)) {
-      newErrors.schoolName = 'School name is required';
-    }
-    const gradeValue = formData.grade;
-    if (!gradeValue) {
-      newErrors.grade = 'Grade is required';
-    } else {
-      const numericGrade = gradeValue.replace(/\D/g, '');
-      if (!validateGrade(numericGrade) && !['PK', 'K'].includes(gradeValue)) {
-        newErrors.grade = 'Please select a valid grade';
-      }
     }
 
     setErrors(newErrors);
     return newErrors;
   };
 
-  // ✅ Per-field blur validators — same live-feedback feel as the Parent field
+  // ── Per-field blur validation ─────────────────────────────────────────────
   const handleBlur = (
-    e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.FocusEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
   ) => {
     const { name, value } = e.target;
-    switch (name) {
-      case 'fullName':
-        if (value && !validateName(value))
-          setFieldError(
-            'fullName',
-            'Please enter a valid name (min 2 characters)',
-          );
-        break;
-      case 'dob':
-        if (value && !validateDateOfBirth(value))
-          setFieldError('dob', 'Please enter a valid date of birth');
-        break;
-      case 'gender':
-        if (!validateRequired(value))
-          setFieldError('gender', 'Gender is required');
-        break;
-      case 'grade':
-        if (!value) {
-          setFieldError('grade', 'Grade is required');
-        } else {
-          const numeric = value.replace(/\D/g, '');
-          if (!validateGrade(numeric) && !['PK', 'K'].includes(value))
-            setFieldError('grade', 'Please select a valid grade');
-        }
-        break;
+    const field = visibleFields.find((f) => f.fieldName === name);
+    if (field) {
+      const error = validateField(field, value);
+      if (error) {
+        setFieldError(name, error);
+      } else {
+        clearFieldError(name);
+      }
     }
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
   ) => {
     const { name, value } = e.target;
 
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
-      if (
-        name === 'dob' &&
-        !prev.isGradeOverridden &&
-        value.match(/^\d{4}-\d{2}-\d{2}$/)
-      ) {
-        updated.grade = calculateGradeFromDOB(value, new Date().getFullYear());
+
+      // Auto-calculate grade from DOB if not overridden
+      if (name === 'dob' && !prev.isGradeOverridden) {
+        // The dynamic form hook will handle calculation
+        // We'll let the visible fields update handle it
       }
+
       return updated;
     });
 
     clearFieldError(name);
   };
 
+  const handleDynamicFieldChange = (fieldName: string, value: any) => {
+    setFormData((prev) => {
+      const updated = { ...prev, [fieldName]: value };
+
+      // Auto-calculate grade from DOB if not overridden
+      if (fieldName === 'dob' && !prev.isGradeOverridden) {
+        // Calculate grade from DOB
+        if (value && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          // Use the same calculation function as Profile page
+          const calculatedGrade = calculateGradeFromDOB(
+            value,
+            new Date().getFullYear(),
+          );
+          updated.grade = calculatedGrade;
+        }
+      }
+
+      return updated;
+    });
+    clearFieldError(fieldName);
+  };
+
+  // ── Filter visible fields to exclude age from display ───────────────────
+  const displayFields = useMemo(() => {
+    // Filter out age field since it's informative only
+    return visibleFields.filter((field) => field.fieldName !== 'age');
+  }, [visibleFields]);
+
   const handleSchoolChange = (val: string) => {
     setFormData((prev) => ({ ...prev, schoolName: val }));
     if (val.trim()) {
       clearFieldError('schoolName');
-    } else {
-      setFieldError('schoolName', 'School name is required');
     }
   };
 
@@ -574,7 +645,7 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
       if (fileInputRef.current) fileInputRef.current.value = '';
       setTimeout(
         () => setSaveStatus((prev) => ({ ...prev, show: false })),
-        3000,
+        5000,
       );
       return;
     }
@@ -645,7 +716,6 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
 
-    // ✅ Use returned errors directly — no stale-state race condition
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       const firstErrorKey = Object.keys(validationErrors)[0];
@@ -679,25 +749,57 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
 
       const url = isEdit
         ? `${API_BASE_URL}/players/${formData.playerId}`
-        : `${API_BASE_URL}/players`;
+        : `${API_BASE_URL}/players/register`;
 
       let gradeToSend = formData.grade;
       if (gradeToSend && !['PK', 'K'].includes(gradeToSend)) {
         gradeToSend = gradeToSend.replace(/\D/g, '');
       }
 
-      const payload = {
-        fullName: formData.fullName,
-        gender: formData.gender,
-        dob: formData.dob,
-        schoolName: formData.schoolName,
-        grade: gradeToSend,
-        healthConcerns: formData.healthConcerns,
-        aauNumber: formData.aauNumber,
+      // Build payload dynamically - only include fields that are visible and have values
+      const payload: any = {
         registrationYear: formData.registrationYear,
         season: formData.season,
         ...(!isEdit && { parentId: formData.parentId }),
       };
+
+      // Only add fields that are visible in the form
+      visibleFields.forEach((field) => {
+        const fieldName = field.fieldName;
+        const value = formData[fieldName as keyof PlayerFormData];
+
+        // For required fields, include them even if empty (backend will validate)
+        // For optional fields, only include if they have a value
+        if (field.isRequired) {
+          payload[fieldName] = value || '';
+        } else {
+          // Only include optional fields if they have a truthy value
+          if (value && value.toString().trim() !== '') {
+            payload[fieldName] = value;
+          }
+        }
+      });
+
+      // Ensure required core fields are always included
+      if (!payload.fullName && formData.fullName) {
+        payload.fullName = formData.fullName;
+      }
+
+      if (!payload.gender && formData.gender) {
+        payload.gender = formData.gender;
+      }
+
+      // Handle grade specially
+      if (gradeToSend) {
+        payload.grade = gradeToSend;
+        payload.isGradeOverridden = formData.isGradeOverridden || false;
+      }
+
+      console.log('Submitting payload:', payload);
+      console.log(
+        'Visible fields:',
+        visibleFields.map((f) => f.fieldName),
+      );
 
       const config = {
         headers: {
@@ -705,12 +807,20 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
           'Content-Type': 'application/json',
         },
       };
+
       const response = await (isEdit
         ? axios.put(url, payload, config)
         : axios.post(url, payload, config));
 
+      // Get the player ID from the response
+      const savedPlayerId =
+        response.data._id ||
+        response.data.id ||
+        response.data.player?._id ||
+        formData.playerId;
+
       if (isEdit && playerState?.from) {
-        const updatedPlayer = response.data;
+        const updatedPlayer = response.data.player || response.data;
         const playerForNavigation = {
           ...updatedPlayer,
           _id: updatedPlayer._id || formData.playerId,
@@ -746,7 +856,126 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
 
         navigate(playerState.from, { state: navigationState, replace: true });
       } else {
-        navigate(all_routes.playerList);
+        // For new players, fetch parent data to include in navigation state
+        let parentData = null;
+        let allGuardians = [];
+        let siblings = [];
+
+        if (!isEdit && formData.parentId) {
+          try {
+            const token = localStorage.getItem('token');
+            // Fetch the complete parent data
+            const parentResponse = await axios.get(
+              `${API_BASE_URL}/parent/${formData.parentId}`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              },
+            );
+
+            parentData = parentResponse.data;
+
+            // Get the newly created player
+            const newPlayer = response.data.player || response.data;
+
+            // Fetch all players for this parent to get siblings
+            try {
+              const playersResponse = await axios.get(
+                `${API_BASE_URL}/players/by-parent/${formData.parentId}`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                },
+              );
+
+              // Filter out the current player to get siblings
+              siblings = playersResponse.data.filter(
+                (p: any) => p._id !== newPlayer._id,
+              );
+            } catch (error) {
+              console.error('Error fetching siblings:', error);
+            }
+
+            // Format guardians array with proper structure
+            // Primary parent
+            const primaryGuardian = {
+              _id: parentData._id,
+              id: parentData._id,
+              fullName: parentData.fullName,
+              email: parentData.email,
+              phone: parentData.phone,
+              address: parentData.address,
+              relationship: parentData.relationship || 'Parent',
+              isCoach: parentData.isCoach || false,
+              aauNumber: parentData.aauNumber || '',
+              avatar: parentData.avatar,
+              isPrimary: true,
+              players: [newPlayer, ...siblings],
+            };
+
+            // Additional guardians
+            const additionalGuardians = (
+              parentData.additionalGuardians || []
+            ).map((g: any) => ({
+              _id: g._id,
+              id: g._id,
+              fullName: g.fullName,
+              email: g.email,
+              phone: g.phone,
+              address: g.address,
+              relationship: g.relationship,
+              isCoach: g.isCoach || false,
+              aauNumber: g.aauNumber || '',
+              avatar: g.avatar,
+              isPrimary: false,
+            }));
+
+            allGuardians = [primaryGuardian, ...additionalGuardians];
+
+            // Create shared data object
+            const sharedData = {
+              familyGuardians: allGuardians,
+              familyAddress: primaryGuardian.address,
+              familyPlayers: [newPlayer, ...siblings],
+            };
+
+            // Navigate with COMPLETE state
+            navigate(`${all_routes.playerDetail}/${savedPlayerId}`, {
+              state: {
+                player: newPlayer,
+                parentId: formData.parentId,
+                parent: parentData,
+                guardians: allGuardians,
+                siblings: siblings,
+                sharedData: sharedData,
+                from: 'add',
+              },
+            });
+            setIsSubmitting(false);
+            return;
+          } catch (error) {
+            console.error('Error fetching parent data for navigation:', error);
+
+            // Fallback - navigate with minimal data if fetch fails
+            navigate(`${all_routes.playerDetail}/${savedPlayerId}`, {
+              state: {
+                player: response.data.player || response.data,
+                parentId: formData.parentId,
+                from: 'add',
+              },
+            });
+            setIsSubmitting(false);
+            return;
+          }
+        } else {
+          // No parentId (shouldn't happen for new players, but just in case)
+          navigate(`${all_routes.playerDetail}/${savedPlayerId}`, {
+            state: {
+              player: response.data.player || response.data,
+              from: 'add',
+            },
+          });
+          setIsSubmitting(false);
+          return;
+        }
       }
     } catch (error) {
       console.error(`Error ${isEdit ? 'updating' : 'adding'} player:`, error);
@@ -755,6 +984,9 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
         errorMessage += ` Server responded with: ${error.response?.status}`;
         if (error.response?.data?.error)
           errorMessage += ` - ${error.response.data.error}`;
+        if (error.response?.data?.errors) {
+          console.error('Validation errors:', error.response.data.errors);
+        }
       }
       alert(errorMessage);
     } finally {
@@ -767,14 +999,20 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
     formData.gender as 'Male' | 'Female',
   );
 
-  const selectStyles = {
-    control: (base: any) => ({
-      ...base,
-      minHeight: '38px',
-      borderColor: '#d9d9d9',
-      '&:hover': { borderColor: '#40a9ff' },
-    }),
-  };
+  if (fieldsLoading) {
+    return (
+      <div className='page-wrapper'>
+        <div className='content content-two'>
+          <div className='text-center py-5'>
+            <div className='spinner-border text-primary' role='status'>
+              <span className='visually-hidden'>Loading form fields...</span>
+            </div>
+            <p className='mt-2'>Loading form configuration...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className='page-wrapper'>
@@ -800,7 +1038,6 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
 
         <div className='row'>
           <div className='col-md-12'>
-            {/* ✅ noValidate disables browser-native popups so our styled errors show instead */}
             <form onSubmit={handleSubmit} noValidate>
               <div className='card' id='player-card'>
                 <div className='card-header bg-light'>
@@ -880,9 +1117,9 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
                     </div>
                   </div>
 
-                  {/* ── Full Name ─────────────────────────────────────────── */}
-                  <div className='row row-cols-xxl-12 row-cols-md-12'>
-                    <div className='col-xxl col-xl-4 col-md-12'>
+                  {/* ── Full Name (always required) ────────────────────────── */}
+                  <div className='row'>
+                    <div className='col-12'>
                       <div className='mb-3'>
                         <NameInput
                           value={formData.fullName}
@@ -890,13 +1127,6 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
                             handleInputChange({
                               target: { name: 'fullName', value: val },
                             } as React.ChangeEvent<HTMLInputElement>);
-                            // Validate once user has typed enough to be meaningful
-                            if (val.length > 0 && !validateName(val)) {
-                              setFieldError(
-                                'fullName',
-                                'Please enter a valid name (min 2 characters)',
-                              );
-                            }
                           }}
                           error={errors.fullName}
                           required
@@ -905,224 +1135,249 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
                     </div>
                   </div>
 
-                  {/* ── Parent + School ───────────────────────────────────── */}
-                  <div className='row row-cols-xxl-12 row-cols-md-12'>
-                    {!isEdit && (
-                      <div className='col-xxl col-xl-4 col-md-12'>
-                        <div
-                          className='mb-3 position-relative'
-                          ref={dropdownRef}
-                        >
-                          <label className='form-label'>Parent</label>
-                          <input
-                            type='text'
-                            className={`form-control ${errors.parentId ? 'is-invalid' : ''}`}
-                            placeholder='Type parent name...'
-                            value={parentSearchTerm}
-                            onChange={handleParentSearch}
-                            onFocus={() => {
-                              if (
-                                parentSearchTerm.length >= 2 &&
-                                parents.length > 0
-                              )
-                                setShowParentDropdown(true);
-                            }}
-                            onBlur={() => {
-                              // Only flag if the user has typed something but not selected
-                              if (parentSearchTerm && !formData.parentId)
-                                setFieldError(
-                                  'parentId',
-                                  'Please select a parent from the list',
-                                );
-                              else if (!parentSearchTerm)
-                                setFieldError('parentId', 'Parent is required');
-                            }}
-                            autoComplete='off'
+                  {/* ── Parent selection (only for add mode) and School Name ───────────────── */}
+                  {!isEdit && (
+                    <div className='row'>
+                      {/* Calculate column width based on whether schoolName is visible */}
+                      {(() => {
+                        const schoolNameField = displayFields.find(
+                          (f) => f.fieldName === 'schoolName',
+                        );
+                        const showSchoolName = !!schoolNameField;
+
+                        return (
+                          <>
+                            {/* Parent field - takes full width if schoolName is hidden, otherwise half */}
+                            <div
+                              className={showSchoolName ? 'col-md-6' : 'col-12'}
+                            >
+                              <div
+                                className='mb-3 position-relative'
+                                ref={dropdownRef}
+                              >
+                                <label className='form-label'>Parent *</label>
+                                <input
+                                  type='text'
+                                  className={`form-control ${errors.parentId ? 'is-invalid' : ''}`}
+                                  placeholder='Type parent name...'
+                                  value={parentSearchTerm}
+                                  onChange={handleParentSearch}
+                                  onFocus={() => {
+                                    if (
+                                      parentSearchTerm.length >= 2 &&
+                                      parents.length > 0
+                                    )
+                                      setShowParentDropdown(true);
+                                  }}
+                                  onBlur={() => {
+                                    if (parentSearchTerm && !formData.parentId)
+                                      setFieldError(
+                                        'parentId',
+                                        'Please select a parent from the list',
+                                      );
+                                    else if (!parentSearchTerm)
+                                      setFieldError(
+                                        'parentId',
+                                        'Parent is required',
+                                      );
+                                  }}
+                                  autoComplete='off'
+                                />
+
+                                {showParentDropdown && (
+                                  <div
+                                    className='position-absolute w-100 mt-1 bg-white border rounded shadow-lg'
+                                    style={{
+                                      zIndex: 1000,
+                                      maxHeight: '250px',
+                                      overflowY: 'auto',
+                                    }}
+                                    onScroll={handleDropdownScroll}
+                                  >
+                                    {loadingParents && parents.length === 0 ? (
+                                      <div className='p-3 text-center text-muted'>
+                                        <span className='spinner-border spinner-border-sm me-2' />
+                                        Searching...
+                                      </div>
+                                    ) : parents.length > 0 ? (
+                                      <>
+                                        {parents.map((parent) => (
+                                          <div
+                                            key={parent._id}
+                                            className='p-2 border-bottom cursor-pointer'
+                                            onClick={() =>
+                                              handleParentSelect(parent)
+                                            }
+                                            style={{ cursor: 'pointer' }}
+                                            onMouseEnter={(e) => {
+                                              e.currentTarget.style.backgroundColor =
+                                                '#f8f9fa';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              e.currentTarget.style.backgroundColor =
+                                                'transparent';
+                                            }}
+                                          >
+                                            <div className='fw-bold'>
+                                              {parent.fullName}
+                                            </div>
+                                            <div className='small text-muted'>
+                                              {parent.email} • {parent.phone}
+                                            </div>
+                                          </div>
+                                        ))}
+                                        {loadingParents && (
+                                          <div className='p-2 text-center text-muted'>
+                                            <span className='spinner-border spinner-border-sm me-2' />
+                                            Loading more...
+                                          </div>
+                                        )}
+                                        {parentPagination.page <
+                                          parentPagination.pages &&
+                                          !loadingParents && (
+                                            <div
+                                              className='p-2 text-center text-primary'
+                                              style={{ cursor: 'pointer' }}
+                                              onClick={loadMoreParents}
+                                            >
+                                              Load more...
+                                            </div>
+                                          )}
+                                      </>
+                                    ) : parentSearchTerm.length >= 2 ? (
+                                      <div className='p-3 text-center text-muted'>
+                                        No parents found matching "
+                                        {parentSearchTerm}"
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                )}
+
+                                <FieldError message={errors.parentId} />
+
+                                {selectedParent && (
+                                  <div className='mt-2 p-2 bg-light rounded'>
+                                    <small className='text-muted'>
+                                      Selected parent:
+                                    </small>
+                                    <div className='fw-bold'>
+                                      {selectedParent.fullName}
+                                    </div>
+                                    <small className='text-muted'>
+                                      {selectedParent.email}
+                                    </small>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* School Name - only if enabled */}
+                            {showSchoolName && (
+                              <div className='col-md-6'>
+                                <div className='mb-3'>
+                                  <label className='form-label'>
+                                    {schoolNameField.label}
+                                    {schoolNameField.isRequired && (
+                                      <span className='text-danger ms-1'>
+                                        *
+                                      </span>
+                                    )}
+                                  </label>
+                                  <SchoolAutocomplete
+                                    value={formData.schoolName}
+                                    onChange={handleSchoolChange}
+                                    isInvalid={!!errors.schoolName}
+                                  />
+                                  <FieldError message={errors.schoolName} />
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* ── Dynamic Fields (Gender, DOB, Grade, AAU, etc.) ─────────────────────── */}
+                  <div className='row'>
+                    {(() => {
+                      // Get all visible fields except fullName and schoolName
+                      const dynamicFields = displayFields.filter(
+                        (field) =>
+                          field.fieldName !== 'fullName' &&
+                          field.fieldName !== 'schoolName',
+                      );
+
+                      console.log('🔍 Dynamic Fields Debug:', {
+                        displayFields: displayFields.map((f) => f.fieldName),
+                        dynamicFields: dynamicFields.map((f) => f.fieldName),
+                        fieldCount: dynamicFields.length,
+                        formData: {
+                          gender: formData.gender,
+                          dob: formData.dob,
+                          grade: formData.grade,
+                          aauNumber: formData.aauNumber,
+                        },
+                      });
+
+                      // If no dynamic fields, show a message (shouldn't happen)
+                      if (dynamicFields.length === 0) {
+                        return (
+                          <div className='col-12'>
+                            <div className='alert alert-info'>
+                              No additional fields configured for this form.
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // Calculate column width based on number of fields
+                      // Bootstrap grid has 12 columns
+                      const fieldCount = dynamicFields.length;
+                      let colClass = 'col-md-12'; // Default for 1 field
+
+                      if (fieldCount === 2) {
+                        colClass = 'col-md-6'; // 2 fields: 50% each
+                      } else if (fieldCount === 3) {
+                        colClass = 'col-md-4'; // 3 fields: 33.33% each
+                      } else if (fieldCount === 4) {
+                        colClass = 'col-md-6 col-lg-3'; // 4 fields: 50% on mobile, 25% on desktop
+                      } else if (fieldCount >= 5) {
+                        colClass = 'col-md-6 col-lg-4 col-xl-3'; // 5+ fields: responsive
+                      }
+
+                      return dynamicFields.map((field) => (
+                        <div className={colClass} key={field.fieldName}>
+                          <DynamicFormField
+                            field={field}
+                            value={
+                              formData[
+                                field.fieldName as keyof PlayerFormData
+                              ] as string
+                            }
+                            onChange={handleDynamicFieldChange}
+                            error={errors[field.fieldName]}
                           />
 
-                          {showParentDropdown && (
-                            <div
-                              className='position-absolute w-100 mt-1 bg-white border rounded shadow-lg'
-                              style={{
-                                zIndex: 1000,
-                                maxHeight: '250px',
-                                overflowY: 'auto',
-                              }}
-                              onScroll={handleDropdownScroll}
-                            >
-                              {loadingParents && parents.length === 0 ? (
-                                <div className='p-3 text-center text-muted'>
-                                  <span className='spinner-border spinner-border-sm me-2' />
-                                  Searching...
-                                </div>
-                              ) : parents.length > 0 ? (
-                                <>
-                                  {parents.map((parent) => (
-                                    <div
-                                      key={parent._id}
-                                      className='p-2 border-bottom cursor-pointer'
-                                      onClick={() => handleParentSelect(parent)}
-                                      style={{ cursor: 'pointer' }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.backgroundColor =
-                                          '#f8f9fa';
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.backgroundColor =
-                                          'transparent';
-                                      }}
-                                    >
-                                      <div className='fw-bold'>
-                                        {parent.fullName}
-                                      </div>
-                                      <div className='small text-muted'>
-                                        {parent.email} • {parent.phone}
-                                      </div>
-                                    </div>
-                                  ))}
-                                  {loadingParents && (
-                                    <div className='p-2 text-center text-muted'>
-                                      <span className='spinner-border spinner-border-sm me-2' />
-                                      Loading more...
-                                    </div>
-                                  )}
-                                  {parentPagination.page <
-                                    parentPagination.pages &&
-                                    !loadingParents && (
-                                      <div
-                                        className='p-2 text-center text-primary'
-                                        style={{ cursor: 'pointer' }}
-                                        onClick={loadMoreParents}
-                                      >
-                                        Load more...
-                                      </div>
-                                    )}
-                                </>
-                              ) : parentSearchTerm.length >= 2 ? (
-                                <div className='p-3 text-center text-muted'>
-                                  No parents found matching "{parentSearchTerm}"
-                                </div>
-                              ) : null}
-                            </div>
-                          )}
-
-                          <FieldError message={errors.parentId} />
-
-                          {selectedParent && (
-                            <div className='mt-2 p-2 bg-light rounded'>
-                              <small className='text-muted'>
-                                Selected parent:
-                              </small>
-                              <div className='fw-bold'>
-                                {selectedParent.fullName}
+                          {/* Grade override helper text */}
+                          {field.fieldName === 'grade' &&
+                            formData.dob &&
+                            !formData.isGradeOverridden &&
+                            formData.grade && (
+                              <div className='text-muted small mt-1'>
+                                Auto-calculated from DOB
+                                <button
+                                  type='button'
+                                  className='btn btn-link btn-sm p-0 ms-2'
+                                  onClick={handleGradeOverride}
+                                >
+                                  Adjust
+                                </button>
                               </div>
-                              <small className='text-muted'>
-                                {selectedParent.email}
-                              </small>
-                            </div>
-                          )}
+                            )}
                         </div>
-                      </div>
-                    )}
-
-                    <div className='col-xxl col-xl-4 col-md-12'>
-                      <div className='mb-3'>
-                        <label className='form-label'>School Name *</label>
-                        <SchoolAutocomplete
-                          value={formData.schoolName}
-                          onChange={handleSchoolChange}
-                          isInvalid={!!errors.schoolName}
-                        />
-                        <FieldError message={errors.schoolName} />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── Gender / DOB / Grade / AAU ────────────────────────── */}
-                  <div className='row row-cols-xxl-12 row-cols-md-12'>
-                    {/* Gender */}
-                    <div className='col-xxl col-xl-3 col-md-12'>
-                      <div className='mb-3'>
-                        <label className='form-label'>Gender</label>
-                        <select
-                          className={`form-control ${errors.gender ? 'is-invalid' : ''}`}
-                          name='gender'
-                          value={formData.gender}
-                          onChange={handleInputChange}
-                          onBlur={handleBlur}
-                        >
-                          <option value=''>Select Gender</option>
-                          <option value='Male'>Male</option>
-                          <option value='Female'>Female</option>
-                        </select>
-                        <FieldError message={errors.gender} />
-                      </div>
-                    </div>
-
-                    {/* Date of Birth */}
-                    <div className='col-xxl col-xl-3 col-md-12'>
-                      <div className='mb-3'>
-                        <label className='form-label'>Date of Birth</label>
-                        <input
-                          type='date'
-                          className={`form-control ${errors.dob ? 'is-invalid' : ''}`}
-                          name='dob'
-                          value={formData.dob}
-                          onChange={handleInputChange}
-                          onBlur={handleBlur}
-                          max={new Date().toISOString().split('T')[0]}
-                        />
-                        <FieldError message={errors.dob} />
-                      </div>
-                    </div>
-
-                    {/* Grade */}
-                    <div className='col-xxl col-xl-3 col-md-12'>
-                      <div className='mb-3'>
-                        <label className='form-label'>Grade</label>
-                        <select
-                          className={`form-control ${errors.grade ? 'is-invalid' : ''}`}
-                          name='grade'
-                          value={formData.grade}
-                          onChange={handleInputChange}
-                          onBlur={handleBlur}
-                        >
-                          <option value=''>Select Grade</option>
-                          {gradeOptions.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                        {formData.dob && !formData.isGradeOverridden && (
-                          <div className='text-muted small mt-1'>
-                            Auto-calculated from DOB
-                            <button
-                              type='button'
-                              className='btn btn-link btn-sm p-0 ms-2'
-                              onClick={handleGradeOverride}
-                            >
-                              Adjust
-                            </button>
-                          </div>
-                        )}
-                        <FieldError message={errors.grade} />
-                      </div>
-                    </div>
-
-                    {/* AAU Number */}
-                    <div className='col-xxl col-xl-3 col-md-12'>
-                      <div className='mb-3'>
-                        <label className='form-label'>AAU Number</label>
-                        <input
-                          type='text'
-                          className='form-control'
-                          name='aauNumber'
-                          value={formData.aauNumber}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
+                      ));
+                    })()}
                   </div>
 
                   {/* ── Medical History ───────────────────────────────────── */}
@@ -1149,7 +1404,6 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
                             classNamePrefix='select'
                             value={selectedConditions}
                             onChange={handleConditionChange}
-                            styles={selectStyles}
                             placeholder='Select health conditions...'
                           />
                           <small className='text-muted'>
