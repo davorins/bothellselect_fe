@@ -2212,7 +2212,10 @@ const Profile: React.FC = () => {
             {hasAddressField && (
               <div className='card'>
                 <div className='card-header d-flex justify-content-between align-items-center'>
-                  <h5>Address Information</h5>
+                  <h5>
+                    <i className='ti ti-map me-2' />
+                    Address Information
+                  </h5>
                 </div>
                 <div className='card-body pb-0'>
                   {!isEditing ? (

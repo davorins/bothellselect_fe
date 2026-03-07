@@ -2190,7 +2190,10 @@ const Profilesettings = () => {
                     {/* ── Personal info card ── */}
                     <div className='card'>
                       <div className='card-header p-3 d-flex justify-content-between align-items-center'>
-                        <h5>Personal Information</h5>
+                        <h5>
+                          <i className='ti ti-user me-2' />
+                          Personal Information
+                        </h5>
                         <div>
                           {!isEditing ? (
                             <button
@@ -2427,7 +2430,10 @@ const Profilesettings = () => {
                     {hasAddressField && (
                       <div className='card'>
                         <div className='card-header p-3'>
-                          <h5>Address Information</h5>
+                          <h5>
+                            <i className='ti ti-map me-2' />
+                            Address Information
+                          </h5>
                         </div>
                         <div className='card-body p-3 pb-0'>
                           {!isEditing ? (
@@ -2619,7 +2625,10 @@ const Profilesettings = () => {
                     {/* ── Guardians card ── */}
                     <div className='card mt-3'>
                       <div className='card-header d-flex justify-content-between align-items-center'>
-                        <h5>Additional Parent/Guardian Information</h5>
+                        <h5>
+                          <i className='ti ti-users me-2' />
+                          Additional Parent / Guardian Information
+                        </h5>
                         {!isEditingGuardian && (
                           <button
                             type='button'
@@ -3102,7 +3111,6 @@ const Profilesettings = () => {
                                 <div className='card'>
                                   <div className='card-header d-flex align-items-center justify-content-between'>
                                     <h5 className='mb-0'>
-                                      <i className='ti ti-users me-2' />{' '}
                                       {guardian.fullName || 'Guardian'}
                                     </h5>
                                     {!editing ? (
@@ -3654,7 +3662,10 @@ const Profilesettings = () => {
                     {/* ── Players card ── */}
                     <div className='card mt-3'>
                       <div className='card-header d-flex justify-content-between align-items-center'>
-                        <h5>Player Information</h5>
+                        <h5>
+                          <i className='ti ti-shirt-sport me-2' />
+                          Player Information
+                        </h5>
                         {!showAddPlayerForm && !editingPlayerId && (
                           <button
                             type='button'
@@ -3705,7 +3716,6 @@ const Profilesettings = () => {
                                   <div className='card'>
                                     <div className='card-header d-flex align-items-center justify-content-between'>
                                       <h5 className='mb-0'>
-                                        <i className='ti ti-shirt-sport me-2' />
                                         {player.fullName}
                                       </h5>
                                       <div className='d-flex gap-2'>
