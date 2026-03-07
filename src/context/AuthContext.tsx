@@ -24,6 +24,7 @@ import {
   CompleteRegistrationData,
 } from '../types/types';
 import { getCurrentSeason, getCurrentYear } from '../utils/season';
+import { formatPhoneNumber, validatePhoneNumber } from '../utils/phone';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 console.log('API_BASE_URL:', process.env.REACT_APP_API_BASE_URL);
@@ -229,7 +230,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const setParentData = useCallback(
     (fetchedParent: Parent | any, isViewing = false): Parent => {
-      // Create a proper address object
+      // Create a proper address object for parent
       let addressObject: any = '';
 
       if (fetchedParent.address && typeof fetchedParent.address === 'object') {
@@ -248,6 +249,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         addressObject = '';
       }
 
+      // Process guardians
+      const processedGuardians =
+        fetchedParent.additionalGuardians?.map((g: any) => {
+          // Ensure guardian address is an object with street2
+          let guardianAddress: any = '';
+
+          if (g.address && typeof g.address === 'object') {
+            guardianAddress = {
+              street: g.address.street || '',
+              street2: g.address.street2 || '',
+              city: g.address.city || '',
+              state: g.address.state || '',
+              zip: g.address.zip || '',
+            };
+          } else if (typeof g.address === 'string') {
+            // If it's a string, parse it (fallback)
+            guardianAddress = parseAddress(g.address);
+          } else {
+            guardianAddress = {
+              street: '',
+              street2: '',
+              city: '',
+              state: '',
+              zip: '',
+            };
+          }
+
+          return {
+            ...g,
+            phone: g.phone ? formatPhoneNumber(g.phone.replace(/\D/g, '')) : '',
+            address: guardianAddress,
+          };
+        }) || [];
+
       const parentData: Parent = {
         _id: fetchedParent._id || fetchedParent.parentId || '',
         email: fetchedParent.email || '',
@@ -263,10 +298,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           : [],
         isCoach: fetchedParent.isCoach || false,
         aauNumber: fetchedParent.aauNumber || '',
-        additionalGuardians: fetchedParent.additionalGuardians || [],
+        additionalGuardians: processedGuardians, // Use processed guardians, not the original
         dismissedNotifications: fetchedParent.dismissedNotifications || [],
-        playersSeason: fetchedParent.string || [],
-        playersYear: fetchedParent.number || [],
+        playersSeason: fetchedParent.playersSeason || [],
+        playersYear: fetchedParent.playersYear || [],
       };
 
       if (isViewing) {

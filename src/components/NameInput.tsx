@@ -1,3 +1,4 @@
+// src/components/NameInput.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 
 interface NameInputProps {
@@ -8,7 +9,7 @@ interface NameInputProps {
   required?: boolean;
 }
 
-const SUFFIXES = [
+export const SUFFIXES = [
   '',
   'Jr.',
   'Sr.',
@@ -22,15 +23,22 @@ const SUFFIXES = [
   'DDS',
 ];
 
-// Simpler, more reliable parsing
-const parseName = (fullName: string) => {
+export interface ParsedName {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  suffix: string;
+}
+
+// Export these functions so they can be used in other files
+export const parseName = (fullName: string): ParsedName => {
   if (!fullName || !fullName.trim()) {
     return { firstName: '', middleName: '', lastName: '', suffix: '' };
   }
 
   const trimmed = fullName.trim();
 
-  // Check for suffix first (simpler pattern)
+  // Check for suffix first
   let namePart = trimmed;
   let suffix = '';
 
@@ -44,13 +52,11 @@ const parseName = (fullName: string) => {
 
   const words = namePart.split(/\s+/).filter(Boolean);
 
-  // Handle different name structures
   if (words.length === 1) {
     return { firstName: words[0], middleName: '', lastName: '', suffix };
   } else if (words.length === 2) {
     return { firstName: words[0], middleName: '', lastName: words[1], suffix };
   } else {
-    // First name, everything in between as middle, last name
     return {
       firstName: words[0],
       middleName: words.slice(1, -1).join(' '),
@@ -58,6 +64,35 @@ const parseName = (fullName: string) => {
       suffix,
     };
   }
+};
+
+export const validateFullName = (
+  fullName: string,
+  required: boolean = true,
+): string | null => {
+  if (!fullName || !fullName.trim()) {
+    return required ? 'Full name is required' : null;
+  }
+
+  const parsed = parseName(fullName);
+
+  if (!parsed.firstName || !parsed.firstName.trim()) {
+    return 'First name is required';
+  }
+
+  if (!parsed.lastName || !parsed.lastName.trim()) {
+    return 'Last name is required';
+  }
+
+  if (parsed.firstName.length < 2) {
+    return 'First name must be at least 2 characters';
+  }
+
+  if (parsed.lastName.length < 2) {
+    return 'Last name must be at least 2 characters';
+  }
+
+  return null;
 };
 
 const buildFullName = (

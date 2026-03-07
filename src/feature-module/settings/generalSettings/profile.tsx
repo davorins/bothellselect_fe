@@ -29,7 +29,7 @@ import { getDefaultAvatar, getAvatarUrl } from '../../../utils/r2Utils';
 import { useAvatar } from '../../hooks/useAvatar';
 import { calculateGradeFromDOB } from '../../../utils/registration-utils';
 import SchoolAutocomplete from '../../../components/SchoolAutocomplete';
-import NameInput from '../../../components/NameInput';
+import NameInput, { validateFullName } from '../../../components/NameInput';
 import { commonHealthConditions } from '../../constants/healthConditions';
 import PlayerForm from '../../../components/forms/PlayerForm';
 import { Player as RegistrationPlayer } from '../../../types/registration-types';
@@ -806,10 +806,19 @@ const Profilesettings = () => {
 
     const errs: Record<string, string> = {};
 
+    // Add explicit name validation for edited player
+    const nameError = validateFullName(player.fullName, true);
+    if (nameError) {
+      errs.fullName = nameError;
+    }
+
     // Get visible fields for this player
     const visibleFields = getPlayerVisibleFields(player);
 
     visibleFields.forEach((field) => {
+      // Skip fullName since we already validated it
+      if (field.fieldName === 'fullName') return;
+
       const value = player[field.fieldName as keyof RegistrationPlayer];
 
       if (field.isRequired) {
@@ -934,8 +943,7 @@ const Profilesettings = () => {
   const validateNewPlayerForm = (): boolean => {
     const errs: Record<string, string> = {};
 
-    // Get visible fields for the new player form - this is the KEY!
-    // Only fields returned by getVisibleFields should be validated
+    // Get visible fields for the new player form
     const visibleFields = getPlayerVisibleFields(newPlayerForm);
 
     console.log(
@@ -947,28 +955,40 @@ const Profilesettings = () => {
     visibleFields.forEach((field) => {
       const value = newPlayerForm[field.fieldName as keyof NewPlayerForm];
 
-      if (field.isRequired) {
-        if (value === undefined || value === null) {
-          errs[field.fieldName] = `${field.label} is required`;
-        } else if (typeof value === 'string' && !value.trim()) {
-          errs[field.fieldName] = `${field.label} is required`;
-        } else if (field.fieldType === 'checkbox' && value === false) {
-          errs[field.fieldName] = `${field.label} must be accepted`;
+      // Add this condition for fullName
+      if (field.fieldName === 'fullName') {
+        if (field.isRequired) {
+          const nameError = validateFullName(value as string, true);
+          if (nameError) {
+            errs.fullName = nameError;
+          }
         }
-      }
-
-      // Add specific validations based on field type
-      if (field.fieldName === 'email' && value && typeof value === 'string') {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(value)) {
-          errs[field.fieldName] = 'Please enter a valid email address';
+      } else {
+        // existing validation for other fields
+        if (field.isRequired) {
+          if (value === undefined || value === null) {
+            errs[field.fieldName] = `${field.label} is required`;
+          } else if (typeof value === 'string' && !value.trim()) {
+            errs[field.fieldName] = `${field.label} is required`;
+          } else if (field.fieldType === 'checkbox' && value === false) {
+            errs[field.fieldName] = `${field.label} must be accepted`;
+          }
         }
-      }
 
-      if (field.fieldName === 'phone' && value && typeof value === 'string') {
-        const phoneDigits = value.replace(/\D/g, '');
-        if (phoneDigits.length !== 10) {
-          errs[field.fieldName] = 'Please enter a valid 10-digit phone number';
+        // Add specific validations based on field type
+        if (field.fieldName === 'email' && value && typeof value === 'string') {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value)) {
+            errs[field.fieldName] = 'Please enter a valid email address';
+          }
+        }
+
+        if (field.fieldName === 'phone' && value && typeof value === 'string') {
+          const phoneDigits = value.replace(/\D/g, '');
+          if (phoneDigits.length !== 10) {
+            errs[field.fieldName] =
+              'Please enter a valid 10-digit phone number';
+          }
         }
       }
     });
@@ -1151,10 +1171,20 @@ const Profilesettings = () => {
         }
       } else if (field.fieldName === 'parentFullName') {
         const value = formData.fullName;
-        if (field.isRequired && (!value || !value.trim())) {
-          newErrors.fullName = `${field.label} is required`;
+        console.log('📝 Validating parentFullName:', {
+          value,
+          isRequired: field.isRequired,
+        });
+
+        if (field.isRequired) {
+          const nameError = validateFullName(value, true);
+          if (nameError) {
+            newErrors.fullName = nameError;
+            console.log('❌ Setting fullName error:', nameError);
+          }
         } else if (value && value.trim().length < 2) {
           newErrors.fullName = 'Please enter a valid name (min 2 characters)';
+          console.log('❌ Setting fullName min length error');
         }
       } else {
         let value;
@@ -1259,13 +1289,14 @@ const Profilesettings = () => {
         console.log('📝 Validating guardianFullName:', {
           value,
           isRequired: field.isRequired,
-          isEmpty: !value || !value.trim(),
-          length: value?.trim().length,
         });
 
-        if (field.isRequired && (!value || !value.trim())) {
-          newErrors.fullName = `${field.label} is required`;
-          console.log('❌ Setting fullName required error');
+        if (field.isRequired) {
+          const nameError = validateFullName(value, true);
+          if (nameError) {
+            newErrors.fullName = nameError;
+            console.log('❌ Setting fullName error:', nameError);
+          }
         } else if (value && value.trim().length < 2) {
           newErrors.fullName = 'Please enter a valid name (min 2 characters)';
           console.log('❌ Setting fullName min length error');
@@ -1368,6 +1399,17 @@ const Profilesettings = () => {
   ): Promise<void> => {
     e.preventDefault();
     console.log('🔄 Saving personal info');
+
+    const nameError = validateFullName(formData.fullName, true);
+    if (nameError) {
+      setErrors((prev) => ({ ...prev, fullName: nameError }));
+      setSaveStatus({
+        show: true,
+        variant: 'danger',
+        message: nameError,
+      });
+      return;
+    }
 
     if (!validateParentForm()) {
       console.log('❌ Parent validation failed');
@@ -1555,6 +1597,22 @@ const Profilesettings = () => {
     guardianIndex: number,
   ): Promise<void> => {
     console.log(`🔄 Saving guardian at index ${guardianIndex}`);
+
+    const guardian = editedGuardians[guardianIndex];
+
+    const nameError = validateFullName(guardian.fullName, true);
+    if (nameError) {
+      setGuardianErrors((prev) => ({
+        ...prev,
+        [guardianIndex]: { ...prev[guardianIndex], fullName: nameError },
+      }));
+      setSaveStatus({
+        show: true,
+        variant: 'danger',
+        message: nameError,
+      });
+      return;
+    }
 
     if (!validateGuardianForm(guardianIndex)) {
       console.log('❌ Guardian validation failed');
@@ -2851,38 +2909,39 @@ const Profilesettings = () => {
                                         </div>
                                       </div>
 
-                                      <div className='card mt-3'>
-                                        <div className='card-header bg-transparent py-2 d-flex justify-content-between align-items-center'>
-                                          <h6 className='mb-0'>
-                                            Address Information
-                                          </h6>
-                                          <div className='form-check'>
-                                            <input
-                                              type='checkbox'
-                                              className='form-check-input'
-                                              id={`guardian-same-address-new-${index}`}
-                                              checked={
-                                                guardianSameAsMain[index] ||
-                                                false
-                                              }
-                                              onChange={(e) =>
-                                                handleGuardianSameAsMainChange(
-                                                  index,
-                                                  e.target.checked,
-                                                )
-                                              }
-                                            />
-                                            <label
-                                              className='form-check-label'
-                                              htmlFor={`guardian-same-address-new-${index}`}
-                                              style={{ fontSize: '0.9rem' }}
-                                            >
-                                              Same as main address
-                                            </label>
+                                      {/* Address Information - only show if address fields are enabled */}
+                                      {guardianHasAddressField && (
+                                        <div className='card mt-3'>
+                                          <div className='card-header bg-transparent py-2 d-flex justify-content-between align-items-center'>
+                                            <h6 className='mb-0'>
+                                              Address Information
+                                            </h6>
+                                            <div className='form-check'>
+                                              <input
+                                                type='checkbox'
+                                                className='form-check-input'
+                                                id={`guardian-same-address-new-${index}`}
+                                                checked={
+                                                  guardianSameAsMain[index] ||
+                                                  false
+                                                }
+                                                onChange={(e) =>
+                                                  handleGuardianSameAsMainChange(
+                                                    index,
+                                                    e.target.checked,
+                                                  )
+                                                }
+                                              />
+                                              <label
+                                                className='form-check-label'
+                                                htmlFor={`guardian-same-address-new-${index}`}
+                                                style={{ fontSize: '0.9rem' }}
+                                              >
+                                                Same as main address
+                                              </label>
+                                            </div>
                                           </div>
-                                        </div>
-                                        <div className='card-body pb-2'>
-                                          {guardianHasAddressField ? (
+                                          <div className='card-body pb-2'>
                                             <div className='flex-fill'>
                                               <div className='row mb-3'>
                                                 <div className='col-md-8'>
@@ -2955,7 +3014,7 @@ const Profilesettings = () => {
                                                   />
                                                 </div>
                                               </div>
-                                              <div className='row mb-4'>
+                                              <div className='row'>
                                                 <div className='col-md-5'>
                                                   <label className='form-label'>
                                                     City
@@ -3074,9 +3133,9 @@ const Profilesettings = () => {
                                                 </div>
                                               </div>
                                             </div>
-                                          ) : null}
+                                          </div>
                                         </div>
-                                      </div>
+                                      )}
 
                                       <div className='d-flex gap-2 mb-3 mt-3'>
                                         <button
@@ -3400,239 +3459,259 @@ const Profilesettings = () => {
                                     </div>
                                   </div>
 
-                                  {/* Address Information */}
-                                  <div className='card mx-3 mb-3'>
-                                    <div className='card-header d-flex justify-content-between align-items-center'>
-                                      <h6 className='mb-0'>
-                                        Address Information
-                                      </h6>
-                                      {editing && (
-                                        <div className='form-check'>
-                                          <input
-                                            type='checkbox'
-                                            className='form-check-input'
-                                            id={`guardian-same-address-${index}`}
-                                            checked={
-                                              guardianSameAsMain[index] || false
-                                            }
-                                            onChange={(e) =>
-                                              handleGuardianSameAsMainChange(
-                                                index,
-                                                e.target.checked,
-                                              )
-                                            }
-                                          />
-                                          <label
-                                            className='form-check-label'
-                                            htmlFor={`guardian-same-address-${index}`}
-                                            style={{ fontSize: '0.9rem' }}
-                                          >
-                                            Same as main address
-                                          </label>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className='card-body pb-0'>
-                                      {!editing ? (
-                                        <div className='mb-3'>
-                                          <label className='form-label'>
-                                            Address
-                                          </label>
-                                          <input
-                                            type='text'
-                                            className='form-control'
-                                            value={formatAddress(
-                                              guardian.address,
-                                            )}
-                                            disabled
-                                          />
-                                        </div>
-                                      ) : guardianHasAddressField ? (
-                                        <div className='flex-fill'>
-                                          <div className='row mb-3'>
-                                            <div className='col-md-8'>
+                                  {/* Address Information - only show if address fields are enabled */}
+                                  {guardianHasAddressField && (
+                                    <div className='card mx-3 mb-3'>
+                                      <div className='card-header d-flex justify-content-between align-items-center'>
+                                        <h6 className='mb-0'>
+                                          Address Information
+                                        </h6>
+                                        {editing && (
+                                          <div className='form-check'>
+                                            <input
+                                              type='checkbox'
+                                              className='form-check-input'
+                                              id={`guardian-same-address-${index}`}
+                                              checked={
+                                                guardianSameAsMain[index] ||
+                                                false
+                                              }
+                                              onChange={(e) =>
+                                                handleGuardianSameAsMainChange(
+                                                  index,
+                                                  e.target.checked,
+                                                )
+                                              }
+                                            />
+                                            <label
+                                              className='form-check-label'
+                                              htmlFor={`guardian-same-address-${index}`}
+                                              style={{ fontSize: '0.9rem' }}
+                                            >
+                                              Same as main address
+                                            </label>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className='card-body pb-0'>
+                                        {!editing ? (
+                                          // Preview mode - show formatted address if data exists
+                                          ensureAddress(guardian.address)
+                                            .street ||
+                                          ensureAddress(guardian.address)
+                                            .city ||
+                                          ensureAddress(guardian.address)
+                                            .state ||
+                                          ensureAddress(guardian.address)
+                                            .zip ? (
+                                            <div className='mb-3'>
                                               <label className='form-label'>
-                                                Street Address
-                                                {allGuardianFields.find(
-                                                  (f) =>
-                                                    f.fieldName === 'address',
-                                                )?.isRequired && (
-                                                  <span className='text-danger ms-1'>
-                                                    *
-                                                  </span>
-                                                )}
-                                              </label>
-                                              <input
-                                                type='text'
-                                                className={`form-control ${gErrors['address.street'] ? 'is-invalid' : ''}`}
-                                                value={
-                                                  ensureAddress(
-                                                    guardian.address,
-                                                  ).street
-                                                }
-                                                onChange={(e) =>
-                                                  handleGuardianAddressChange(
-                                                    e,
-                                                    index,
-                                                    'street',
-                                                  )
-                                                }
-                                                placeholder='123 Main St'
-                                                disabled={
-                                                  guardianSameAsMain[index]
-                                                }
-                                              />
-                                              {gErrors['address.street'] && (
-                                                <div className='invalid-feedback d-block'>
-                                                  {gErrors['address.street']}
-                                                </div>
-                                              )}
-                                            </div>
-                                            <div className='col-md-4'>
-                                              <label className='form-label'>
-                                                Apt/Suite (optional)
+                                                Address
                                               </label>
                                               <input
                                                 type='text'
                                                 className='form-control'
-                                                value={
-                                                  ensureAddress(
-                                                    guardian.address,
-                                                  ).street2 || ''
-                                                }
-                                                onChange={(e) =>
-                                                  handleGuardianAddressChange(
-                                                    e,
-                                                    index,
-                                                    'street2',
-                                                  )
-                                                }
-                                                disabled={
-                                                  guardianSameAsMain[index]
-                                                }
+                                                value={formatAddress(
+                                                  guardian.address,
+                                                )}
+                                                disabled
                                               />
+                                            </div>
+                                          ) : (
+                                            <p className='text-muted fst-italic mb-3'>
+                                              No address provided.
+                                            </p>
+                                          )
+                                        ) : (
+                                          // Edit mode - show full address form
+                                          <div className='flex-fill'>
+                                            <div className='row mb-3'>
+                                              <div className='col-md-8'>
+                                                <label className='form-label'>
+                                                  Street Address
+                                                  {allGuardianFields.find(
+                                                    (f) =>
+                                                      f.fieldName === 'address',
+                                                  )?.isRequired && (
+                                                    <span className='text-danger ms-1'>
+                                                      *
+                                                    </span>
+                                                  )}
+                                                </label>
+                                                <input
+                                                  type='text'
+                                                  className={`form-control ${gErrors['address.street'] ? 'is-invalid' : ''}`}
+                                                  value={
+                                                    ensureAddress(
+                                                      guardian.address,
+                                                    ).street
+                                                  }
+                                                  onChange={(e) =>
+                                                    handleGuardianAddressChange(
+                                                      e,
+                                                      index,
+                                                      'street',
+                                                    )
+                                                  }
+                                                  placeholder='123 Main St'
+                                                  disabled={
+                                                    guardianSameAsMain[index]
+                                                  }
+                                                />
+                                                {gErrors['address.street'] && (
+                                                  <div className='invalid-feedback d-block'>
+                                                    {gErrors['address.street']}
+                                                  </div>
+                                                )}
+                                              </div>
+                                              <div className='col-md-4'>
+                                                <label className='form-label'>
+                                                  Apt/Suite (optional)
+                                                </label>
+                                                <input
+                                                  type='text'
+                                                  className='form-control'
+                                                  value={
+                                                    ensureAddress(
+                                                      guardian.address,
+                                                    ).street2 || ''
+                                                  }
+                                                  onChange={(e) =>
+                                                    handleGuardianAddressChange(
+                                                      e,
+                                                      index,
+                                                      'street2',
+                                                    )
+                                                  }
+                                                  disabled={
+                                                    guardianSameAsMain[index]
+                                                  }
+                                                />
+                                              </div>
+                                            </div>
+                                            <div className='row'>
+                                              <div className='col-md-5'>
+                                                <label className='form-label'>
+                                                  City
+                                                  {allGuardianFields.find(
+                                                    (f) =>
+                                                      f.fieldName === 'city',
+                                                  )?.isRequired && (
+                                                    <span className='text-danger ms-1'>
+                                                      *
+                                                    </span>
+                                                  )}
+                                                </label>
+                                                <input
+                                                  type='text'
+                                                  className={`form-control ${gErrors['address.city'] ? 'is-invalid' : ''}`}
+                                                  value={
+                                                    ensureAddress(
+                                                      guardian.address,
+                                                    ).city
+                                                  }
+                                                  onChange={(e) =>
+                                                    handleGuardianAddressChange(
+                                                      e,
+                                                      index,
+                                                      'city',
+                                                    )
+                                                  }
+                                                  placeholder='Seattle'
+                                                  disabled={
+                                                    guardianSameAsMain[index]
+                                                  }
+                                                />
+                                                {gErrors['address.city'] && (
+                                                  <div className='invalid-feedback d-block'>
+                                                    {gErrors['address.city']}
+                                                  </div>
+                                                )}
+                                              </div>
+                                              <div className='col-md-3'>
+                                                <label className='form-label'>
+                                                  State
+                                                  {allGuardianFields.find(
+                                                    (f) =>
+                                                      f.fieldName === 'state',
+                                                  )?.isRequired && (
+                                                    <span className='text-danger ms-1'>
+                                                      *
+                                                    </span>
+                                                  )}
+                                                </label>
+                                                <input
+                                                  type='text'
+                                                  className={`form-control ${gErrors['address.state'] ? 'is-invalid' : ''}`}
+                                                  value={
+                                                    ensureAddress(
+                                                      guardian.address,
+                                                    ).state
+                                                  }
+                                                  onChange={(e) =>
+                                                    handleGuardianAddressChange(
+                                                      e,
+                                                      index,
+                                                      'state',
+                                                    )
+                                                  }
+                                                  maxLength={2}
+                                                  placeholder='WA'
+                                                  disabled={
+                                                    guardianSameAsMain[index]
+                                                  }
+                                                />
+                                                {gErrors['address.state'] && (
+                                                  <div className='invalid-feedback d-block'>
+                                                    {gErrors['address.state']}
+                                                  </div>
+                                                )}
+                                              </div>
+                                              <div className='col-md-4'>
+                                                <label className='form-label'>
+                                                  ZIP Code
+                                                  {allGuardianFields.find(
+                                                    (f) =>
+                                                      f.fieldName === 'zip',
+                                                  )?.isRequired && (
+                                                    <span className='text-danger ms-1'>
+                                                      *
+                                                    </span>
+                                                  )}
+                                                </label>
+                                                <input
+                                                  type='text'
+                                                  className={`form-control ${gErrors['address.zip'] ? 'is-invalid' : ''}`}
+                                                  value={
+                                                    ensureAddress(
+                                                      guardian.address,
+                                                    ).zip
+                                                  }
+                                                  onChange={(e) =>
+                                                    handleGuardianAddressChange(
+                                                      e,
+                                                      index,
+                                                      'zip',
+                                                    )
+                                                  }
+                                                  maxLength={10}
+                                                  placeholder='98101'
+                                                  disabled={
+                                                    guardianSameAsMain[index]
+                                                  }
+                                                />
+                                                {gErrors['address.zip'] && (
+                                                  <div className='invalid-feedback d-block'>
+                                                    {gErrors['address.zip']}
+                                                  </div>
+                                                )}
+                                              </div>
                                             </div>
                                           </div>
-                                          <div className='row mb-4'>
-                                            <div className='col-md-5'>
-                                              <label className='form-label'>
-                                                City
-                                                {allGuardianFields.find(
-                                                  (f) => f.fieldName === 'city',
-                                                )?.isRequired && (
-                                                  <span className='text-danger ms-1'>
-                                                    *
-                                                  </span>
-                                                )}
-                                              </label>
-                                              <input
-                                                type='text'
-                                                className={`form-control ${gErrors['address.city'] ? 'is-invalid' : ''}`}
-                                                value={
-                                                  ensureAddress(
-                                                    guardian.address,
-                                                  ).city
-                                                }
-                                                onChange={(e) =>
-                                                  handleGuardianAddressChange(
-                                                    e,
-                                                    index,
-                                                    'city',
-                                                  )
-                                                }
-                                                placeholder='Seattle'
-                                                disabled={
-                                                  guardianSameAsMain[index]
-                                                }
-                                              />
-                                              {gErrors['address.city'] && (
-                                                <div className='invalid-feedback d-block'>
-                                                  {gErrors['address.city']}
-                                                </div>
-                                              )}
-                                            </div>
-                                            <div className='col-md-3'>
-                                              <label className='form-label'>
-                                                State
-                                                {allGuardianFields.find(
-                                                  (f) =>
-                                                    f.fieldName === 'state',
-                                                )?.isRequired && (
-                                                  <span className='text-danger ms-1'>
-                                                    *
-                                                  </span>
-                                                )}
-                                              </label>
-                                              <input
-                                                type='text'
-                                                className={`form-control ${gErrors['address.state'] ? 'is-invalid' : ''}`}
-                                                value={
-                                                  ensureAddress(
-                                                    guardian.address,
-                                                  ).state
-                                                }
-                                                onChange={(e) =>
-                                                  handleGuardianAddressChange(
-                                                    e,
-                                                    index,
-                                                    'state',
-                                                  )
-                                                }
-                                                maxLength={2}
-                                                placeholder='WA'
-                                                disabled={
-                                                  guardianSameAsMain[index]
-                                                }
-                                              />
-                                              {gErrors['address.state'] && (
-                                                <div className='invalid-feedback d-block'>
-                                                  {gErrors['address.state']}
-                                                </div>
-                                              )}
-                                            </div>
-                                            <div className='col-md-4'>
-                                              <label className='form-label'>
-                                                ZIP Code
-                                                {allGuardianFields.find(
-                                                  (f) => f.fieldName === 'zip',
-                                                )?.isRequired && (
-                                                  <span className='text-danger ms-1'>
-                                                    *
-                                                  </span>
-                                                )}
-                                              </label>
-                                              <input
-                                                type='text'
-                                                className={`form-control ${gErrors['address.zip'] ? 'is-invalid' : ''}`}
-                                                value={
-                                                  ensureAddress(
-                                                    guardian.address,
-                                                  ).zip
-                                                }
-                                                onChange={(e) =>
-                                                  handleGuardianAddressChange(
-                                                    e,
-                                                    index,
-                                                    'zip',
-                                                  )
-                                                }
-                                                maxLength={10}
-                                                placeholder='98101'
-                                                disabled={
-                                                  guardianSameAsMain[index]
-                                                }
-                                              />
-                                              {gErrors['address.zip'] && (
-                                                <div className='invalid-feedback d-block'>
-                                                  {gErrors['address.zip']}
-                                                </div>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ) : null}
+                                        )}
+                                      </div>
                                     </div>
-                                  </div>
+                                  )}
                                 </div>
                               </div>
                             );
