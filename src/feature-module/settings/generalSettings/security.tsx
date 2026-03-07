@@ -286,7 +286,12 @@ const SecuritySettings = () => {
 
           <div className='col-xxl-10 col-xl-9'>
             <div className='border-start ps-3 flex-fill'>
-              <h5 className='pt-3 mb-3 border-bottom'>Security Settings!</h5>
+              <div className='d-flex align-items-center justify-content-between flex-wrap border-bottom mb-3 pt-3'>
+                <div className='mb-3'>
+                  <h5>Security Settings!</h5>
+                  <p>Manage passwords</p>
+                </div>
+              </div>
 
               {/* Password Section */}
               <div className='d-flex justify-content-between align-items-center flex-wrap bg-white border rounded p-3 mb-3'>
