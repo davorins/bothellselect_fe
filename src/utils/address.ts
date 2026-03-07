@@ -57,7 +57,7 @@ export const parseAddress = (addressString: string | Address): Address => {
 
     // Improved state/ZIP parsing
     const stateZipMatch = stateZipPart.match(
-      /([A-Za-z]{2})\s*(\d{5}(?:-\d{4})?)/
+      /([A-Za-z]{2})\s*(\d{5}(?:-\d{4})?)/,
     );
 
     if (stateZipMatch) {
@@ -83,7 +83,7 @@ export const ensureAddress = (
     | string
     | Address
     | { street: string; city: string; state: string; zip: string }
-    | undefined
+    | undefined,
 ): Address => {
   if (!address) {
     return {

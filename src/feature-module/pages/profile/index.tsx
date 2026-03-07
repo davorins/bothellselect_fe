@@ -12,16 +12,19 @@ import {
   FormData as FormDataType,
   Parent,
 } from '../../../types/types';
-import { Address, ensureAddress, formatAddress } from '../../../utils/address';
+import {
+  Address,
+  ensureAddress,
+  formatAddress,
+  parseAddress,
+} from '../../../utils/address';
 import { formatPhoneNumber, validatePhoneNumber } from '../../../utils/phone';
 import {
   validateEmail,
   validateRequired,
   validateName,
-  validateDateOfBirth,
   validateState,
   validateZipCode,
-  validateGrade,
 } from '../../../utils/validation';
 import { getAvatarUrl, getDefaultAvatar } from '../../../utils/r2Utils';
 import { useAvatar } from '../../hooks/useAvatar';
@@ -51,6 +54,39 @@ const convertToRegistrationPlayer = (player: Player): RegistrationPlayer => {
     grade: player.grade || '',
     isGradeOverridden: false,
     avatar: player.avatar || '',
+  };
+};
+
+// ── Mapping utilities for dynamic fields ────────────────────────────────────
+const mapParentFormDataToDynamicFields = (formData: FormDataType) => {
+  return {
+    parentFullName: formData.fullName,
+    email: formData.email,
+    phone: formData.phone,
+    address: formData.address,
+    city: formData.address.city,
+    state: formData.address.state,
+    zip: formData.address.zip,
+    relationship: formData.relationship,
+    isCoach: formData.isCoach,
+    aauNumber: formData.aauNumber,
+  };
+};
+
+const mapGuardianToDynamicFields = (guardian: Guardian) => {
+  const address = ensureAddress(guardian.address);
+  return {
+    guardianFullName: guardian.fullName,
+    email: guardian.email,
+    phone: guardian.phone,
+    address: guardian.address,
+    city: address.city,
+    state: address.state,
+    zip: address.zip,
+    relationship: guardian.relationship,
+    isCoach: guardian.isCoach,
+    aauNumber: guardian.aauNumber,
+    parentFullName: guardian.fullName,
   };
 };
 
@@ -87,6 +123,16 @@ const formatDOB = (dob: string): string => {
   });
 };
 
+// ── NON-ADDRESS personal fields ─────────────────────────────────────────────
+const PERSONAL_FIELDS = [
+  'fullName',
+  'relationship',
+  'email',
+  'phone',
+  'aauNumber',
+  'isCoach',
+];
+
 const Profile: React.FC = () => {
   const route = all_routes;
   const {
@@ -107,10 +153,21 @@ const Profile: React.FC = () => {
     parent?.avatar,
   );
 
-  // ── Dynamic form fields hook ──────────────────────────────────────────────
-  const { getVisibleFields } = useDynamicFormFields('player', {
-    registrationYear: new Date().getFullYear(),
-  });
+  // ── Dynamic form fields hooks ─────────────────────────────────────────────
+  const { getVisibleFields: getPlayerVisibleFields } = useDynamicFormFields(
+    'player',
+    { registrationYear: new Date().getFullYear() },
+  );
+
+  const { getVisibleFields: getParentVisibleFields } = useDynamicFormFields(
+    'parent',
+    { registrationYear: new Date().getFullYear() },
+  );
+
+  const { getVisibleFields: getGuardianVisibleFields } = useDynamicFormFields(
+    'guardian',
+    { registrationYear: new Date().getFullYear() },
+  );
 
   // ── Save status banner ────────────────────────────────────────────────────
   const [saveStatus, setSaveStatus] = useState<{
@@ -139,6 +196,9 @@ const Profile: React.FC = () => {
   const guardianFileInputRefs = useRef<Record<number, HTMLInputElement | null>>(
     {},
   );
+  const [guardianSameAsMain, setGuardianSameAsMain] = useState<
+    Record<number, boolean>
+  >({});
 
   // ── Player avatar state ───────────────────────────────────────────────────
   const [playerAvatarPreviews, setPlayerAvatarPreviews] = useState<
@@ -556,6 +616,28 @@ const Profile: React.FC = () => {
     }
   };
 
+  const handleGuardianSameAsMainChange = (index: number, checked: boolean) => {
+    setGuardianSameAsMain((prev) => ({ ...prev, [index]: checked }));
+
+    if (checked) {
+      // Copy main address to guardian
+      setEditedGuardians((prev) => {
+        const updated = [...prev];
+        updated[index] = {
+          ...updated[index],
+          address: {
+            street: formData.address.street || '',
+            street2: formData.address.street2 || '',
+            city: formData.address.city || '',
+            state: formData.address.state || '',
+            zip: formData.address.zip || '',
+          },
+        };
+        return updated;
+      });
+    }
+  };
+
   const handleDeletePlayer = async (playerId: string): Promise<void> => {
     if (!token) return;
     const result = await Swal.fire({
@@ -608,13 +690,13 @@ const Profile: React.FC = () => {
     }
   };
 
-  // ── Save edited player — uses getVisibleFields validation (matches profilesettings) ──
+  // ── Save edited player ────────────────────────────────────────────────────
   const handleSaveEditedPlayer = async (playerId: string) => {
     const player = editedPlayers[playerId];
     if (!player) return;
 
     const errs: Record<string, string> = {};
-    const visibleFields = getVisibleFields(player);
+    const visibleFields = getPlayerVisibleFields(player);
 
     visibleFields.forEach((field) => {
       const value = player[field.fieldName as keyof RegistrationPlayer];
@@ -698,7 +780,7 @@ const Profile: React.FC = () => {
     }
   };
 
-  // ── New-player handlers (matches profilesettings exactly) ─────────────────
+  // ── New-player handlers ───────────────────────────────────────────────────
   const handleNewPlayerChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -723,7 +805,7 @@ const Profile: React.FC = () => {
 
   const validateNewPlayerForm = (): boolean => {
     const errs: Record<string, string> = {};
-    const visibleFields = getVisibleFields(newPlayerForm);
+    const visibleFields = getPlayerVisibleFields(newPlayerForm);
 
     visibleFields.forEach((field) => {
       const value = newPlayerForm[field.fieldName as keyof NewPlayerForm];
@@ -758,7 +840,7 @@ const Profile: React.FC = () => {
 
     setIsSavingPlayer(true);
     try {
-      const visibleFields = getVisibleFields(newPlayerForm);
+      const visibleFields = getPlayerVisibleFields(newPlayerForm);
       const payload: any = {
         parentId,
         registrationYear: new Date().getFullYear(),
@@ -835,50 +917,213 @@ const Profile: React.FC = () => {
     setNewPlayerErrors({});
   };
 
-  // ── Validation ────────────────────────────────────────────────────────────
-  const validateForm = (): boolean => {
+  // ── Parent validation (dynamic fields) ───────────────────────────────────
+  const validateParentForm = (): boolean => {
+    const mappedData = mapParentFormDataToDynamicFields(formData);
+    const visibleFields = getParentVisibleFields(mappedData);
     const newErrors: Record<string, string> = {};
-    if (!validateName(formData.fullName))
-      newErrors.fullName = 'Please enter a valid name (min 2 characters)';
-    if (!validateEmail(formData.email))
-      newErrors.email = 'Please enter a valid email address';
-    if (!validatePhoneNumber(formData.phone))
-      newErrors.phone = 'Please enter a valid 10-digit phone number';
-    if (!validateRequired(formData.relationship))
-      newErrors.relationship = 'Relationship to player is required';
-    if (!validateRequired(formData.address.street))
-      newErrors['address.street'] = 'Street address is required';
-    if (!validateRequired(formData.address.city))
-      newErrors['address.city'] = 'City is required';
-    if (!validateState(formData.address.state))
-      newErrors['address.state'] = 'Please enter a valid 2-letter state code';
-    if (!validateZipCode(formData.address.zip))
-      newErrors['address.zip'] = 'Please enter a valid ZIP code';
+    const address = ensureAddress(formData.address);
+
+    console.log(
+      '🔍 Validating parent with visible fields:',
+      visibleFields.map((f) => f.fieldName),
+    );
+    console.log('📦 Mapped form data:', mappedData);
+
+    visibleFields.forEach((field) => {
+      if (field.fieldName === 'address') {
+        if (field.isRequired) {
+          if (!address.street?.trim()) {
+            newErrors['address.street'] = 'Street address is required';
+          }
+        }
+      } else if (field.fieldName === 'city') {
+        if (field.isRequired && !address.city?.trim()) {
+          newErrors['address.city'] = `${field.label} is required`;
+        }
+      } else if (field.fieldName === 'state') {
+        if (field.isRequired && !address.state?.trim()) {
+          newErrors['address.state'] = `${field.label} is required`;
+        } else if (address.state && !validateState(address.state)) {
+          newErrors['address.state'] =
+            'Please enter a valid 2-letter state code';
+        }
+      } else if (field.fieldName === 'zip') {
+        if (field.isRequired && !address.zip?.trim()) {
+          newErrors['address.zip'] = `${field.label} is required`;
+        } else if (address.zip && !validateZipCode(address.zip)) {
+          newErrors['address.zip'] = 'Please enter a valid ZIP code';
+        }
+      } else if (field.fieldName === 'parentFullName') {
+        const value = formData.fullName;
+        if (field.isRequired && (!value || !value.trim())) {
+          newErrors.fullName = `${field.label} is required`;
+        } else if (value && value.trim().length < 2) {
+          newErrors.fullName = 'Please enter a valid name (min 2 characters)';
+        }
+      } else {
+        let value;
+        if (field.fieldName === 'email') value = formData.email;
+        else if (field.fieldName === 'phone') value = formData.phone;
+        else if (field.fieldName === 'relationship')
+          value = formData.relationship;
+        else if (field.fieldName === 'isCoach') value = formData.isCoach;
+        else if (field.fieldName === 'aauNumber') value = formData.aauNumber;
+        else value = mappedData[field.fieldName as keyof typeof mappedData];
+
+        console.log(`📝 Validating field ${field.fieldName}:`, {
+          value,
+          required: field.isRequired,
+          type: field.fieldType,
+        });
+
+        if (field.isRequired) {
+          if (value === undefined || value === null) {
+            newErrors[field.fieldName] = `${field.label} is required`;
+          } else if (typeof value === 'string' && !value.trim()) {
+            newErrors[field.fieldName] = `${field.label} is required`;
+          } else if (field.fieldType === 'checkbox' && value === false) {
+            newErrors[field.fieldName] = `${field.label} must be accepted`;
+          }
+        }
+
+        if (value !== undefined && value !== null && value !== '') {
+          if (field.fieldName === 'email' && typeof value === 'string') {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+              newErrors.email = 'Please enter a valid email address';
+            }
+          }
+
+          if (field.fieldName === 'phone' && typeof value === 'string') {
+            const phoneDigits = value.replace(/\D/g, '');
+            if (phoneDigits.length !== 10) {
+              newErrors.phone = 'Please enter a valid 10-digit phone number';
+            }
+          }
+        }
+      }
+    });
+
+    if (formData.isCoach) {
+      if (!formData.aauNumber || !formData.aauNumber.trim()) {
+        newErrors.aauNumber = 'AAU number is required for coaches';
+      }
+    }
+
+    console.log('✅ Validation errors:', newErrors);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // ── Guardian validation (dynamic fields) ─────────────────────────────────
   const validateGuardianForm = (index: number): boolean => {
     const guardian = editedGuardians[index];
     if (!guardian) return false;
+
+    const mappedData = mapGuardianToDynamicFields(guardian);
+    const visibleFields = getGuardianVisibleFields(mappedData);
     const newErrors: Record<string, string> = {};
-    if (!validateName(guardian.fullName))
-      newErrors.fullName = 'Please enter a valid name (min 2 characters)';
-    if (!validateEmail(guardian.email))
-      newErrors.email = 'Please enter a valid email address';
-    if (!validatePhoneNumber(guardian.phone))
-      newErrors.phone = 'Please enter a valid 10-digit phone number';
-    if (!validateRequired(guardian.relationship))
-      newErrors.relationship = 'Relationship is required';
     const address = ensureAddress(guardian.address);
-    if (!validateRequired(address.street))
-      newErrors['address.street'] = 'Street address is required';
-    if (!validateRequired(address.city))
-      newErrors['address.city'] = 'City is required';
-    if (!validateState(address.state))
-      newErrors['address.state'] = 'Please enter a valid 2-letter state code';
-    if (!validateZipCode(address.zip))
-      newErrors['address.zip'] = 'Please enter a valid ZIP code';
+
+    console.log(
+      `🔍 Validating guardian ${index} with visible fields:`,
+      visibleFields.map((f) => f.fieldName),
+    );
+    console.log(`📦 Mapped guardian data:`, mappedData);
+
+    visibleFields.forEach((field) => {
+      // Handle address fields
+      if (field.fieldName === 'address') {
+        if (field.isRequired) {
+          if (!address.street?.trim()) {
+            newErrors['address.street'] = 'Street address is required';
+          }
+        }
+      } else if (field.fieldName === 'city') {
+        if (field.isRequired && !address.city?.trim()) {
+          newErrors['address.city'] = `${field.label} is required`;
+        }
+      } else if (field.fieldName === 'state') {
+        if (field.isRequired && !address.state?.trim()) {
+          newErrors['address.state'] = `${field.label} is required`;
+        } else if (address.state && !validateState(address.state)) {
+          newErrors['address.state'] =
+            'Please enter a valid 2-letter state code';
+        }
+      } else if (field.fieldName === 'zip') {
+        if (field.isRequired && !address.zip?.trim()) {
+          newErrors['address.zip'] = `${field.label} is required`;
+        } else if (address.zip && !validateZipCode(address.zip)) {
+          newErrors['address.zip'] = 'Please enter a valid ZIP code';
+        }
+      }
+      // Handle guardian full name
+      else if (field.fieldName === 'guardianFullName') {
+        const value = guardian.fullName;
+        console.log('📝 Validating guardianFullName:', {
+          value,
+          isRequired: field.isRequired,
+          isEmpty: !value || !value.trim(),
+          length: value?.trim().length,
+        });
+
+        if (field.isRequired && (!value || !value.trim())) {
+          newErrors.fullName = `${field.label} is required`;
+          console.log('❌ Setting fullName required error');
+        } else if (value && value.trim().length < 2) {
+          newErrors.fullName = 'Please enter a valid name (min 2 characters)';
+          console.log('❌ Setting fullName min length error');
+        }
+      }
+      // Handle all other fields
+      else {
+        let value;
+        if (field.fieldName === 'email') value = guardian.email;
+        else if (field.fieldName === 'phone') value = guardian.phone;
+        else if (field.fieldName === 'relationship')
+          value = guardian.relationship;
+        else if (field.fieldName === 'isCoach') value = guardian.isCoach;
+        else if (field.fieldName === 'aauNumber') value = guardian.aauNumber;
+        else value = mappedData[field.fieldName as keyof typeof mappedData];
+
+        console.log(`📝 Validating guardian field ${field.fieldName}:`, {
+          value,
+          required: field.isRequired,
+          type: field.fieldType,
+        });
+
+        // Required validation
+        if (field.isRequired) {
+          if (value === undefined || value === null) {
+            newErrors[field.fieldName] = `${field.label} is required`;
+          } else if (typeof value === 'string' && !value.trim()) {
+            newErrors[field.fieldName] = `${field.label} is required`;
+          } else if (field.fieldType === 'checkbox' && value === false) {
+            newErrors[field.fieldName] = `${field.label} must be accepted`;
+          }
+        }
+
+        // Field-specific validations
+        if (value !== undefined && value !== null && value !== '') {
+          if (field.fieldName === 'email' && typeof value === 'string') {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+              newErrors.email = 'Please enter a valid email address';
+            }
+          }
+
+          if (field.fieldName === 'phone' && typeof value === 'string') {
+            const phoneDigits = value.replace(/\D/g, '');
+            if (phoneDigits.length !== 10) {
+              newErrors.phone = 'Please enter a valid 10-digit phone number';
+            }
+          }
+        }
+      }
+    });
+
+    console.log(`✅ Guardian ${index} validation errors:`, newErrors);
     setGuardianErrors((prev) => ({ ...prev, [index]: newErrors }));
     return Object.keys(newErrors).length === 0;
   };
@@ -920,7 +1165,10 @@ const Profile: React.FC = () => {
     e: React.MouseEvent<HTMLButtonElement>,
   ): Promise<void> => {
     e.preventDefault();
-    if (!validateForm()) {
+    console.log('🔄 Saving personal info');
+
+    if (!validateParentForm()) {
+      console.log('❌ Parent validation failed');
       setSaveStatus({
         show: true,
         variant: 'danger',
@@ -928,17 +1176,48 @@ const Profile: React.FC = () => {
       });
       return;
     }
+
     try {
-      if (!parentId || !token || !parent) return;
-      await axios.put(
-        `${API_BASE_URL}/parent/${parentId}`,
-        {
-          ...formData,
-          phone: formData.phone.replace(/\D/g, ''),
-          address: ensureAddress(formData.address),
+      if (!parentId || !token || !parent) {
+        console.log('❌ Missing parentId, token, or parent');
+        return;
+      }
+
+      // Log the address data before sending
+      console.log('Address data being sent:', {
+        street: formData.address.street,
+        street2: formData.address.street2,
+        city: formData.address.city,
+        state: formData.address.state,
+        zip: formData.address.zip,
+      });
+
+      const updateData = {
+        fullName: formData.fullName?.trim() || '',
+        email: formData.email?.trim() || '',
+        phone: formData.phone?.replace(/\D/g, '') || '',
+        address: {
+          street: formData.address.street?.trim() || '',
+          street2: formData.address.street2?.trim() || '',
+          city: formData.address.city?.trim() || '',
+          state: formData.address.state?.trim() || '',
+          zip: formData.address.zip?.trim() || '',
         },
+        relationship: formData.relationship?.trim() || '',
+        isCoach: formData.isCoach || false,
+        aauNumber: formData.aauNumber?.trim() || '',
+      };
+
+      console.log('📤 Sending parent update:', updateData);
+
+      const response = await axios.put(
+        `${API_BASE_URL}/parent/${parentId}`,
+        updateData,
         { headers: { Authorization: `Bearer ${token}` } },
       );
+
+      console.log('✅ Parent update response:', response.data);
+
       setIsEditing(false);
       await fetchParentData(parentId);
       setSaveStatus({
@@ -946,12 +1225,15 @@ const Profile: React.FC = () => {
         variant: 'success',
         message: 'Profile updated successfully!',
       });
-    } catch (error) {
-      console.error('Error updating personal information:', error);
+    } catch (error: any) {
+      console.error('❌ Error updating personal information:', error);
+      console.error('Error response:', error.response?.data);
       setSaveStatus({
         show: true,
         variant: 'danger',
-        message: 'Failed to update profile. Please try again.',
+        message:
+          error.response?.data?.error ||
+          'Failed to update profile. Please try again.',
       });
     }
   };
@@ -1006,18 +1288,17 @@ const Profile: React.FC = () => {
   };
 
   const addNewGuardian = (): void => {
-    setEditedGuardians((prev) => [
-      ...prev,
-      {
-        fullName: '',
-        relationship: '',
-        phone: '',
-        email: '',
-        address: { street: '', street2: '', city: '', state: '', zip: '' },
-        isCoach: false,
-        aauNumber: '',
-      },
-    ]);
+    const newGuardian = {
+      fullName: '',
+      relationship: '',
+      phone: '',
+      email: '',
+      address: { street: '', street2: '', city: '', state: '', zip: '' },
+      isCoach: false,
+      aauNumber: '',
+    };
+
+    setEditedGuardians((prev) => [...prev, newGuardian]);
     setIsEditingGuardian(editedGuardians.length);
   };
 
@@ -1035,48 +1316,248 @@ const Profile: React.FC = () => {
   const handleGuardianInfoSubmit = async (
     guardianIndex: number,
   ): Promise<void> => {
-    if (!validateGuardianForm(guardianIndex)) return;
-    try {
-      if (!parentId || !token || !parent) return;
-      const updatedGuardian = {
-        ...editedGuardians[guardianIndex],
-        phone: editedGuardians[guardianIndex].phone.replace(/\D/g, ''),
-        address: ensureAddress(editedGuardians[guardianIndex].address),
-      };
+    console.log(`🔄 Saving guardian at index ${guardianIndex}`);
 
-      if (updatedGuardian._id) {
-        await axios.put(
-          `${API_BASE_URL}/parent/${parentId}/guardian/${guardianIndex}`,
-          updatedGuardian,
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
-      } else {
-        const response = await axios.post(
-          `${API_BASE_URL}/parent/${parentId}/guardians`,
-          updatedGuardian,
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
-        const updated = [...editedGuardians];
-        updated[guardianIndex] = {
-          ...updated[guardianIndex],
-          _id: response.data._id,
-        };
-        setEditedGuardians(updated);
+    if (!validateGuardianForm(guardianIndex)) {
+      console.log('❌ Guardian validation failed');
+      setSaveStatus({
+        show: true,
+        variant: 'danger',
+        message: 'Please fix the errors in the form before saving.',
+      });
+      return;
+    }
+
+    try {
+      if (!parentId || !token || !parent) {
+        console.log('❌ Missing parentId, token, or parent');
+        return;
       }
 
+      const guardian = editedGuardians[guardianIndex];
+      console.log('📤 Guardian data to save:', guardian);
+
+      const updatedGuardian = {
+        fullName: guardian.fullName?.trim() || '',
+        relationship: guardian.relationship?.trim() || '',
+        phone: guardian.phone?.replace(/\D/g, '') || '',
+        email: guardian.email?.trim() || '',
+        address: ensureAddress(guardian.address),
+        isCoach: guardian.isCoach || false,
+        aauNumber: guardian.aauNumber?.trim() || '',
+      };
+
+      console.log('📤 Prepared guardian data:', updatedGuardian);
+
+      let response;
+
+      if (guardian._id) {
+        console.log(`🔄 Updating existing guardian with ID: ${guardian._id}`);
+
+        const parentResponse = await axios.get(
+          `${API_BASE_URL}/parent/${parentId}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+
+        const parentData = parentResponse.data;
+        const guardianIndexInParent = parentData.additionalGuardians?.findIndex(
+          (g: any) => g._id === guardian._id,
+        );
+
+        if (guardianIndexInParent !== undefined && guardianIndexInParent >= 0) {
+          response = await axios.put(
+            `${API_BASE_URL}/parent/${parentId}/guardian/${guardianIndexInParent}`,
+            updatedGuardian,
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
+          console.log('✅ Guardian updated by index:', response.data);
+        } else {
+          console.log('⚠️ Guardian index not found, updating all guardians');
+          const allGuardians = editedGuardians.map((g, i) =>
+            i === guardianIndex
+              ? { ...g, ...updatedGuardian }
+              : {
+                  ...g,
+                  phone: g.phone?.replace(/\D/g, '') || '',
+                  address: ensureAddress(g.address),
+                },
+          );
+
+          response = await axios.put(
+            `${API_BASE_URL}/parent/${parentId}/guardians`,
+            { additionalGuardians: allGuardians },
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
+          console.log('✅ All guardians updated:', response.data);
+        }
+      } else {
+        console.log('➕ Adding new guardian');
+        try {
+          response = await axios.put(
+            `${API_BASE_URL}/parent/${parentId}/guardian`,
+            updatedGuardian,
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
+          console.log('✅ New guardian added - full response:', response.data);
+
+          // The response might contain the updated parent or just the guardian
+          // Let's extract the new guardian ID from the response
+          let newGuardianId: string | undefined;
+
+          if (response.data.parent) {
+            // Response contains the full parent object
+            const updatedParent = response.data.parent;
+            const newGuardian = updatedParent.additionalGuardians?.find(
+              (g: any) =>
+                g.fullName === updatedGuardian.fullName &&
+                g.email === updatedGuardian.email,
+            );
+            newGuardianId = newGuardian?._id;
+          } else if (response.data.guardian) {
+            // Response contains just the guardian
+            newGuardianId = response.data.guardian._id;
+          } else if (response.data._id) {
+            // Response is the guardian itself
+            newGuardianId = response.data._id;
+          }
+
+          if (newGuardianId) {
+            // Update the local state with the new ID
+            setEditedGuardians((prev) => {
+              const updated = [...prev];
+              updated[guardianIndex] = {
+                ...updated[guardianIndex],
+                _id: newGuardianId,
+              };
+              return updated;
+            });
+          }
+
+          // Show success message immediately without waiting for parent refresh
+          setSaveStatus({
+            show: true,
+            variant: 'success',
+            message: 'Guardian saved successfully!',
+          });
+
+          setIsEditingGuardian(null);
+
+          // Refresh parent data in the background
+          fetchParentData(parentId).catch((err) =>
+            console.error('Background parent refresh failed:', err),
+          );
+        } catch (postError: any) {
+          console.error('❌ Error in POST request:', postError);
+          console.error('Error response:', postError.response?.data);
+
+          // Check if the error is because the guardian already exists
+          if (
+            postError.response?.status === 400 &&
+            postError.response?.data?.error?.includes('already exists')
+          ) {
+            setSaveStatus({
+              show: true,
+              variant: 'danger',
+              message: 'This guardian email is already registered.',
+            });
+          } else {
+            throw postError; // Re-throw to be caught by outer catch
+          }
+        }
+      }
+
+      console.log('✅ Guardian save successful');
+
       setIsEditingGuardian(null);
+
+      // Refresh parent data to get the latest guardians
       await fetchParentData(parentId);
+
       setSaveStatus({
         show: true,
         variant: 'success',
         message: 'Guardian saved successfully!',
       });
-    } catch (error) {
-      console.error('Error saving guardian:', error);
+    } catch (error: any) {
+      console.error('❌ Error saving guardian:', error);
+      console.error('Error response:', error.response?.data);
+
+      // Show more specific error message
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        'Failed to save guardian. Please try again.';
+
       setSaveStatus({
         show: true,
         variant: 'danger',
-        message: 'Failed to save guardian. Please try again.',
+        message: errorMessage,
+      });
+    }
+  };
+
+  const handleDeleteGuardian = async (index: number): Promise<void> => {
+    if (!token || !parentId) return;
+    const guardian = editedGuardians[index];
+    const result = await Swal.fire({
+      title: 'Remove Guardian?',
+      text: 'Are you sure you want to remove this guardian from your account? This cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, remove guardian',
+      cancelButtonText: 'Cancel',
+    });
+    if (!result.isConfirmed) return;
+    try {
+      if (guardian._id) {
+        const remaining = editedGuardians
+          .filter((_, i) => i !== index)
+          .map((g) => ({
+            ...g,
+            phone: g.phone.replace(/\D/g, ''),
+            address: ensureAddress(g.address),
+          }));
+        await axios.put(
+          `${API_BASE_URL}/parent/${parentId}/guardians`,
+          { additionalGuardians: remaining },
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+      }
+      setEditedGuardians((prev) => prev.filter((_, i) => i !== index));
+      setIsEditingGuardian(null);
+      setGuardianErrors((prev) => {
+        const n = { ...prev };
+        delete n[index];
+        return n;
+      });
+      if (guardian._id) await fetchParentData(parentId);
+      Swal.fire({
+        icon: 'success',
+        title: 'Guardian Removed',
+        text: 'The guardian has been removed from your account.',
+        timer: 2000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end',
+        background: '#10b981',
+        color: '#fff',
+        iconColor: '#fff',
+      });
+    } catch (error) {
+      console.error('Error deleting guardian:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Removal Failed',
+        text: 'Failed to remove guardian. Please try again.',
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end',
+        background: '#ef4444',
+        color: '#fff',
+        iconColor: '#fff',
       });
     }
   };
@@ -1135,14 +1616,224 @@ const Profile: React.FC = () => {
     }
   };
 
+  // ── Render helpers ────────────────────────────────────────────────────────
+  const renderParentPersonalField = (
+    field: VisibleField,
+    data: FormDataType,
+    editing: boolean,
+    fieldErrors: Record<string, string>,
+    isLast = false,
+  ) => {
+    if (
+      field.fieldName === 'fullName' ||
+      field.fieldName === 'parentFullName'
+    ) {
+      return editing ? (
+        <NameInput
+          key='fullName'
+          value={data.fullName}
+          onChange={(val: string) =>
+            handleInputChange({
+              target: { name: 'fullName', value: val },
+            } as React.ChangeEvent<HTMLInputElement>)
+          }
+          error={fieldErrors.fullName}
+        />
+      ) : (
+        <div key='fullName' className='mb-3 flex-fill'>
+          <label className='form-label'>Full Name</label>
+          <input
+            type='text'
+            className='form-control'
+            value={data.fullName}
+            disabled
+          />
+        </div>
+      );
+    }
+
+    // Handle checkbox fields (like isCoach)
+    if (field.fieldType === 'checkbox') {
+      return (
+        <div key={field.fieldName} className='mb-3 flex-fill'>
+          <div className='form-check'>
+            <input
+              type='checkbox'
+              className={`form-check-input ${fieldErrors[field.fieldName] ? 'is-invalid' : ''}`}
+              name={field.fieldName}
+              id={`parent-${field.fieldName}`}
+              checked={!!data[field.fieldName as keyof FormDataType]}
+              onChange={handleInputChange}
+              disabled={!editing}
+            />
+            <label
+              className='form-check-label'
+              htmlFor={`parent-${field.fieldName}`}
+            >
+              {field.label}
+            </label>
+            {fieldErrors[field.fieldName] && (
+              <div className='invalid-feedback d-block'>
+                {fieldErrors[field.fieldName]}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const inputType =
+      field.fieldName === 'email'
+        ? 'email'
+        : field.fieldName === 'phone'
+          ? 'tel'
+          : 'text';
+
+    const rawValue = data[field.fieldName as keyof FormDataType];
+    const displayValue =
+      typeof rawValue === 'boolean'
+        ? String(rawValue)
+        : (rawValue as string) || '';
+
+    return (
+      <div
+        key={field.fieldName}
+        className={`mb-3 flex-fill${isLast ? '' : ' me-xl-3'} me-0`}
+      >
+        <label className='form-label'>{field.label}</label>
+        <input
+          type={inputType}
+          className={`form-control ${fieldErrors[field.fieldName] ? 'is-invalid' : ''}`}
+          name={field.fieldName}
+          value={displayValue}
+          onChange={handleInputChange}
+          disabled={!editing}
+          placeholder={
+            field.placeholder ||
+            (field.fieldName === 'phone' ? '(123) 456-7890' : undefined)
+          }
+          maxLength={field.fieldName === 'phone' ? 14 : undefined}
+        />
+        {fieldErrors[field.fieldName] && (
+          <div className='invalid-feedback d-block'>
+            {fieldErrors[field.fieldName]}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderGuardianPersonalField = (
+    field: VisibleField,
+    guardian: Guardian,
+    index: number,
+    editing: boolean,
+    fieldErrors: Record<string, string>,
+    isLast = false,
+  ) => {
+    // Handle full name fields
+    if (field.fieldName === 'guardianFullName') {
+      return editing ? (
+        <NameInput
+          key='fullName'
+          value={guardian.fullName}
+          onChange={(val: string) =>
+            handleGuardianInputChange(
+              {
+                target: { name: 'fullName', value: val },
+              } as React.ChangeEvent<HTMLInputElement>,
+              index,
+            )
+          }
+          error={fieldErrors.fullName}
+        />
+      ) : (
+        <div key='fullName' className='mb-3 flex-fill'>
+          <label className='form-label'>Full Name</label>
+          <input
+            type='text'
+            className='form-control'
+            value={guardian.fullName}
+            disabled
+          />
+        </div>
+      );
+    }
+
+    // Handle regular fields
+    const inputType =
+      field.fieldName === 'email'
+        ? 'email'
+        : field.fieldName === 'phone'
+          ? 'tel'
+          : 'text';
+
+    // Get the value based on field name
+    let value: any;
+    if (field.fieldName === 'email') value = guardian.email;
+    else if (field.fieldName === 'phone') value = guardian.phone;
+    else if (field.fieldName === 'relationship') value = guardian.relationship;
+    else if (field.fieldName === 'isCoach') value = guardian.isCoach;
+    else if (field.fieldName === 'aauNumber') value = guardian.aauNumber;
+    else value = '';
+
+    const displayValue =
+      typeof value === 'boolean' ? String(value) : (value as string) || '';
+
+    return (
+      <div
+        key={field.fieldName}
+        className={`mb-3 flex-fill${isLast ? '' : ' me-xl-3'} me-0`}
+      >
+        <label className='form-label'>{field.label}</label>
+        <input
+          type={inputType}
+          className={`form-control ${fieldErrors[field.fieldName] ? 'is-invalid' : ''}`}
+          name={field.fieldName}
+          value={displayValue}
+          onChange={(e) => handleGuardianInputChange(e, index)}
+          disabled={!editing}
+          placeholder={
+            field.placeholder ||
+            (field.fieldName === 'phone' ? '(123) 456-7890' : undefined) ||
+            (field.fieldName === 'aauNumber'
+              ? 'Entering an AAU will mark as coach'
+              : undefined)
+          }
+          maxLength={field.fieldName === 'phone' ? 14 : undefined}
+        />
+        {fieldErrors[field.fieldName] && (
+          <div className='invalid-feedback d-block'>
+            {fieldErrors[field.fieldName]}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (isLoading) return <div className='text-center p-5'>Loading...</div>;
   if (!parent)
     return <div className='text-center p-5'>No parent data found.</div>;
 
+  // Get visible fields for parent
+  const allParentFields = getParentVisibleFields(
+    mapParentFormDataToDynamicFields(formData),
+  );
+  const parentPersonalFields = allParentFields.filter(
+    (f) =>
+      PERSONAL_FIELDS.includes(f.fieldName) || f.fieldName === 'parentFullName',
+  );
+  const hasAddressField = allParentFields.some(
+    (f) =>
+      f.fieldName === 'address' ||
+      f.fieldName === 'city' ||
+      f.fieldName === 'state' ||
+      f.fieldName === 'zip',
+  );
+
   return (
     <div className='page-wrapper'>
       <div className='content'>
-        {/* ── Save status banner ── */}
         {saveStatus.show && (
           <Alert
             variant={saveStatus.variant}
@@ -1172,6 +1863,7 @@ const Profile: React.FC = () => {
             </nav>
           </div>
           <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
+            {/* Update the Refresh button to actually refresh the data */}
             <div className='pe-1 mb-2'>
               <OverlayTrigger
                 placement='top'
@@ -1180,14 +1872,39 @@ const Profile: React.FC = () => {
                 <Link
                   to='#'
                   className='btn btn-outline-light bg-white btn-icon me-1'
-                  onClick={async () => {
+                  onClick={async (e) => {
+                    e.preventDefault();
                     if (!parentId) return;
-                    await fetchParentData(parentId);
-                    const playerIds =
-                      parent?.players?.map((p: any) =>
-                        typeof p === 'string' ? p : p._id,
-                      ) || [];
-                    if (playerIds.length > 0) await fetchPlayersData(playerIds);
+
+                    setSaveStatus({
+                      show: true,
+                      variant: 'success',
+                      message: 'Refreshing data...',
+                    });
+
+                    try {
+                      await fetchParentData(parentId);
+                      const playerIds =
+                        parent?.players?.map((p: any) =>
+                          typeof p === 'string' ? p : p._id,
+                        ) || [];
+                      if (playerIds.length > 0) {
+                        await fetchPlayersData(playerIds);
+                      }
+
+                      setSaveStatus({
+                        show: true,
+                        variant: 'success',
+                        message: 'Data refreshed successfully!',
+                      });
+                    } catch (error) {
+                      console.error('Error refreshing data:', error);
+                      setSaveStatus({
+                        show: true,
+                        variant: 'danger',
+                        message: 'Failed to refresh data. Please try again.',
+                      });
+                    }
                   }}
                 >
                   <i className='ti ti-refresh' />
@@ -1198,7 +1915,6 @@ const Profile: React.FC = () => {
         </div>
 
         <div className='d-md-flex d-block mt-3'>
-          {/* ── Parent avatar sidebar ── */}
           <div className='settings-right-sidebar me-md-3 border-0'>
             <div className='card'>
               <div className='card-header'>
@@ -1269,113 +1985,243 @@ const Profile: React.FC = () => {
           </div>
 
           <div className='flex-fill ps-0 border-0'>
-            {/* ── Personal Information ── */}
             <div className='card'>
               <div className='card-header d-flex justify-content-between align-items-center'>
-                <h5>Personal Information</h5>
+                <h5>
+                  <i className='ti ti-user me-2' />
+                  Personal Information
+                </h5>
+                {!isEditing ? (
+                  <button
+                    type='button'
+                    className='btn btn-primary btn-sm'
+                    onClick={() => {
+                      console.log(
+                        '📝 Setting form data for edit with parent:',
+                        parent,
+                      );
+                      console.log('📝 Parent address:', parent?.address);
+
+                      const addressObj =
+                        typeof parent?.address === 'string'
+                          ? parseAddress(parent.address)
+                          : parent?.address || {
+                              street: '',
+                              street2: '',
+                              city: '',
+                              state: '',
+                              zip: '',
+                            };
+
+                      setFormData({
+                        fullName: parent?.fullName || '',
+                        email: parent?.email || '',
+                        phone: parent?.phone
+                          ? formatPhoneNumber(parent.phone.replace(/\D/g, ''))
+                          : '',
+                        address: {
+                          street: addressObj.street || '',
+                          street2: addressObj.street2 || '',
+                          city: addressObj.city || '',
+                          state: addressObj.state || '',
+                          zip: addressObj.zip || '',
+                        },
+                        relationship: parent?.relationship || '',
+                        isCoach: parent?.isCoach || false,
+                        aauNumber: parent?.aauNumber || '',
+                      });
+                      setIsEditing(true);
+                    }}
+                  >
+                    <i className='ti ti-edit me-2' /> Edit
+                  </button>
+                ) : (
+                  <div className='d-flex gap-2'>
+                    <button
+                      type='button'
+                      className='btn btn-outline-secondary btn-sm'
+                      onClick={() => {
+                        console.log(
+                          '📝 Canceling edit, resetting to parent data:',
+                          parent,
+                        );
+                        console.log(
+                          '📝 Parent address on cancel:',
+                          parent?.address,
+                        );
+
+                        const addressObj =
+                          typeof parent?.address === 'string'
+                            ? parseAddress(parent.address)
+                            : parent?.address || {
+                                street: '',
+                                street2: '',
+                                city: '',
+                                state: '',
+                                zip: '',
+                              };
+
+                        setFormData({
+                          fullName: parent?.fullName || '',
+                          email: parent?.email || '',
+                          phone: parent?.phone
+                            ? formatPhoneNumber(parent.phone.replace(/\D/g, ''))
+                            : '',
+                          address: {
+                            street: addressObj.street || '',
+                            street2: addressObj.street2 || '',
+                            city: addressObj.city || '',
+                            state: addressObj.state || '',
+                            zip: addressObj.zip || '',
+                          },
+                          relationship: parent?.relationship || '',
+                          isCoach: parent?.isCoach || false,
+                          aauNumber: parent?.aauNumber || '',
+                        });
+                        setIsEditing(false);
+                        setErrors({});
+                      }}
+                    >
+                      <i className='ti ti-x me-2' /> Cancel
+                    </button>
+                    <button
+                      type='button'
+                      className='btn btn-primary btn-sm'
+                      onClick={handlePersonalInfoSubmit}
+                    >
+                      <i className='ti ti-device-floppy me-2' /> Save Changes
+                    </button>
+                  </div>
+                )}
               </div>
               <div className='card-body pb-0'>
-                <div className='d-block d-xl-flex'>
-                  <div className='mb-3 flex-fill'>
-                    {isEditing ? (
-                      <NameInput
+                {/* Rest of the personal info content remains the same */}
+                <div className='d-block'>
+                  {isEditing ? (
+                    <NameInput
+                      value={formData.fullName}
+                      onChange={(val: string) =>
+                        handleInputChange({
+                          target: { name: 'fullName', value: val },
+                        } as React.ChangeEvent<HTMLInputElement>)
+                      }
+                      error={errors.fullName}
+                    />
+                  ) : (
+                    <div className='mb-3 flex-fill'>
+                      <label className='form-label'>Full Name</label>
+                      <input
+                        type='text'
+                        className='form-control'
                         value={formData.fullName}
-                        onChange={(val: string) =>
-                          handleInputChange({
-                            target: { name: 'fullName', value: val },
-                          } as React.ChangeEvent<HTMLInputElement>)
-                        }
-                        error={errors.fullName}
+                        disabled
                       />
-                    ) : (
-                      <>
-                        <label className='form-label'>Full Name</label>
+                    </div>
+                  )}
+                </div>
+
+                {/* First row: All fields except fullName, isCoach, and aauNumber */}
+                {parentPersonalFields.filter(
+                  (f) =>
+                    f.fieldName !== 'fullName' &&
+                    f.fieldName !== 'parentFullName' &&
+                    f.fieldName !== 'aauNumber' &&
+                    f.fieldName !== 'isCoach',
+                ).length > 0 && (
+                  <div className='d-block d-xl-flex flex-wrap'>
+                    {parentPersonalFields
+                      .filter(
+                        (f) =>
+                          f.fieldName !== 'fullName' &&
+                          f.fieldName !== 'parentFullName' &&
+                          f.fieldName !== 'aauNumber' &&
+                          f.fieldName !== 'isCoach',
+                      )
+                      .map((field, i, arr) =>
+                        renderParentPersonalField(
+                          field,
+                          formData,
+                          isEditing,
+                          errors,
+                          i === arr.length - 1,
+                        ),
+                      )}
+                  </div>
+                )}
+
+                {/* Second row: Are you a coach? checkbox and AAU number (side by side) */}
+                <div className='row mb-4'>
+                  <div className='d-block d-xl-flex flex-wrap'>
+                    {/* Coach checkbox column */}
+                    {parentPersonalFields.some(
+                      (f) => f.fieldName === 'isCoach',
+                    ) && (
+                      <div className='col-md-2'>
+                        {parentPersonalFields
+                          .filter((f) => f.fieldName === 'isCoach')
+                          .map((field) =>
+                            renderParentPersonalField(
+                              field,
+                              formData,
+                              isEditing,
+                              errors,
+                              true,
+                            ),
+                          )}
+                      </div>
+                    )}
+
+                    {/* AAU Number column - shown conditionally next to checkbox */}
+                    {isEditing && formData.isCoach ? (
+                      <div className='col-md-10 '>
+                        <label className='form-label'>
+                          AAU Number {isEditing && '(Required for coaches)'}
+                        </label>
+                        <input
+                          type='text'
+                          className={`form-control ${errors.aauNumber ? 'is-invalid' : ''}`}
+                          name='aauNumber'
+                          value={formData.aauNumber || ''}
+                          onChange={handleInputChange}
+                          placeholder='Enter your AAU number'
+                          disabled={!isEditing}
+                        />
+                        {errors.aauNumber && (
+                          <div className='invalid-feedback d-block'>
+                            {errors.aauNumber}
+                          </div>
+                        )}
+                      </div>
+                    ) : !isEditing && formData.isCoach && formData.aauNumber ? (
+                      <div className='col-md-10'>
+                        <label className='form-label'>AAU Number</label>
                         <input
                           type='text'
                           className='form-control'
-                          value={formData.fullName}
+                          value={formData.aauNumber}
                           disabled
                         />
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className='d-block d-xl-flex'>
-                  <div className='mb-3 flex-fill me-xl-3 me-0'>
-                    <label className='form-label'>Relationship to Player</label>
-                    <input
-                      type='text'
-                      className={`form-control ${errors.relationship ? 'is-invalid' : ''}`}
-                      name='relationship'
-                      value={formData.relationship}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                    />
-                    {errors.relationship && (
-                      <div className='invalid-feedback d-block'>
-                        {errors.relationship}
                       </div>
-                    )}
-                  </div>
-                  <div className='mb-3 flex-fill me-xl-3 me-0'>
-                    <label className='form-label'>Email</label>
-                    <input
-                      type='email'
-                      className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-                      name='email'
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                    />
-                    {errors.email && (
-                      <div className='invalid-feedback d-block'>
-                        {errors.email}
-                      </div>
-                    )}
-                  </div>
-                  <div className='mb-3 flex-fill me-xl-3 me-0'>
-                    <label className='form-label'>Phone Number</label>
-                    <input
-                      type='tel'
-                      className={`form-control ${errors.phone ? 'is-invalid' : ''}`}
-                      name='phone'
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      placeholder='(123) 456-7890'
-                      maxLength={14}
-                    />
-                    {errors.phone && (
-                      <div className='invalid-feedback d-block'>
-                        {errors.phone}
-                      </div>
-                    )}
-                  </div>
-                  <div className='mb-3 flex-fill'>
-                    <label className='form-label'>AAU Number</label>
-                    <input
-                      type='text'
-                      className='form-control'
-                      name='aauNumber'
-                      value={formData.aauNumber}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                    />
+                    ) : null}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* ── Address Information ── */}
-            <div className='card'>
-              <div className='card-header d-flex justify-content-between align-items-center'>
-                <h5>Address Information</h5>
-              </div>
-              <div className='card-body pb-0'>
-                <div className='d-block d-xl-flex'>
-                  <div className='mb-3 flex-fill me-xl-3 me-0'>
-                    {!isEditing ? (
-                      <>
+            {/* Address Information - shown in both modes but differently */}
+            {hasAddressField && (
+              <div className='card'>
+                <div className='card-header d-flex justify-content-between align-items-center'>
+                  <h5>Address Information</h5>
+                </div>
+                <div className='card-body pb-0'>
+                  {!isEditing ? (
+                    // Preview mode - show formatted address if any address field has data
+                    formData.address.street ||
+                    formData.address.city ||
+                    formData.address.state ||
+                    formData.address.zip ? (
+                      <div className='mb-3'>
                         <label className='form-label'>Address</label>
                         <input
                           type='text'
@@ -1383,12 +2229,29 @@ const Profile: React.FC = () => {
                           value={formatAddress(formData.address)}
                           disabled
                         />
-                      </>
+                      </div>
                     ) : (
-                      <div className='flex-fill'>
+                      <p className='text-muted fst-italic mb-3'>
+                        No address provided.
+                      </p>
+                    )
+                  ) : (
+                    // Edit mode - show full address form with individual field visibility
+                    <div className='flex-fill mb-4'>
+                      {/* Street Address - only show if enabled */}
+                      {allParentFields.some(
+                        (f) => f.fieldName === 'address',
+                      ) && (
                         <div className='row mb-3'>
                           <div className='col-md-8'>
-                            <label className='form-label'>Street Address</label>
+                            <label className='form-label'>
+                              Street Address
+                              {allParentFields.find(
+                                (f) => f.fieldName === 'address',
+                              )?.isRequired && (
+                                <span className='text-danger ms-1'>*</span>
+                              )}
+                            </label>
                             <input
                               type='text'
                               className={`form-control ${errors['address.street'] ? 'is-invalid' : ''}`}
@@ -1416,130 +2279,114 @@ const Profile: React.FC = () => {
                             />
                           </div>
                         </div>
-                        <div className='row'>
-                          <div className='col-md-5'>
-                            <label className='form-label'>City</label>
-                            <input
-                              type='text'
-                              className={`form-control ${errors['address.city'] ? 'is-invalid' : ''}`}
-                              value={formData.address.city}
-                              onChange={(e) => handleAddressChange(e, 'city')}
-                              placeholder='Seattle'
-                            />
-                            {errors['address.city'] && (
-                              <div className='invalid-feedback d-block'>
-                                {errors['address.city']}
-                              </div>
-                            )}
-                          </div>
-                          <div className='col-md-3'>
-                            <label className='form-label'>State</label>
-                            <input
-                              type='text'
-                              className={`form-control ${errors['address.state'] ? 'is-invalid' : ''}`}
-                              value={formData.address.state}
-                              onChange={(e) => handleAddressChange(e, 'state')}
-                              maxLength={2}
-                              placeholder='WA'
-                            />
-                            {errors['address.state'] && (
-                              <div className='invalid-feedback d-block'>
-                                {errors['address.state']}
-                              </div>
-                            )}
-                          </div>
-                          <div className='col-md-4'>
-                            <label className='form-label'>ZIP Code</label>
-                            <input
-                              type='text'
-                              className={`form-control ${errors['address.zip'] ? 'is-invalid' : ''}`}
-                              value={formData.address.zip}
-                              onChange={(e) => handleAddressChange(e, 'zip')}
-                              maxLength={10}
-                              placeholder='98101'
-                            />
-                            {errors['address.zip'] && (
-                              <div className='invalid-feedback d-block'>
-                                {errors['address.zip']}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {/* Edit / Save / Cancel buttons */}
-                {!isEditing ? (
-                  <button
-                    type='button'
-                    className='btn btn-primary btn-sm mb-4'
-                    onClick={() => {
-                      setFormData({
-                        fullName: parent?.fullName || '',
-                        email: parent?.email || '',
-                        phone: parent?.phone
-                          ? formatPhoneNumber(parent.phone.replace(/\D/g, ''))
-                          : '',
-                        address: ensureAddress(
-                          typeof parent?.address === 'object'
-                            ? parent.address
-                            : parent?.address || '',
-                        ),
-                        relationship: parent?.relationship || '',
-                        isCoach: parent?.isCoach || false,
-                        aauNumber: parent?.aauNumber || '',
-                      });
-                      setIsEditing(true);
-                    }}
-                  >
-                    <i className='ti ti-edit me-2' /> Edit
-                  </button>
-                ) : (
-                  <div className='d-flex gap-2 mb-4'>
-                    <button
-                      type='button'
-                      className='btn btn-outline-secondary btn-sm'
-                      onClick={() => {
-                        setFormData({
-                          fullName: parent?.fullName || '',
-                          email: parent?.email || '',
-                          phone: parent?.phone
-                            ? formatPhoneNumber(parent.phone.replace(/\D/g, ''))
-                            : '',
-                          address: ensureAddress(
-                            typeof parent?.address === 'object'
-                              ? parent.address
-                              : parent?.address || '',
-                          ),
-                          relationship: parent?.relationship || '',
-                          isCoach: parent?.isCoach || false,
-                          aauNumber: parent?.aauNumber || '',
-                        });
-                        setIsEditing(false);
-                        setErrors({});
-                      }}
-                    >
-                      <i className='ti ti-x me-2' />
-                      Cancel
-                    </button>
-                    <button
-                      type='button'
-                      className='btn btn-primary btn-sm'
-                      onClick={handlePersonalInfoSubmit}
-                    >
-                      <i className='ti ti-device-floppy me-2' /> Save Changes
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+                      )}
 
-            {/* ── Additional Guardians ── */}
+                      <div className='row'>
+                        {/* City - only show if enabled */}
+                        {allParentFields.some(
+                          (f) => f.fieldName === 'city',
+                        ) && (
+                          <div className='col-md-5'>
+                            <div className='mb-3'>
+                              <label className='form-label'>
+                                City
+                                {allParentFields.find(
+                                  (f) => f.fieldName === 'city',
+                                )?.isRequired && (
+                                  <span className='text-danger ms-1'>*</span>
+                                )}
+                              </label>
+                              <input
+                                type='text'
+                                className={`form-control ${errors['address.city'] ? 'is-invalid' : ''}`}
+                                value={formData.address.city}
+                                onChange={(e) => handleAddressChange(e, 'city')}
+                                placeholder='Seattle'
+                              />
+                              {errors['address.city'] && (
+                                <div className='invalid-feedback d-block'>
+                                  {errors['address.city']}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* State - only show if enabled */}
+                        {allParentFields.some(
+                          (f) => f.fieldName === 'state',
+                        ) && (
+                          <div className='col-md-3'>
+                            <div className='mb-3'>
+                              <label className='form-label'>
+                                State
+                                {allParentFields.find(
+                                  (f) => f.fieldName === 'state',
+                                )?.isRequired && (
+                                  <span className='text-danger ms-1'>*</span>
+                                )}
+                              </label>
+                              <input
+                                type='text'
+                                className={`form-control ${errors['address.state'] ? 'is-invalid' : ''}`}
+                                value={formData.address.state}
+                                onChange={(e) =>
+                                  handleAddressChange(e, 'state')
+                                }
+                                maxLength={2}
+                                placeholder='WA'
+                              />
+                              {errors['address.state'] && (
+                                <div className='invalid-feedback d-block'>
+                                  {errors['address.state']}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* ZIP - only show if enabled */}
+                        {allParentFields.some((f) => f.fieldName === 'zip') && (
+                          <div className='col-md-4'>
+                            <div className='mb-3'>
+                              <label className='form-label'>
+                                ZIP Code
+                                {allParentFields.find(
+                                  (f) => f.fieldName === 'zip',
+                                )?.isRequired && (
+                                  <span className='text-danger ms-1'>*</span>
+                                )}
+                              </label>
+                              <input
+                                type='text'
+                                className={`form-control ${errors['address.zip'] ? 'is-invalid' : ''}`}
+                                value={formData.address.zip}
+                                onChange={(e) => handleAddressChange(e, 'zip')}
+                                maxLength={10}
+                                placeholder='98101'
+                              />
+                              {errors['address.zip'] && (
+                                <div className='invalid-feedback d-block'>
+                                  {errors['address.zip']}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className='card mt-3'>
               <div className='card-header d-flex justify-content-between align-items-center'>
-                <h5>Additional Parent/Guardian Information</h5>
-                {!isEditingGuardian && editedGuardians.length === 0 && (
+                <h5>
+                  <i className='ti ti-users me-2' /> Additional Parent /
+                  Guardian Information
+                </h5>
+                {!isEditingGuardian && (
                   <button
                     type='button'
                     className='btn btn-primary btn-sm'
@@ -1562,16 +2409,43 @@ const Profile: React.FC = () => {
                     const hasSavedId = !!guardian._id;
                     const isNewGuardian =
                       !guardian._id && isEditingGuardian === index;
+                    const editing = isEditingGuardian === index;
+                    const gErrors = guardianErrors[index] || {};
 
-                    return (
-                      <div key={index} className='mb-4'>
-                        <div className='card'>
-                          <div className='card-header d-flex align-items-center justify-content-between'>
-                            <h5 className='mb-0'>
-                              <i className='ti ti-users me-2' />{' '}
-                              {guardian.fullName || 'New Guardian'}
-                            </h5>
-                            {isNewGuardian && (
+                    const allGuardianFields = getGuardianVisibleFields(
+                      mapGuardianToDynamicFields(guardian),
+                    );
+                    const guardianPersonalFields = allGuardianFields.filter(
+                      (f) =>
+                        f.fieldName === 'guardianFullName' ||
+                        f.fieldName === 'email' ||
+                        f.fieldName === 'phone' ||
+                        f.fieldName === 'relationship' ||
+                        f.fieldName === 'isCoach' ||
+                        f.fieldName === 'aauNumber',
+                    );
+                    const guardianHasAddressField = allGuardianFields.some(
+                      (f) =>
+                        f.fieldName === 'address' ||
+                        f.fieldName === 'city' ||
+                        f.fieldName === 'state' ||
+                        f.fieldName === 'zip',
+                    );
+
+                    // For new guardians
+                    if (isNewGuardian) {
+                      return (
+                        <div
+                          key={index}
+                          className='mb-4'
+                          ref={editing ? undefined : undefined}
+                        >
+                          <div className='card border-primary'>
+                            <div className='card-header d-flex align-items-center justify-content-between bg-light'>
+                              <h5 className='mb-0'>
+                                <i className='ti ti-user-plus me-2 text-primary' />
+                                New Guardian
+                              </h5>
                               <button
                                 type='button'
                                 className='btn btn-sm btn-outline-secondary'
@@ -1579,330 +2453,408 @@ const Profile: React.FC = () => {
                               >
                                 <i className='ti ti-x me-1' /> Cancel
                               </button>
-                            )}
-                          </div>
-                          <div className='card-body pb-0'>
-                            {renderAvatarBlock({
-                              displayAvatar,
-                              isUploading: isGuardianUploading,
-                              hasSavedId,
-                              defaultAvatar: DEFAULT_AVATAR,
-                              inputRef: (el) => {
-                                guardianFileInputRefs.current[index] = el;
-                              },
-                              onFileChange: (e) =>
-                                handleGuardianAvatarChange(e, index),
-                              onDelete: () => handleGuardianAvatarDelete(index),
-                            })}
-                            <div className='d-block d-xl-flex'>
-                              <div className='mb-3 flex-fill'>
-                                {isEditingGuardian === index ? (
-                                  <NameInput
-                                    value={guardian.fullName}
-                                    onChange={(val: string) =>
-                                      handleGuardianInputChange(
-                                        {
-                                          target: {
-                                            name: 'fullName',
-                                            value: val,
-                                          },
-                                        } as React.ChangeEvent<HTMLInputElement>,
+                            </div>
+                            <div className='card-body pb-2'>
+                              {renderAvatarBlock({
+                                displayAvatar,
+                                isUploading: isGuardianUploading,
+                                hasSavedId,
+                                defaultAvatar: DEFAULT_AVATAR,
+                                inputRef: (el) => {
+                                  guardianFileInputRefs.current[index] = el;
+                                },
+                                onFileChange: (e) =>
+                                  handleGuardianAvatarChange(e, index),
+                                onDelete: () =>
+                                  handleGuardianAvatarDelete(index),
+                              })}
+
+                              <div className='d-block'>
+                                <NameInput
+                                  value={guardian.fullName}
+                                  onChange={(val: string) =>
+                                    handleGuardianInputChange(
+                                      {
+                                        target: {
+                                          name: 'fullName',
+                                          value: val,
+                                        },
+                                      } as React.ChangeEvent<HTMLInputElement>,
+                                      index,
+                                    )
+                                  }
+                                  error={gErrors.fullName}
+                                />
+                              </div>
+
+                              {/* First row: All fields except fullName, isCoach, and aauNumber */}
+                              {guardianPersonalFields.filter(
+                                (f) =>
+                                  f.fieldName !== 'fullName' &&
+                                  f.fieldName !== 'guardianFullName' &&
+                                  f.fieldName !== 'aauNumber' &&
+                                  f.fieldName !== 'isCoach',
+                              ).length > 0 && (
+                                <div className='d-block d-xl-flex flex-wrap'>
+                                  {guardianPersonalFields
+                                    .filter(
+                                      (f) =>
+                                        f.fieldName !== 'fullName' &&
+                                        f.fieldName !== 'guardianFullName' &&
+                                        f.fieldName !== 'aauNumber' &&
+                                        f.fieldName !== 'isCoach',
+                                    )
+                                    .map((field, i, arr) =>
+                                      renderGuardianPersonalField(
+                                        field,
+                                        guardian,
                                         index,
-                                      )
-                                    }
-                                    error={guardianErrors[index]?.fullName}
-                                  />
-                                ) : (
-                                  <>
-                                    <label className='form-label'>
-                                      Full Name
-                                    </label>
-                                    <input
-                                      type='text'
-                                      className='form-control'
-                                      value={guardian.fullName}
-                                      disabled
-                                    />
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                            <div className='d-block d-xl-flex'>
-                              <div className='mb-3 flex-fill me-xl-3 me-0'>
-                                <label className='form-label'>
-                                  Relationship
-                                </label>
-                                <input
-                                  type='text'
-                                  className={`form-control ${
-                                    guardianErrors[index]?.relationship
-                                      ? 'is-invalid'
-                                      : ''
-                                  }`}
-                                  value={guardian.relationship}
-                                  onChange={(e) =>
-                                    handleGuardianInputChange(e, index)
-                                  }
-                                  disabled={isEditingGuardian !== index}
-                                  name='relationship'
-                                />
-                                {guardianErrors[index]?.relationship && (
-                                  <div className='invalid-feedback d-block'>
-                                    {guardianErrors[index].relationship}
-                                  </div>
-                                )}
-                              </div>
-                              <div className='mb-3 flex-fill me-xl-3 me-0'>
-                                <label className='form-label'>Email</label>
-                                <input
-                                  type='email'
-                                  className={`form-control ${
-                                    guardianErrors[index]?.email
-                                      ? 'is-invalid'
-                                      : ''
-                                  }`}
-                                  value={guardian.email}
-                                  onChange={(e) =>
-                                    handleGuardianInputChange(e, index)
-                                  }
-                                  disabled={isEditingGuardian !== index}
-                                  name='email'
-                                />
-                                {guardianErrors[index]?.email && (
-                                  <div className='invalid-feedback d-block'>
-                                    {guardianErrors[index].email}
-                                  </div>
-                                )}
-                              </div>
-                              <div className='mb-3 flex-fill me-xl-3 me-0'>
-                                <label className='form-label'>
-                                  Phone Number
-                                </label>
-                                <input
-                                  type='tel'
-                                  className={`form-control ${
-                                    guardianErrors[index]?.phone
-                                      ? 'is-invalid'
-                                      : ''
-                                  }`}
-                                  name='phone'
-                                  value={guardian.phone}
-                                  onChange={(e) =>
-                                    handleGuardianInputChange(e, index)
-                                  }
-                                  disabled={isEditingGuardian !== index}
-                                  placeholder='(123) 456-7890'
-                                  maxLength={14}
-                                />
-                                {guardianErrors[index]?.phone && (
-                                  <div className='invalid-feedback d-block'>
-                                    {guardianErrors[index].phone}
-                                  </div>
-                                )}
-                              </div>
-                              <div className='mb-3 flex-fill'>
-                                <label className='form-label'>AAU Number</label>
-                                <input
-                                  type='text'
-                                  className='form-control'
-                                  value={guardian.aauNumber || ''}
-                                  onChange={(e) =>
-                                    handleGuardianInputChange(e, index)
-                                  }
-                                  disabled={isEditingGuardian !== index}
-                                  name='aauNumber'
-                                  placeholder='Entering an AAU will mark as coach'
-                                />
-                              </div>
-                            </div>
-                            <div className='mb-3 flex-fill'>
-                              {isEditingGuardian === index ? (
-                                <div className='flex-fill'>
-                                  <div className='row mb-3'>
-                                    <div className='col-md-8'>
-                                      <label className='form-label'>
-                                        Street Address
-                                      </label>
-                                      <input
-                                        type='text'
-                                        className={`form-control ${
-                                          guardianErrors[index]?.[
-                                            'address.street'
-                                          ]
-                                            ? 'is-invalid'
-                                            : ''
-                                        }`}
-                                        value={
-                                          ensureAddress(guardian.address).street
-                                        }
-                                        onChange={(e) =>
-                                          handleGuardianAddressChange(
-                                            e,
-                                            index,
-                                            'street',
-                                          )
-                                        }
-                                      />
-                                      {guardianErrors[index]?.[
-                                        'address.street'
-                                      ] && (
-                                        <div className='invalid-feedback d-block'>
-                                          {
-                                            guardianErrors[index][
-                                              'address.street'
-                                            ]
-                                          }
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className='col-md-4'>
-                                      <label className='form-label'>
-                                        Apt/Suite (optional)
-                                      </label>
-                                      <input
-                                        type='text'
-                                        className='form-control'
-                                        value={
-                                          ensureAddress(guardian.address)
-                                            .street2
-                                        }
-                                        onChange={(e) =>
-                                          handleGuardianAddressChange(
-                                            e,
-                                            index,
-                                            'street2',
-                                          )
-                                        }
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className='row'>
-                                    <div className='col-md-5'>
-                                      <label className='form-label'>City</label>
-                                      <input
-                                        type='text'
-                                        className={`form-control ${
-                                          guardianErrors[index]?.[
-                                            'address.city'
-                                          ]
-                                            ? 'is-invalid'
-                                            : ''
-                                        }`}
-                                        value={
-                                          ensureAddress(guardian.address).city
-                                        }
-                                        onChange={(e) =>
-                                          handleGuardianAddressChange(
-                                            e,
-                                            index,
-                                            'city',
-                                          )
-                                        }
-                                      />
-                                      {guardianErrors[index]?.[
-                                        'address.city'
-                                      ] && (
-                                        <div className='invalid-feedback d-block'>
-                                          {
-                                            guardianErrors[index][
-                                              'address.city'
-                                            ]
-                                          }
-                                        </div>
-                                      )}
-                                    </div>
+                                        true,
+                                        gErrors,
+                                        i === arr.length - 1,
+                                      ),
+                                    )}
+                                </div>
+                              )}
+
+                              {/* Second row: Are you a coach? checkbox and AAU number (side by side) */}
+                              <div className='row mb-3'>
+                                <div className='d-block d-xl-flex flex-wrap'>
+                                  {/* Coach checkbox column */}
+                                  {guardianPersonalFields.some(
+                                    (f) => f.fieldName === 'isCoach',
+                                  ) && (
                                     <div className='col-md-3'>
+                                      <div className='mb-3 flex-fill'>
+                                        <div className='form-check mt-2'>
+                                          <input
+                                            type='checkbox'
+                                            className={`form-check-input ${gErrors.isCoach ? 'is-invalid' : ''}`}
+                                            name='isCoach'
+                                            id={`guardian-${index}-isCoach-new`}
+                                            checked={guardian.isCoach || false}
+                                            onChange={(e) => {
+                                              handleGuardianInputChange(
+                                                e,
+                                                index,
+                                              );
+                                              // If unchecked, clear AAU number
+                                              if (!e.target.checked) {
+                                                handleGuardianInputChange(
+                                                  {
+                                                    target: {
+                                                      name: 'aauNumber',
+                                                      value: '',
+                                                    },
+                                                  } as React.ChangeEvent<HTMLInputElement>,
+                                                  index,
+                                                );
+                                              }
+                                            }}
+                                            disabled={!editing}
+                                          />
+                                          <label
+                                            className='form-check-label'
+                                            htmlFor={`guardian-${index}-isCoach-new`}
+                                          >
+                                            This guardian is a coach
+                                          </label>
+                                          {gErrors.isCoach && (
+                                            <div className='invalid-feedback d-block'>
+                                              {gErrors.isCoach}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* AAU Number column - shown conditionally next to checkbox */}
+                                  {guardian.isCoach && (
+                                    <div className='col-md-9'>
                                       <label className='form-label'>
-                                        State
+                                        AAU Number (Required for coaches)
                                       </label>
                                       <input
                                         type='text'
-                                        className={`form-control ${
-                                          guardianErrors[index]?.[
-                                            'address.state'
-                                          ]
-                                            ? 'is-invalid'
-                                            : ''
-                                        }`}
-                                        value={
-                                          ensureAddress(guardian.address).state
-                                        }
+                                        className={`form-control ${gErrors.aauNumber ? 'is-invalid' : ''}`}
+                                        name='aauNumber'
+                                        value={guardian.aauNumber || ''}
                                         onChange={(e) =>
-                                          handleGuardianAddressChange(
-                                            e,
-                                            index,
-                                            'state',
-                                          )
+                                          handleGuardianInputChange(e, index)
                                         }
-                                        maxLength={2}
+                                        placeholder='Enter AAU number'
                                       />
-                                      {guardianErrors[index]?.[
-                                        'address.state'
-                                      ] && (
+                                      {gErrors.aauNumber && (
                                         <div className='invalid-feedback d-block'>
-                                          {
-                                            guardianErrors[index][
-                                              'address.state'
-                                            ]
-                                          }
+                                          {gErrors.aauNumber}
                                         </div>
                                       )}
                                     </div>
-                                    <div className='col-md-4'>
-                                      <label className='form-label'>
-                                        ZIP Code
-                                      </label>
-                                      <input
-                                        type='text'
-                                        className={`form-control ${
-                                          guardianErrors[index]?.['address.zip']
-                                            ? 'is-invalid'
-                                            : ''
-                                        }`}
-                                        value={
-                                          ensureAddress(guardian.address).zip
-                                        }
-                                        onChange={(e) =>
-                                          handleGuardianAddressChange(
-                                            e,
-                                            index,
-                                            'zip',
-                                          )
-                                        }
-                                        maxLength={10}
-                                      />
-                                      {guardianErrors[index]?.[
-                                        'address.zip'
-                                      ] && (
-                                        <div className='invalid-feedback d-block'>
-                                          {guardianErrors[index]['address.zip']}
-                                        </div>
-                                      )}
-                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className='card mt-3'>
+                                <div className='card-header bg-transparent py-2 d-flex justify-content-between align-items-center'>
+                                  <h6 className='mb-0'>Address Information</h6>
+                                  <div className='form-check'>
+                                    <input
+                                      type='checkbox'
+                                      className='form-check-input'
+                                      id={`guardian-same-address-new-${index}`}
+                                      checked={
+                                        guardianSameAsMain[index] || false
+                                      }
+                                      onChange={(e) =>
+                                        handleGuardianSameAsMainChange(
+                                          index,
+                                          e.target.checked,
+                                        )
+                                      }
+                                    />
+                                    <label
+                                      className='form-check-label'
+                                      htmlFor={`guardian-same-address-new-${index}`}
+                                      style={{ fontSize: '0.9rem' }}
+                                    >
+                                      Same as main address
+                                    </label>
                                   </div>
                                 </div>
-                              ) : (
-                                <>
-                                  <label className='form-label'>Address</label>
-                                  <input
-                                    type='text'
-                                    className='form-control'
-                                    value={formatAddress(guardian.address)}
-                                    disabled
-                                  />
-                                </>
-                              )}
+                                <div className='card-body pb-2'>
+                                  {guardianHasAddressField ? (
+                                    <div className='flex-fill'>
+                                      <div className='row mb-3'>
+                                        <div className='col-md-8'>
+                                          <label className='form-label'>
+                                            Street Address
+                                            {allGuardianFields.find(
+                                              (f) => f.fieldName === 'address',
+                                            )?.isRequired && (
+                                              <span className='text-danger ms-1'>
+                                                *
+                                              </span>
+                                            )}
+                                          </label>
+                                          <input
+                                            type='text'
+                                            className={`form-control ${gErrors['address.street'] ? 'is-invalid' : ''}`}
+                                            value={
+                                              ensureAddress(guardian.address)
+                                                .street
+                                            }
+                                            onChange={(e) =>
+                                              handleGuardianAddressChange(
+                                                e,
+                                                index,
+                                                'street',
+                                              )
+                                            }
+                                            placeholder='123 Main St'
+                                            disabled={guardianSameAsMain[index]}
+                                          />
+                                          {gErrors['address.street'] && (
+                                            <div className='invalid-feedback d-block'>
+                                              {gErrors['address.street']}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className='col-md-4'>
+                                          <label className='form-label'>
+                                            Apt/Suite (optional)
+                                          </label>
+                                          <input
+                                            type='text'
+                                            className='form-control'
+                                            value={
+                                              ensureAddress(guardian.address)
+                                                .street2 || ''
+                                            }
+                                            onChange={(e) =>
+                                              handleGuardianAddressChange(
+                                                e,
+                                                index,
+                                                'street2',
+                                              )
+                                            }
+                                            disabled={guardianSameAsMain[index]}
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className='row mb-4'>
+                                        <div className='col-md-5'>
+                                          <label className='form-label'>
+                                            City
+                                            {allGuardianFields.find(
+                                              (f) => f.fieldName === 'city',
+                                            )?.isRequired && (
+                                              <span className='text-danger ms-1'>
+                                                *
+                                              </span>
+                                            )}
+                                          </label>
+                                          <input
+                                            type='text'
+                                            className={`form-control ${gErrors['address.city'] ? 'is-invalid' : ''}`}
+                                            value={
+                                              ensureAddress(guardian.address)
+                                                .city
+                                            }
+                                            onChange={(e) =>
+                                              handleGuardianAddressChange(
+                                                e,
+                                                index,
+                                                'city',
+                                              )
+                                            }
+                                            placeholder='Seattle'
+                                            disabled={guardianSameAsMain[index]}
+                                          />
+                                          {gErrors['address.city'] && (
+                                            <div className='invalid-feedback d-block'>
+                                              {gErrors['address.city']}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className='col-md-3'>
+                                          <label className='form-label'>
+                                            State
+                                            {allGuardianFields.find(
+                                              (f) => f.fieldName === 'state',
+                                            )?.isRequired && (
+                                              <span className='text-danger ms-1'>
+                                                *
+                                              </span>
+                                            )}
+                                          </label>
+                                          <input
+                                            type='text'
+                                            className={`form-control ${gErrors['address.state'] ? 'is-invalid' : ''}`}
+                                            value={
+                                              ensureAddress(guardian.address)
+                                                .state
+                                            }
+                                            onChange={(e) =>
+                                              handleGuardianAddressChange(
+                                                e,
+                                                index,
+                                                'state',
+                                              )
+                                            }
+                                            maxLength={2}
+                                            placeholder='WA'
+                                            disabled={guardianSameAsMain[index]}
+                                          />
+                                          {gErrors['address.state'] && (
+                                            <div className='invalid-feedback d-block'>
+                                              {gErrors['address.state']}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className='col-md-4'>
+                                          <label className='form-label'>
+                                            ZIP Code
+                                            {allGuardianFields.find(
+                                              (f) => f.fieldName === 'zip',
+                                            )?.isRequired && (
+                                              <span className='text-danger ms-1'>
+                                                *
+                                              </span>
+                                            )}
+                                          </label>
+                                          <input
+                                            type='text'
+                                            className={`form-control ${gErrors['address.zip'] ? 'is-invalid' : ''}`}
+                                            value={
+                                              ensureAddress(guardian.address)
+                                                .zip
+                                            }
+                                            onChange={(e) =>
+                                              handleGuardianAddressChange(
+                                                e,
+                                                index,
+                                                'zip',
+                                              )
+                                            }
+                                            maxLength={10}
+                                            placeholder='98101'
+                                            disabled={guardianSameAsMain[index]}
+                                          />
+                                          {gErrors['address.zip'] && (
+                                            <div className='invalid-feedback d-block'>
+                                              {gErrors['address.zip']}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </div>
+
+                              <div className='d-flex gap-2 mb-3 mt-3'>
+                                <button
+                                  type='button'
+                                  className='btn btn-primary btn-sm'
+                                  onClick={() =>
+                                    handleGuardianInfoSubmit(index)
+                                  }
+                                >
+                                  <i className='ti ti-device-floppy me-2' />{' '}
+                                  Save Guardian
+                                </button>
+                                <button
+                                  type='button'
+                                  className='btn btn-outline-secondary btn-sm'
+                                  onClick={() =>
+                                    handleCancelGuardianEdit(index)
+                                  }
+                                >
+                                  Cancel
+                                </button>
+                              </div>
                             </div>
-                            {isEditingGuardian !== index ? (
-                              <button
-                                type='button'
-                                className='btn btn-primary btn-sm mb-4'
-                                onClick={() => setIsEditingGuardian(index)}
-                              >
-                                <i className='ti ti-edit me-2' /> Edit
-                              </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // For existing guardians, use the regular card style
+                    return (
+                      <div key={index} className='mb-4'>
+                        <div className='card'>
+                          <div className='card-header d-flex align-items-center justify-content-between'>
+                            <h5 className='mb-0'>
+                              {guardian.fullName || 'Guardian'}
+                            </h5>
+                            {!editing ? (
+                              <div className='d-flex gap-2'>
+                                <button
+                                  type='button'
+                                  className='btn btn-primary btn-sm'
+                                  onClick={() => setIsEditingGuardian(index)}
+                                  disabled={
+                                    isEditingGuardian !== null &&
+                                    isEditingGuardian !== index
+                                  }
+                                >
+                                  <i className='ti ti-edit me-2' /> Edit
+                                </button>
+                                <button
+                                  type='button'
+                                  className='btn btn-outline-danger btn-sm'
+                                  onClick={() => handleDeleteGuardian(index)}
+                                  disabled={
+                                    isEditingGuardian !== null &&
+                                    isEditingGuardian !== index
+                                  }
+                                >
+                                  <i className='ti ti-trash me-2' /> Remove
+                                </button>
+                              </div>
                             ) : (
-                              <div className='d-flex gap-2 mb-4'>
+                              <div className='d-flex gap-2'>
                                 <button
                                   type='button'
                                   className='btn btn-outline-secondary btn-sm'
@@ -1941,8 +2893,7 @@ const Profile: React.FC = () => {
                                     }
                                   }}
                                 >
-                                  <i className='ti ti-x me-2' />
-                                  Cancel
+                                  <i className='ti ti-x me-2' /> Cancel
                                 </button>
                                 <button
                                   type='button'
@@ -1951,10 +2902,400 @@ const Profile: React.FC = () => {
                                     handleGuardianInfoSubmit(index)
                                   }
                                 >
-                                  <i className='ti ti-edit me-2' /> Save Changes
+                                  <i className='ti ti-device-floppy me-2' />{' '}
+                                  Save Changes
                                 </button>
                               </div>
                             )}
+                          </div>
+
+                          <div className='card-body pb-0'>
+                            {renderAvatarBlock({
+                              displayAvatar,
+                              isUploading: isGuardianUploading,
+                              hasSavedId,
+                              defaultAvatar: DEFAULT_AVATAR,
+                              inputRef: (el) => {
+                                guardianFileInputRefs.current[index] = el;
+                              },
+                              onFileChange: (e) =>
+                                handleGuardianAvatarChange(e, index),
+                              onDelete: () => handleGuardianAvatarDelete(index),
+                            })}
+
+                            <div className='d-block'>
+                              {editing ? (
+                                <NameInput
+                                  value={guardian.fullName}
+                                  onChange={(val: string) =>
+                                    handleGuardianInputChange(
+                                      {
+                                        target: {
+                                          name: 'fullName',
+                                          value: val,
+                                        },
+                                      } as React.ChangeEvent<HTMLInputElement>,
+                                      index,
+                                    )
+                                  }
+                                  error={gErrors.fullName}
+                                />
+                              ) : (
+                                <div className='mb-3 flex-fill'>
+                                  <label className='form-label'>
+                                    Full Name
+                                  </label>
+                                  <input
+                                    type='text'
+                                    className='form-control'
+                                    value={guardian.fullName}
+                                    disabled
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* First row: All fields except fullName, isCoach, and aauNumber */}
+                            {guardianPersonalFields.filter(
+                              (f) =>
+                                f.fieldName !== 'fullName' &&
+                                f.fieldName !== 'guardianFullName' &&
+                                f.fieldName !== 'aauNumber' &&
+                                f.fieldName !== 'isCoach',
+                            ).length > 0 && (
+                              <div className='d-block d-xl-flex flex-wrap'>
+                                {guardianPersonalFields
+                                  .filter(
+                                    (f) =>
+                                      f.fieldName !== 'fullName' &&
+                                      f.fieldName !== 'guardianFullName' &&
+                                      f.fieldName !== 'aauNumber' &&
+                                      f.fieldName !== 'isCoach',
+                                  )
+                                  .map((field, i, arr) =>
+                                    renderGuardianPersonalField(
+                                      field,
+                                      guardian,
+                                      index,
+                                      editing,
+                                      gErrors,
+                                      i === arr.length - 1,
+                                    ),
+                                  )}
+                              </div>
+                            )}
+
+                            {/* Second row: Are you a coach? checkbox and AAU number (side by side) */}
+                            <div className='row mb-3'>
+                              <div className='d-block d-xl-flex flex-wrap'>
+                                {/* Coach checkbox column */}
+                                {guardianPersonalFields.some(
+                                  (f) => f.fieldName === 'isCoach',
+                                ) && (
+                                  <div className='col-md-3'>
+                                    {guardianPersonalFields
+                                      .filter((f) => f.fieldName === 'isCoach')
+                                      .map((field) => {
+                                        // Create a custom handler for the checkbox
+                                        const handleCoachChange = (
+                                          e: React.ChangeEvent<HTMLInputElement>,
+                                        ) => {
+                                          handleGuardianInputChange(e, index);
+                                          // If unchecked, clear AAU number
+                                          if (!e.target.checked) {
+                                            handleGuardianInputChange(
+                                              {
+                                                target: {
+                                                  name: 'aauNumber',
+                                                  value: '',
+                                                },
+                                              } as React.ChangeEvent<HTMLInputElement>,
+                                              index,
+                                            );
+                                          }
+                                        };
+
+                                        return (
+                                          <div
+                                            key={field.fieldName}
+                                            className='mb-3 flex-fill'
+                                          >
+                                            <div className='form-check mt-2'>
+                                              <input
+                                                type='checkbox'
+                                                className={`form-check-input ${gErrors.isCoach ? 'is-invalid' : ''}`}
+                                                name='isCoach'
+                                                id={`guardian-${index}-isCoach`}
+                                                checked={
+                                                  guardian.isCoach || false
+                                                }
+                                                onChange={handleCoachChange}
+                                                disabled={!editing}
+                                              />
+                                              <label
+                                                className='form-check-label'
+                                                htmlFor={`guardian-${index}-isCoach`}
+                                              >
+                                                {field.label}
+                                              </label>
+                                              {gErrors.isCoach && (
+                                                <div className='invalid-feedback d-block'>
+                                                  {gErrors.isCoach}
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                  </div>
+                                )}
+
+                                {/* AAU Number column - shown conditionally next to checkbox */}
+                                {editing && guardian.isCoach ? (
+                                  <div className='col-md-9'>
+                                    <label className='form-label'>
+                                      AAU Number{' '}
+                                      {editing && '(Required for coaches)'}
+                                    </label>
+                                    <input
+                                      type='text'
+                                      className={`form-control ${gErrors.aauNumber ? 'is-invalid' : ''}`}
+                                      name='aauNumber'
+                                      value={guardian.aauNumber || ''}
+                                      onChange={(e) =>
+                                        handleGuardianInputChange(e, index)
+                                      }
+                                      placeholder='Enter AAU number'
+                                      disabled={!editing}
+                                    />
+                                    {gErrors.aauNumber && (
+                                      <div className='invalid-feedback d-block'>
+                                        {gErrors.aauNumber}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : !editing &&
+                                  guardian.isCoach &&
+                                  guardian.aauNumber ? (
+                                  <div className='col-md-9'>
+                                    <label className='form-label'>
+                                      AAU Number
+                                    </label>
+                                    <input
+                                      type='text'
+                                      className='form-control'
+                                      value={guardian.aauNumber}
+                                      disabled
+                                    />
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Address Information */}
+                          <div className='card mx-3 mb-3'>
+                            <div className='card-header d-flex justify-content-between align-items-center'>
+                              <h6 className='mb-0'>Address Information</h6>
+                              {editing && (
+                                <div className='form-check'>
+                                  <input
+                                    type='checkbox'
+                                    className='form-check-input'
+                                    id={`guardian-same-address-${index}`}
+                                    checked={guardianSameAsMain[index] || false}
+                                    onChange={(e) =>
+                                      handleGuardianSameAsMainChange(
+                                        index,
+                                        e.target.checked,
+                                      )
+                                    }
+                                  />
+                                  <label
+                                    className='form-check-label'
+                                    htmlFor={`guardian-same-address-${index}`}
+                                    style={{ fontSize: '0.9rem' }}
+                                  >
+                                    Same as main address
+                                  </label>
+                                </div>
+                              )}
+                            </div>
+                            <div className='card-body pb-0'>
+                              {!editing ? (
+                                <div className='mb-3'>
+                                  <label className='form-label'>Address</label>
+                                  <input
+                                    type='text'
+                                    className='form-control'
+                                    value={formatAddress(guardian.address)}
+                                    disabled
+                                  />
+                                </div>
+                              ) : guardianHasAddressField ? (
+                                <div className='flex-fill'>
+                                  <div className='row mb-3'>
+                                    <div className='col-md-8'>
+                                      <label className='form-label'>
+                                        Street Address
+                                        {allGuardianFields.find(
+                                          (f) => f.fieldName === 'address',
+                                        )?.isRequired && (
+                                          <span className='text-danger ms-1'>
+                                            *
+                                          </span>
+                                        )}
+                                      </label>
+                                      <input
+                                        type='text'
+                                        className={`form-control ${gErrors['address.street'] ? 'is-invalid' : ''}`}
+                                        value={
+                                          ensureAddress(guardian.address).street
+                                        }
+                                        onChange={(e) =>
+                                          handleGuardianAddressChange(
+                                            e,
+                                            index,
+                                            'street',
+                                          )
+                                        }
+                                        placeholder='123 Main St'
+                                        disabled={guardianSameAsMain[index]}
+                                      />
+                                      {gErrors['address.street'] && (
+                                        <div className='invalid-feedback d-block'>
+                                          {gErrors['address.street']}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className='col-md-4'>
+                                      <label className='form-label'>
+                                        Apt/Suite (optional)
+                                      </label>
+                                      <input
+                                        type='text'
+                                        className='form-control'
+                                        value={
+                                          ensureAddress(guardian.address)
+                                            .street2 || ''
+                                        }
+                                        onChange={(e) =>
+                                          handleGuardianAddressChange(
+                                            e,
+                                            index,
+                                            'street2',
+                                          )
+                                        }
+                                        disabled={guardianSameAsMain[index]}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className='row mb-4'>
+                                    <div className='col-md-5'>
+                                      <label className='form-label'>
+                                        City
+                                        {allGuardianFields.find(
+                                          (f) => f.fieldName === 'city',
+                                        )?.isRequired && (
+                                          <span className='text-danger ms-1'>
+                                            *
+                                          </span>
+                                        )}
+                                      </label>
+                                      <input
+                                        type='text'
+                                        className={`form-control ${gErrors['address.city'] ? 'is-invalid' : ''}`}
+                                        value={
+                                          ensureAddress(guardian.address).city
+                                        }
+                                        onChange={(e) =>
+                                          handleGuardianAddressChange(
+                                            e,
+                                            index,
+                                            'city',
+                                          )
+                                        }
+                                        placeholder='Seattle'
+                                        disabled={guardianSameAsMain[index]}
+                                      />
+                                      {gErrors['address.city'] && (
+                                        <div className='invalid-feedback d-block'>
+                                          {gErrors['address.city']}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className='col-md-3'>
+                                      <label className='form-label'>
+                                        State
+                                        {allGuardianFields.find(
+                                          (f) => f.fieldName === 'state',
+                                        )?.isRequired && (
+                                          <span className='text-danger ms-1'>
+                                            *
+                                          </span>
+                                        )}
+                                      </label>
+                                      <input
+                                        type='text'
+                                        className={`form-control ${gErrors['address.state'] ? 'is-invalid' : ''}`}
+                                        value={
+                                          ensureAddress(guardian.address).state
+                                        }
+                                        onChange={(e) =>
+                                          handleGuardianAddressChange(
+                                            e,
+                                            index,
+                                            'state',
+                                          )
+                                        }
+                                        maxLength={2}
+                                        placeholder='WA'
+                                        disabled={guardianSameAsMain[index]}
+                                      />
+                                      {gErrors['address.state'] && (
+                                        <div className='invalid-feedback d-block'>
+                                          {gErrors['address.state']}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className='col-md-4'>
+                                      <label className='form-label'>
+                                        ZIP Code
+                                        {allGuardianFields.find(
+                                          (f) => f.fieldName === 'zip',
+                                        )?.isRequired && (
+                                          <span className='text-danger ms-1'>
+                                            *
+                                          </span>
+                                        )}
+                                      </label>
+                                      <input
+                                        type='text'
+                                        className={`form-control ${gErrors['address.zip'] ? 'is-invalid' : ''}`}
+                                        value={
+                                          ensureAddress(guardian.address).zip
+                                        }
+                                        onChange={(e) =>
+                                          handleGuardianAddressChange(
+                                            e,
+                                            index,
+                                            'zip',
+                                          )
+                                        }
+                                        maxLength={10}
+                                        placeholder='98101'
+                                        disabled={guardianSameAsMain[index]}
+                                      />
+                                      {gErrors['address.zip'] && (
+                                        <div className='invalid-feedback d-block'>
+                                          {gErrors['address.zip']}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1966,24 +3307,15 @@ const Profile: React.FC = () => {
                     No additional guardians registered.
                   </p>
                 )}
-                {editedGuardians.length > 0 && !isEditingGuardian && (
-                  <div className='mb-3'>
-                    <button
-                      type='button'
-                      className='btn btn-outline-primary btn-sm'
-                      onClick={addNewGuardian}
-                    >
-                      <i className='ti ti-plus me-1' /> Add Another Guardian
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
-
             {/* ── Players ── */}
             <div className='card mt-3'>
               <div className='card-header d-flex justify-content-between align-items-center'>
-                <h5>Player Information</h5>
+                <h5>
+                  <i className='ti ti-shirt-sport me-2' />
+                  Player Information
+                </h5>
                 {!showAddPlayerForm && !editingPlayerId && (
                   <button
                     type='button'
@@ -2020,7 +3352,7 @@ const Profile: React.FC = () => {
                       const isEditingThis = editingPlayerId === player._id;
                       const isSavingThis = isSavingPlayerEdit === player._id;
                       const editPlayer = editedPlayers[player._id];
-                      const visibleFields = getVisibleFields(
+                      const visibleFields = getPlayerVisibleFields(
                         editPlayer || player,
                       );
 
@@ -2028,10 +3360,7 @@ const Profile: React.FC = () => {
                         <div key={player._id} className='mb-4'>
                           <div className='card'>
                             <div className='card-header d-flex align-items-center justify-content-between'>
-                              <h5 className='mb-0'>
-                                <i className='ti ti-users me-2' />
-                                {player.fullName}
-                              </h5>
+                              <h5 className='mb-0'>{player.fullName}</h5>
                               <div className='d-flex gap-2'>
                                 {!isEditingThis ? (
                                   <>

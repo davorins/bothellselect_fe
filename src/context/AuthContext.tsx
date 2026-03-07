@@ -229,16 +229,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const setParentData = useCallback(
     (fetchedParent: Parent | any, isViewing = false): Parent => {
+      // Create a proper address object
+      let addressObject: any = '';
+
+      if (fetchedParent.address && typeof fetchedParent.address === 'object') {
+        // Keep it as an object with all fields including street2
+        addressObject = {
+          street: fetchedParent.address.street || '',
+          street2: fetchedParent.address.street2 || '',
+          city: fetchedParent.address.city || '',
+          state: fetchedParent.address.state || '',
+          zip: fetchedParent.address.zip || '',
+        };
+      } else if (typeof fetchedParent.address === 'string') {
+        // If it's a string, parse it (though this shouldn't happen with proper data)
+        addressObject = fetchedParent.address;
+      } else {
+        addressObject = '';
+      }
+
       const parentData: Parent = {
         _id: fetchedParent._id || fetchedParent.parentId || '',
         email: fetchedParent.email || '',
         fullName: fetchedParent.fullName || '',
         role: fetchedParent.role || 'Parent',
         phone: fetchedParent.phone || '',
-        address:
-          typeof fetchedParent.address === 'object'
-            ? `${fetchedParent.address.street}, ${fetchedParent.address.city}, ${fetchedParent.address.state} ${fetchedParent.address.zip}`
-            : fetchedParent.address || '',
+        address: addressObject, // Keep as object, not string
         relationship: fetchedParent.relationship || '',
         players: Array.isArray(fetchedParent.players)
           ? fetchedParent.players.filter(
@@ -931,11 +947,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             role: decoded.role || 'Parent',
             phone: decoded.phone || '',
             address:
-              typeof decoded.address === 'string'
-                ? decoded.address
-                : decoded.address
-                  ? `${decoded.address.street}, ${decoded.address.city}, ${decoded.address.state} ${decoded.address.zip}`
-                  : '',
+              decoded.address && typeof decoded.address === 'object'
+                ? {
+                    street: decoded.address.street || '',
+                    street2: decoded.address.street2 || '',
+                    city: decoded.address.city || '',
+                    state: decoded.address.state || '',
+                    zip: decoded.address.zip || '',
+                  }
+                : decoded.address || '',
             relationship: decoded.relationship || '',
             players: decoded.players || [],
             isCoach: decoded.isCoach || false,
