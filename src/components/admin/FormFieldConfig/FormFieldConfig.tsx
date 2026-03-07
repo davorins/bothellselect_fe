@@ -250,7 +250,7 @@ const FormFieldConfig: React.FC = () => {
     <Card>
       <Card.Header>
         <div className='d-flex justify-content-between align-items-center'>
-          <h5 className='mb-0'>Form Field Configuration</h5>
+          <h5 className='mb-0'></h5>
           <div>
             <Button
               variant='outline-primary'

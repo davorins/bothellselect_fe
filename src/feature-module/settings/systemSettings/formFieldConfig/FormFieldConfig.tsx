@@ -13,19 +13,10 @@ const FormFieldConfigPage = () => {
         <div className='d-md-flex d-block align-items-center justify-content-between border-bottom pb-3 mb-3'>
           <div className='my-auto mb-2'>
             <h3 className='page-title mb-1'>Form Field Configuration</h3>
-            <nav>
-              <ol className='breadcrumb mb-0'>
-                <li className='breadcrumb-item'>
-                  <Link to={routes.adminDashboard}>Dashboard</Link>
-                </li>
-                <li className='breadcrumb-item'>
-                  <Link to='#'>System Settings</Link>
-                </li>
-                <li className='breadcrumb-item active' aria-current='page'>
-                  Form Fields
-                </li>
-              </ol>
-            </nav>
+            <p>
+              Manage form fields to control what information users submit during
+              registration
+            </p>
           </div>
         </div>
 
