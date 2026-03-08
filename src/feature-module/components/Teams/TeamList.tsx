@@ -513,9 +513,14 @@ const TeamList: React.FC = () => {
   return (
     <div className='page-wrapper'>
       <div className='content'>
+        <div className='d-md-flex d-block align-items-center justify-content-between mb-3'>
+          <div className='my-auto mb-2'>
+            <h3 className='page-title mb-1'>Team Management</h3>
+          </div>
+        </div>
         <div className='card'>
           <div className='card-header d-flex align-items-center justify-content-between flex-wrap pb-0'>
-            <h4 className='mb-5'>Team Management</h4>
+            <h4 className='mb-5'></h4>
             <div className='d-flex align-items-center flex-wrap'>
               <Link to={all_routes.createTeam}>
                 <Button
@@ -722,8 +727,6 @@ const TeamList: React.FC = () => {
                     total: filteredTeams.length,
                     showSizeChanger: true,
                     pageSizeOptions: ['10', '20', '50', '100'],
-                    showTotal: (total, range) =>
-                      `Showing ${range[0]}-${range[1]} of ${total} teams`,
                   }}
                   onChange={handleTableChange}
                   loading={tableLoading}

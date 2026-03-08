@@ -34,6 +34,8 @@ import { message } from 'antd';
 import { debounce } from 'lodash';
 import { ExtendedTableRecord } from '../../../../types/table.types';
 import { useActiveSeasonEvents } from '../../../../context/SeasonEventsContext';
+import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
+import { formatPhoneNumber } from '../../../../utils/phone';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -45,7 +47,21 @@ const ParentGrid = () => {
   const { currentUser } = useAuth();
   const { activeEvents } = useActiveSeasonEvents();
 
-  // State for filters
+  // ── Dynamic fields ──────────────────────────────────────────────────────
+  const { getVisibleFields: getParentVisibleFields } = useDynamicFormFields(
+    'parent',
+    { registrationYear: new Date().getFullYear() },
+  );
+
+  const parentVisibleFields = useMemo(
+    () => getParentVisibleFields({} as any),
+    [getParentVisibleFields],
+  );
+
+  const hasField = (name: string) =>
+    parentVisibleFields.some((f) => f.fieldName === name);
+
+  // ── Filter state ───────────────────────────────────────────────────────────
   const [filters, setFilters] = useState<ParentFilterParams>({
     nameFilter: '',
     emailFilter: '',
@@ -59,13 +75,10 @@ const ParentGrid = () => {
     'asc' | 'desc' | 'recentlyViewed' | 'recentlyAdded' | null
   >(null);
 
-  // Grid specific state
   const [displayCount, setDisplayCount] = useState(12);
   const itemsPerLoad = 12;
 
-  // Create hook filters by mapping from component filters to API expected keys
   const hookFilters = useMemo(() => {
-    // Safely convert Moment date range to ISO date strings
     let dateFrom: string | undefined;
     let dateTo: string | undefined;
 
@@ -102,7 +115,6 @@ const ParentGrid = () => {
     filters.dateRange?.[1]?.valueOf(),
   ]);
 
-  // Use the new useAllParents hook to fetch ALL data
   const {
     data: allParentData,
     loading,
@@ -112,11 +124,9 @@ const ParentGrid = () => {
 
   const { handleParentClick } = useParentActions();
 
-  // Local state
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  // Debug logs for sort order changes
   useEffect(() => {
     console.log('🔍 Sort order changed to:', sortOrder);
     if (sortOrder === 'recentlyViewed') {
@@ -127,7 +137,6 @@ const ParentGrid = () => {
     }
   }, [sortOrder]);
 
-  // Debug logs
   useEffect(() => {
     console.log('🎯 ParentGrid Debug:', {
       hookFilters,
@@ -143,7 +152,6 @@ const ParentGrid = () => {
     });
   }, [hookFilters, allParentData, loading, error]);
 
-  // ✅ Enhance parent data with calculated statuses
   const enhancedParentData = useMemo(() => {
     return allParentData.map((item: ExtendedTableRecord) => {
       const calculatedStatus = getParentStatusFromRecord(item);
@@ -158,18 +166,15 @@ const ParentGrid = () => {
     });
   }, [allParentData]);
 
-  // Apply sorting with debug logging
   const sortedData = useMemo(() => {
     if (!sortOrder || allParentData.length === 0) return allParentData;
     return sortParentData(allParentData, sortOrder);
   }, [allParentData, sortOrder]);
 
-  // Get items to display
   const parentsToDisplay = useMemo(() => {
     return sortedData.slice(0, displayCount);
   }, [sortedData, displayCount]);
 
-  // Debounced filter change
   const debouncedFilterChange = useMemo(
     () =>
       debounce((newFilters: Partial<ParentFilterParams>) => {
@@ -206,7 +211,6 @@ const ParentGrid = () => {
     [handleFilterChange],
   );
 
-  // Handle delete action
   const handleDelete = (record: ExtendedTableRecord) => {
     const canDelete =
       currentUser?.role === 'admin' &&
@@ -248,7 +252,6 @@ const ParentGrid = () => {
     setDisplayCount((prev) => Math.min(prev + itemsPerLoad, sortedData.length));
   };
 
-  // Handle refresh
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     await refresh();
@@ -257,7 +260,6 @@ const ParentGrid = () => {
     message.success('Parent list refreshed');
   }, [refresh]);
 
-  // Handle API errors
   useEffect(() => {
     if (error) {
       setApiError(error);
@@ -266,14 +268,12 @@ const ParentGrid = () => {
     }
   }, [error]);
 
-  // Clean up debounce
   useEffect(() => {
     return () => {
       debouncedFilterChange.cancel();
     };
   }, [debouncedFilterChange]);
 
-  // Status summary
   const statusSummary = useMemo(() => {
     const active = allParentData.filter((p) => p.status === 'Active').length;
     const pending = allParentData.filter(
@@ -407,7 +407,6 @@ const ParentGrid = () => {
                   item.type === 'guardian' ||
                   (item.type === 'coach' && !item.parentId));
 
-              // Get avatar using helper functions
               const avatarType = getAvatarTypeFromItem(item);
               const gender = getGenderFromItem(item);
               const defaultAvatar = getDefaultAvatar(avatarType, gender);
@@ -416,11 +415,9 @@ const ParentGrid = () => {
                 defaultAvatar,
               );
 
-              // Get status from enhanced data
               const status = item.status;
               const paymentStatus = item.paymentStatus;
 
-              // Determine badge color based on status
               const badgeColor =
                 status === 'Active'
                   ? 'success'
@@ -437,9 +434,7 @@ const ParentGrid = () => {
                     <div className='card-header d-flex align-items-center justify-content-between'>
                       <div className='d-flex align-items-center gap-2'>
                         {item.type === 'guardian' ? (
-                          <>
-                            <span>Guardian</span>
-                          </>
+                          <span>Guardian</span>
                         ) : item.isCoach ? (
                           'Coach'
                         ) : (
@@ -584,9 +579,18 @@ const ParentGrid = () => {
                               </span>
                             </h5>
                             <p className='mb-1'>
-                              {item.email}
-                              <br />
-                              <small>{item.phone}</small>
+                              {/* Email — gated */}
+                              {hasField('email') && item.email && (
+                                <>
+                                  {item.email}
+                                  <br />
+                                </>
+                              )}
+                              {/* Phone — gated */}
+                              {hasField('phone') && item.phone && (
+                                <small>{formatPhoneNumber(item.phone)}</small>
+                              )}
+                              {/* Relationship — always shown for guardians */}
                               {item.type === 'guardian' &&
                                 (item as any).relationship && (
                                   <>
@@ -601,11 +605,14 @@ const ParentGrid = () => {
                               <small className='text-muted'>
                                 Players: {item.players?.length || 0}
                               </small>
-                              {item.aauNumber && item.aauNumber !== 'N/A' && (
-                                <small className='text-muted'>
-                                  AAU: {item.aauNumber}
-                                </small>
-                              )}
+                              {/* AAU — gated on isCoach field or if parent is a coach */}
+                              {(hasField('isCoach') || item.isCoach) &&
+                                item.aauNumber &&
+                                item.aauNumber !== 'N/A' && (
+                                  <small className='text-muted'>
+                                    AAU: {item.aauNumber}
+                                  </small>
+                                )}
                             </div>
                           </div>
                         </div>

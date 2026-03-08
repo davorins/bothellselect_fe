@@ -25,6 +25,7 @@ import { all_routes } from '../../../router/all_routes';
 import { Moment } from 'moment';
 import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 import { debounce } from 'lodash';
+import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
 
 const CoachList = () => {
   const [searchParams] = useSearchParams();
@@ -33,6 +34,17 @@ const CoachList = () => {
   const dropdownMenuRef = useRef<HTMLDivElement>(null);
   const { currentUser } = useAuth();
   const { handleCoachClick } = useCoachActions();
+
+  // ── Dynamic fields ─────────────────────────────────────────────────────────
+  const { getVisibleFields: getParentVisibleFields } = useDynamicFormFields(
+    'parent',
+    { registrationYear: new Date().getFullYear() },
+  );
+
+  const visibleFieldNames = useMemo(() => {
+    const fields = getParentVisibleFields({} as any);
+    return fields.map((f) => f.fieldName);
+  }, [getParentVisibleFields]);
 
   // ── Filter state ───────────────────────────────────────────────────────────
   const [filters, setFilters] = useState<CoachFilterParams>({
@@ -45,8 +57,6 @@ const CoachList = () => {
   });
 
   const [sortOrder, setSortOrder] = useState<CoachSortOrder>(null);
-
-  // ✅ pageSize as state so changing it triggers a new API request
   const [pageSize, setPageSize] = useState(10);
   const [tableLoading, setTableLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -91,7 +101,6 @@ const CoachList = () => {
     filters.dateRange?.[1]?.valueOf(),
   ]);
 
-  // ✅ Single useCoachData call — was being called twice before
   const {
     data: coaches,
     loading,
@@ -147,7 +156,6 @@ const CoachList = () => {
     setSortOrder(order);
   }, []);
 
-  // ── Table change (pagination + page size) ─────────────────────────────────
   const handleTableChange = useCallback(
     (newPagination: any) => {
       const newPageSize = newPagination.pageSize;
@@ -156,7 +164,6 @@ const CoachList = () => {
       setTableLoading(true);
 
       if (newPageSize !== pageSize) {
-        // Page size changed — update and reset to page 1
         setPageSize(newPageSize);
         goToPage(1);
       } else {
@@ -182,20 +189,16 @@ const CoachList = () => {
     }
   }, [error]);
 
-  // ── Derived values ─────────────────────────────────────────────────────────
-  const statusSummary = useMemo(() => {
-    const active = coaches.filter(
-      (c: ExtendedCoachRecord) => c.status === 'Active',
-    ).length;
-    const inactive = coaches.filter(
-      (c: ExtendedCoachRecord) => c.status === 'Inactive',
-    ).length;
-    return { active, inactive, total: coaches.length };
-  }, [coaches]);
-
+  // ── Columns — depend on both actions AND dynamic field names ───────────────
   const columns = useMemo(
-    () => getCoachTableColumns(handleCoachClick, currentUser?.role),
-    [handleCoachClick, currentUser?.role],
+    () =>
+      getCoachTableColumns(
+        handleCoachClick,
+        currentUser?.role,
+        handleRefresh,
+        visibleFieldNames,
+      ),
+    [handleCoachClick, currentUser?.role, handleRefresh, visibleFieldNames],
   );
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -340,8 +343,6 @@ const CoachList = () => {
                 total: pagination.total,
                 showSizeChanger: true,
                 pageSizeOptions: ['10', '25', '50', '100'],
-                // showTotal: (total, range) =>
-                //   `Showing ${range[0]}-${range[1]} of ${total} coaches`,
               }}
               onChange={handleTableChange}
               scroll={{ x: true }}

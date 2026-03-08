@@ -1,3 +1,4 @@
+// components/Coaches/CoachGrid.tsx
 import React, {
   useRef,
   useState,
@@ -11,11 +12,7 @@ import PredefinedDateRanges from '../../../../core/common/datePicker';
 import { useAuth } from '../../../../context/AuthContext';
 import { useCoachData } from '../../../hooks/useCoachData';
 import { useCoachActions } from '../../../hooks/useCoachActions';
-import {
-  filterCoachData,
-  sortCoachData,
-  ExtendedCoachRecord,
-} from '../../../../utils/coachUtils';
+import { ExtendedCoachRecord } from '../../../../utils/coachUtils';
 import {
   CoachFilterParams,
   CoachSortOrder,
@@ -28,6 +25,8 @@ import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 import { debounce } from 'lodash';
 import { message } from 'antd';
 import { getAvatarUrl, getDefaultAvatar } from '../../../../utils/r2Utils';
+import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
+import { formatPhoneNumber } from '../../../../utils/phone';
 
 const DEFAULT_COACH_AVATAR = getDefaultAvatar('coach');
 
@@ -37,7 +36,21 @@ const CoachGrid = () => {
   const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
   const { currentUser } = useAuth();
 
-  // Filter states
+  // ── Dynamic fields ─────────────────────────────────────────────────────────
+  const { getVisibleFields: getParentVisibleFields } = useDynamicFormFields(
+    'parent',
+    { registrationYear: new Date().getFullYear() },
+  );
+
+  const parentVisibleFields = useMemo(
+    () => getParentVisibleFields({} as any),
+    [getParentVisibleFields],
+  );
+
+  const hasField = (name: string) =>
+    parentVisibleFields.some((f) => f.fieldName === name);
+
+  // ── Filter state ───────────────────────────────────────────────────────────
   const [filters, setFilters] = useState<CoachFilterParams>({
     nameFilter: '',
     emailFilter: '',
@@ -53,7 +66,6 @@ const CoachGrid = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  // Convert local filters to hook filters
   const hookFilters = useMemo(() => {
     return {
       name: filters.nameFilter || undefined,
@@ -72,18 +84,15 @@ const CoachGrid = () => {
     sortOrder,
   ]);
 
-  // Use the paginated hook
   const {
     data: coaches,
     loading,
     error,
-    pagination,
     refresh,
-  } = useCoachData(hookFilters, 50); // Load more items for grid view
+  } = useCoachData(hookFilters, 50);
 
   const { handleCoachClick } = useCoachActions();
 
-  // Debounced filter change handler
   const debouncedFilterChange = useMemo(
     () =>
       debounce((newFilters: Partial<CoachFilterParams>) => {
@@ -93,14 +102,12 @@ const CoachGrid = () => {
     [],
   );
 
-  // Clean up debounce on unmount
   useEffect(() => {
     return () => {
       debouncedFilterChange.cancel();
     };
   }, [debouncedFilterChange]);
 
-  // Handle filter changes
   const handleFilterChange = useCallback(
     (newFilters: Partial<CoachFilterParams>) => {
       debouncedFilterChange(newFilters);
@@ -129,7 +136,6 @@ const CoachGrid = () => {
     [handleFilterChange],
   );
 
-  // Handle refresh
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     await refresh();
@@ -138,7 +144,6 @@ const CoachGrid = () => {
     message.success('Coach list refreshed');
   }, [refresh]);
 
-  // Handle API errors
   useEffect(() => {
     if (error) {
       setApiError(error);
@@ -147,7 +152,6 @@ const CoachGrid = () => {
     }
   }, [error]);
 
-  // Get coaches to display based on current display count
   const coachesToDisplay = useMemo(() => {
     return coaches.slice(0, displayCount);
   }, [coaches, displayCount]);
@@ -156,21 +160,7 @@ const CoachGrid = () => {
     setDisplayCount((prev) => Math.min(prev + itemsPerLoad, coaches.length));
   };
 
-  // Status summary
-  const statusSummary = useMemo(() => {
-    const active = coaches.filter(
-      (c: ExtendedCoachRecord) => c.status === 'Active',
-    ).length;
-    const inactive = coaches.filter(
-      (c: ExtendedCoachRecord) => c.status === 'Inactive',
-    ).length;
-    return { active, inactive, total: coaches.length };
-  }, [coaches]);
-
-  // Loading state
-  const isLoading = loading && coaches.length === 0;
-
-  if (isLoading) return <LoadingSpinner />;
+  if (loading && coaches.length === 0) return <LoadingSpinner />;
   if (apiError && coaches.length === 0) return <div>Error: {apiError}</div>;
 
   return (
@@ -184,7 +174,7 @@ const CoachGrid = () => {
             onRefresh={handleRefresh}
           />
           <div className='bg-white p-3 border rounded-1 d-flex align-items-center justify-content-between flex-wrap mb-4 pb-0'>
-            <h4 className='mb-3'>Coaches Grid</h4>
+            <h4 className='mb-3'></h4>
             <div className='d-flex align-items-center flex-wrap'>
               {currentUser?.role === 'admin' && (
                 <div className='input-icon-start mb-3 me-2 position-relative'>
@@ -258,34 +248,40 @@ const CoachGrid = () => {
             </div>
           </div>
 
-          {isRefreshing && (
-            <div className='text-center mb-3'>
-              <div className='spinner-border text-primary' role='status'>
-                <span className='visually-hidden'>Refreshing...</span>
-              </div>
-            </div>
-          )}
-
-          {loading && coaches.length > 0 && (
-            <div className='text-center mb-3'>
-              <div
-                className='spinner-border spinner-border-sm text-primary'
-                role='status'
-              >
-                <span className='visually-hidden'>Loading...</span>
-              </div>
-              <span className='ms-2 text-muted'>Updating...</span>
-            </div>
-          )}
-
           <div className='row'>
+            {isRefreshing && (
+              <div className='col-12 text-center py-3'>
+                <div className='spinner-border text-primary' role='status'>
+                  <span className='visually-hidden'>Refreshing...</span>
+                </div>
+              </div>
+            )}
+
+            {loading && coaches.length > 0 && (
+              <div className='col-12 text-center mb-3'>
+                <div
+                  className='spinner-border spinner-border-sm text-primary'
+                  role='status'
+                >
+                  <span className='visually-hidden'>Loading...</span>
+                </div>
+                <span className='ms-2 text-muted'>Updating...</span>
+              </div>
+            )}
+
+            {coachesToDisplay.length === 0 && !loading && (
+              <div className='col-12 text-center py-5'>
+                <i className='ti ti-users fs-1 text-muted'></i>
+                <h5 className='mt-3'>No coaches found</h5>
+                <p className='text-muted'>Try adjusting your filters</p>
+              </div>
+            )}
+
             {coachesToDisplay.map((coach: ExtendedCoachRecord) => {
               const coachAvatar = getAvatarUrl(
                 coach.imgSrc || coach.avatar,
                 DEFAULT_COACH_AVATAR,
               );
-              const statusColor =
-                coach.status === 'Active' ? 'success' : 'danger';
 
               return (
                 <div
@@ -294,18 +290,14 @@ const CoachGrid = () => {
                 >
                   <div className='card flex-fill'>
                     <div className='card-header d-flex align-items-center justify-content-between'>
-                      <span className='text-primary'>
-                        AAU: {coach.aauNumber || 'N/A'}
-                      </span>
+                      <div className='d-flex align-items-center gap-2'>
+                        <span>Coach</span>
+                      </div>
                       <div className='d-flex align-items-center'>
-                        <span
-                          className={`badge badge-soft-${statusColor} d-inline-flex align-items-center me-1`}
-                          title={`Status: ${coach.status}`}
-                        >
-                          <i
-                            className={`ti ti-circle-filled fs-5 me-1 text-${statusColor}`}
-                          />
-                          {coach.status || 'Active'}
+                        {/* Coaches are always Active */}
+                        <span className='badge badge-soft-success d-inline-flex align-items-center me-1'>
+                          <i className='ti ti-circle-filled fs-5 me-1 text-success' />
+                          Active
                         </span>
                         <div className='dropdown'>
                           <Link
@@ -330,7 +322,18 @@ const CoachGrid = () => {
                               <Link
                                 to={`${routes.editCoach}/${coach._id}`}
                                 state={{
-                                  coach,
+                                  parent: {
+                                    _id: coach._id,
+                                    fullName: coach.fullName || '',
+                                    email: coach.email || '',
+                                    phone: coach.phone || '',
+                                    address: coach.address || '',
+                                    aauNumber: coach.aauNumber || '',
+                                    isCoach: true,
+                                    additionalGuardians:
+                                      (coach as any).additionalGuardians || [],
+                                  },
+                                  isCoach: true,
                                   from: location.pathname,
                                 }}
                                 className='dropdown-item rounded-1'
@@ -361,29 +364,40 @@ const CoachGrid = () => {
                             />
                           </div>
                           <div className='ms-2'>
-                            <h6 className='text-dark text-truncate mb-0'>
+                            <h5 className='mb-0'>
                               <span
-                                className='cursor-pointer text-primary'
+                                className='text-primary cursor-pointer'
                                 onClick={() => handleCoachClick(coach)}
                               >
                                 {coach.fullName}
                               </span>
-                            </h6>
-                            <p className='mb-0'>{coach.email}</p>
-                            <small>{coach.phone}</small>
+                            </h5>
+                            <p className='mb-1'>
+                              {/* Email — gated */}
+                              {hasField('email') && coach.email && (
+                                <>
+                                  {coach.email}
+                                  <br />
+                                </>
+                              )}
+                              {/* Phone — gated + formatted */}
+                              {hasField('phone') && coach.phone && (
+                                <small>{formatPhoneNumber(coach.phone)}</small>
+                              )}
+                            </p>
+                            <div className='d-flex gap-2 mt-1'>
+                              <small className='text-muted'>
+                                Players: {coach.players?.length || 0}
+                              </small>
+                              {/* AAU always shown for coaches since they are always coaches */}
+                              {coach.aauNumber && coach.aauNumber !== 'N/A' && (
+                                <small className='text-muted'>
+                                  AAU: {coach.aauNumber}
+                                </small>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className='d-flex justify-content-between align-items-center'>
-                        <span className='badge badge-soft-primary'>
-                          {coach.players?.length || 0} Players
-                        </span>
-                        <button
-                          className='btn btn-sm btn-outline-primary'
-                          onClick={() => handleCoachClick(coach)}
-                        >
-                          View Details
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -397,15 +411,6 @@ const CoachGrid = () => {
                   <i className='ti ti-loader-3 me-2' />
                   Load More ({displayCount} of {coaches.length})
                 </button>
-              </div>
-            )}
-
-            {coachesToDisplay.length === 0 && !loading && (
-              <div className='col-md-12 text-center'>
-                <div className='alert alert-info'>
-                  <h5>No Coaches Found</h5>
-                  <p>Try adjusting your filters or search criteria.</p>
-                </div>
               </div>
             )}
           </div>

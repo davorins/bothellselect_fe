@@ -32,8 +32,8 @@ import { Moment } from 'moment';
 import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 import { debounce } from 'lodash';
 import { getPlayerStatus } from '../../../../utils/season';
+import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
 
-// Define the structure that matches PlayerTableData
 interface PlayerData {
   _id?: string;
   id?: string;
@@ -65,7 +65,6 @@ interface PlayerData {
   siblings?: any[];
 }
 
-// Extend PlayerTableData to add our custom properties
 interface ExtendedPlayer extends PlayerTableData {
   isOwnPlayer: boolean;
   grade: string;
@@ -84,6 +83,17 @@ const PlayerList = () => {
   const schoolParam = useMemo(() => searchParams.get('school'), [searchParams]);
 
   const { handlePlayerClick } = usePlayerActions();
+
+  // ── Dynamic fields ─────────────────────────────────────────────────────────
+  const { getVisibleFields: getPlayerVisibleFields } = useDynamicFormFields(
+    'player',
+    { registrationYear: new Date().getFullYear() },
+  );
+
+  const playerVisibleFieldNames = useMemo(() => {
+    const fields = getPlayerVisibleFields({} as any);
+    return fields.map((f) => f.fieldName);
+  }, [getPlayerVisibleFields]);
 
   // ── State for regular users ────────────────────────────────────────────────
   const [userPlayersList, setUserPlayersList] = useState<PlayerData[]>([]);
@@ -107,11 +117,8 @@ const PlayerList = () => {
 
   const [localSortOrder, setLocalSortOrder] =
     useState<PlayerSortOrder>('recent');
-
-  // ✅ pageSize as state so changing it triggers a new API request
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-
   const [tableLoading, setTableLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
@@ -120,7 +127,6 @@ const PlayerList = () => {
     const loadUserPlayers = async () => {
       const parentId = localStorage.getItem('parentId');
       if (!parentId) return;
-
       setUserPlayersLoading(true);
       try {
         const players = await fetchParentPlayers(parentId);
@@ -132,14 +138,12 @@ const PlayerList = () => {
         setUserPlayersLoading(false);
       }
     };
-
     loadUserPlayers();
   }, [fetchParentPlayers]);
 
   // ── Load all players for coaches ───────────────────────────────────────────
   useEffect(() => {
     const loadAllPlayers = async () => {
-      // If user is admin OR (coach with isCoach flag), load all players
       if (currentUser?.role === 'admin' || currentUser?.isCoach) {
         setAllPlayersLoading(true);
         try {
@@ -153,7 +157,6 @@ const PlayerList = () => {
         }
       }
     };
-
     loadAllPlayers();
   }, [currentUser?.role, currentUser?.isCoach, fetchAllPlayers]);
 
@@ -162,7 +165,6 @@ const PlayerList = () => {
     () =>
       debounce((newFilters: Partial<PlayerFilterParams>) => {
         setLocalFilters((prev) => ({ ...prev, ...newFilters }));
-        // Reset to first page when filters change
         setCurrentPage(1);
       }, 300),
     [],
@@ -210,7 +212,7 @@ const PlayerList = () => {
     setCurrentPage(1);
   }, []);
 
-  // ── Build filters for the hook (for admin and coach) ─────────────────────
+  // ── Build filters for the hook ────────────────────────────────────────────
   const buildHookFilters = useCallback((): PlayerFiltersType => {
     let dateFrom: string | undefined;
     let dateTo: string | undefined;
@@ -221,12 +223,10 @@ const PlayerList = () => {
       localFilters.dateRange.length === 2
     ) {
       const [start, end] = localFilters.dateRange;
-      if (start && start.isValid && start.isValid()) {
+      if (start && start.isValid && start.isValid())
         dateFrom = start.format('YYYY-MM-DD');
-      }
-      if (end && end.isValid && end.isValid()) {
+      if (end && end.isValid && end.isValid())
         dateTo = end.format('YYYY-MM-DD');
-      }
     }
 
     return {
@@ -258,10 +258,9 @@ const PlayerList = () => {
     localFilters.dateRange?.[1]?.valueOf(),
   ]);
 
-  // ── Paginated data (for admin and coach) ───────────────────────────────────
+  // ── Paginated data ─────────────────────────────────────────────────────────
   const shouldUsePagination =
     currentUser?.role === 'admin' || currentUser?.isCoach;
-
   const hookFilters = buildHookFilters();
 
   const {
@@ -276,55 +275,33 @@ const PlayerList = () => {
     shouldUsePagination ? pageSize : 10,
   );
 
-  // ── Determine which players to show based on role and active tab ───────────
+  // ── Determine which players to show ───────────────────────────────────────
   const getPlayersForCurrentView = (): PlayerData[] => {
-    // Admin always sees paginated data
-    if (currentUser?.role === 'admin') {
-      return paginatedPlayers || [];
-    }
+    if (currentUser?.role === 'admin') return paginatedPlayers || [];
 
-    // Coach/Parent with isCoach flag
     if (currentUser?.isCoach) {
-      if (activeTab === 'my-players') {
-        // For "My Players" tab, we still use client-side filtering/pagination
-        return userPlayersList || [];
-      } else {
-        // For "All Other Players" tab, use paginated data
-        // Filter out user's own players from all players list
-        const userPlayerIds = new Set(
-          (userPlayersList || [])
-            .map((p: PlayerData) => {
-              const id = p && (p._id || p.id);
-              return id ? id.toString() : '';
-            })
-            .filter(Boolean),
-        );
-
-        // Properly type the filter parameter
-        return (paginatedPlayers || []).filter((p: PlayerData) => {
-          const playerId = p && (p._id || p.id);
-          return playerId ? !userPlayerIds.has(playerId.toString()) : true;
-        });
-      }
+      if (activeTab === 'my-players') return userPlayersList || [];
+      const userPlayerIds = new Set(
+        (userPlayersList || [])
+          .map((p: PlayerData) => {
+            const id = p && (p._id || p.id);
+            return id ? id.toString() : '';
+          })
+          .filter(Boolean),
+      );
+      return (paginatedPlayers || []).filter((p: PlayerData) => {
+        const playerId = p && (p._id || p.id);
+        return playerId ? !userPlayerIds.has(playerId.toString()) : true;
+      });
     }
 
-    // Regular parent - only see their own players
     return userPlayersList || [];
   };
 
   const getLoadingState = (): boolean => {
-    if (currentUser?.role === 'admin') {
-      return paginatedLoading;
-    }
-
-    if (currentUser?.isCoach) {
-      if (activeTab === 'my-players') {
-        return userPlayersLoading;
-      } else {
-        return paginatedLoading;
-      }
-    }
-
+    if (currentUser?.role === 'admin') return paginatedLoading;
+    if (currentUser?.isCoach)
+      return activeTab === 'my-players' ? userPlayersLoading : paginatedLoading;
     return userPlayersLoading;
   };
 
@@ -335,21 +312,17 @@ const PlayerList = () => {
   // ── Transform to PlayerTableData format ───────────────────────────────────
   const enhancedPlayers = useMemo((): ExtendedPlayer[] => {
     return (players || []).map((player: PlayerData) => {
-      // Safely get player ID
       const playerId = player?._id || player?.id || '';
       const playerIdStr = playerId.toString();
 
-      // Check if this is the user's own player
       const isOwnPlayer = (userPlayersList || []).some((p: PlayerData) => {
         const pId = p?._id || p?.id;
         return pId ? pId.toString() === playerIdStr : false;
       });
 
-      // Create a date for DateofJoin
       const dateStr =
         player?.createdAt || player?.DateofJoin || new Date().toISOString();
 
-      // Calculate age if DOB exists
       let age = 0;
       if (player?.dob) {
         try {
@@ -362,7 +335,6 @@ const PlayerList = () => {
         }
       }
 
-      // Get grade value
       const gradeValue = player?.grade || player?.class || 'N/A';
 
       return {
@@ -372,7 +344,7 @@ const PlayerList = () => {
         fullName: player?.fullName || player?.name || 'N/A',
         gender: player?.gender || 'N/A',
         dob: player?.dob || '',
-        age: age,
+        age,
         section: player?.schoolName || player?.section || 'No School',
         schoolName: player?.schoolName || player?.section || 'No School',
         class: gradeValue,
@@ -400,11 +372,9 @@ const PlayerList = () => {
     });
   }, [players, userPlayersList]);
 
-  // Client-side filtering for non-paginated views
+  // ── Client-side filtering ─────────────────────────────────────────────────
   const filteredPlayers = useMemo((): ExtendedPlayer[] => {
     let filtered = enhancedPlayers;
-
-    // Apply client-side filters for non-paginated views
     const isPaginatedView =
       currentUser?.role === 'admin' ||
       (currentUser?.isCoach && activeTab === 'all-players');
@@ -423,7 +393,6 @@ const PlayerList = () => {
         );
       }
       if (localFilters.gradeFilter) {
-        // Use 'class' instead of 'grade' since that's what's in PlayerTableData
         filtered = filtered.filter((p) => p.class === localFilters.gradeFilter);
       }
       if (localFilters.statusFilter) {
@@ -452,12 +421,10 @@ const PlayerList = () => {
   const dataSource = useMemo((): ExtendedPlayer[] => {
     let sorted = [...filteredPlayers];
 
-    // Apply sorting for all views
-    if (localSortOrder === 'asc') {
+    if (localSortOrder === 'asc')
       sorted.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (localSortOrder === 'desc') {
+    else if (localSortOrder === 'desc')
       sorted.sort((a, b) => b.name.localeCompare(a.name));
-    }
 
     if (localSortOrder === 'recentlyViewed') {
       const recentlyViewed: string[] = JSON.parse(
@@ -473,15 +440,13 @@ const PlayerList = () => {
       });
     }
 
-    // Apply client-side pagination for non-paginated views
     const isPaginatedView =
       currentUser?.role === 'admin' ||
       (currentUser?.isCoach && activeTab === 'all-players');
 
     if (!isPaginatedView && pageSize) {
       const start = (currentPage - 1) * pageSize;
-      const end = start + pageSize;
-      return sorted.slice(start, end);
+      return sorted.slice(start, start + pageSize);
     }
 
     return sorted;
@@ -499,11 +464,7 @@ const PlayerList = () => {
     const isPaginatedView =
       currentUser?.role === 'admin' ||
       (currentUser?.isCoach && activeTab === 'all-players');
-
-    if (isPaginatedView && pagination) {
-      return pagination.total;
-    }
-
+    if (isPaginatedView && pagination) return pagination.total;
     return filteredPlayers.length;
   }, [
     filteredPlayers.length,
@@ -524,6 +485,7 @@ const PlayerList = () => {
     return { active, pending, inactive, total: enhancedPlayers.length };
   }, [enhancedPlayers]);
 
+  // ── Columns — depend on actions, role, AND dynamic field names ────────────
   const columns = useMemo(() => {
     try {
       const cols = getPlayerTableColumns({
@@ -532,7 +494,8 @@ const PlayerList = () => {
         loading: loading && players.length === 0,
         currentUserRole: currentUser?.role,
         isCoach: currentUser?.isCoach,
-        activeTab: activeTab,
+        activeTab,
+        visibleFields: playerVisibleFieldNames,
       });
       return Array.isArray(cols) ? cols : [];
     } catch (error) {
@@ -547,9 +510,10 @@ const PlayerList = () => {
     currentUser?.role,
     currentUser?.isCoach,
     activeTab,
+    playerVisibleFieldNames,
   ]);
 
-  // ── Helper to build grid URL preserving current filters ───────────────────
+  // ── Grid URL ──────────────────────────────────────────────────────────────
   const getGridUrl = useCallback(() => {
     const params = new URLSearchParams();
     if (localFilters.schoolFilter)
@@ -573,38 +537,26 @@ const PlayerList = () => {
         (currentUser?.isCoach && activeTab === 'all-players');
 
       if (!isPaginatedView) {
-        // Handle client-side pagination
-        const newPage = newPagination.current;
-        const newPageSize = newPagination.pageSize;
-
         setTableLoading(true);
-        setCurrentPage(newPage);
-
-        if (newPageSize !== pageSize) {
-          setPageSize(newPageSize);
+        setCurrentPage(newPagination.current);
+        if (newPagination.pageSize !== pageSize) {
+          setPageSize(newPagination.pageSize);
           setCurrentPage(1);
         }
-
         setTimeout(() => setTableLoading(false), 300);
         return;
       }
 
-      // Handle server-side pagination
+      setTableLoading(true);
       const newPageSize = newPagination.pageSize;
       const newPage = newPagination.current;
 
-      setTableLoading(true);
-
       if (newPageSize !== pageSize) {
         setPageSize(newPageSize);
-        if (goToPage) {
-          goToPage(1);
-        }
+        if (goToPage) goToPage(1);
         setCurrentPage(1);
       } else {
-        if (goToPage) {
-          goToPage(newPage);
-        }
+        if (goToPage) goToPage(newPage);
         setCurrentPage(newPage);
       }
 
@@ -621,12 +573,8 @@ const PlayerList = () => {
       if (refresh) refresh();
     } else {
       const parentId = localStorage.getItem('parentId');
-      if (parentId) {
-        fetchParentPlayers(parentId).then(setUserPlayersList);
-      }
-      if (currentUser?.isCoach) {
-        fetchAllPlayers().then(setAllPlayersList);
-      }
+      if (parentId) fetchParentPlayers(parentId).then(setUserPlayersList);
+      if (currentUser?.isCoach) fetchAllPlayers().then(setAllPlayersList);
     }
     message.success('Refreshing players...');
   }, [
@@ -641,7 +589,6 @@ const PlayerList = () => {
   const handleTabChange = useCallback((tab: string) => {
     setActiveTab(tab);
     setCurrentPage(1);
-    // Reset to first page when switching tabs
   }, []);
 
   // ── Effects ────────────────────────────────────────────────────────────────
@@ -653,7 +600,6 @@ const PlayerList = () => {
     }
   }, [error]);
 
-  // Sync URL params into filter state
   useEffect(() => {
     setLocalFilters((prev) => ({
       ...prev,
@@ -710,7 +656,6 @@ const PlayerList = () => {
           onRefresh={handleRefresh}
         />
 
-        {/* Show active school filter banner */}
         {localFilters.schoolFilter && (
           <div className='alert alert-info d-flex align-items-center justify-content-between mb-3'>
             <span>
@@ -733,7 +678,7 @@ const PlayerList = () => {
         <div className='card'>
           <div className='card-header d-flex align-items-center justify-content-between flex-wrap pb-0'>
             <h4 className='mb-3'></h4>
-            {/* Tabs for Coach View */}
+
             {currentUser?.isCoach && currentUser?.role !== 'admin' && (
               <Tabs
                 activeKey={activeTab}
@@ -765,7 +710,6 @@ const PlayerList = () => {
             )}
 
             <div className='d-flex align-items-center flex-wrap'>
-              {/* Show filters for admin OR (coach with all-players tab) */}
               {(currentUser?.role === 'admin' ||
                 (currentUser?.isCoach && activeTab === 'all-players')) && (
                 <>
@@ -774,7 +718,6 @@ const PlayerList = () => {
                       onDateChange={handleDateRangeChange}
                     />
                   </div>
-
                   <div className='dropdown mb-3 me-2'>
                     <Link
                       to='#'
@@ -806,7 +749,6 @@ const PlayerList = () => {
                 >
                   <i className='ti ti-list-tree' />
                 </Link>
-                {/* Preserve school/season/year params when switching to grid */}
                 <Link
                   to={getGridUrl()}
                   className='btn btn-icon btn-sm bg-light primary-hover'
@@ -850,14 +792,12 @@ const PlayerList = () => {
               <PlayerTableSkeleton rows={10} />
             ) : (
               <>
-                {/* Safety check for columns */}
                 {columns && columns.length > 0 ? (
                   <Table
                     dataSource={dataSource}
                     columns={
                       activeTab === 'all-players'
                         ? columns.map((col) => {
-                            // Create a new column object with onCell
                             const newCol: any = { ...col };
                             newCol.onCell = (record: ExtendedPlayer) => ({
                               style: record?.isOwnPlayer
@@ -874,12 +814,10 @@ const PlayerList = () => {
                     rowKey='id'
                     pagination={{
                       current: currentPage,
-                      pageSize: pageSize,
+                      pageSize,
                       total: totalCount,
                       showSizeChanger: true,
                       pageSizeOptions: ['10', '20', '50', '100'],
-                      showTotal: (total, range) =>
-                        `${range[0]}-${range[1]} of ${total} players`,
                     }}
                     onChange={handleTableChange}
                     loading={tableLoading}

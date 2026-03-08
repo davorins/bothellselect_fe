@@ -7,6 +7,7 @@ import { formatDate } from '../../../utils/dateFormatter';
 import { TableRecord } from '../../../types/types';
 import { getCurrentYear } from '../../../utils/season';
 import { getAvatarUrl, getDefaultAvatar } from '../../../utils/r2Utils';
+import { formatAddress, AddressShowConfig } from '../../../utils/address';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import 'jspdf-autotable';
@@ -30,26 +31,24 @@ interface ExtendedCoachTableRecord extends Omit<TableRecord, 'email'> {
   [key: string]: any;
 }
 
+// LooseAddress to handle optional street2 from API
+type LooseAddress = {
+  street: string;
+  street2?: string;
+  city: string;
+  state: string;
+  zip: string;
+};
+const fmtAddr = (
+  addr: string | LooseAddress | undefined,
+  show?: AddressShowConfig,
+): string => {
+  if (!addr) return 'N/A';
+  if (typeof addr === 'string') return addr || 'N/A';
+  return formatAddress(addr as any, show) || 'N/A';
+};
+
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-
-// Coaches are always active - this function is now deprecated for coaches
-// but kept for backward compatibility
-const isPlayerRegisteredForCurrentSeason = (player: any): boolean => {
-  const currentYear = getCurrentYear();
-  if (player.seasons && Array.isArray(player.seasons)) {
-    if (player.seasons.some((season: any) => season.year === currentYear))
-      return true;
-  }
-  return player.season && player.registrationYear === currentYear;
-};
-
-// For coaches, we always return 'active' regardless of player status
-const getCoachStatus = <T extends ExtendedCoachTableRecord>(
-  record: T,
-): 'active' | 'inactive' => {
-  // COACHES ARE ALWAYS ACTIVE - this overrides any player-based calculation
-  return 'active';
-};
 
 export const exportEmailList = <T extends ExtendedCoachTableRecord>(
   data: T[],
@@ -99,6 +98,7 @@ export const exportEmailList = <T extends ExtendedCoachTableRecord>(
 
 export const exportCoachesToPDF = <T extends ExtendedCoachTableRecord>(
   data: T[],
+  addrShow?: AddressShowConfig,
 ) => {
   const doc = new jsPDF();
   doc.text('Coaches List', 14, 15);
@@ -115,10 +115,8 @@ export const exportCoachesToPDF = <T extends ExtendedCoachTableRecord>(
     item.fullName,
     item.email || 'N/A',
     item.phone ? formatPhoneNumber(item.phone) : 'N/A',
-    typeof item.address === 'string'
-      ? item.address
-      : `${item.address?.street}, ${item.address?.city}, ${item.address?.state} ${item.address?.zip}`,
-    'Active', // Always Active for coaches
+    fmtAddr(item.address as any, addrShow),
+    'Active',
     formatDate(item.createdAt),
   ]);
 
@@ -132,14 +130,6 @@ export const exportCoachesToPDF = <T extends ExtendedCoachTableRecord>(
       textColor: 255,
       fontStyle: 'bold',
     },
-    columnStyles: {
-      0: { cellWidth: 'auto' },
-      1: { cellWidth: 'auto' },
-      2: { cellWidth: 'auto' },
-      3: { cellWidth: 'auto' },
-      4: { cellWidth: 'auto' },
-      5: { cellWidth: 'auto' },
-    },
   });
 
   doc.save(`coaches_${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -147,17 +137,15 @@ export const exportCoachesToPDF = <T extends ExtendedCoachTableRecord>(
 
 export const exportCoachesToExcel = <T extends ExtendedCoachTableRecord>(
   data: T[],
+  addrShow?: AddressShowConfig,
 ) => {
   const worksheet = XLSX.utils.json_to_sheet(
     data.map((item) => ({
       Name: item.fullName,
       Email: item.email || 'N/A',
       Phone: item.phone ? formatPhoneNumber(item.phone) : 'N/A',
-      Address:
-        typeof item.address === 'string'
-          ? item.address
-          : `${item.address?.street}, ${item.address?.city}, ${item.address?.state} ${item.address?.zip}`,
-      Status: 'Active', // Always Active for coaches
+      Address: fmtAddr(item.address as any, addrShow),
+      Status: 'Active',
       'Date Joined': formatDate(item.createdAt),
     })),
   );
@@ -247,217 +235,207 @@ export const getCoachTableColumns = <T extends ExtendedCoachTableRecord>(
   handleCoachClick: (record: T) => void,
   currentUserRole?: string,
   onDeleteSuccess?: () => void,
+  visibleFields?: string[],
 ): TableProps<T>['columns'] => {
-  return [
-    {
-      title: 'Name',
-      dataIndex: 'fullName',
-      key: 'name',
-      render: (text: string, record: T) => {
-        const defaultAvatar = getDefaultAvatar(
-          record.isCoach ? 'coach' : 'parent',
-        );
+  // undefined = config not wired up yet, show everything
+  // [] = config loaded, all fields disabled
+  const isFieldVisible = (name: string): boolean => {
+    if (visibleFields === undefined) return true;
+    return visibleFields.includes(name);
+  };
 
-        const avatarUrl = getAvatarUrl(
-          record.avatar || record.imgSrc,
-          defaultAvatar,
-        );
+  const nameCol = {
+    title: 'Name',
+    dataIndex: 'fullName',
+    key: 'name',
+    render: (text: string, record: T) => {
+      const defaultAvatar = getDefaultAvatar('coach');
+      const avatarUrl = getAvatarUrl(
+        record.avatar || record.imgSrc,
+        defaultAvatar,
+      );
 
-        return (
-          <div className='table-avatar d-flex align-items-center'>
-            <div
-              className='avatar avatar-md cursor-pointer'
-              onClick={() => handleCoachClick(record)}
-            >
-              <img
-                src={avatarUrl}
-                className='img-fluid rounded-circle'
-                alt={record.fullName}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = getDefaultAvatar(
-                    record.isCoach ? 'coach' : 'parent',
-                  );
-                }}
-              />
-            </div>
-            <div className='ms-3'>
-              <Link
-                to='#'
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleCoachClick(record);
-                }}
-                className='text-primary'
-              >
-                {text}
-              </Link>
-              {record.isCoach && (
-                <span className='d-block text-muted small'>Coach</span>
-              )}
-            </div>
-          </div>
-        );
-      },
-      sorter: (a: T, b: T) => a.fullName.localeCompare(b.fullName),
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-      sorter: (a: T, b: T) => (a.email || '').localeCompare(b.email || ''),
-    },
-    {
-      title: 'Phone',
-      dataIndex: 'phone',
-      key: 'phone',
-      render: (phone: string) => (phone ? formatPhoneNumber(phone) : 'N/A'),
-      sorter: (a: T, b: T) => (a.phone || '').localeCompare(b.phone || ''),
-    },
-    {
-      title: 'AAU Number',
-      dataIndex: 'aauNumber',
-      key: 'aauNumber',
-      render: (num: string) => num || 'N/A',
-      sorter: (a: T, b: T) =>
-        (a.aauNumber || '').localeCompare(b.aauNumber || ''),
-    },
-    {
-      title: 'Status',
-      key: 'status',
-      render: (_: unknown, record: T) => {
-        // For coaches, we always show Active
-        // You can also use record.status if it's set in the data
-        const status = 'active'; // Always active for coaches
-        const displayStatus = 'Active'; // Always show "Active"
-
-        return (
-          <span
-            className={`badge badge-soft-success d-inline-flex align-items-center`}
+      return (
+        <div className='table-avatar d-flex align-items-center'>
+          <div
+            className='avatar avatar-md cursor-pointer'
+            onClick={() => handleCoachClick(record)}
           >
-            <i className={`ti ti-circle-filled fs-5 me-1 text-success`}></i>
-            {displayStatus}
-          </span>
-        );
-      },
-      sorter: (a: T, b: T) => {
-        // Since all coaches are active, sorting doesn't matter much
-        // But we'll keep it for consistency
-        return 0;
-      },
+            <img
+              src={avatarUrl}
+              className='img-fluid rounded-circle'
+              alt={record.fullName}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = getDefaultAvatar('coach');
+              }}
+            />
+          </div>
+          <div className='ms-3'>
+            <Link
+              to='#'
+              onClick={(e) => {
+                e.preventDefault();
+                handleCoachClick(record);
+              }}
+              className='text-primary'
+            >
+              {text}
+            </Link>
+            <span className='d-block text-muted small'>Coach</span>
+          </div>
+        </div>
+      );
     },
-    {
-      title: 'Date Joined',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date: string) => formatDate(date),
-      sorter: (a: T, b: T) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-    },
-    ...(currentUserRole === 'admin' || currentUserRole === 'coach'
+    sorter: (a: T, b: T) => a.fullName.localeCompare(b.fullName),
+  };
+
+  const emailCol = {
+    title: 'Email',
+    dataIndex: 'email',
+    key: 'email',
+    sorter: (a: T, b: T) => (a.email || '').localeCompare(b.email || ''),
+  };
+
+  const phoneCol = {
+    title: 'Phone',
+    dataIndex: 'phone',
+    key: 'phone',
+    render: (phone: string) => (phone ? formatPhoneNumber(phone) : 'N/A'),
+    sorter: (a: T, b: T) => (a.phone || '').localeCompare(b.phone || ''),
+  };
+
+  // AAU is always shown for coaches — they are by definition coaches
+  const aauCol = {
+    title: 'AAU Number',
+    dataIndex: 'aauNumber',
+    key: 'aauNumber',
+    render: (num: string) => num || 'N/A',
+    sorter: (a: T, b: T) =>
+      (a.aauNumber || '').localeCompare(b.aauNumber || ''),
+  };
+
+  const statusCol = {
+    title: 'Status',
+    key: 'status',
+    render: () => (
+      <span className='badge badge-soft-success d-inline-flex align-items-center'>
+        <i className='ti ti-circle-filled fs-5 me-1 text-success'></i>
+        Active
+      </span>
+    ),
+  };
+
+  const dateCol = {
+    title: 'Date Joined',
+    dataIndex: 'createdAt',
+    key: 'createdAt',
+    render: (date: string) => formatDate(date),
+    sorter: (a: T, b: T) =>
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  };
+
+  const actionsCol =
+    currentUserRole === 'admin' || currentUserRole === 'coach'
       ? [
           {
-            title: 'Actions',
-            key: 'actions',
-            width: 120,
+            title: 'Action',
+            key: 'action',
             render: (_: unknown, record: T) => {
               const canDelete = currentUserRole === 'admin' && !record.parentId;
 
               return (
-                <div className='dropdown'>
-                  <Link
-                    to='#'
-                    className='btn btn-icon btn-sm'
-                    data-bs-toggle='dropdown'
+                <div className='d-flex align-items-center gap-2'>
+                  <button
+                    onClick={() => handleCoachClick(record)}
+                    className='btn btn-sm btn-icon btn-outline-secondary'
+                    title='View Details'
+                    style={{ width: '32px', height: '32px' }}
                   >
-                    <i className='ti ti-dots-vertical' />
+                    <i className='ti ti-eye fs-16' />
+                  </button>
+                  <Link
+                    to={`${all_routes.editParent}/${record._id}`}
+                    state={{
+                      parent: record,
+                      isCoach: true,
+                      from: window.location.pathname,
+                    }}
+                    className='btn btn-sm btn-icon btn-outline-warning'
+                    title='Edit'
+                    style={{ width: '32px', height: '32px' }}
+                  >
+                    <i className='ti ti-edit fs-16' />
                   </Link>
-                  <ul className='dropdown-menu dropdown-menu-end'>
-                    <li>
-                      <button
-                        className='dropdown-item'
-                        onClick={() => handleCoachClick(record)}
-                      >
-                        <i className='ti ti-eye me-2' /> View
-                      </button>
-                    </li>
-                    <li>
-                      <Link
-                        className='dropdown-item'
-                        to={`${all_routes.editParent}/${record._id}`}
-                        state={{
-                          parent: record,
-                          isCoach: true,
-                          from: window.location.pathname,
-                        }}
-                      >
-                        <i className='ti ti-edit me-2' /> Edit
-                      </Link>
-                    </li>
-                    {canDelete && (
-                      <li>
-                        <button
-                          className='dropdown-item text-danger'
-                          onClick={() =>
-                            showDeleteConfirm(
-                              {
-                                _id: record._id,
-                                fullName: record.fullName,
-                                email: record.email,
-                                parentId: record.parentId,
-                                isCoach: true,
-                                role: 'coach',
-                              },
-                              {
-                                onDeleteSuccess: onDeleteSuccess,
-                                customTitle: 'Delete Coach Account',
-                                customContent: (
-                                  <div>
-                                    <p>
-                                      Are you sure you want to delete this coach
-                                      account?
-                                    </p>
-                                    <p>
-                                      <strong>Name:</strong> {record.fullName}
-                                    </p>
-                                    <p>
-                                      <strong>Email:</strong>{' '}
-                                      {record.email || 'N/A'}
-                                    </p>
-                                    <div
-                                      className='alert alert-danger mt-2 p-2'
-                                      style={{ fontSize: '14px' }}
-                                    >
-                                      <i className='ti ti-alert-triangle me-2'></i>
-                                      This action cannot be undone. This will
-                                      permanently delete:
-                                      <ul className='mt-2 mb-0'>
-                                        <li>
-                                          The coach's personal information
-                                        </li>
-                                        <li>All coaching associations</li>
-                                        <li>Any linked player profiles</li>
-                                        <li>
-                                          Registration history and payment
-                                          records
-                                        </li>
-                                      </ul>
-                                    </div>
-                                  </div>
-                                ),
-                              },
-                            )
-                          }
-                        >
-                          <i className='ti ti-trash me-2' /> Delete
-                        </button>
-                      </li>
-                    )}
-                  </ul>
+                  {canDelete && (
+                    <button
+                      onClick={() =>
+                        showDeleteConfirm(
+                          {
+                            _id: record._id,
+                            fullName: record.fullName,
+                            email: record.email,
+                            parentId: record.parentId,
+                            isCoach: true,
+                            role: 'coach',
+                          },
+                          {
+                            onDeleteSuccess: onDeleteSuccess,
+                            customTitle: 'Delete Coach Account',
+                            customContent: (
+                              <div>
+                                <p>
+                                  Are you sure you want to delete this coach
+                                  account?
+                                </p>
+                                <p>
+                                  <strong>Name:</strong> {record.fullName}
+                                </p>
+                                <p>
+                                  <strong>Email:</strong>{' '}
+                                  {record.email || 'N/A'}
+                                </p>
+                                <div
+                                  className='alert alert-danger mt-2 p-2'
+                                  style={{ fontSize: '14px' }}
+                                >
+                                  <i className='ti ti-alert-triangle me-2'></i>
+                                  This action cannot be undone. This will
+                                  permanently delete:
+                                  <ul className='mt-2 mb-0'>
+                                    <li>The coach's personal information</li>
+                                    <li>All coaching associations</li>
+                                    <li>Any linked player profiles</li>
+                                    <li>
+                                      Registration history and payment records
+                                    </li>
+                                  </ul>
+                                </div>
+                              </div>
+                            ),
+                          },
+                        )
+                      }
+                      className='btn btn-sm btn-icon btn-outline-danger'
+                      title='Delete'
+                      style={{ width: '32px', height: '32px' }}
+                    >
+                      <i className='ti ti-trash fs-16' />
+                    </button>
+                  )}
                 </div>
               );
             },
           },
         ]
-      : []),
+      : [];
+
+  return [
+    nameCol,
+    ...(isFieldVisible('email') ? [emailCol] : []),
+    ...(isFieldVisible('phone') ? [phoneCol] : []),
+    aauCol, // always shown — coaches always have AAU
+    statusCol,
+    dateCol,
+    ...actionsCol,
   ];
 };

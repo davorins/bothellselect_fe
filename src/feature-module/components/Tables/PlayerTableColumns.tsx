@@ -23,6 +23,7 @@ interface PlayerTableColumnsProps {
   currentUserRole?: string;
   isCoach?: boolean;
   activeTab?: string;
+  visibleFields?: string[];
 }
 
 // Skeleton loader for table rows
@@ -393,7 +394,6 @@ export const copyPlayerParentEmailsToClipboard = <T extends PlayerTableData>(
     const msg = hasParents
       ? 'No valid parent email addresses found. Ensure parents have valid emails.'
       : 'No parents associated with the selected players.';
-
     Swal.fire({
       icon: 'warning',
       title: 'No Emails Found',
@@ -416,18 +416,7 @@ export const copyPlayerParentEmailsToClipboard = <T extends PlayerTableData>(
             <p style="margin-bottom:10px;color:#555">
               <strong>${uniqueEmails.length}</strong> parent email${uniqueEmails.length > 1 ? 's' : ''} copied to clipboard.
             </p>
-            <div style="
-              background:#f8f9fa;
-              border:1px solid #e9ecef;
-              border-radius:8px;
-              padding:10px 14px;
-              max-height:140px;
-              overflow-y:auto;
-              font-size:13px;
-              color:#495057;
-              font-family:monospace;
-              line-height:1.7;
-            ">
+            <div style="background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:10px 14px;max-height:140px;overflow-y:auto;font-size:13px;color:#495057;font-family:monospace;line-height:1.7;">
               ${uniqueEmails.map((e) => `<div>${e}</div>`).join('')}
             </div>
           </div>
@@ -479,8 +468,15 @@ export const getPlayerTableColumns = ({
   currentUserRole,
   isCoach = false,
   activeTab = 'my-players',
+  visibleFields,
 }: PlayerTableColumnsProps): TableProps<PlayerTableData>['columns'] => {
-  // ✅ R2-aware avatar resolver — uses r2Utils for all providers
+  // undefined = config not yet wired up, show everything
+  // [] = config loaded, all optional fields disabled
+  const isFieldVisible = (name: string): boolean => {
+    if (visibleFields === undefined) return true;
+    return visibleFields.includes(name);
+  };
+
   const resolveAvatar = (
     avatar: string | undefined,
     gender: string | undefined,
@@ -621,205 +617,204 @@ export const getPlayerTableColumns = ({
     ];
   }
 
-  return [
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      width: 200,
-      render: (text: string, record: PlayerTableData) => {
-        const avatarUrl = resolveAvatar(record.avatar, record.gender);
-        return (
-          <div className='d-flex align-items-center'>
-            <div
-              onClick={() => handlePlayerClick(record)}
-              className='avatar avatar-md cursor-pointer flex-shrink-0'
-            >
-              <img
-                src={avatarUrl}
-                className='img-fluid rounded-circle'
-                alt={`${record.name || 'Player'} avatar`}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = resolveAvatar(
-                    undefined,
-                    record.gender,
-                  );
-                }}
-              />
-            </div>
-            <div className='ms-2 flex-grow-1 min-width-0'>
-              <p
-                className='cursor-pointer text-primary mb-0 text-truncate'
-                style={{ maxWidth: '150px' }}
-                title={text}
-              >
-                <span
-                  onClick={() => handlePlayerClick(record)}
-                  className='cursor-pointer'
-                >
-                  {text}
-                </span>
-              </p>
-            </div>
-          </div>
-        );
-      },
-      sorter: (a: PlayerTableData, b: PlayerTableData) =>
-        (a.name || '').localeCompare(b.name || ''),
-    },
-    {
-      title: 'Gender',
-      dataIndex: 'gender',
-      width: 100,
-      sorter: (a: PlayerTableData, b: PlayerTableData) =>
-        (a.gender || '').localeCompare(b.gender || ''),
-    },
-    {
-      title: 'DOB',
-      dataIndex: 'dob',
-      width: 110,
-      render: formatDOBWithoutShift,
-      sorter: (a: PlayerTableData, b: PlayerTableData) =>
-        new Date(formatDateForStorage(a.dob)).getTime() -
-        new Date(formatDateForStorage(b.dob)).getTime(),
-    },
-    {
-      title: 'Age',
-      dataIndex: 'age',
-      width: 80,
-      sorter: (a: PlayerTableData, b: PlayerTableData) =>
-        (a.age || 0) - (b.age || 0),
-    },
-    {
-      title: 'School Name',
-      dataIndex: 'section',
-      width: 150,
-      render: (text: string) => (
-        <span
-          className='text-truncate d-inline-block'
-          style={{ maxWidth: '140px' }}
-          title={text}
-        >
-          {text}
-        </span>
-      ),
-      sorter: (a: PlayerTableData, b: PlayerTableData) =>
-        (a.section || '').localeCompare(b.section || ''),
-    },
-    {
-      title: 'Grade',
-      dataIndex: 'class',
-      width: 100,
-      sorter: (a: PlayerTableData, b: PlayerTableData) =>
-        (a.class || '').localeCompare(b.class || ''),
-    },
-    {
-      title: 'Seasons',
-      key: 'seasons',
-      width: 180,
-      render: (_: unknown, record: PlayerTableData) => (
-        <div
-          className='seasons-display'
-          title={getSeasonsTooltip(record)}
-          style={{ cursor: 'help' }}
-        >
-          <span
-            className='text-dark fw-medium text-truncate d-inline-block'
-            style={{ maxWidth: '170px' }}
+  // ── Name column — always shown ─────────────────────────────────────────────
+  const nameCol = {
+    title: 'Name',
+    dataIndex: 'name',
+    width: 200,
+    render: (text: string, record: PlayerTableData) => {
+      const avatarUrl = resolveAvatar(record.avatar, record.gender);
+      return (
+        <div className='d-flex align-items-center'>
+          <div
+            onClick={() => handlePlayerClick(record)}
+            className='avatar avatar-md cursor-pointer flex-shrink-0'
           >
-            {getCompactSeasonsDisplay(record)}
-          </span>
-        </div>
-      ),
-      sorter: (a: PlayerTableData, b: PlayerTableData) =>
-        getCompactSeasonsDisplay(a).localeCompare(getCompactSeasonsDisplay(b)),
-    },
-    {
-      title: 'Status',
-      key: 'status',
-      width: 130,
-      render: (_: unknown, record: PlayerTableData) =>
-        getSeasonsPaymentStatus(record),
-      sorter: (a: PlayerTableData, b: PlayerTableData) =>
-        getPlayerStatus(a).localeCompare(getPlayerStatus(b)),
-    },
-    {
-      title: 'AAU Number',
-      dataIndex: 'aauNumber',
-      width: 120,
-      sorter: (a: PlayerTableData, b: PlayerTableData) =>
-        (a.aauNumber || '').localeCompare(b.aauNumber || ''),
-    },
-    {
-      title: 'Action',
-      dataIndex: 'action',
-      width: 100,
-      render: (
-        _: unknown,
-        record: PlayerTableData & { isOwnPlayer?: boolean },
-      ) => {
-        // Use the same logic as in PlayerGrid
-        const showEdit =
-          currentUserRole === 'admin' ||
-          activeTab === 'my-players' ||
-          (isCoach && record.isOwnPlayer);
-
-        console.log('Action column - record:', {
-          id: record.id,
-          name: record.name,
-          isOwnPlayer: record.isOwnPlayer,
-          currentUserRole,
-          isCoach,
-          activeTab,
-          showEdit,
-        });
-
-        return (
-          <div className='d-flex align-items-center'>
-            <div className='dropdown'>
-              <Link
-                to='#'
-                className='btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0'
-                data-bs-toggle='dropdown'
-                aria-expanded='false'
-              >
-                <i className='ti ti-dots-vertical fs-14' />
-              </Link>
-              <ul className='dropdown-menu dropdown-menu-right p-3'>
-                <li>
-                  <div
-                    className='dropdown-item rounded-1 cursor-pointer'
-                    onClick={() => handlePlayerClick(record)}
-                  >
-                    <i className='ti ti-menu me-2' />
-                    View
-                  </div>
-                </li>
-                {showEdit && (
-                  <li>
-                    <Link
-                      to={`${all_routes.editPlayer}/${record.id}`}
-                      state={{
-                        player: {
-                          ...record,
-                          playerId: record.id,
-                          _id: record.id,
-                          fullName: record.name,
-                          seasons: record.seasons || [],
-                        },
-                        from: location.pathname,
-                      }}
-                      className='dropdown-item rounded-1'
-                    >
-                      <i className='ti ti-edit me-2' />
-                      Edit
-                    </Link>
-                  </li>
-                )}
-              </ul>
-            </div>
+            <img
+              src={avatarUrl}
+              className='img-fluid rounded-circle'
+              alt={`${record.name || 'Player'} avatar`}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = resolveAvatar(
+                  undefined,
+                  record.gender,
+                );
+              }}
+            />
           </div>
-        );
-      },
+          <div className='ms-2 flex-grow-1 min-width-0'>
+            <p
+              className='cursor-pointer text-primary mb-0 text-truncate'
+              style={{ maxWidth: '150px' }}
+              title={text}
+            >
+              <span
+                onClick={() => handlePlayerClick(record)}
+                className='cursor-pointer'
+              >
+                {text}
+              </span>
+            </p>
+          </div>
+        </div>
+      );
     },
+    sorter: (a: PlayerTableData, b: PlayerTableData) =>
+      (a.name || '').localeCompare(b.name || ''),
+  };
+
+  const genderCol = {
+    title: 'Gender',
+    dataIndex: 'gender',
+    width: 100,
+    sorter: (a: PlayerTableData, b: PlayerTableData) =>
+      (a.gender || '').localeCompare(b.gender || ''),
+  };
+
+  const dobCol = {
+    title: 'DOB',
+    dataIndex: 'dob',
+    width: 110,
+    render: formatDOBWithoutShift,
+    sorter: (a: PlayerTableData, b: PlayerTableData) =>
+      new Date(formatDateForStorage(a.dob)).getTime() -
+      new Date(formatDateForStorage(b.dob)).getTime(),
+  };
+
+  const ageCol = {
+    title: 'Age',
+    dataIndex: 'age',
+    width: 80,
+    sorter: (a: PlayerTableData, b: PlayerTableData) =>
+      (a.age || 0) - (b.age || 0),
+  };
+
+  const schoolCol = {
+    title: 'School Name',
+    dataIndex: 'section',
+    width: 150,
+    render: (text: string) => (
+      <span
+        className='text-truncate d-inline-block'
+        style={{ maxWidth: '140px' }}
+        title={text}
+      >
+        {text}
+      </span>
+    ),
+    sorter: (a: PlayerTableData, b: PlayerTableData) =>
+      (a.section || '').localeCompare(b.section || ''),
+  };
+
+  const gradeCol = {
+    title: 'Grade',
+    dataIndex: 'class',
+    width: 100,
+    sorter: (a: PlayerTableData, b: PlayerTableData) =>
+      (a.class || '').localeCompare(b.class || ''),
+  };
+
+  // Seasons — always shown (core registration data)
+  const seasonsCol = {
+    title: 'Seasons',
+    key: 'seasons',
+    width: 180,
+    render: (_: unknown, record: PlayerTableData) => (
+      <div
+        className='seasons-display'
+        title={getSeasonsTooltip(record)}
+        style={{ cursor: 'help' }}
+      >
+        <span
+          className='text-dark fw-medium text-truncate d-inline-block'
+          style={{ maxWidth: '170px' }}
+        >
+          {getCompactSeasonsDisplay(record)}
+        </span>
+      </div>
+    ),
+    sorter: (a: PlayerTableData, b: PlayerTableData) =>
+      getCompactSeasonsDisplay(a).localeCompare(getCompactSeasonsDisplay(b)),
+  };
+
+  // Status — always shown
+  const statusCol = {
+    title: 'Status',
+    key: 'status',
+    width: 130,
+    render: (_: unknown, record: PlayerTableData) =>
+      getSeasonsPaymentStatus(record),
+    sorter: (a: PlayerTableData, b: PlayerTableData) =>
+      getPlayerStatus(a).localeCompare(getPlayerStatus(b)),
+  };
+
+  const aauCol = {
+    title: 'AAU Number',
+    dataIndex: 'aauNumber',
+    width: 120,
+    sorter: (a: PlayerTableData, b: PlayerTableData) =>
+      (a.aauNumber || '').localeCompare(b.aauNumber || ''),
+  };
+
+  const actionCol = {
+    title: 'Action',
+    dataIndex: 'action',
+    width: 100,
+    render: (
+      _: unknown,
+      record: PlayerTableData & { isOwnPlayer?: boolean },
+    ) => {
+      const showEdit =
+        currentUserRole === 'admin' ||
+        activeTab === 'my-players' ||
+        (isCoach && record.isOwnPlayer);
+
+      return (
+        <div className='d-flex align-items-center gap-2'>
+          <button
+            onClick={() => handlePlayerClick(record)}
+            className='btn btn-sm btn-icon btn-outline-secondary'
+            title='View Details'
+            style={{ width: '32px', height: '32px' }}
+          >
+            <i className='ti ti-eye fs-16' />
+          </button>
+          {showEdit && (
+            <Link
+              to={`${all_routes.editPlayer}/${record.id}`}
+              state={{
+                player: {
+                  ...record,
+                  playerId: record.id,
+                  _id: record.id,
+                  fullName: record.name,
+                  seasons: record.seasons || [],
+                },
+                from: location.pathname,
+              }}
+              className='btn btn-sm btn-icon btn-outline-warning'
+              title='Edit'
+              style={{ width: '32px', height: '32px' }}
+            >
+              <i className='ti ti-edit fs-16' />
+            </Link>
+          )}
+        </div>
+      );
+    },
+  };
+
+  return [
+    nameCol,
+    ...(isFieldVisible('gender') ? [genderCol] : []),
+    ...(isFieldVisible('dob') ? [dobCol] : []),
+    // age is derived from dob — gate on same field
+    ...(isFieldVisible('dob') ? [ageCol] : []),
+    ...(isFieldVisible('schoolName') ? [schoolCol] : []),
+    ...(isFieldVisible('grade') ? [gradeCol] : []),
+    seasonsCol,
+    statusCol,
+    ...(isFieldVisible('aauNumber') ? [aauCol] : []),
+    actionCol,
   ];
 };

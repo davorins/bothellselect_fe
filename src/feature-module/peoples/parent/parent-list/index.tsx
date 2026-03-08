@@ -32,6 +32,7 @@ import { debounce } from 'lodash';
 import axios from 'axios';
 import { ExtendedTableRecord } from '../../../../types/table.types';
 import { useActiveSeasonEvents } from '../../../../context/SeasonEventsContext';
+import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -44,6 +45,17 @@ const ParentList = () => {
   const { activeEvents } = useActiveSeasonEvents();
   const seasonParam = useMemo(() => searchParams.get('season'), [searchParams]);
   const yearParam = useMemo(() => searchParams.get('year'), [searchParams]);
+
+  // ── Dynamic fields ──────────────────────────────────────────────────────
+  const { getVisibleFields: getParentVisibleFields } = useDynamicFormFields(
+    'parent',
+    { registrationYear: new Date().getFullYear() },
+  );
+
+  const parentVisibleFieldNames = useMemo(() => {
+    const fields = getParentVisibleFields({} as any);
+    return fields.map((f) => f.fieldName);
+  }, [getParentVisibleFields]);
 
   // ── Filter state ───────────────────────────────────────────────────────────
   const [filters, setFilters] = useState<ParentFilterParams>({
@@ -66,7 +78,6 @@ const ParentList = () => {
 
   // ── Fetch all data ─────────────────────────────────────────────────────────
   const hookFilters = useMemo(() => {
-    // Safely convert Moment date range to ISO date strings
     let dateFrom: string | undefined;
     let dateTo: string | undefined;
 
@@ -117,7 +128,6 @@ const ParentList = () => {
 
   const { handleParentClick } = useParentActions();
 
-  // Debug logs
   useEffect(() => {
     console.log('📊 ParentList Debug:', {
       totalItems: allData.length,
@@ -153,7 +163,6 @@ const ParentList = () => {
         setCurrentPage(newPage);
       }
 
-      // Simulate loading state
       setTimeout(() => setTableLoading(false), 300);
     },
     [pageSize],
@@ -187,7 +196,6 @@ const ParentList = () => {
           fullName: record.fullName,
         });
 
-        // CASE 1: Guardian
         if (record.type === 'guardian' && record.parentId) {
           console.log('→ CASE 1: Guardian');
           navigate(`${all_routes.editParent}/${record.parentId}`, {
@@ -208,7 +216,6 @@ const ParentList = () => {
           return;
         }
 
-        // CASE 2: Coach — use loose check to handle boolean/string/number variations
         // eslint-disable-next-line eqeqeq
         if (record.type === 'coach' || record.isCoach == true) {
           console.log(
@@ -240,7 +247,6 @@ const ParentList = () => {
           return;
         }
 
-        // CASE 3: Regular Parent
         console.log(
           '→ CASE 3: Parent, navigating to:',
           `${all_routes.editParent}/${record._id}`,
@@ -275,7 +281,6 @@ const ParentList = () => {
     [navigate, location.pathname],
   );
 
-  // Debounced filter change
   const debouncedFilterChange = useMemo(
     () =>
       debounce((newFilters: Partial<ParentFilterParams>) => {
@@ -318,11 +323,10 @@ const ParentList = () => {
     }
   }, [loading]);
 
-  // ── Memoised derived values ────────────────────────────────────────────────
+  // ── Derived values ─────────────────────────────────────────────────────────
 
   const sortedParents = useMemo(() => {
     if (!sortOrder || paginatedData.length === 0) return paginatedData;
-
     console.log(
       '🔄 Applying sort:',
       sortOrder,
@@ -335,13 +339,11 @@ const ParentList = () => {
     return sorted;
   }, [paginatedData, sortOrder]);
 
-  // Use sorted data if available, otherwise use paginated data
   const dataSource = useMemo(
     () => (sortOrder ? sortedParents : paginatedData),
     [sortOrder, sortedParents, paginatedData],
   );
 
-  // Custom click handlers for guardians
   const handleParentClickWrapper = useCallback(
     (record: ExtendedTableRecord) => {
       if (record.type === 'guardian' && record.parentId) {
@@ -360,20 +362,19 @@ const ParentList = () => {
   const handleEditClickWrapper = useCallback(
     (record: ExtendedTableRecord) => {
       if (record.type === 'guardian' && record.parentId) {
-        // For guardians, we need to pass the parent ID
         handleEditClick({
           ...record,
           _id: record.parentId,
           fullName: (record as any).parentName || record.fullName,
         });
       } else {
-        // For coaches and parents, use their own ID
         handleEditClick(record);
       }
     },
     [handleEditClick],
   );
 
+  // ── Columns — depend on both actions AND dynamic field names ───────────────
   const columns = useMemo(
     () =>
       getParentTableColumns({
@@ -382,6 +383,7 @@ const ParentList = () => {
         currentUserRole: currentUser?.role,
         loading: loading && allData.length === 0,
         onDeleteSuccess: handleRefresh,
+        visibleFields: parentVisibleFieldNames,
       }),
     [
       handleParentClickWrapper,
@@ -390,6 +392,7 @@ const ParentList = () => {
       loading,
       allData.length,
       handleRefresh,
+      parentVisibleFieldNames,
     ],
   );
 
@@ -554,25 +557,21 @@ const ParentList = () => {
                 <p className='text-muted'>Try adjusting your filters</p>
               </div>
             ) : (
-              <>
-                <Table
-                  columns={columns}
-                  dataSource={dataSource}
-                  rowKey='_id'
-                  pagination={{
-                    current: currentPage,
-                    pageSize: pageSize,
-                    total: allData.length,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50', '100'],
-                    // showTotal: (total, range) =>
-                    //   `Showing ${range[0]}-${range[1]} of ${total} parents & guardians`,
-                  }}
-                  onChange={handleTableChange}
-                  loading={tableLoading}
-                  scroll={{ x: true }}
-                />
-              </>
+              <Table
+                columns={columns}
+                dataSource={dataSource}
+                rowKey='_id'
+                pagination={{
+                  current: currentPage,
+                  pageSize: pageSize,
+                  total: allData.length,
+                  showSizeChanger: true,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                }}
+                onChange={handleTableChange}
+                loading={tableLoading}
+                scroll={{ x: true }}
+              />
             )}
 
             {apiError && (

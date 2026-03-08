@@ -33,10 +33,10 @@ import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 import { debounce } from 'lodash';
 import { message, Tabs } from 'antd';
 import { getPlayerStatus } from '../../../../utils/season';
+import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
 
 const { TabPane } = Tabs;
 
-// Define the structure that matches PlayerTableData
 interface PlayerData {
   _id?: string;
   id?: string;
@@ -68,13 +68,11 @@ interface PlayerData {
   siblings?: any[];
 }
 
-// Extend PlayerTableData to add our custom properties
 interface ExtendedPlayer extends PlayerTableData {
   isOwnPlayer: boolean;
   grade: string;
 }
 
-// Helper function to get avatar URL - moved outside component
 const getAvatarUrl = (
   avatar: string | undefined,
   gender: string | undefined,
@@ -84,15 +82,10 @@ const getAvatarUrl = (
       ? 'https://partizan-be.onrender.com/uploads/avatars/girl.png'
       : 'https://partizan-be.onrender.com/uploads/avatars/boy.png';
   }
-
-  if (avatar.includes('res.cloudinary.com')) {
+  if (avatar.includes('res.cloudinary.com'))
     return `${avatar}${avatar.includes('?') ? '&' : '?'}${Date.now()}`;
-  }
-
-  if (avatar.startsWith('/uploads/')) {
+  if (avatar.startsWith('/uploads/'))
     return `https://partizan-be.onrender.com${avatar}`;
-  }
-
   return avatar;
 };
 
@@ -104,12 +97,25 @@ const PlayerGrid = () => {
   const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
   const { currentUser, fetchParentPlayers, fetchAllPlayers } = useAuth();
 
-  // Read URL params
   const schoolParam = useMemo(() => searchParams.get('school'), [searchParams]);
   const seasonParam = useMemo(() => searchParams.get('season'), [searchParams]);
   const yearParam = useMemo(() => searchParams.get('year'), [searchParams]);
 
-  // ── State for regular users ────────────────────────────────────────────────
+  // ── Dynamic fields ─────────────────────────────────────────────────────────
+  const { getVisibleFields: getPlayerVisibleFields } = useDynamicFormFields(
+    'player',
+    { registrationYear: new Date().getFullYear() },
+  );
+
+  const playerVisibleFields = useMemo(
+    () => getPlayerVisibleFields({} as any),
+    [getPlayerVisibleFields],
+  );
+
+  const hasField = (name: string) =>
+    playerVisibleFields.some((f) => f.fieldName === name);
+
+  // ── State ──────────────────────────────────────────────────────────────────
   const [userPlayersList, setUserPlayersList] = useState<PlayerData[]>([]);
   const [allPlayersList, setAllPlayersList] = useState<PlayerData[]>([]);
   const [userPlayersLoading, setUserPlayersLoading] = useState(false);
@@ -130,11 +136,9 @@ const PlayerGrid = () => {
 
   const [localSortOrder, setLocalSortOrder] =
     useState<PlayerSortOrder>('recent');
-
   const [displayCount, setDisplayCount] = useState(12);
   const itemsPerLoad = 12;
 
-  // ── Sync URL params into filter state when URL changes ────────────────────
   useEffect(() => {
     setLocalFilters((prev) => ({
       ...prev,
@@ -144,12 +148,10 @@ const PlayerGrid = () => {
     }));
   }, [seasonParam, yearParam, schoolParam]);
 
-  // ── Fetch user players ─────────────────────────────────────────────────────
   useEffect(() => {
     const loadUserPlayers = async () => {
       const parentId = localStorage.getItem('parentId');
       if (!parentId) return;
-
       setUserPlayersLoading(true);
       try {
         const players = await fetchParentPlayers(parentId);
@@ -160,11 +162,9 @@ const PlayerGrid = () => {
         setUserPlayersLoading(false);
       }
     };
-
     loadUserPlayers();
   }, [fetchParentPlayers]);
 
-  // ── Load all players for coaches ───────────────────────────────────────────
   useEffect(() => {
     const loadAllPlayers = async () => {
       if (currentUser?.role === 'admin' || currentUser?.isCoach) {
@@ -179,11 +179,9 @@ const PlayerGrid = () => {
         }
       }
     };
-
     loadAllPlayers();
   }, [currentUser?.role, currentUser?.isCoach, fetchAllPlayers]);
 
-  // ── Debounced filter change ────────────────────────────────────────────────
   const debouncedFilterChange = useMemo(
     () =>
       debounce((newFilters: Partial<PlayerFilterParams>) => {
@@ -193,7 +191,6 @@ const PlayerGrid = () => {
     [],
   );
 
-  // ── Build filters for the hook (for admin and coach) ─────────────────────
   const buildHookFilters = useCallback((): PlayerFiltersType => {
     let dateFrom: string | undefined;
     let dateTo: string | undefined;
@@ -204,12 +201,10 @@ const PlayerGrid = () => {
       localFilters.dateRange.length === 2
     ) {
       const [start, end] = localFilters.dateRange;
-      if (start && start.isValid && start.isValid()) {
+      if (start && start.isValid && start.isValid())
         dateFrom = start.format('YYYY-MM-DD');
-      }
-      if (end && end.isValid && end.isValid()) {
+      if (end && end.isValid && end.isValid())
         dateTo = end.format('YYYY-MM-DD');
-      }
     }
 
     return {
@@ -241,17 +236,12 @@ const PlayerGrid = () => {
     localFilters.dateRange?.[1]?.valueOf(),
   ]);
 
-  // ── Paginated data (for admin and coach) ───────────────────────────────────
   const shouldUsePagination =
     currentUser?.role === 'admin' || currentUser?.isCoach;
-
   const hookFilters = buildHookFilters();
 
   const gridFilters = useMemo(
-    () => ({
-      ...hookFilters,
-      loadAll: true,
-    }),
+    () => ({ ...hookFilters, loadAll: true }),
     [hookFilters],
   );
 
@@ -262,48 +252,31 @@ const PlayerGrid = () => {
     pagination,
     refresh,
   } = usePaginatedPlayers(shouldUsePagination ? gridFilters : {});
-  // ── Determine which players to show based on role and active tab ───────────
+
   const getPlayersForCurrentView = (): PlayerData[] => {
-    if (currentUser?.role === 'admin') {
-      return paginatedPlayers || [];
-    }
-
+    if (currentUser?.role === 'admin') return paginatedPlayers || [];
     if (currentUser?.isCoach) {
-      if (activeTab === 'my-players') {
-        return userPlayersList || [];
-      } else {
-        const userPlayerIds = new Set(
-          (userPlayersList || [])
-            .map((p: PlayerData) => {
-              const id = p && (p._id || p.id);
-              return id ? id.toString() : '';
-            })
-            .filter(Boolean),
-        );
-
-        return (paginatedPlayers || []).filter((p: PlayerData) => {
-          const playerId = p && (p._id || p.id);
-          return playerId ? !userPlayerIds.has(playerId.toString()) : true;
-        });
-      }
+      if (activeTab === 'my-players') return userPlayersList || [];
+      const userPlayerIds = new Set(
+        (userPlayersList || [])
+          .map((p: PlayerData) => {
+            const id = p && (p._id || p.id);
+            return id ? id.toString() : '';
+          })
+          .filter(Boolean),
+      );
+      return (paginatedPlayers || []).filter((p: PlayerData) => {
+        const playerId = p && (p._id || p.id);
+        return playerId ? !userPlayerIds.has(playerId.toString()) : true;
+      });
     }
-
     return userPlayersList || [];
   };
 
   const getLoadingState = (): boolean => {
-    if (currentUser?.role === 'admin') {
-      return paginatedLoading;
-    }
-
-    if (currentUser?.isCoach) {
-      if (activeTab === 'my-players') {
-        return userPlayersLoading;
-      } else {
-        return paginatedLoading;
-      }
-    }
-
+    if (currentUser?.role === 'admin') return paginatedLoading;
+    if (currentUser?.isCoach)
+      return activeTab === 'my-players' ? userPlayersLoading : paginatedLoading;
     return userPlayersLoading;
   };
 
@@ -311,10 +284,8 @@ const PlayerGrid = () => {
   const loading = getLoadingState();
 
   const { handlePlayerClick } = usePlayerActions();
-
   const [apiError, setApiError] = useState<string | null>(null);
 
-  // ── Enhanced players with status ───────────────────────────────────────────
   const enhancedPlayers = useMemo((): ExtendedPlayer[] => {
     return (players || []).map((player: PlayerData) => {
       const playerId = player?._id || player?.id || '';
@@ -349,7 +320,7 @@ const PlayerGrid = () => {
         fullName: player?.fullName || player?.name || 'N/A',
         gender: player?.gender || 'N/A',
         dob: player?.dob || '',
-        age: age,
+        age,
         section: player?.schoolName || player?.section || 'No School',
         schoolName: player?.schoolName || player?.section || 'No School',
         class: gradeValue,
@@ -377,42 +348,35 @@ const PlayerGrid = () => {
     });
   }, [players, userPlayersList]);
 
-  // ── Apply filters for non-paginated views ─────────────────────────────────
   const filteredPlayers = useMemo((): ExtendedPlayer[] => {
     let filtered = enhancedPlayers;
-
     const isPaginatedView =
       currentUser?.role === 'admin' ||
       (currentUser?.isCoach && activeTab === 'all-players');
 
     if (!isPaginatedView) {
-      if (localFilters.nameFilter) {
+      if (localFilters.nameFilter)
         filtered = filtered.filter((p) =>
           p.name
             ?.toLowerCase()
             .includes(localFilters.nameFilter!.toLowerCase()),
         );
-      }
-      if (localFilters.genderFilter) {
+      if (localFilters.genderFilter)
         filtered = filtered.filter(
           (p) => p.gender === localFilters.genderFilter,
         );
-      }
-      if (localFilters.gradeFilter) {
+      if (localFilters.gradeFilter)
         filtered = filtered.filter((p) => p.class === localFilters.gradeFilter);
-      }
-      if (localFilters.statusFilter) {
+      if (localFilters.statusFilter)
         filtered = filtered.filter(
           (p) => p.status === localFilters.statusFilter,
         );
-      }
-      if (localFilters.schoolFilter) {
+      if (localFilters.schoolFilter)
         filtered = filtered.filter((p) =>
           p.section
             ?.toLowerCase()
             .includes(localFilters.schoolFilter!.toLowerCase()),
         );
-      }
     }
 
     return filtered;
@@ -424,15 +388,14 @@ const PlayerGrid = () => {
     activeTab,
   ]);
 
-  // ── Sorting ───────────────────────────────────────────────────────────────
   const sortedPlayers = useMemo((): ExtendedPlayer[] => {
     let sorted = [...filteredPlayers];
 
-    if (localSortOrder === 'asc') {
+    if (localSortOrder === 'asc')
       sorted.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (localSortOrder === 'desc') {
+    else if (localSortOrder === 'desc')
       sorted.sort((a, b) => b.name.localeCompare(a.name));
-    } else if (localSortOrder === 'recentlyViewed') {
+    else if (localSortOrder === 'recentlyViewed') {
       const recentlyViewed: string[] = JSON.parse(
         localStorage.getItem('recentlyViewed') || '[]',
       );
@@ -449,12 +412,11 @@ const PlayerGrid = () => {
     return sorted;
   }, [filteredPlayers, localSortOrder]);
 
-  // ── Players to display (sliced for load-more) ─────────────────────────────
-  const playersToDisplay = useMemo(() => {
-    return sortedPlayers.slice(0, displayCount);
-  }, [sortedPlayers, displayCount]);
+  const playersToDisplay = useMemo(
+    () => sortedPlayers.slice(0, displayCount),
+    [sortedPlayers, displayCount],
+  );
 
-  // ── Status summary ─────────────────────────────────────────────────────────
   const statusSummary = useMemo(() => {
     const active = enhancedPlayers.filter((p) => p.status === 'Active').length;
     const pending = enhancedPlayers.filter(
@@ -466,7 +428,6 @@ const PlayerGrid = () => {
     return { active, pending, inactive, total: enhancedPlayers.length };
   }, [enhancedPlayers]);
 
-  // ── Helper to build list URL preserving current filters ───────────────────
   const getListUrl = useCallback(() => {
     const params = new URLSearchParams();
     if (localFilters.schoolFilter)
@@ -482,7 +443,6 @@ const PlayerGrid = () => {
     localFilters.yearParam,
   ]);
 
-  // ── Callbacks ──────────────────────────────────────────────────────────────
   const handleFilterChange = useCallback(
     (newFilters: Partial<PlayerFilterParams>) => {
       debouncedFilterChange(newFilters);
@@ -534,10 +494,7 @@ const PlayerGrid = () => {
     (player: ExtendedPlayer) => {
       try {
         sessionStorage.setItem('currentPlayerData', JSON.stringify(player));
-      } catch (err) {
-        console.warn('Could not store player data in session storage:', err);
-      }
-
+      } catch (err) {}
       const recentlyViewed: string[] = JSON.parse(
         localStorage.getItem('recentlyViewed') || '[]',
       );
@@ -546,16 +503,13 @@ const PlayerGrid = () => {
         ...recentlyViewed.filter((id) => id !== String(player.id)),
       ].slice(0, 10);
       localStorage.setItem('recentlyViewed', JSON.stringify(updated));
-
-      const playerForNavigation = {
+      handlePlayerClick({
         ...player,
         _id: player.id,
         id: player.id,
         fullName: player.name,
         seasons: player.seasons || [],
-      };
-
-      handlePlayerClick(playerForNavigation);
+      });
     },
     [handlePlayerClick],
   );
@@ -568,12 +522,8 @@ const PlayerGrid = () => {
       if (refresh) refresh();
     } else {
       const parentId = localStorage.getItem('parentId');
-      if (parentId) {
-        fetchParentPlayers(parentId).then(setUserPlayersList);
-      }
-      if (currentUser?.isCoach) {
-        fetchAllPlayers().then(setAllPlayersList);
-      }
+      if (parentId) fetchParentPlayers(parentId).then(setUserPlayersList);
+      if (currentUser?.isCoach) fetchAllPlayers().then(setAllPlayersList);
     }
     message.success('Player list refreshed');
   }, [
@@ -585,7 +535,6 @@ const PlayerGrid = () => {
     fetchAllPlayers,
   ]);
 
-  // ── Effects ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (error) {
       setApiError(error);
@@ -600,20 +549,13 @@ const PlayerGrid = () => {
     };
   }, [debouncedFilterChange]);
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-  if (loading && players.length === 0 && !currentUser?.isCoach) {
+  if (loading && players.length === 0 && !currentUser?.isCoach)
     return <LoadingSpinner />;
-  }
-
   if (apiError) {
     return (
       <div className='alert alert-danger'>
         <h4>Error Loading Data</h4>
         <p>{apiError}</p>
-        <p>
-          Please try refreshing the page or contact support if the problem
-          persists.
-        </p>
         <button
           className='btn btn-primary'
           onClick={() => window.location.reload()}
@@ -634,7 +576,6 @@ const PlayerGrid = () => {
           onRefresh={handleRefresh}
         />
 
-        {/* Show active school filter banner */}
         {localFilters.schoolFilter && (
           <div className='alert alert-info d-flex align-items-center justify-content-between mb-3'>
             <span>
@@ -656,7 +597,7 @@ const PlayerGrid = () => {
 
         <div className='bg-white p-3 border rounded-1 d-flex align-items-center justify-content-between flex-wrap mb-4 pb-0'>
           <h4 className='mb-3'></h4>
-          {/* Tabs for Coach View */}
+
           {currentUser?.isCoach && currentUser?.role !== 'admin' && (
             <Tabs
               activeKey={activeTab}
@@ -687,7 +628,6 @@ const PlayerGrid = () => {
             </Tabs>
           )}
 
-          {/* Title for Regular Parents */}
           {!currentUser?.isCoach && currentUser?.role !== 'admin' && (
             <h4 className='mb-3'>
               <i className='ti ti-shirt-sport me-2' />
@@ -696,14 +636,12 @@ const PlayerGrid = () => {
           )}
 
           <div className='d-flex align-items-center flex-wrap'>
-            {/* Show filters for admin OR (coach with all-players tab) */}
             {(currentUser?.role === 'admin' ||
               (currentUser?.isCoach && activeTab === 'all-players')) && (
               <>
                 <div className='input-icon-start mb-3 me-2 position-relative'>
                   <PredefinedDateRanges onDateChange={handleDateRangeChange} />
                 </div>
-
                 <div className='dropdown mb-3 me-2'>
                   <Link
                     to='#'
@@ -793,6 +731,11 @@ const PlayerGrid = () => {
                   ? 'warning'
                   : 'danger';
 
+            const showEdit =
+              currentUser?.role === 'admin' ||
+              activeTab === 'my-players' ||
+              (currentUser?.isCoach && player.isOwnPlayer);
+
             return (
               <div
                 key={player.id}
@@ -802,11 +745,13 @@ const PlayerGrid = () => {
                   className={`card flex-fill ${player.isOwnPlayer && activeTab === 'all-players' ? 'border-warning border-2' : ''}`}
                 >
                   <div className='card-header d-flex align-items-center justify-content-between'>
-                    AAU Number: {player.aauNumber || 'No AAU Number'}
-                    <div className='d-flex align-items-center'>
+                    <div className='d-flex align-items-center gap-2'>
+                      <span>Player</span>
+                    </div>
+                    <div className='d-flex align-items-center gap-2'>
                       {player.isOwnPlayer && activeTab === 'all-players' && (
                         <span
-                          className='badge badge-soft-warning me-2'
+                          className='badge badge-soft-warning'
                           title='Your Player'
                         >
                           <i className='ti ti-star me-1' />
@@ -814,56 +759,14 @@ const PlayerGrid = () => {
                         </span>
                       )}
                       <span
-                        className={`badge badge-soft-${statusColor} d-inline-flex align-items-center me-1`}
+                        className={`badge badge-soft-${statusColor} d-inline-flex align-items-center`}
                         title={`Status: ${player.status}`}
                       >
-                        <i className='ti ti-circle-filled fs-5 me-1' />
+                        <i
+                          className={`ti ti-circle-filled fs-5 me-1 text-${statusColor}`}
+                        />
                         {player.status}
                       </span>
-                      <div className='dropdown'>
-                        <Link
-                          to='#'
-                          className='btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0'
-                          data-bs-toggle='dropdown'
-                          aria-expanded='false'
-                        >
-                          <i className='ti ti-dots-vertical fs-14' />
-                        </Link>
-                        <ul className='dropdown-menu dropdown-menu-right p-3'>
-                          <li>
-                            <div
-                              className='dropdown-item rounded-1 cursor-pointer'
-                              onClick={() => handlePlayerView(player)}
-                            >
-                              <i className='ti ti-menu me-2' />
-                              View
-                            </div>
-                          </li>
-                          {(currentUser?.role === 'admin' ||
-                            activeTab === 'my-players' ||
-                            (currentUser?.isCoach && player.isOwnPlayer)) && (
-                            <li>
-                              <Link
-                                to={`${routes.editPlayer}/${player.id}`}
-                                state={{
-                                  player: {
-                                    ...player,
-                                    playerId: player.id,
-                                    _id: player.id,
-                                    fullName: player.name,
-                                    seasons: player.seasons || [],
-                                  },
-                                  from: location.pathname,
-                                }}
-                                className='dropdown-item rounded-1'
-                              >
-                                <i className='ti ti-edit me-2' />
-                                Edit
-                              </Link>
-                            </li>
-                          )}
-                        </ul>
-                      </div>
                     </div>
                   </div>
                   <div className='card-body'>
@@ -890,7 +793,7 @@ const PlayerGrid = () => {
                             }}
                           />
                         </div>
-                        <div className='ms-2'>
+                        <div className='ms-2 flex-grow-1'>
                           <h5 className='mb-0'>
                             <span
                               className={`cursor-pointer ${player.isOwnPlayer && activeTab === 'all-players' ? 'text-warning fw-bold' : 'text-primary'}`}
@@ -899,17 +802,84 @@ const PlayerGrid = () => {
                               {player.name}
                             </span>
                           </h5>
-                          <p>
-                            {player.class} • {player.section}
+                          <p className='mb-1 text-muted small'>
+                            {/* Gender — gated */}
+                            {hasField('gender') &&
+                              player.gender &&
+                              player.gender !== 'N/A' && (
+                                <span className='me-2'>{player.gender}</span>
+                              )}
+                            {/* Age derived from dob — gated on dob */}
+                            {hasField('dob') && player.age > 0 && (
+                              <span className='me-2'>Age {player.age}</span>
+                            )}
                           </p>
-                          {player.seasons && player.seasons.length > 0 && (
-                            <small className='text-muted'>
-                              {player.seasons.length} season
-                              {player.seasons.length > 1 ? 's' : ''}
-                            </small>
-                          )}
+                          <p className='mb-1 text-muted small'>
+                            {/* School — gated */}
+                            {hasField('schoolName') &&
+                              player.section &&
+                              player.section !== 'No School' && (
+                                <span className='me-2'>
+                                  <i className='ti ti-school me-1' />
+                                  {player.section}
+                                </span>
+                              )}
+                            {/* Grade — gated */}
+                            {hasField('grade') &&
+                              player.class &&
+                              player.class !== 'N/A' && (
+                                <span>Grade {player.class}</span>
+                              )}
+                          </p>
+                          <div className='d-flex gap-2 mt-1 flex-wrap'>
+                            {/* AAU — gated */}
+                            {hasField('aauNumber') &&
+                              player.aauNumber &&
+                              player.aauNumber !== 'N/A' && (
+                                <small className='text-muted'>
+                                  AAU: {player.aauNumber}
+                                </small>
+                              )}
+                            {player.seasons && player.seasons.length > 0 && (
+                              <small className='text-muted'>
+                                {player.seasons.length} season
+                                {player.seasons.length > 1 ? 's' : ''}
+                              </small>
+                            )}
+                          </div>
                         </div>
                       </div>
+                    </div>
+                    {/* Inline action buttons — matching parent/coach grid style */}
+                    <div className='d-flex align-items-center gap-2'>
+                      <button
+                        onClick={() => handlePlayerView(player)}
+                        className='btn btn-sm btn-icon btn-outline-secondary'
+                        title='View Details'
+                        style={{ width: '32px', height: '32px' }}
+                      >
+                        <i className='ti ti-eye fs-16' />
+                      </button>
+                      {showEdit && (
+                        <Link
+                          to={`${routes.editPlayer}/${player.id}`}
+                          state={{
+                            player: {
+                              ...player,
+                              playerId: player.id,
+                              _id: player.id,
+                              fullName: player.name,
+                              seasons: player.seasons || [],
+                            },
+                            from: location.pathname,
+                          }}
+                          className='btn btn-sm btn-icon btn-outline-warning'
+                          title='Edit'
+                          style={{ width: '32px', height: '32px' }}
+                        >
+                          <i className='ti ti-edit fs-16' />
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -5,7 +5,8 @@ import { TableProps, Skeleton } from 'antd';
 import { Link } from 'react-router-dom';
 import { formatPhoneNumber } from '../../../utils/phone';
 import { formatDate } from '../../../utils/dateFormatter';
-import { TableRecord, FormattedAddress } from '../../../types/types';
+import { FormattedAddress } from '../../../types/types';
+import { ExtendedTableRecord } from '../../../types/table.types';
 import { getCurrentYear } from '../../../utils/season';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -17,22 +18,11 @@ import {
   DeleteUserData,
 } from '../modals/DeleteConfirmModal';
 import Swal from 'sweetalert2';
-
-interface ExtendedTableRecord extends TableRecord {
-  type: 'parent' | 'guardian' | 'coach';
-  status: 'Active' | 'Inactive' | 'Pending Payment';
-  DateofJoin: string;
-  imgSrc: string;
-  avatar?: string;
-  canView: boolean;
-  parentId?: string;
-  aauNumber?: string;
-  isCoach?: boolean;
-  players?: any[];
-  additionalGuardians?: any[];
-  paymentStatus?: 'paid' | 'notPaid' | null;
-  relationship?: string;
-}
+import {
+  formatAddress,
+  AddressShowConfig,
+  Address,
+} from '../../../utils/address';
 
 interface ParentTableColumnsProps {
   handleParentClick: (record: ExtendedTableRecord) => void;
@@ -40,7 +30,24 @@ interface ParentTableColumnsProps {
   currentUserRole?: string;
   loading?: boolean;
   onDeleteSuccess?: () => void;
+  visibleFields?: string[];
 }
+
+// fmtAddr accepts address with optional street2 and casts for shared formatAddress
+const fmtAddr = (
+  addr:
+    | string
+    | {
+        street: string;
+        street2?: string;
+        city: string;
+        state: string;
+        zip: string;
+      }
+    | undefined
+    | null,
+  show?: AddressShowConfig,
+) => formatAddress(addr as Address | string | null | undefined, show);
 
 // Skeleton loader for parent table rows
 export const ParentTableSkeleton: React.FC<{ rows?: number }> = ({
@@ -112,59 +119,50 @@ export const ParentTableSkeleton: React.FC<{ rows?: number }> = ({
   );
 };
 
-// Helper function to check if player is registered for current season
+// Helper: is player registered for current season
 const isPlayerRegisteredForCurrentSeason = (player: any): boolean => {
   const currentYear = getCurrentYear();
-
   if (player.seasons && Array.isArray(player.seasons)) {
-    const hasCurrentYearSeason = player.seasons.some(
-      (season: any) => season.year === currentYear,
-    );
-    if (hasCurrentYearSeason) return true;
+    if (player.seasons.some((season: any) => season.year === currentYear))
+      return true;
   }
-
-  const hasDirectSeason =
-    player.season && player.registrationYear === currentYear;
-  return hasDirectSeason;
+  return player.season && player.registrationYear === currentYear;
 };
 
-// Helper function to get parent status based on registration only
+// Helper: parent status
 const getParentStatus = <T extends ExtendedTableRecord>(
   record: T,
 ): 'active' | 'inactive' | 'pending' => {
   if (record.isCoach) return 'active';
-
-  const currentYear = getCurrentYear();
-
   const hasCurrentSeasonRegistration = record.players?.some(
     isPlayerRegisteredForCurrentSeason,
   );
-
   if (hasCurrentSeasonRegistration) return 'active';
-
   const hasPendingPayments = record.players?.some(
     (player) => player.registrationComplete && !player.paymentComplete,
   );
-
   return hasPendingPayments ? 'pending' : 'inactive';
 };
 
-// Export to PDF function
+// Export to PDF
 export const exportParentsToPDF = <T extends ExtendedTableRecord>(
   data: T[],
+  addrShow: AddressShowConfig = {
+    street: true,
+    city: true,
+    state: true,
+    zip: true,
+  },
 ) => {
   const doc = new jsPDF();
   doc.text('Parents List', 14, 15);
 
   const tableColumn = ['Name', 'Email', 'Phone', 'Address', 'Type', 'Status'];
-
   const tableRows = data.map((item) => [
     item.fullName,
     item.email || 'N/A',
     item.phone ? formatPhoneNumber(item.phone) : 'N/A',
-    typeof item.address === 'string'
-      ? item.address
-      : `${item.address?.street}, ${item.address?.city}, ${item.address?.state} ${item.address?.zip}`,
+    fmtAddr(item.address, addrShow) || 'N/A',
     item.isCoach ? 'Coach' : item.type === 'guardian' ? 'Guardian' : 'Parent',
     getParentStatus(item) === 'active' ? 'Active' : 'Inactive',
   ]);
@@ -173,11 +171,7 @@ export const exportParentsToPDF = <T extends ExtendedTableRecord>(
     head: [tableColumn],
     body: tableRows,
     startY: 25,
-    styles: {
-      fontSize: 8,
-      cellPadding: 2,
-      overflow: 'linebreak',
-    },
+    styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
     headStyles: {
       fillColor: [41, 128, 185],
       textColor: 255,
@@ -196,19 +190,22 @@ export const exportParentsToPDF = <T extends ExtendedTableRecord>(
   doc.save(`parents_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
 
-// Export to Excel function
+// Export to Excel
 export const exportParentsToExcel = <T extends ExtendedTableRecord>(
   data: T[],
+  addrShow: AddressShowConfig = {
+    street: true,
+    city: true,
+    state: true,
+    zip: true,
+  },
 ) => {
   const worksheet = XLSX.utils.json_to_sheet(
     data.map((item) => ({
       Name: item.fullName,
       Email: item.email || 'N/A',
       Phone: item.phone ? formatPhoneNumber(item.phone) : 'N/A',
-      Address:
-        typeof item.address === 'string'
-          ? item.address
-          : `${item.address?.street}, ${item.address?.city}, ${item.address?.state} ${item.address?.zip}`,
+      Address: fmtAddr(item.address, addrShow) || 'N/A',
       Type: item.isCoach
         ? 'Coach'
         : item.type === 'guardian'
@@ -227,7 +224,7 @@ export const exportParentsToExcel = <T extends ExtendedTableRecord>(
   );
 };
 
-// Export to CSV function
+// Export email list to CSV
 export const exportEmailList = <T extends ExtendedTableRecord>(data: T[]) => {
   const uniqueEmails = Array.from(
     new Set(
@@ -272,7 +269,7 @@ export const exportEmailList = <T extends ExtendedTableRecord>(data: T[]) => {
   });
 };
 
-// Copy to clipboard function
+// Copy emails to clipboard
 export const copyEmailListToClipboard = <T extends ExtendedTableRecord>(
   data: T[],
   onSuccess?: (message: string) => void,
@@ -310,16 +307,9 @@ export const copyEmailListToClipboard = <T extends ExtendedTableRecord>(
               <strong>${uniqueEmails.length}</strong> email${uniqueEmails.length > 1 ? 's' : ''} copied to clipboard.
             </p>
             <div style="
-              background:#f8f9fa;
-              border:1px solid #e9ecef;
-              border-radius:8px;
-              padding:10px 14px;
-              max-height:140px;
-              overflow-y:auto;
-              font-size:13px;
-              color:#495057;
-              font-family:monospace;
-              line-height:1.7;
+              background:#f8f9fa; border:1px solid #e9ecef; border-radius:8px;
+              padding:10px 14px; max-height:140px; overflow-y:auto;
+              font-size:13px; color:#495057; font-family:monospace; line-height:1.7;
             ">
               ${uniqueEmails.map((e) => `<div>${e}</div>`).join('')}
             </div>
@@ -347,15 +337,38 @@ export const copyEmailListToClipboard = <T extends ExtendedTableRecord>(
   return true;
 };
 
-// Main columns definition
+// ---------------------------------------------------------------------------
+// Main columns definition with dynamic visibility
+// ---------------------------------------------------------------------------
 export const getParentTableColumns = ({
   handleParentClick,
   handleEditClick,
   currentUserRole,
   loading = false,
   onDeleteSuccess,
+  visibleFields = [],
 }: ParentTableColumnsProps): TableProps<ExtendedTableRecord>['columns'] => {
-  // If loading, return skeleton columns
+  // No length===0 fallback — if visibleFields is empty the caller hasn't loaded
+  // config yet; columns are simply not rendered until fields arrive.
+  const isFieldVisible = (fieldName: string): boolean =>
+    visibleFields.includes(fieldName);
+
+  const isAddressFieldVisible =
+    isFieldVisible('address') ||
+    isFieldVisible('city') ||
+    isFieldVisible('state') ||
+    isFieldVisible('zip');
+
+  const isPhoneFieldVisible = isFieldVisible('phone');
+
+  const addrShow: AddressShowConfig = {
+    street: isFieldVisible('address'),
+    city: isFieldVisible('city'),
+    state: isFieldVisible('state'),
+    zip: isFieldVisible('zip'),
+  };
+
+  // Loading skeleton columns
   if (loading) {
     return [
       {
@@ -375,42 +388,54 @@ export const getParentTableColumns = ({
           </div>
         ),
       },
-      {
-        title: 'Email',
-        dataIndex: 'email',
-        key: 'email',
-        render: () => (
-          <Skeleton.Input
-            active
-            size='small'
-            style={{ width: 150, height: 16 }}
-          />
-        ),
-      },
-      {
-        title: 'Phone',
-        dataIndex: 'phone',
-        key: 'phone',
-        render: () => (
-          <Skeleton.Input
-            active
-            size='small'
-            style={{ width: 100, height: 16 }}
-          />
-        ),
-      },
-      {
-        title: 'Address',
-        dataIndex: 'address',
-        key: 'address',
-        render: () => (
-          <Skeleton.Input
-            active
-            size='small'
-            style={{ width: 120, height: 16 }}
-          />
-        ),
-      },
+      ...(isFieldVisible('email')
+        ? [
+            {
+              title: 'Email',
+              dataIndex: 'email',
+              key: 'email',
+              render: () => (
+                <Skeleton.Input
+                  active
+                  size='small'
+                  style={{ width: 150, height: 16 }}
+                />
+              ),
+            },
+          ]
+        : []),
+      ...(isPhoneFieldVisible
+        ? [
+            {
+              title: 'Phone',
+              dataIndex: 'phone',
+              key: 'phone',
+              render: () => (
+                <Skeleton.Input
+                  active
+                  size='small'
+                  style={{ width: 100, height: 16 }}
+                />
+              ),
+            },
+          ]
+        : []),
+      ...(isAddressFieldVisible
+        ? [
+            {
+              title: 'Address',
+              dataIndex: 'address',
+              key: 'address',
+              render: () => (
+                <Skeleton.Input
+                  active
+                  size='small'
+                  style={{ width: 120, height: 16 }}
+                />
+              ),
+            },
+          ]
+        : []),
       {
         title: 'Type',
         key: 'type',
@@ -423,7 +448,7 @@ export const getParentTableColumns = ({
         ),
       },
       {
-        title: 'Status',
+        title: 'Payment Status',
         key: 'status',
         render: () => (
           <Skeleton.Input
@@ -470,16 +495,12 @@ export const getParentTableColumns = ({
       key: 'name',
       render: (text: string, record: ExtendedTableRecord) => {
         const defaultAvatar = getDefaultAvatar(
-          record.isCoach
-            ? 'coach'
-            : record.type === 'guardian'
-              ? 'parent'
-              : 'parent',
+          record.isCoach ? 'coach' : 'parent',
         );
-
-        const avatarSource = record.avatar || record.imgSrc;
-        const avatarUrl = getAvatarUrl(avatarSource, defaultAvatar);
-
+        const avatarUrl = getAvatarUrl(
+          record.avatar || record.imgSrc,
+          defaultAvatar,
+        );
         return (
           <div key={record._id} className='d-flex align-items-center'>
             <div
@@ -492,11 +513,7 @@ export const getParentTableColumns = ({
                 alt={record.fullName}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = getDefaultAvatar(
-                    record.isCoach
-                      ? 'coach'
-                      : record.type === 'guardian'
-                        ? 'parent'
-                        : 'parent',
+                    record.isCoach ? 'coach' : 'parent',
                   );
                 }}
               />
@@ -515,41 +532,49 @@ export const getParentTableColumns = ({
       sorter: (a: ExtendedTableRecord, b: ExtendedTableRecord) =>
         a.fullName.localeCompare(b.fullName),
     },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-      sorter: (a: ExtendedTableRecord, b: ExtendedTableRecord) =>
-        (a.email || '').localeCompare(b.email || ''),
-    },
-    {
-      title: 'Phone',
-      dataIndex: 'phone',
-      key: 'phone',
-      sorter: (a: ExtendedTableRecord, b: ExtendedTableRecord) =>
-        (a.phone || '').localeCompare(b.phone || ''),
-      render: (phone: string) => (phone ? formatPhoneNumber(phone) : 'N/A'),
-    },
-    {
-      title: 'Address',
-      dataIndex: 'address',
-      key: 'address',
-      render: (address: FormattedAddress) =>
-        typeof address === 'string'
-          ? address
-          : `${address.street}, ${address.city}, ${address.state} ${address.zip}`,
-      sorter: (a: ExtendedTableRecord, b: ExtendedTableRecord) => {
-        const addrA =
-          typeof a.address === 'string'
-            ? a.address
-            : `${a.address?.street} ${a.address?.city} ${a.address?.state} ${a.address?.zip}`;
-        const addrB =
-          typeof b.address === 'string'
-            ? b.address
-            : `${b.address?.street} ${b.address?.city} ${b.address?.state} ${b.address?.zip}`;
-        return (addrA || '').localeCompare(addrB || '');
-      },
-    },
+
+    ...(isFieldVisible('email')
+      ? [
+          {
+            title: 'Email',
+            dataIndex: 'email',
+            key: 'email',
+            sorter: (a: ExtendedTableRecord, b: ExtendedTableRecord) =>
+              (a.email || '').localeCompare(b.email || ''),
+          },
+        ]
+      : []),
+
+    ...(isPhoneFieldVisible
+      ? [
+          {
+            title: 'Phone',
+            dataIndex: 'phone',
+            key: 'phone',
+            sorter: (a: ExtendedTableRecord, b: ExtendedTableRecord) =>
+              (a.phone || '').localeCompare(b.phone || ''),
+            render: (phone: string) =>
+              phone ? formatPhoneNumber(phone) : 'N/A',
+          },
+        ]
+      : []),
+
+    ...(isAddressFieldVisible
+      ? [
+          {
+            title: 'Address',
+            dataIndex: 'address',
+            key: 'address',
+            render: (_: unknown, record: ExtendedTableRecord) =>
+              fmtAddr(record.address, addrShow) || 'N/A',
+            sorter: (a: ExtendedTableRecord, b: ExtendedTableRecord) =>
+              fmtAddr(a.address, addrShow).localeCompare(
+                fmtAddr(b.address, addrShow),
+              ),
+          },
+        ]
+      : []),
+
     {
       title: 'Type',
       key: 'type',
@@ -564,19 +589,18 @@ export const getParentTableColumns = ({
         return typeA.localeCompare(typeB);
       },
     },
+
     {
       title: 'Payment Status',
       key: 'status',
       render: (_: unknown, record: ExtendedTableRecord) => {
         const status = record.status;
-
         const badgeColor =
           status === 'Active'
             ? 'success'
             : status === 'Pending Payment'
               ? 'warning'
               : 'danger';
-
         return (
           <span
             className={`badge badge-soft-${badgeColor} d-inline-flex align-items-center`}
@@ -589,6 +613,7 @@ export const getParentTableColumns = ({
       sorter: (a: ExtendedTableRecord, b: ExtendedTableRecord) =>
         (a.status || '').localeCompare(b.status || ''),
     },
+
     {
       title: 'Date Joined',
       dataIndex: 'createdAt',
@@ -597,6 +622,7 @@ export const getParentTableColumns = ({
       sorter: (a: ExtendedTableRecord, b: ExtendedTableRecord) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     },
+
     ...(currentUserRole === 'admin' || currentUserRole === 'coach'
       ? [
           {
@@ -606,16 +632,58 @@ export const getParentTableColumns = ({
               const targetRecord = record.parentId
                 ? { ...record, _id: record.parentId }
                 : record;
-
-              // Determine if delete should be allowed
               const canDelete =
                 currentUserRole === 'admin' &&
                 (record.type === 'parent' ||
                   (record.type === 'coach' && !record.parentId));
 
               return (
-                <div className='d-flex align-items-center'>
-                  <div className='dropdown'>
+                <div className='d-flex align-items-center gap-2'>
+                  <button
+                    onClick={() => handleParentClick(targetRecord)}
+                    className='btn btn-sm btn-icon btn-outline-secondary btn-sm'
+                    title='View Details'
+                    style={{ width: '32px', height: '32px' }}
+                  >
+                    <i className='ti ti-eye fs-16' />
+                  </button>
+                  <button
+                    onClick={() => handleEditClick?.(record)}
+                    className='btn btn-sm btn-icon btn-outline-warning btn-sm'
+                    title='Edit'
+                    style={{ width: '32px', height: '32px' }}
+                  >
+                    <i className='ti ti-edit fs-16' />
+                  </button>
+                  {canDelete && (
+                    <button
+                      onClick={() =>
+                        showDeleteConfirm(
+                          {
+                            _id: targetRecord._id,
+                            fullName: targetRecord.fullName,
+                            email: targetRecord.email,
+                            parentId: targetRecord.parentId,
+                            type: targetRecord.type,
+                            isCoach: targetRecord.isCoach,
+                          },
+                          { onDeleteSuccess: onDeleteSuccess },
+                        )
+                      }
+                      className='btn btn-sm btn-icon btn-outline-danger btn-sm'
+                      title='Delete'
+                      style={{ width: '32px', height: '32px' }}
+                    >
+                      <i className='ti ti-trash fs-16' />
+                    </button>
+                  )}
+                </div>
+              );
+              {
+                /* Dropdown Menu - Preserved for future use */
+              }
+              {
+                /* <div className='dropdown'>
                     <Link
                       to='#'
                       className='btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0'
@@ -669,9 +737,8 @@ export const getParentTableColumns = ({
                         </li>
                       )}
                     </ul>
-                  </div>
-                </div>
-              );
+                  </div> */
+              }
             },
           },
         ]
