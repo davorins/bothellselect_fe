@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import ParentSidebar from './parentSidebar';
 import ParentBreadcrumb from './parentBreadcrumb';
@@ -9,6 +9,7 @@ import { formatDate } from '../../../../utils/dateFormatter';
 import { formatPhoneNumber } from '../../../../utils/phone';
 import { getCurrentYear } from '../../../../utils/season';
 import { getAvatarUrl, getDefaultAvatar } from '../../../../utils/r2Utils';
+import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
 
 // ✅ R2 defaults
 const DEFAULT_PARENT_AVATAR = getDefaultAvatar('parent');
@@ -368,9 +369,7 @@ const ParentDetails = () => {
   const [parent, setParent] = useState<ParentWithStatus | null>(() => {
     const p = location.state?.parent;
     if (!p) return null;
-    // Determine default avatar based on coach status
     const defaultAvatar = getDefaultAvatar(p.isCoach ? 'coach' : 'parent');
-    // Apply getAvatarUrl to whatever is in state — handles null, legacy paths, R2
     return { ...p, avatar: getAvatarUrl(p.avatar, defaultAvatar) };
   });
 
@@ -396,107 +395,107 @@ const ParentDetails = () => {
     maxRefundAmount: 0,
   });
   const prevParentIdRef = useRef<string | undefined>(undefined);
+  const [guardianAvatarStates, setGuardianAvatarStates] = useState<
+    Record<string, string>
+  >({});
 
   const currentUser = authUser as ParentWithStatus | null;
   const isAdmin = currentUser?.role === 'admin';
   const isCoach = currentUser?.isCoach || currentUser?.role === 'coach';
   const currentUserId = currentUser?._id || currentUser?.id;
 
-  // State for guardian avatars
-  const [guardianAvatarStates, setGuardianAvatarStates] = useState<
-    Record<string, string>
-  >({});
+  // ── Dynamic fields ──────────────────────────────────────────────────────
+  const { getVisibleFields: getGuardianVisibleFields } = useDynamicFormFields(
+    'guardian',
+    { registrationYear: new Date().getFullYear() },
+  );
+  const { getVisibleFields: getPlayerVisibleFields } = useDynamicFormFields(
+    'player',
+    { registrationYear: new Date().getFullYear() },
+  );
 
-  // ---------------------------------------------------------------------------
-  // ✅ KEY FIX: When component mounts from location.state (skipping the full
-  // fetchParentData path), the avatar in state may be a stale/legacy path.
-  // We do a lightweight GET /parent/:id to resolve the live R2 URL — exactly
-  // the same strategy ParentSidebar uses, so both always show the same avatar.
-  // ---------------------------------------------------------------------------
+  const guardianVisibleFields = useMemo(
+    () => getGuardianVisibleFields({} as any),
+    [getGuardianVisibleFields],
+  );
+  // Use first player's data for field config if available
+  const playerVisibleFields = useMemo(
+    () =>
+      players.length > 0
+        ? getPlayerVisibleFields(players[0] as any)
+        : getPlayerVisibleFields({} as any),
+    [players, getPlayerVisibleFields],
+  );
+
+  const hasGuardianField = (name: string) =>
+    guardianVisibleFields.some((f) => f.fieldName === name);
+  const hasPlayerField = (name: string) =>
+    playerVisibleFields.some((f) => f.fieldName === name);
+
+  // ── Avatar resolve on mount ─────────────────────────────────────────────
   useEffect(() => {
     const resolveAvatarFromApi = async () => {
-      // Only run when we initialised from location.state (isLoading starts false)
-      // AND we have a valid parentId to query
       const resolveId = parent?._id || parent?.id || parentId;
       if (!resolveId) return;
-
-      // Skip if the avatar is already a valid R2 / http URL that isn't a legacy
-      // partizan-be.onrender.com path — those are the ones that need refreshing.
       const currentAvatar = parent?.avatar ?? '';
       const isLegacyOrMissing =
         !currentAvatar ||
         currentAvatar.includes('partizan-be.onrender.com') ||
         !currentAvatar.startsWith('http');
-
       if (!isLegacyOrMissing) return;
-
       try {
         const token = localStorage.getItem('token');
         const response = await axios.get(
           `${API_BASE_URL}/parent/${resolveId}`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
         );
-
         const freshAvatar = response.data?.avatar;
         const defaultAvatar = getDefaultAvatar(
           parent?.isCoach ? 'coach' : 'parent',
         );
-
         if (freshAvatar) {
-          // Apply getAvatarUrl so R2 cache-busting is handled consistently
           const resolvedAvatar = getAvatarUrl(freshAvatar, defaultAvatar);
-
-          setParent((prev) =>
-            prev ? { ...prev, avatar: resolvedAvatar } : prev,
-          );
-
-          // Also resolve additional guardians from fresh API data if present
           const freshGuardians = response.data?.additionalGuardians;
-          if (freshGuardians && Array.isArray(freshGuardians)) {
-            setParent((prev) => {
-              if (!prev) return prev;
-              return {
-                ...prev,
-                avatar: resolvedAvatar,
-                additionalGuardians: freshGuardians,
-              };
-            });
-          }
+          setParent((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              avatar: resolvedAvatar,
+              ...(freshGuardians && Array.isArray(freshGuardians)
+                ? { additionalGuardians: freshGuardians }
+                : {}),
+            };
+          });
         }
       } catch (err) {
-        // Non-critical — avatar just stays as the default, no need to surface error
         console.warn('Could not resolve fresh avatar from API:', err);
       }
     };
-
     resolveAvatarFromApi();
-    // Run once on mount / when parent._id becomes available
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parent?._id]);
 
-  // Initialize guardian avatar states
+  // ── Guardian avatar init ────────────────────────────────────────────────
   useEffect(() => {
     if (parent?.additionalGuardians) {
       const newAvatarStates: Record<string, string> = {};
-
       parent.additionalGuardians.forEach((guardian: any, index: number) => {
         const isGuardianCoach =
           guardian.isCoach === true ||
           guardian.role === 'coach' ||
           guardian.type === 'coach' ||
           (guardian.aauNumber && guardian.aauNumber.trim() !== '');
-
         const defaultAvatar = getDefaultAvatar(
           isGuardianCoach ? 'coach' : 'parent',
         );
         const avatarKey = guardian._id || guardian.id || `guardian-${index}`;
-
         newAvatarStates[avatarKey] = getAvatarUrl(
           guardian.avatar,
           defaultAvatar,
         );
       });
-
       setGuardianAvatarStates(newAvatarStates);
     }
   }, [parent?.additionalGuardians]);
@@ -507,17 +506,13 @@ const ParentDetails = () => {
   ): string => {
     if (parentData.isCoach) return 'Active';
     const currentYear = getCurrentYear();
-
     const hasCurrentSeasonRegistration = playersData.some((player) => {
       if (player.seasons && Array.isArray(player.seasons)) {
-        const hasCurrentYearSeason = player.seasons.some(
-          (season: any) => season.year === currentYear,
-        );
-        if (hasCurrentYearSeason) return true;
+        if (player.seasons.some((season: any) => season.year === currentYear))
+          return true;
       }
       return player.season && player.registrationYear === currentYear;
     });
-
     if (hasCurrentSeasonRegistration) return 'Active';
     const hasPendingPayments = playersData.some(
       (player) => player.registrationComplete && !player.paymentComplete,
@@ -525,9 +520,7 @@ const ParentDetails = () => {
     return hasPendingPayments ? 'Pending Payment' : 'Inactive';
   };
 
-  // ---------------------------------------------------------------------------
-  // Full data load (direct URL access — no location.state)
-  // ---------------------------------------------------------------------------
+  // ── Full data load ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!parentId || prevParentIdRef.current === parentId) return;
 
@@ -536,7 +529,6 @@ const ParentDetails = () => {
       try {
         const parentData = await fetchParentData(parentId);
         if (!parentData) throw new Error('Parent not found');
-
         const defaultAvatar = getDefaultAvatar(
           parentData.isCoach ? 'coach' : 'parent',
         );
@@ -544,7 +536,6 @@ const ParentDetails = () => {
           ...parentData,
           avatar: getAvatarUrl(parentData.avatar, defaultAvatar),
         };
-
         const formattedPlayers = (parentData.players || []).map((player) => ({
           ...player,
           imgSrc: getAvatarUrl(
@@ -554,15 +545,12 @@ const ParentDetails = () => {
               : DEFAULT_BOY_AVATAR,
           ),
         }));
-
         setPlayers(formattedPlayers);
-
         const parentStatus = calculateParentStatus(
           formattedParent,
           formattedPlayers,
         );
         setParent({ ...formattedParent, status: parentStatus });
-
         await loadPayments(parentData._id);
       } catch (err) {
         console.error('Error loading data:', err);
@@ -580,7 +568,9 @@ const ParentDetails = () => {
         const token = localStorage.getItem('token');
         const response = await axios.get(
           `${API_BASE_URL}/payment/parent/${id}`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
         );
         if (response.data && Array.isArray(response.data)) {
           setPayments(response.data);
@@ -599,6 +589,7 @@ const ParentDetails = () => {
     prevParentIdRef.current = parentId;
   }, [parentId, fetchParentData, navigate, API_BASE_URL]);
 
+  // ── Helpers ─────────────────────────────────────────────────────────────
   const calculateAge = (dob: string): string => {
     if (!dob) return 'N/A';
     try {
@@ -637,7 +628,9 @@ const ParentDetails = () => {
       const token = localStorage.getItem('token');
       const response = await axios.get(
         `${API_BASE_URL}/payment/parent/${parent._id}`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
       );
       if (response.data && Array.isArray(response.data)) {
         setPayments(response.data);
@@ -663,7 +656,6 @@ const ParentDetails = () => {
       if (!payment) throw new Error('Payment not found in local data');
       if (!payment.paymentId)
         throw new Error('No Square payment ID found for this payment');
-
       const response = await axios.post(
         `${API_BASE_URL}/payment/refund`,
         { paymentId: payment.paymentId, amount, reason, parentId: parent?._id },
@@ -675,7 +667,6 @@ const ParentDetails = () => {
           timeout: 30000,
         },
       );
-
       handleCloseRefundModal();
       if (response.data.success) {
         alert('✅ Refund processed successfully!');
@@ -717,7 +708,9 @@ const ParentDetails = () => {
       try {
         const response = await axios.get(
           `${API_BASE_URL}/payment/${payment._id}/refund-eligibility`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
         );
         if (response.data.success) return response.data.eligibility;
       } catch (endpointError: any) {
@@ -810,9 +803,7 @@ const ParentDetails = () => {
         (a, b) =>
           new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
       );
-
     if (allRefunds.length === 0) return null;
-
     return (
       <div className='card mt-4'>
         <div className='card-header'>
@@ -835,13 +826,7 @@ const ParentDetails = () => {
                     <td>${refund.amount.toFixed(2)}</td>
                     <td>
                       <span
-                        className={`badge badge-soft-${
-                          refund.status === 'completed'
-                            ? 'success'
-                            : refund.status === 'pending'
-                              ? 'warning'
-                              : 'danger'
-                        }`}
+                        className={`badge badge-soft-${refund.status === 'completed' ? 'success' : refund.status === 'pending' ? 'warning' : 'danger'}`}
                       >
                         {refund.status}
                       </span>
@@ -969,15 +954,11 @@ const ParentDetails = () => {
                   </li>
                   <li className='nav-item' role='presentation'>
                     <button
-                      className={`nav-link ${activeTab === 'payments' ? 'active' : ''} ${
-                        payments.length === 0 ? 'text-danger' : ''
-                      }`}
+                      className={`nav-link ${activeTab === 'payments' ? 'active' : ''} ${payments.length === 0 ? 'text-danger' : ''}`}
                       onClick={() => setActiveTab('payments')}
                     >
                       <i
-                        className={`ti ti-credit-card me-2 ${
-                          payments.length === 0 ? 'text-danger' : ''
-                        }`}
+                        className={`ti ti-credit-card me-2 ${payments.length === 0 ? 'text-danger' : ''}`}
                       ></i>
                       {payments.length === 0
                         ? 'No Payment History'
@@ -990,9 +971,9 @@ const ParentDetails = () => {
 
             {/* Tab Content */}
             <div className='tab-content pt-0'>
-              {/* Family Information Tab */}
               {activeTab === 'family' && (
                 <div className='tab-pane fade show active'>
+                  {/* ── Guardians Card ── */}
                   <div className='card mb-4'>
                     <div className='card-header'>
                       <h5 className='card-title mb-0'>Guardians Information</h5>
@@ -1001,6 +982,7 @@ const ParentDetails = () => {
                       {/* Primary Parent */}
                       <div className='border rounded p-3 pb-0 mb-3'>
                         <div className='row'>
+                          {/* Name — always shown */}
                           <div className='col-sm-6 col-lg-3'>
                             <div className='d-flex align-items-center mb-3'>
                               <span className='avatar avatar-lg flex-shrink-0'>
@@ -1034,32 +1016,48 @@ const ParentDetails = () => {
                               </div>
                             </div>
                           </div>
-                          <div className='col-sm-6 col-lg-3'>
-                            <div className='mb-3'>
-                              <p className='text-dark fw-medium mb-1'>
-                                AAU Number
-                              </p>
-                              <p>{parent.aauNumber || 'Not Available'}</p>
+
+                          {/* AAU — show if isCoach field enabled or parent is coach */}
+                          {(hasGuardianField('isCoach') || parent.isCoach) && (
+                            <div className='col-sm-6 col-lg-3'>
+                              <div className='mb-3'>
+                                <p className='text-dark fw-medium mb-1'>
+                                  AAU Number
+                                </p>
+                                <p>{parent.aauNumber || 'Not Available'}</p>
+                              </div>
                             </div>
-                          </div>
-                          <div className='col-sm-6 col-lg-3'>
-                            <div className='mb-3'>
-                              <p className='text-dark fw-medium mb-1'>Phone</p>
-                              <p>
-                                {parent.phone
-                                  ? formatPhoneNumber(parent.phone)
-                                  : 'N/A'}
-                              </p>
+                          )}
+
+                          {/* Phone — gated */}
+                          {hasGuardianField('phone') && (
+                            <div className='col-sm-6 col-lg-3'>
+                              <div className='mb-3'>
+                                <p className='text-dark fw-medium mb-1'>
+                                  Phone
+                                </p>
+                                <p>
+                                  {parent.phone
+                                    ? formatPhoneNumber(parent.phone)
+                                    : 'N/A'}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                          <div className='col-sm-6 col-lg-3'>
-                            <div className='mb-3 overflow-hidden me-3'>
-                              <p className='text-dark fw-medium mb-1'>Email</p>
-                              <p className='text-truncate'>
-                                {parent.email || 'N/A'}
-                              </p>
+                          )}
+
+                          {/* Email — gated */}
+                          {hasGuardianField('email') && (
+                            <div className='col-sm-6 col-lg-3'>
+                              <div className='mb-3 overflow-hidden me-3'>
+                                <p className='text-dark fw-medium mb-1'>
+                                  Email
+                                </p>
+                                <p className='text-truncate'>
+                                  {parent.email || 'N/A'}
+                                </p>
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                       </div>
 
@@ -1068,14 +1066,12 @@ const ParentDetails = () => {
                       parent.additionalGuardians.length > 0 ? (
                         parent.additionalGuardians.map(
                           (guardian: any, index: number) => {
-                            // Determine if this guardian is a coach
                             const isGuardianCoach =
                               guardian.isCoach === true ||
                               guardian.role === 'coach' ||
                               guardian.type === 'coach' ||
                               (guardian.aauNumber &&
                                 guardian.aauNumber.trim() !== '');
-
                             const defaultAvatar = getDefaultAvatar(
                               isGuardianCoach ? 'coach' : 'parent',
                             );
@@ -1083,7 +1079,7 @@ const ParentDetails = () => {
                               guardian._id ||
                               guardian.id ||
                               `guardian-${index}`;
-                            const avatarSrc =
+                            const guardianAvatarSrc =
                               guardianAvatarStates[avatarKey] ||
                               getAvatarUrl(guardian.avatar, defaultAvatar);
 
@@ -1093,11 +1089,12 @@ const ParentDetails = () => {
                                 className='border rounded p-3 pb-0 mb-3'
                               >
                                 <div className='row'>
+                                  {/* Name — always shown */}
                                   <div className='col-sm-6 col-lg-3'>
                                     <div className='d-flex align-items-center mb-3'>
                                       <span className='avatar avatar-lg flex-shrink-0'>
                                         <img
-                                          src={avatarSrc}
+                                          src={guardianAvatarSrc}
                                           className='img-fluid rounded'
                                           alt={`${guardian.fullName} avatar`}
                                           onError={(e) => {
@@ -1121,38 +1118,52 @@ const ParentDetails = () => {
                                       </div>
                                     </div>
                                   </div>
-                                  <div className='col-sm-6 col-lg-3'>
-                                    <div className='mb-3'>
-                                      <p className='text-dark fw-medium mb-1'>
-                                        AAU Number
-                                      </p>
-                                      <p>
-                                        {guardian.aauNumber || 'Not Available'}
-                                      </p>
+
+                                  {/* AAU — gated */}
+                                  {(hasGuardianField('isCoach') ||
+                                    isGuardianCoach) && (
+                                    <div className='col-sm-6 col-lg-3'>
+                                      <div className='mb-3'>
+                                        <p className='text-dark fw-medium mb-1'>
+                                          AAU Number
+                                        </p>
+                                        <p>
+                                          {guardian.aauNumber ||
+                                            'Not Available'}
+                                        </p>
+                                      </div>
                                     </div>
-                                  </div>
-                                  <div className='col-sm-6 col-lg-3'>
-                                    <div className='mb-3'>
-                                      <p className='text-dark fw-medium mb-1'>
-                                        Phone
-                                      </p>
-                                      <p>
-                                        {guardian.phone
-                                          ? formatPhoneNumber(guardian.phone)
-                                          : 'N/A'}
-                                      </p>
+                                  )}
+
+                                  {/* Phone — gated */}
+                                  {hasGuardianField('phone') && (
+                                    <div className='col-sm-6 col-lg-3'>
+                                      <div className='mb-3'>
+                                        <p className='text-dark fw-medium mb-1'>
+                                          Phone
+                                        </p>
+                                        <p>
+                                          {guardian.phone
+                                            ? formatPhoneNumber(guardian.phone)
+                                            : 'N/A'}
+                                        </p>
+                                      </div>
                                     </div>
-                                  </div>
-                                  <div className='col-sm-6 col-lg-3'>
-                                    <div className='mb-3 overflow-hidden me-3'>
-                                      <p className='text-dark fw-medium mb-1'>
-                                        Email
-                                      </p>
-                                      <p className='text-truncate'>
-                                        {guardian.email || 'N/A'}
-                                      </p>
+                                  )}
+
+                                  {/* Email — gated */}
+                                  {hasGuardianField('email') && (
+                                    <div className='col-sm-6 col-lg-3'>
+                                      <div className='mb-3 overflow-hidden me-3'>
+                                        <p className='text-dark fw-medium mb-1'>
+                                          Email
+                                        </p>
+                                        <p className='text-truncate'>
+                                          {guardian.email || 'N/A'}
+                                        </p>
+                                      </div>
                                     </div>
-                                  </div>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -1166,7 +1177,7 @@ const ParentDetails = () => {
                     </div>
                   </div>
 
-                  {/* Players Section */}
+                  {/* ── Players Card ── */}
                   <div className='card'>
                     <div className='card-header'>
                       <h5 className='card-title mb-0'>Players Information</h5>
@@ -1179,6 +1190,7 @@ const ParentDetails = () => {
                             className='border rounded p-3 pb-0 mb-3'
                           >
                             <div className='row'>
+                              {/* Name — always shown */}
                               <div className='col-sm-6 col-lg-3'>
                                 <div className='d-flex align-items-center mb-3'>
                                   <span className='avatar avatar-lg flex-shrink-0'>
@@ -1206,30 +1218,44 @@ const ParentDetails = () => {
                                   </div>
                                 </div>
                               </div>
-                              <div className='col-sm-6 col-lg-3'>
-                                <div className='mb-3'>
-                                  <p className='text-dark fw-medium mb-1'>
-                                    Age
-                                  </p>
-                                  <p>{calculateAge(player.dob)}</p>
+
+                              {/* Age — gated on dob field */}
+                              {hasPlayerField('dob') && (
+                                <div className='col-sm-6 col-lg-3'>
+                                  <div className='mb-3'>
+                                    <p className='text-dark fw-medium mb-1'>
+                                      Age
+                                    </p>
+                                    <p>{calculateAge(player.dob)}</p>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className='col-sm-6 col-lg-3'>
-                                <div className='mb-3'>
-                                  <p className='text-dark fw-medium mb-1'>
-                                    AAU Number
-                                  </p>
-                                  <p>{player.aauNumber || 'N/A'}</p>
+                              )}
+
+                              {/* AAU Number — gated */}
+                              {hasPlayerField('aauNumber') && (
+                                <div className='col-sm-6 col-lg-3'>
+                                  <div className='mb-3'>
+                                    <p className='text-dark fw-medium mb-1'>
+                                      AAU Number
+                                    </p>
+                                    <p>{player.aauNumber || 'N/A'}</p>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className='col-sm-6 col-lg-2'>
-                                <div className='mb-3'>
-                                  <p className='text-dark fw-medium mb-1'>
-                                    Grade
-                                  </p>
-                                  <p>{player.grade || 'N/A'}</p>
+                              )}
+
+                              {/* Grade — gated */}
+                              {hasPlayerField('grade') && (
+                                <div className='col-sm-6 col-lg-2'>
+                                  <div className='mb-3'>
+                                    <p className='text-dark fw-medium mb-1'>
+                                      Grade
+                                    </p>
+                                    <p>{player.grade || 'N/A'}</p>
+                                  </div>
                                 </div>
-                              </div>
+                              )}
+
+                              {/* View button — always shown */}
                               <div className='col-sm-6 col-lg-1'>
                                 <div className='d-flex align-items-center justify-content-end'>
                                   <button

@@ -1,8 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { formatPhoneNumber } from '../../../../utils/phone';
 import { getAvatarUrl, getDefaultAvatar } from '../../../../utils/r2Utils';
 import { getParentStatus } from '../../../../utils/parentUtils';
+import {
+  formatAddress,
+  Address,
+  AddressShowConfig,
+} from '../../../../utils/address';
+import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
+
+// API data may omit street2
+type LooseAddress = Omit<Address, 'street2'> & { street2?: string };
 
 interface ParentData {
   _id?: string;
@@ -16,7 +25,7 @@ interface ParentData {
   aauNumber?: string;
   phone?: string;
   email?: string;
-  address?: string;
+  address?: string | LooseAddress;
   players?: any[];
   season?: string;
   registrationYear?: number;
@@ -33,44 +42,55 @@ interface ParentSidebarProps {
 
 const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
   const [avatarSrc, setAvatarSrc] = useState<string>(() => {
-    // Initial avatar based on props
     const defaultAvatar = getDefaultAvatar(
       parent?.isCoach ? 'coach' : 'parent',
     );
     return getAvatarUrl(parent?.avatar || parent?.imgSrc, defaultAvatar);
   });
 
-  // Fetch avatar from backend - MUST be called before any conditional returns
+  // ── Dynamic fields ──────────────────────────────────────────────────────
+  const { getVisibleFields: getParentVisibleFields } = useDynamicFormFields(
+    'parent',
+    { registrationYear: parent?.registrationYear || new Date().getFullYear() },
+  );
+
+  const parentVisibleFields = useMemo(
+    () => getParentVisibleFields({} as any),
+    [getParentVisibleFields],
+  );
+
+  const hasField = (name: string) =>
+    parentVisibleFields.some((f) => f.fieldName === name);
+
+  const addrShow: AddressShowConfig = {
+    street: hasField('address'),
+    city: hasField('city'),
+    state: hasField('state'),
+    zip: hasField('zip'),
+  };
+  const hasAnyAddressField = Object.values(addrShow).some(Boolean);
+
+  // ── Avatar fetch ────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchAvatarUrlFromBackend = async () => {
       const token = localStorage.getItem('token');
       const parentId = parent?._id;
-
       if (!token || !parentId) return;
-
       try {
         const response = await axios.get(`${API_BASE_URL}/parent/${parentId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
-
-        const avatarUrl = response.data.avatar;
         const defaultAvatar = getDefaultAvatar(
           parent?.isCoach ? 'coach' : 'parent',
         );
-
-        setAvatarSrc(getAvatarUrl(avatarUrl, defaultAvatar));
+        setAvatarSrc(getAvatarUrl(response.data.avatar, defaultAvatar));
       } catch (err) {
         console.error('Failed to fetch avatar:', err);
-        // Keep existing avatar on error
       }
     };
-
     fetchAvatarUrlFromBackend();
   }, [parent?._id, parent?.isCoach, parent?.avatar, parent?.imgSrc]);
 
-  // Debug log to see what's happening - MUST be called before any conditional returns
   useEffect(() => {
     if (parent) {
       console.log('👪 ParentSidebar - Parent:', {
@@ -88,36 +108,20 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
     }
   }, [parent]);
 
-  // Handle image load error
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     e.currentTarget.src = getDefaultAvatar(
       parent?.isCoach ? 'coach' : 'parent',
     );
   };
 
-  // NOW we can have conditional returns after all hooks
-  if (!parent) {
-    return <div>No parent data found.</div>;
-  }
+  if (!parent) return <div>No parent data found.</div>;
 
   const getDisplayName = () => parent.fullName || parent.name || 'N/A';
 
-  const formatAddress = (address: any): string => {
-    if (!address) return 'N/A';
-    if (typeof address === 'string') return address;
+  const fmtAddr = (addr: string | LooseAddress | undefined) =>
+    formatAddress(addr as Address | string | null | undefined, addrShow);
 
-    const parts = [
-      address.street,
-      address.street2,
-      `${address.city}, ${address.state} ${address.zip}`.trim(),
-    ].filter((part) => part && part.trim() !== '');
-
-    return parts.join(', ');
-  };
-
-  // Calculate the parent status using the utility function
   const calculatedStatus = getParentStatus(parent as any);
-  const displayStatus = calculatedStatus;
 
   return (
     <div className='col-xxl-3 col-xl-4 theiaStickySidebar'>
@@ -136,23 +140,23 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
               <div className='overflow-hidden'>
                 <span
                   className={`badge badge-soft-${
-                    displayStatus === 'Active'
+                    calculatedStatus === 'Active'
                       ? 'success'
-                      : displayStatus === 'Pending Payment'
+                      : calculatedStatus === 'Pending Payment'
                         ? 'warning'
                         : 'danger'
                   } d-inline-flex align-items-center mb-1`}
                 >
                   <i
                     className={`ti ti-circle-filled fs-5 me-1 ${
-                      displayStatus === 'Active'
+                      calculatedStatus === 'Active'
                         ? 'text-success'
-                        : displayStatus === 'Pending Payment'
+                        : calculatedStatus === 'Pending Payment'
                           ? 'text-warning'
                           : 'text-danger'
                     }`}
                   />
-                  {displayStatus}
+                  {calculatedStatus}
                 </span>
                 <h5 className='mb-1 text-truncate'>{getDisplayName()}</h5>
               </div>
@@ -162,21 +166,37 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
           <div className='card-body'>
             <h5 className='mb-3'>Basic Information</h5>
             <dl className='row mb-0'>
-              <dt className='col-6 fw-medium text-dark mb-3'>Phone</dt>
-              <dd className='col-6 mb-3'>
-                {parent.phone ? formatPhoneNumber(parent.phone) : 'N/A'}
-              </dd>
+              {hasField('phone') && (
+                <>
+                  <dt className='col-6 fw-medium text-dark mb-3'>Phone</dt>
+                  <dd className='col-6 mb-3'>
+                    {parent.phone ? formatPhoneNumber(parent.phone) : 'N/A'}
+                  </dd>
+                </>
+              )}
 
-              <dt className='col-6 fw-medium text-dark mb-3'>Email</dt>
-              <dd className='col-6 mb-3'>{parent.email || 'N/A'}</dd>
+              {hasField('email') && (
+                <>
+                  <dt className='col-6 fw-medium text-dark mb-3'>Email</dt>
+                  <dd className='col-6 mb-3'>{parent.email || 'N/A'}</dd>
+                </>
+              )}
 
-              <dt className='col-6 fw-medium text-dark mb-3'>Address</dt>
-              <dd className='col-6 mb-3'>
-                {formatAddress(parent.address || 'N/A')}
-              </dd>
+              {hasAnyAddressField && (
+                <>
+                  <dt className='col-6 fw-medium text-dark mb-3'>Address</dt>
+                  <dd className='col-6 mb-3'>
+                    {fmtAddr(parent.address) || 'N/A'}
+                  </dd>
+                </>
+              )}
 
-              <dt className='col-6 fw-medium text-dark mb-3'>AAU Number</dt>
-              <dd className='col-6 mb-3'>{parent.aauNumber || 'N/A'}</dd>
+              {(hasField('isCoach') || parent.isCoach) && (
+                <>
+                  <dt className='col-6 fw-medium text-dark mb-3'>AAU Number</dt>
+                  <dd className='col-6 mb-3'>{parent.aauNumber || 'N/A'}</dd>
+                </>
+              )}
             </dl>
           </div>
         </div>

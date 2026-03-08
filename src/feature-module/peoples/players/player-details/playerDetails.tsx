@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import PlayerSidebar from './playerSidebar';
 import PlayerBreadcrumb from './playerBreadcrumb';
@@ -9,6 +9,18 @@ import { Guardian } from '../../../../types/playerTypes';
 import { getParentStatus } from '../../../../utils/parentUtils';
 import { getPlayerStatus } from '../../../../utils/season';
 import { getAvatarUrl, getDefaultAvatar } from '../../../../utils/r2Utils';
+import {
+  formatAddress,
+  normalizeAddressKey,
+  AddressShowConfig,
+  Address,
+} from '../../../../utils/address';
+import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
+import { Player as RegistrationPlayer } from '../../../../types/registration-types';
+
+// API data may omit street2 — this local alias widens the type for use
+// only within this file without touching the shared Address interface.
+type LooseAddress = Omit<Address, 'street2'> & { street2?: string };
 
 interface FetchedGuardianData extends Guardian {
   _id: string;
@@ -25,15 +37,28 @@ interface GuardianWithPlayers extends Guardian {
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 const DEFAULT_PARENT_AVATAR = getDefaultAvatar('parent');
-const DEFAULT_BOY_AVATAR = getDefaultAvatar('player', 'Male');
-const DEFAULT_GIRL_AVATAR = getDefaultAvatar('player', 'Female');
+
+// Convert player data to the shape useDynamicFormFields expects
+const toRegistrationPlayer = (player: any): RegistrationPlayer => ({
+  _id: player._id || player.id || '',
+  fullName: player.fullName || player.name || '',
+  gender: player.gender || '',
+  dob: player.dob ? String(player.dob) : '',
+  schoolName: player.section || player.schoolName || '',
+  healthConcerns: player.healthConcerns || '',
+  aauNumber: player.aauNumber || '',
+  registrationYear: player.registrationYear || new Date().getFullYear(),
+  season: player.season || '',
+  grade: String(player.grade || player.class || ''),
+  isGradeOverridden: player.isGradeOverridden || false,
+  avatar: player.avatar || '',
+});
 
 const PlayerDetails = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { playerId } = useParams();
 
-  // State for player data that updates when location.state changes
   const [playerData, setPlayerData] = useState(location.state?.player);
   const [guardians, setGuardians] = useState<FetchedGuardianData[]>(
     location.state?.guardians ||
@@ -51,163 +76,237 @@ const PlayerDetails = () => {
   const [token, setToken] = useState<string | null>(null);
   const [avatarSrc, setAvatarSrc] = useState(DEFAULT_PARENT_AVATAR);
   const [isLoading, setIsLoading] = useState(!location.state?.player);
-
-  // State for guardian avatars
   const [guardianAvatarStates, setGuardianAvatarStates] = useState<
     Record<string, string>
   >({});
 
-  // Update state when location.state changes
-  useEffect(() => {
-    console.log('Location state updated:', location.state);
+  // ── Dynamic fields ──────────────────────────────────────────────────────
+  const { getVisibleFields: getPlayerVisibleFields } = useDynamicFormFields(
+    'player',
+    {
+      registrationYear:
+        playerData?.registrationYear || new Date().getFullYear(),
+    },
+  );
 
+  const { getVisibleFields: getParentVisibleFields } = useDynamicFormFields(
+    'parent',
+    { registrationYear: new Date().getFullYear() },
+  );
+
+  const { getVisibleFields: getGuardianVisibleFields } = useDynamicFormFields(
+    'guardian',
+    { registrationYear: new Date().getFullYear() },
+  );
+
+  const playerVisibleFields = useMemo(
+    () =>
+      playerData
+        ? getPlayerVisibleFields(toRegistrationPlayer(playerData))
+        : [],
+    [playerData, getPlayerVisibleFields],
+  );
+
+  const parentVisibleFields = useMemo(
+    () => getParentVisibleFields({} as any),
+    [getParentVisibleFields],
+  );
+
+  const guardianVisibleFields = useMemo(
+    () => getGuardianVisibleFields({} as any),
+    [getGuardianVisibleFields],
+  );
+
+  const hasParentField = (name: string) =>
+    parentVisibleFields.some((f) => f.fieldName === name);
+
+  const hasGuardianField = (name: string) =>
+    guardianVisibleFields.some((f) => f.fieldName === name);
+
+  const hasPlayerField = (name: string) =>
+    playerVisibleFields.some((f) => f.fieldName === name);
+
+  // ── Location state sync ─────────────────────────────────────────────────
+  useEffect(() => {
     if (location.state?.player) {
       setPlayerData(location.state.player);
       setIsLoading(false);
     }
-    if (location.state?.guardians) {
-      setGuardians(location.state.guardians);
-    }
-    if (location.state?.siblings) {
-      setSiblings(location.state.siblings);
-    }
-    if (location.state?.sharedData) {
-      setSharedData(location.state.sharedData);
-    }
+    if (location.state?.guardians) setGuardians(location.state.guardians);
+    if (location.state?.siblings) setSiblings(location.state.siblings);
+    if (location.state?.sharedData) setSharedData(location.state.sharedData);
   }, [location.state]);
 
-  // Fetch data if no player data is available
+  // ── Fetch player if missing ─────────────────────────────────────────────
   useEffect(() => {
     const fetchPlayerDetails = async () => {
-      if (!playerId) return;
+      if (!playerId || playerData) return;
+      setIsLoading(true);
+      try {
+        const storedToken = localStorage.getItem('authToken');
+        setToken(storedToken);
+        const response = await axios.get(
+          `${API_BASE_URL}/players/${playerId}`,
+          {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          },
+        );
+        setPlayerData(response.data);
 
-      if (!playerData) {
-        setIsLoading(true);
-        try {
-          const storedToken = localStorage.getItem('authToken');
-          setToken(storedToken);
-
-          const response = await axios.get(
-            `${API_BASE_URL}/players/${playerId}`,
-            {
-              headers: { Authorization: `Bearer ${storedToken}` },
-            },
-          );
-
-          const fullPlayerData = response.data;
-          setPlayerData(fullPlayerData);
-
-          if (guardians.length === 0) {
-            try {
-              const guardiansResponse = await axios.get(
-                `${API_BASE_URL}/player/${playerId}/guardians`,
-                {
-                  headers: { Authorization: `Bearer ${storedToken}` },
-                },
-              );
-              setGuardians(guardiansResponse.data);
-            } catch (guardianError) {
-              console.error('Failed to fetch guardians:', guardianError);
-            }
+        if (guardians.length === 0) {
+          try {
+            const guardiansResponse = await axios.get(
+              `${API_BASE_URL}/player/${playerId}/guardians`,
+              { headers: { Authorization: `Bearer ${storedToken}` } },
+            );
+            setGuardians(guardiansResponse.data);
+          } catch (guardianError) {
+            console.error('Failed to fetch guardians:', guardianError);
           }
-        } catch (error) {
-          console.error('Failed to fetch player details:', error);
-        } finally {
-          setIsLoading(false);
         }
+      } catch (error) {
+        console.error('Failed to fetch player details:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
-
     fetchPlayerDetails();
   }, [playerId, playerData, guardians.length]);
 
-  // Initialize guardian avatar states
+  // ── Guardian avatar init ────────────────────────────────────────────────
   useEffect(() => {
     const newAvatarStates: Record<string, string> = {};
-
     guardians.forEach((guardian: FetchedGuardianData, index: number) => {
-      const isGuardianCoach =
+      const isCoach =
         guardian.isCoach === true ||
         guardian.role === 'coach' ||
         guardian.type === 'coach' ||
-        (guardian.aauNumber && guardian.aauNumber.trim() !== '');
-
-      const defaultAvatar = getDefaultAvatar(
-        isGuardianCoach ? 'coach' : 'parent',
-      );
+        !!guardian.aauNumber?.trim();
+      const defaultAvatar = getDefaultAvatar(isCoach ? 'coach' : 'parent');
       const avatarKey = guardian._id || guardian.id || `guardian-${index}`;
-
       newAvatarStates[avatarKey] = getAvatarUrl(guardian.avatar, defaultAvatar);
 
-      // Also handle additional guardians
-      if (guardian.additionalGuardians) {
-        guardian.additionalGuardians.forEach((g: any, gIndex: number) => {
-          const isSubGuardianCoach =
-            g.isCoach === true ||
-            g.role === 'coach' ||
-            g.type === 'coach' ||
-            (g.aauNumber && g.aauNumber.trim() !== '');
-
-          const subDefaultAvatar = getDefaultAvatar(
-            isSubGuardianCoach ? 'coach' : 'parent',
-          );
-          const subAvatarKey =
-            g._id || g.id || `guardian-${index}-sub-${gIndex}`;
-
-          newAvatarStates[subAvatarKey] = getAvatarUrl(
-            g.avatar,
-            subDefaultAvatar,
-          );
-        });
-      }
+      (guardian.additionalGuardians || []).forEach((g: any, gIndex: number) => {
+        const isSubCoach =
+          g.isCoach === true ||
+          g.role === 'coach' ||
+          g.type === 'coach' ||
+          !!g.aauNumber?.trim();
+        const subKey = g._id || g.id || `guardian-${index}-sub-${gIndex}`;
+        newAvatarStates[subKey] = getAvatarUrl(
+          g.avatar,
+          getDefaultAvatar(isSubCoach ? 'coach' : 'parent'),
+        );
+      });
     });
-
     setGuardianAvatarStates(newAvatarStates);
   }, [guardians]);
 
-  const handleViewParent = (parent: Guardian) => {
-    navigate(`${all_routes.parentDetail}/${parent.id}`, {
-      state: { parent },
-    });
-  };
-
-  const formatAddress = (
-    address:
-      | string
-      | {
-          street: string;
-          street2?: string;
-          city: string;
-          state: string;
-          zip: string;
-        }
-      | undefined
-      | null,
-  ): string => {
-    if (!address) return 'N/A';
-    if (typeof address === 'string') return address;
-
-    const parts = [
-      address.street,
-      address.street2,
-      `${address.city}, ${address.state} ${address.zip}`.trim(),
-    ].filter(Boolean);
-
-    return parts.join(', ');
-  };
-
+  // ── Primary parent avatar fetch ─────────────────────────────────────────
   const primaryParent: FetchedGuardianData | null =
-    guardians?.find((g: FetchedGuardianData) => g.isPrimary) ?? null;
+    guardians?.find((g) => g.isPrimary) ?? null;
 
-  // Create mapped guardians with players
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      if (!primaryParent?.id) return;
+      const avatarKey = primaryParent._id || primaryParent.id;
+      if (guardianAvatarStates[avatarKey]) {
+        setAvatarSrc(guardianAvatarStates[avatarKey]);
+        return;
+      }
+      const isCoach = primaryParent.isCoach || false;
+      const defaultAvatar = getDefaultAvatar(isCoach ? 'coach' : 'parent');
+      if (primaryParent.avatar?.startsWith('http')) {
+        setAvatarSrc(getAvatarUrl(primaryParent.avatar, defaultAvatar));
+        return;
+      }
+      try {
+        const storedToken = localStorage.getItem('authToken');
+        const response = await axios.get(
+          `${API_BASE_URL}/parent/${primaryParent.id}`,
+          { headers: { Authorization: `Bearer ${storedToken}` } },
+        );
+        const resolved = getAvatarUrl(response.data?.avatar, defaultAvatar);
+        setAvatarSrc(resolved);
+        setGuardianAvatarStates((prev) => ({ ...prev, [avatarKey]: resolved }));
+      } catch {
+        setAvatarSrc(defaultAvatar);
+      }
+    };
+    fetchAvatar();
+  }, [
+    primaryParent?.id,
+    primaryParent?.avatar,
+    primaryParent?.isCoach,
+    guardianAvatarStates,
+  ]);
+
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  const handleViewParent = (parent: Guardian) => {
+    navigate(`${all_routes.parentDetail}/${parent.id}`, { state: { parent } });
+  };
+
+  // Wrappers that accept LooseAddress (street2 optional) from API data,
+  // casting to Address to satisfy the shared interface without modifying it.
+  const fmtAddr = (
+    addr: string | LooseAddress | undefined | null,
+    show?: AddressShowConfig,
+  ) => formatAddress(addr as Address | string | null | undefined, show);
+
+  const normAddr = (addr: string | LooseAddress | undefined | null) =>
+    normalizeAddressKey(addr as Address | string | null | undefined);
+
+  const getGuardianAvatar = (guardian: GuardianWithPlayers) => {
+    const avatarKey = guardian._id || guardian.id;
+    if (guardianAvatarStates[avatarKey]) return guardianAvatarStates[avatarKey];
+    const isCoach = guardian.isCoach || false;
+    return getAvatarUrl(
+      guardian.avatar,
+      getDefaultAvatar(isCoach ? 'coach' : 'parent'),
+    );
+  };
+
+  const getParentStatusBadge = (parent: GuardianWithPlayers) => {
+    if (parent.isCoach) {
+      return (
+        <span className='badge badge-soft-primary d-inline-flex align-items-center ms-2'>
+          <i className='ti ti-coach fs-5 me-1' />
+          Coach
+        </span>
+      );
+    }
+    const status = getParentStatus(parent as any);
+    switch (status) {
+      case 'Active':
+        return (
+          <span className='badge badge-soft-success d-inline-flex align-items-center ms-2'>
+            <i className='ti ti-circle-filled fs-5 me-1 text-success' />
+            Active
+          </span>
+        );
+      case 'Pending Payment':
+        return (
+          <span className='badge badge-soft-warning d-inline-flex align-items-center ms-2'>
+            <i className='ti ti-circle-filled fs-5 me-1 text-warning' />
+            Pending Payment
+          </span>
+        );
+      default:
+        return (
+          <span className='badge badge-soft-danger d-inline-flex align-items-center ms-2'>
+            <i className='ti ti-circle-filled fs-5 me-1 text-danger' />
+            Inactive
+          </span>
+        );
+    }
+  };
+
+  // ── Mapped guardians ────────────────────────────────────────────────────
   const mappedGuardians: GuardianWithPlayers[] = guardians
     ? guardians.flatMap((guardian: FetchedGuardianData) => {
-        // Get all players for this family (from the current player)
         const familyPlayers = playerData
           ? [playerData]
           : guardian.players || [];
-
-        // Create main guardian record
         const mainGuardian: GuardianWithPlayers = {
           id: guardian._id,
           _id: guardian._id,
@@ -231,8 +330,6 @@ const PlayerDetails = () => {
           })),
           isCoach: guardian.isCoach || false,
         };
-
-        // Create additional guardians
         const additionalGuardians: GuardianWithPlayers[] = (
           guardian.additionalGuardians || []
         ).map((g) => ({
@@ -258,69 +355,12 @@ const PlayerDetails = () => {
           })),
           isCoach: g.isCoach || false,
         }));
-
         return [mainGuardian, ...additionalGuardians];
       })
     : [];
 
-  // Fetch primary parent avatar
-  useEffect(() => {
-    const fetchAvatar = async () => {
-      if (!primaryParent?.id) return;
-
-      const avatarKey = primaryParent._id || primaryParent.id;
-      if (guardianAvatarStates[avatarKey]) {
-        setAvatarSrc(guardianAvatarStates[avatarKey]);
-        return;
-      }
-
-      const isCoach = primaryParent.isCoach || false;
-      const defaultAvatar = getDefaultAvatar(isCoach ? 'coach' : 'parent');
-
-      if (primaryParent.avatar?.startsWith('http')) {
-        setAvatarSrc(getAvatarUrl(primaryParent.avatar, defaultAvatar));
-        return;
-      }
-
-      try {
-        const storedToken = localStorage.getItem('authToken');
-        const response = await axios.get(
-          `${API_BASE_URL}/parent/${primaryParent.id}`,
-          {
-            headers: { Authorization: `Bearer ${storedToken}` },
-          },
-        );
-
-        const avatar = response.data?.avatar;
-        const resolvedAvatar = getAvatarUrl(avatar, defaultAvatar);
-        setAvatarSrc(resolvedAvatar);
-
-        // Update avatar state
-        setGuardianAvatarStates((prev) => ({
-          ...prev,
-          [avatarKey]: resolvedAvatar,
-        }));
-      } catch (err) {
-        console.error('Failed to fetch avatar:', err);
-        setAvatarSrc(defaultAvatar);
-      }
-    };
-
-    fetchAvatar();
-  }, [
-    primaryParent?.id,
-    primaryParent?.avatar,
-    primaryParent?.isCoach,
-    guardianAvatarStates,
-  ]);
-
-  if (isLoading) {
-    return <div>Loading player details...</div>;
-  }
-
-  if (!playerData) {
-    return <div>No player data found.</div>;
-  }
+  if (isLoading) return <div>Loading player details...</div>;
+  if (!playerData) return <div>No player data found.</div>;
 
   const uniqueGuardians: GuardianWithPlayers[] = Array.from(
     new Map(mappedGuardians.map((g) => [g.id, g])).values(),
@@ -335,74 +375,88 @@ const PlayerDetails = () => {
       ),
   );
 
-  // Enhanced parent status badge using the utility function
-  const getParentStatusBadge = (parent: GuardianWithPlayers) => {
-    // Log the parent data for debugging
-    console.log('🏷️ Getting status for parent:', {
-      name: parent.fullName,
-      isPrimary: parent.isPrimary,
-      isCoach: parent.isCoach,
-      playersCount: parent.players?.length,
-      players: parent.players?.map((p) => ({
-        name: p.fullName,
-        status: getPlayerStatus(p),
-      })),
-    });
-
-    // Use the imported utility function for consistent status
-    const status = getParentStatus(parent as any);
-
-    // Also check if parent is a coach
-    if (parent.isCoach) {
-      return (
-        <span className='badge badge-soft-primary d-inline-flex align-items-center ms-2'>
-          <i className='ti ti-coach fs-5 me-1' />
-          Coach
-        </span>
-      );
-    }
-
-    // Return badge based on status from utility
-    switch (status) {
-      case 'Active':
-        return (
-          <span className='badge badge-soft-success d-inline-flex align-items-center ms-2'>
-            <i className='ti ti-circle-filled fs-5 me-1 text-success' />
-            Active
-          </span>
-        );
-      case 'Pending Payment':
-        return (
-          <span className='badge badge-soft-warning d-inline-flex align-items-center ms-2'>
-            <i className='ti ti-circle-filled fs-5 me-1 text-warning' />
-            Pending Payment
-          </span>
-        );
-      case 'Inactive':
-        return (
-          <span className='badge badge-soft-danger d-inline-flex align-items-center ms-2'>
-            <i className='ti ti-circle-filled fs-5 me-1 text-danger' />
-            Inactive
-          </span>
-        );
-      default:
-        return null;
-    }
+  // Whether we show the address section at all (parent config)
+  // Show address section if EITHER parent or guardian config has address enabled
+  // Which address sub-fields are enabled per config
+  const parentAddrShow = {
+    street: hasParentField('address'),
+    city: hasParentField('city'),
+    state: hasParentField('state'),
+    zip: hasParentField('zip'),
   };
+  const guardianAddrShow = {
+    street: hasGuardianField('address'),
+    city: hasGuardianField('city'),
+    state: hasGuardianField('state'),
+    zip: hasGuardianField('zip'),
+  };
+  const parentHasAddress = Object.values(parentAddrShow).some(Boolean);
+  const guardianHasAddress = Object.values(guardianAddrShow).some(Boolean);
+  const showAddressSection = parentHasAddress || guardianHasAddress;
 
-  // Get player status for display
-  const playerStatus = getPlayerStatus(playerData);
-
-  // Helper to get guardian avatar
-  const getGuardianAvatar = (guardian: GuardianWithPlayers) => {
-    const avatarKey = guardian._id || guardian.id;
-    if (guardianAvatarStates[avatarKey]) {
-      return guardianAvatarStates[avatarKey];
-    }
-
+  // ── Render a single guardian card row ───────────────────────────────────
+  const renderGuardianRow = (
+    guardian: GuardianWithPlayers,
+    avatarEl: React.ReactNode,
+  ) => {
     const isCoach = guardian.isCoach || false;
-    const defaultAvatar = getDefaultAvatar(isCoach ? 'coach' : 'parent');
-    return getAvatarUrl(guardian.avatar, defaultAvatar);
+    return (
+      <div className='row'>
+        {/* Name + avatar — always shown */}
+        <div className='col-sm-6 col-lg-3'>
+          <div className='d-flex align-items-center mb-3'>
+            <span className='avatar avatar-lg flex-shrink-0'>{avatarEl}</span>
+            <div className='ms-2 overflow-hidden'>
+              <div className='d-flex align-items-center flex-wrap gap-1'>
+                <h6 className='text-truncate mb-0'>{guardian.fullName}</h6>
+                {isCoach && (
+                  <span className='badge badge-soft-primary ms-2'>Coach</span>
+                )}
+              </div>
+              <p className='mb-0'>{guardian.relationship}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* AAU Number — gated */}
+        {hasGuardianField('aauNumber') && (
+          <div className='col-sm-6 col-lg-2'>
+            <p className='text-dark fw-medium mb-1'>AAU Number</p>
+            <p>{guardian.aauNumber}</p>
+          </div>
+        )}
+
+        {/* Phone — gated */}
+        {hasGuardianField('phone') && (
+          <div className='col-sm-6 col-lg-2'>
+            <p className='text-dark fw-medium mb-1'>Phone</p>
+            <p>{guardian.phone ? formatPhoneNumber(guardian.phone) : 'N/A'}</p>
+          </div>
+        )}
+
+        {/* Email — gated */}
+        {hasGuardianField('email') && (
+          <div className='col-sm-6 col-lg-3'>
+            <p className='text-dark fw-medium mb-1'>Email</p>
+            <p className='text-truncate' title={guardian.email}>
+              {guardian.email || 'N/A'}
+            </p>
+          </div>
+        )}
+
+        {/* View profile — always shown */}
+        <div className='col-sm-6 col-lg-2'>
+          <div className='d-flex justify-content-end'>
+            <button
+              onClick={() => handleViewParent(guardian)}
+              className='btn btn-primary btn-sm'
+            >
+              View Profile
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -420,6 +474,7 @@ const PlayerDetails = () => {
             siblings={siblings}
             sharedData={sharedData}
           />
+
           <div className='col-xxl-9 col-xl-8'>
             <div className='row'>
               <div className='col-md-12'>
@@ -431,162 +486,49 @@ const PlayerDetails = () => {
                   <div className='card-body'>
                     {primaryParent && (
                       <div className='border rounded p-3 pb-0 mb-3'>
-                        <div className='row'>
-                          <div className='col-sm-6 col-lg-3'>
-                            <div className='d-flex align-items-center mb-3'>
-                              <span className='avatar avatar-lg flex-shrink-0'>
-                                <img
-                                  src={avatarSrc}
-                                  alt={primaryParent.fullName}
-                                  className='img-fluid rounded'
-                                  onError={(e) => {
-                                    const isCoach =
-                                      primaryParent.isCoach || false;
-                                    (e.target as HTMLImageElement).src =
-                                      getDefaultAvatar(
-                                        isCoach ? 'coach' : 'parent',
-                                      );
-                                  }}
-                                />
-                              </span>
-                              <div className='ms-2 overflow-hidden'>
-                                <div className='d-flex align-items-center flex-wrap gap-1'>
-                                  <h6 className='text-truncate mb-0'>
-                                    {primaryParent.fullName}
-                                  </h6>
-                                  {primaryParent.isCoach && (
-                                    <span className='badge badge-soft-primary ms-2'>
-                                      Coach
-                                    </span>
-                                  )}
-                                </div>
-                                <p className='mb-0'>
-                                  {primaryParent.relationship}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          <div className='col-sm-6 col-lg-2'>
-                            <p className='text-dark fw-medium mb-1'>
-                              AAU Number
-                            </p>
-                            <p>{primaryParent.aauNumber}</p>
-                          </div>
-                          <div className='col-sm-6 col-lg-2'>
-                            <p className='text-dark fw-medium mb-1'>Phone</p>
-                            <p>
-                              {primaryParent.phone
-                                ? formatPhoneNumber(primaryParent.phone)
-                                : 'N/A'}
-                            </p>
-                          </div>
-                          <div className='col-sm-6 col-lg-3'>
-                            <p className='text-dark fw-medium mb-1'>Email</p>
-                            <p
-                              className='text-truncate'
-                              title={primaryParent.email}
-                            >
-                              {primaryParent.email || 'N/A'}
-                            </p>
-                          </div>
-                          <div className='col-sm-6 col-lg-2'>
-                            <div className='d-flex justify-content-end'>
-                              <button
-                                onClick={() => handleViewParent(primaryParent)}
-                                className='btn btn-primary btn-sm'
-                              >
-                                View Profile
-                              </button>
-                            </div>
-                          </div>
-                        </div>
+                        {renderGuardianRow(
+                          {
+                            ...primaryParent,
+                            aauNumber:
+                              primaryParent.aauNumber || 'Not Available',
+                          } as GuardianWithPlayers,
+                          <img
+                            src={avatarSrc}
+                            alt={primaryParent.fullName}
+                            className='img-fluid rounded'
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                getDefaultAvatar(
+                                  primaryParent.isCoach ? 'coach' : 'parent',
+                                );
+                            }}
+                          />,
+                        )}
                       </div>
                     )}
 
                     {filteredGuardians.length > 0 ? (
-                      filteredGuardians.map((guardian) => {
-                        const guardianAvatar = getGuardianAvatar(guardian);
-                        const isCoach = guardian.isCoach || false;
-
-                        return (
-                          <div
-                            key={guardian.id}
-                            className='border rounded p-3 pb-0 mb-3'
-                          >
-                            <div className='row'>
-                              <div className='col-sm-6 col-lg-3'>
-                                <div className='d-flex align-items-center mb-3'>
-                                  <span className='avatar avatar-lg flex-shrink-0'>
-                                    <img
-                                      src={guardianAvatar}
-                                      alt={guardian.fullName}
-                                      className='img-fluid rounded'
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).src =
-                                          getDefaultAvatar(
-                                            isCoach ? 'coach' : 'parent',
-                                          );
-                                      }}
-                                    />
-                                  </span>
-                                  <div className='ms-2 overflow-hidden'>
-                                    <div className='d-flex align-items-center flex-wrap gap-1'>
-                                      <h6 className='text-truncate mb-0'>
-                                        {guardian.fullName}
-                                      </h6>
-                                      {isCoach && (
-                                        <span className='badge badge-soft-primary ms-2'>
-                                          Coach
-                                        </span>
-                                      )}
-                                    </div>
-                                    <p className='mb-0'>
-                                      {guardian.relationship}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className='col-sm-6 col-lg-2'>
-                                <p className='text-dark fw-medium mb-1'>
-                                  AAU Number
-                                </p>
-                                <p>{guardian.aauNumber}</p>
-                              </div>
-                              <div className='col-sm-6 col-lg-2'>
-                                <p className='text-dark fw-medium mb-1'>
-                                  Phone
-                                </p>
-                                <p>
-                                  {guardian.phone
-                                    ? formatPhoneNumber(guardian.phone)
-                                    : 'N/A'}
-                                </p>
-                              </div>
-                              <div className='col-sm-6 col-lg-3'>
-                                <p className='text-dark fw-medium mb-1'>
-                                  Email
-                                </p>
-                                <p
-                                  className='text-truncate'
-                                  title={guardian.email}
-                                >
-                                  {guardian.email || 'N/A'}
-                                </p>
-                              </div>
-                              <div className='col-sm-6 col-lg-2'>
-                                <div className='d-flex justify-content-end'>
-                                  <button
-                                    onClick={() => handleViewParent(guardian)}
-                                    className='btn btn-primary btn-sm'
-                                  >
-                                    View Profile
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
+                      filteredGuardians.map((guardian) => (
+                        <div
+                          key={guardian.id}
+                          className='border rounded p-3 pb-0 mb-3'
+                        >
+                          {renderGuardianRow(
+                            guardian,
+                            <img
+                              src={getGuardianAvatar(guardian)}
+                              alt={guardian.fullName}
+                              className='img-fluid rounded'
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  getDefaultAvatar(
+                                    guardian.isCoach ? 'coach' : 'parent',
+                                  );
+                              }}
+                            />,
+                          )}
+                        </div>
+                      ))
                     ) : (
                       <p className='text-muted'>
                         No parent/guardian data available.
@@ -598,51 +540,83 @@ const PlayerDetails = () => {
 
               <div className='col-xxl-12 d-flex'>
                 {/* Address Section */}
-                <div className='card flex-fill me-4'>
-                  <div className='card-header'>
-                    <h5>Address Information</h5>
+                {showAddressSection && (
+                  <div className='card flex-fill me-4'>
+                    <div className='card-header'>
+                      <h5>Address Information</h5>
+                    </div>
+                    <div className='card-body'>
+                      {primaryParent &&
+                        parentHasAddress &&
+                        (() => {
+                          const displayed = fmtAddr(
+                            primaryParent.address,
+                            parentAddrShow,
+                          );
+                          if (!displayed || displayed === 'N/A') return null;
+                          return (
+                            <div className='d-flex align-items-center mb-3'>
+                              <span className='avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default'>
+                                <i className='ti ti-map-pin-up' />
+                              </span>
+                              <div>
+                                <p className='text-dark fw-medium mb-1'>
+                                  {primaryParent.fullName}'s Address
+                                </p>
+                                <p>{displayed}</p>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      {guardianHasAddress &&
+                        (() => {
+                          const primaryAddrKey = normAddr(
+                            primaryParent?.address,
+                          );
+                          const seenKeys = new Set<string>(
+                            primaryAddrKey ? [primaryAddrKey] : [],
+                          );
+                          return filteredGuardians
+                            .filter((g) => {
+                              const addrKey = normAddr(g.address);
+                              if (!addrKey) return false;
+                              // Skip if same as an already-shown address
+                              if (seenKeys.has(addrKey)) return false;
+                              // Skip if display would be blank
+                              const displayed = fmtAddr(
+                                g.address,
+                                guardianAddrShow,
+                              );
+                              if (!displayed || displayed === 'N/A')
+                                return false;
+                              seenKeys.add(addrKey);
+                              return true;
+                            })
+                            .map((g) => (
+                              <div
+                                key={g.id}
+                                className='d-flex align-items-center mb-3'
+                              >
+                                <span className='avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default'>
+                                  <i className='ti ti-map-pins' />
+                                </span>
+                                <div>
+                                  <p className='text-dark fw-medium mb-1'>
+                                    {g.fullName}'s Address
+                                  </p>
+                                  <p>{fmtAddr(g.address, guardianAddrShow)}</p>
+                                </div>
+                              </div>
+                            ));
+                        })()}
+                    </div>
                   </div>
-                  <div className='card-body'>
-                    {primaryParent && (
-                      <div className='d-flex align-items-center mb-3'>
-                        <span className='avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default'>
-                          <i className='ti ti-map-pin-up' />
-                        </span>
-                        <div>
-                          <p className='text-dark fw-medium mb-1'>
-                            Primary Address
-                          </p>
-                          <p>{formatAddress(primaryParent.address)}</p>
-                        </div>
-                      </div>
-                    )}
-                    {filteredGuardians
-                      .filter(
-                        (g) =>
-                          formatAddress(g.address) !==
-                          formatAddress(primaryParent?.address),
-                      )
-                      .map((g) => (
-                        <div
-                          key={g.id}
-                          className='d-flex align-items-center mb-3'
-                        >
-                          <span className='avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default'>
-                            <i className='ti ti-map-pins' />
-                          </span>
-                          <div>
-                            <p className='text-dark fw-medium mb-1'>
-                              {g.fullName}'s Address
-                            </p>
-                            <p>{formatAddress(g.address)}</p>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
+                )}
 
-                {/* Medical History Section */}
-                <div className='card flex-fill'>
+                {/* Medical History — always shown */}
+                <div
+                  className={`card flex-fill${showAddressSection ? '' : ' w-100'}`}
+                >
                   <div className='card-header'>
                     <h5>Medical History</h5>
                   </div>

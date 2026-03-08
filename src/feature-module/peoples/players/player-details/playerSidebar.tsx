@@ -1,18 +1,15 @@
-// PlayerSidebar.tsx - Update the status display section
-
-import React from 'react';
+// PlayerSidebar.tsx
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { all_routes } from '../../../router/all_routes';
 import { useAuth } from '../../../../context/AuthContext';
 import { formatDate } from '../../../../utils/dateFormatter';
-import {
-  getPlayerStatus,
-  isPlayerPaidForCurrentSeason,
-  isPlayerRegisteredForCurrentSeason,
-} from '../../../../utils/season';
+import { getPlayerStatus } from '../../../../utils/season';
 import { formatPhoneNumber } from '../../../../utils/phone';
 import { Player, Guardian } from '../../../../types/playerTypes';
 import { getAvatarUrl, getDefaultAvatar } from '../../../../utils/r2Utils';
+import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
+import { Player as RegistrationPlayer } from '../../../../types/registration-types';
 
 interface PlayerSidebarProps {
   player: Player;
@@ -34,19 +31,20 @@ interface PlayerSidebarProps {
   };
 }
 
-interface PlayerSeason {
-  season: string;
-  year: number;
-  tryoutId?: string;
-  registrationDate?: string | Date;
-  paymentComplete?: boolean;
-  paymentStatus?: 'paid' | 'pending' | 'failed' | 'refunded';
-  paymentId?: string;
-  amountPaid?: number;
-  cardLast4?: string;
-  cardBrand?: string;
-  paymentDate?: string | Date;
-}
+const toRegistrationPlayer = (player: Player): RegistrationPlayer => ({
+  _id: (player as any)._id || (player as any).id || '',
+  fullName: player.fullName || (player as any).name || '',
+  gender: player.gender || '',
+  dob: player.dob ? String(player.dob) : '',
+  schoolName: player.section || player.schoolName || '',
+  healthConcerns: player.healthConcerns || '',
+  aauNumber: player.aauNumber || '',
+  registrationYear: player.registrationYear || new Date().getFullYear(),
+  season: player.season || '',
+  grade: String(player.grade || player.class || ''),
+  isGradeOverridden: (player as any).isGradeOverridden || false,
+  avatar: player.avatar || '',
+});
 
 const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
   player,
@@ -59,6 +57,20 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
   },
 }) => {
   const { user } = useAuth();
+
+  // ── Dynamic fields ──────────────────────────────────────────────────────
+  const { getVisibleFields } = useDynamicFormFields('player', {
+    registrationYear: player.registrationYear || new Date().getFullYear(),
+  });
+
+  const visibleFields = useMemo(
+    () => getVisibleFields(toRegistrationPlayer(player)),
+    [player, getVisibleFields],
+  );
+
+  const hasField = (name: string) =>
+    visibleFields.length === 0 ||
+    visibleFields.some((f) => f.fieldName === name);
 
   if (!player) {
     return <div>No player data found.</div>;
@@ -79,20 +91,22 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
     }
   };
 
-  const getDisplayName = () => player.fullName || player.name || 'N/A';
-  const getJoinDate = () => player.DateofJoin || player.createdAt || undefined;
+  const getDisplayName = () => player.fullName || (player as any).name || 'N/A';
+  const getJoinDate = () =>
+    (player as any).DateofJoin || (player as any).createdAt || undefined;
 
   const formatGrade = (grade?: string | number) => {
     if (!grade) return 'N/A';
-    const gradeNum =
-      typeof grade === 'string' ? parseInt(grade.replace(/\D/g, '')) : grade;
-    if (isNaN(gradeNum)) return grade.toString();
+    const gradeStr = String(grade);
+    if (gradeStr === 'PK') return 'Pre-Kindergarten';
+    if (gradeStr === 'K') return 'Kindergarten';
+    const gradeNum = parseInt(gradeStr.replace(/\D/g, ''));
+    if (isNaN(gradeNum)) return gradeStr;
     const suffixes = ['th', 'st', 'nd', 'rd'];
     const v = gradeNum % 100;
     return `${gradeNum}${suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]} Grade`;
   };
 
-  // Use the utility function for consistent status
   const playerStatus = getPlayerStatus(player);
 
   const shouldShowSiblings = siblings?.length > 0 && user?.role !== 'admin';
@@ -108,13 +122,6 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
   const getSeasonPaymentStatus = (season: any): string => {
     if (season.paymentStatus) return season.paymentStatus;
     if (season.paymentComplete) return 'paid';
-    return 'pending';
-  };
-
-  const getPlayerPaymentStatus = (): string => {
-    const playerWithPayment = player as any;
-    if (playerWithPayment.paymentStatus) return playerWithPayment.paymentStatus;
-    if (player.paymentComplete) return 'paid';
     return 'pending';
   };
 
@@ -142,14 +149,12 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
 
   const displayParent = getDisplayParent();
 
-  // ── R2 avatar helpers ───────────────────────────────────────────────────
   const playerDefaultAvatar = getDefaultAvatar(
     'player',
     player.gender as 'Male' | 'Female' | undefined,
   );
   const playerAvatarSrc = getAvatarUrl(player.avatar, playerDefaultAvatar);
 
-  // Get the appropriate badge based on player status
   const getStatusBadge = () => {
     switch (playerStatus) {
       case 'Active':
@@ -218,31 +223,52 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
           <div className='card-body'>
             <h5 className='mb-3'>Basic Information</h5>
             <dl className='row mb-0'>
-              <dt className='col-6 fw-medium text-dark mb-3'>Date Of Birth</dt>
-              <dd className='col-6 mb-3'>{formatPlayerDob()}</dd>
+              {hasField('dob') && (
+                <>
+                  <dt className='col-6 fw-medium text-dark mb-3'>
+                    Date Of Birth
+                  </dt>
+                  <dd className='col-6 mb-3'>{formatPlayerDob()}</dd>
+                </>
+              )}
 
-              <dt className='col-6 fw-medium text-dark mb-3'>Gender</dt>
-              <dd className='col-6 mb-3'>{player.gender || 'N/A'}</dd>
+              {hasField('gender') && (
+                <>
+                  <dt className='col-6 fw-medium text-dark mb-3'>Gender</dt>
+                  <dd className='col-6 mb-3'>{player.gender || 'N/A'}</dd>
+                </>
+              )}
 
-              <dt className='col-6 fw-medium text-dark mb-3'>School</dt>
-              <dd className='col-6 mb-3'>
-                {player.section || player.schoolName || 'N/A'}
-              </dd>
+              {hasField('schoolName') && (
+                <>
+                  <dt className='col-6 fw-medium text-dark mb-3'>School</dt>
+                  <dd className='col-6 mb-3'>
+                    {player.section || player.schoolName || 'N/A'}
+                  </dd>
+                </>
+              )}
 
-              <dt className='col-6 fw-medium text-dark mb-3'>Grade</dt>
-              <dd className='col-6 mb-3'>
-                {formatGrade(player.grade || player.class)}
-              </dd>
+              {hasField('grade') && (
+                <>
+                  <dt className='col-6 fw-medium text-dark mb-3'>Grade</dt>
+                  <dd className='col-6 mb-3'>
+                    {formatGrade(player.grade || (player as any).class)}
+                  </dd>
+                </>
+              )}
 
-              <dt className='col-6 fw-medium text-dark mb-3'>AAU Number</dt>
-              <dd className='col-6 mb-3'>{player.aauNumber || 'N/A'}</dd>
+              {hasField('aauNumber') && (
+                <>
+                  <dt className='col-6 fw-medium text-dark mb-3'>AAU Number</dt>
+                  <dd className='col-6 mb-3'>{player.aauNumber || 'N/A'}</dd>
+                </>
+              )}
 
               <dt className='col-12 fw-medium text-dark mb-2 mt-3'>
                 Seasons & Events
               </dt>
               <dd className='col-12 mb-3'>
                 {hasSeasons ? (
-                  // Has actual seasons in the seasons array
                   <div className='seasons-list'>
                     {Object.entries(seasonsByYear).map(([year, seasons]) => (
                       <div key={year} className='season-year-group mb-3'>
@@ -295,7 +321,6 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                     ))}
                   </div>
                 ) : player.season && player.registrationYear ? (
-                  // Legacy: Has top-level season fields (but no seasons array)
                   <div className='single-season'>
                     <div className='d-flex justify-content-between align-items-center'>
                       <span>
@@ -309,7 +334,6 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                     </div>
                   </div>
                 ) : (
-                  // No season data at all
                   <div className='text-muted'>
                     <i className='ti ti-info-circle me-1'></i>
                     No season registrations found
@@ -380,7 +404,8 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                 <div className='ms-2'>
                   <ul>
                     {siblings.map((sibling) => {
-                      const siblingId = sibling.id || sibling._id;
+                      const siblingId =
+                        (sibling as any).id || (sibling as any)._id;
                       if (!siblingId) {
                         console.error('Sibling has no ID:', sibling);
                         return null;
@@ -404,7 +429,7 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                                 <img
                                   src={siblingAvatarSrc}
                                   className='img-fluid rounded-circle'
-                                  alt={`${sibling.fullName || sibling.name || 'Sibling'} avatar`}
+                                  alt={`${sibling.fullName || (sibling as any).name || 'Sibling'} avatar`}
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).src =
                                       siblingDefault;
@@ -423,7 +448,9 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                                   },
                                   siblings: siblings
                                     .filter(
-                                      (s) => (s.id || s._id) !== siblingId,
+                                      (s) =>
+                                        ((s as any).id || (s as any)._id) !==
+                                        siblingId,
                                     )
                                     .concat([player]),
                                   sharedData,
@@ -432,7 +459,7 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                               >
                                 <h5>
                                   {sibling.fullName ||
-                                    sibling.name ||
+                                    (sibling as any).name ||
                                     'Sibling'}
                                 </h5>
                               </Link>
@@ -449,9 +476,13 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                                   {siblingStatus}
                                 </span>
                               </div>
-                              <p>
-                                {formatGrade(sibling.grade || sibling.class)}
-                              </p>
+                              {hasField('grade') && (
+                                <p>
+                                  {formatGrade(
+                                    sibling.grade || (sibling as any).class,
+                                  )}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </li>
