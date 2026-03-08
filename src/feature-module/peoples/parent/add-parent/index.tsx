@@ -21,7 +21,11 @@ import {
   validateDateOfBirth,
   validateGrade,
 } from '../../../../utils/validation';
-import { Address, ensureAddress } from '../../../../utils/address';
+import {
+  Address,
+  ensureAddress,
+  parseAddress,
+} from '../../../../utils/address';
 import {
   ParentFormData,
   GuardianFormData,
@@ -32,6 +36,9 @@ import {
 } from '../../../../types/types';
 import { calculateGradeFromDOB } from '../../../../utils/registration-utils';
 import { getAvatarUrl, getDefaultAvatar } from '../../../../utils/r2Utils';
+import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
+import { VisibleField } from '../../../../types/form-config.types';
+import NameInput, { validateFullName } from '../../../../components/NameInput';
 
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001/api';
@@ -82,9 +89,6 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
   >({});
   const [newGuardianAvatarFile, setNewGuardianAvatarFile] =
     useState<File | null>(null);
-  const [newGuardianAvatarPreview, setNewGuardianAvatarPreview] = useState<
-    string | null
-  >(null);
 
   // ── Player avatar state ───────────────────────────────────────────────────
   const [playerAvatarFiles, setPlayerAvatarFiles] = useState<
@@ -102,6 +106,35 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
   const [newPlayerAvatarPreview, setNewPlayerAvatarPreview] = useState<
     string | null
   >(null);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [pendingGuardianAvatarFiles, setPendingGuardianAvatarFiles] = useState<
+    Record<number, File>
+  >({});
+  const [pendingPlayerAvatarFiles, setPendingPlayerAvatarFiles] = useState<
+    Record<number, File>
+  >({});
+
+  // ── Dynamic form fields hooks ──────────────────────────────────────────────
+  const { getVisibleFields: getParentVisibleFields } = useDynamicFormFields(
+    'parent',
+    {
+      registrationYear: new Date().getFullYear(),
+    },
+  );
+
+  const { getVisibleFields: getGuardianVisibleFields } = useDynamicFormFields(
+    'guardian',
+    {
+      registrationYear: new Date().getFullYear(),
+    },
+  );
+
+  const { getVisibleFields: getPlayerVisibleFields } = useDynamicFormFields(
+    'player',
+    {
+      registrationYear: new Date().getFullYear(),
+    },
+  );
 
   // ── Players list state ────────────────────────────────────────────────────
   const [players, setPlayers] = useState<PlayerFormDataType[]>([]);
@@ -304,13 +337,16 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setAvatarFile(file);
-    setIsUploading(true);
+
+    // Preview the image immediately
     const reader = new FileReader();
     reader.onloadend = () => setAvatarPreview(reader.result as string);
     reader.readAsDataURL(file);
 
     if (isEdit && formData._id) {
+      // For existing parents, upload immediately
+      setAvatarFile(file);
+      setIsUploading(true);
       try {
         const token = localStorage.getItem('token');
         Swal.fire({
@@ -319,7 +355,7 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
           allowOutsideClick: false,
           didOpen: () => Swal.showLoading(),
         });
-        const latestParentData = await fetchParentData(formData._id);
+
         const fd = new FormData();
         fd.append('avatar', file);
         const response = await axios.put(
@@ -327,31 +363,12 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
           fd,
           { headers: { Authorization: `Bearer ${token}` } },
         );
+
         const newAvatarUrl =
           response.data.avatarUrl || response.data.parent?.avatar;
-        setFormData((prev) => ({
-          ...prev,
-          fullName: latestParentData.fullName || prev.fullName,
-          email: latestParentData.email || prev.email,
-          phone: latestParentData.phone || prev.phone,
-          address: ensureAddress(latestParentData.address) || prev.address,
-          relationship: latestParentData.relationship || prev.relationship,
-          isCoach: latestParentData.isCoach || prev.isCoach,
-          aauNumber: latestParentData.aauNumber || prev.aauNumber,
-          additionalGuardians:
-            latestParentData.additionalGuardians?.map((g: Guardian) => ({
-              ...g,
-              id: g._id?.toString() || g.id,
-              address: ensureAddress(g.address),
-              isCoach: g.isCoach || false,
-            })) || prev.additionalGuardians,
-          avatar: newAvatarUrl,
-        }));
-        const defaultAvatar = getDefaultAvatar(
-          formData.isCoach ? 'coach' : 'parent',
-        );
-        if (newAvatarUrl)
-          setAvatarPreview(getAvatarUrl(newAvatarUrl, defaultAvatar));
+        setFormData((prev) => ({ ...prev, avatar: newAvatarUrl }));
+
+        Swal.close();
         swalToast('success', 'Avatar uploaded successfully!');
       } catch (err) {
         console.error('Avatar upload failed:', err);
@@ -360,19 +377,20 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
           'Upload Failed',
           'Failed to upload avatar. Please try again.',
         );
-        const defaultAvatar = getDefaultAvatar(
-          formData.isCoach ? 'coach' : 'parent',
-        );
         setAvatarPreview(
-          formData.avatar ? getAvatarUrl(formData.avatar, defaultAvatar) : null,
+          formData.avatar
+            ? getAvatarUrl(formData.avatar, getDefaultAvatar('parent'))
+            : null,
         );
-        setAvatarFile(null);
       } finally {
         setIsUploading(false);
+        setAvatarFile(null);
       }
     } else {
-      setIsUploading(false);
+      // For new parents, store the file for later upload
+      setPendingAvatarFile(file);
     }
+
     e.target.value = '';
   };
 
@@ -389,16 +407,19 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
           cancelButtonColor: '#6b7280',
           confirmButtonText: 'Yes, remove it!',
         });
+
         if (!result.isConfirmed) {
           setIsUploading(false);
           return;
         }
+
         const token = localStorage.getItem('token');
         Swal.fire({
           title: 'Removing...',
           allowOutsideClick: false,
           didOpen: () => Swal.showLoading(),
         });
+
         await axios.delete(
           `${API_BASE_URL}/upload/parent/${formData._id}/avatar`,
           {
@@ -406,9 +427,12 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
             data: { avatarUrl: formData.avatar },
           },
         );
+
         setFormData((prev) => ({ ...prev, avatar: '' }));
         setAvatarPreview(null);
-        setAvatarFile(null);
+        setPendingAvatarFile(null);
+
+        Swal.close();
         swalToast('success', 'Avatar removed successfully!');
       } catch (err) {
         console.error('Avatar delete failed:', err);
@@ -421,18 +445,19 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
         setIsUploading(false);
       }
     } else {
+      // For new parents, just clear the preview and pending file
       setAvatarPreview(null);
-      setAvatarFile(null);
+      setPendingAvatarFile(null);
       swalToast('info', 'Preview Cleared', 'Avatar preview has been cleared');
     }
+
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   // ── Guardian avatar handlers ──────────────────────────────────────────────
 
   const handleGuardianAvatarChange = async (file: File, index: number) => {
-    setGuardianAvatarFiles((prev) => ({ ...prev, [index]: file }));
-    setGuardianAvatarUploading((prev) => ({ ...prev, [index]: true }));
+    // Show preview immediately
     const reader = new FileReader();
     reader.onloadend = () =>
       setGuardianAvatarPreviews((prev) => ({
@@ -440,35 +465,36 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
         [index]: reader.result as string,
       }));
     reader.readAsDataURL(file);
+
     const guardian = formData.additionalGuardians?.[index];
-    const isTempId =
-      !guardian?._id ||
-      guardian._id.toString().startsWith('temp_') ||
-      guardian._id.toString().length < 10;
-    if (isTempId) {
-      setGuardianAvatarUploading((prev) => ({ ...prev, [index]: false }));
-      swalToast(
-        'info',
-        'Avatar Saved',
-        'The avatar will be uploaded after you save the guardian.',
-      );
-      return;
-    }
-    if (isEdit && formData._id && guardian?._id) {
+    const hasRealId =
+      guardian?._id &&
+      !guardian._id.toString().startsWith('temp_') &&
+      guardian._id.toString().length === 24;
+
+    if (isEdit && formData._id && hasRealId) {
+      // For existing guardians with real IDs, upload immediately
+      setGuardianAvatarUploading((prev) => ({ ...prev, [index]: true }));
+      setGuardianAvatarFiles((prev) => ({ ...prev, [index]: file }));
+
       try {
         const token = localStorage.getItem('token');
         const fd = new FormData();
         fd.append('avatar', file);
+
         Swal.fire({
           title: 'Uploading...',
+          text: 'Please wait while we upload the guardian avatar',
           allowOutsideClick: false,
           didOpen: () => Swal.showLoading(),
         });
+
         const response = await axios.put(
           `${API_BASE_URL}/upload/guardian/${formData._id}/${guardian._id}/avatar`,
           fd,
           { headers: { Authorization: `Bearer ${token}` } },
         );
+
         setFormData((prev) => {
           const updatedGuardians = [...(prev.additionalGuardians || [])];
           updatedGuardians[index] = {
@@ -477,6 +503,8 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
           };
           return { ...prev, additionalGuardians: updatedGuardians };
         });
+
+        Swal.close();
         swalToast('success', 'Guardian avatar uploaded successfully!');
       } catch (err) {
         console.error('Guardian avatar upload failed:', err);
@@ -490,16 +518,17 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
           delete n[index];
           return n;
         });
-        setGuardianAvatarFiles((prev) => {
-          const n = { ...prev };
-          delete n[index];
-          return n;
-        });
       } finally {
         setGuardianAvatarUploading((prev) => ({ ...prev, [index]: false }));
       }
     } else {
-      setGuardianAvatarUploading((prev) => ({ ...prev, [index]: false }));
+      // For new guardians, store for later upload
+      setPendingGuardianAvatarFiles((prev) => ({ ...prev, [index]: file }));
+      swalToast(
+        'info',
+        'Avatar Saved',
+        'The avatar will be uploaded after you save the guardian.',
+      );
     }
   };
 
@@ -541,24 +570,10 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
     });
   };
 
-  const handleNewGuardianAvatarChange = (file: File) => {
-    setNewGuardianAvatarFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () =>
-      setNewGuardianAvatarPreview(reader.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const handleNewGuardianAvatarRemove = () => {
-    setNewGuardianAvatarFile(null);
-    setNewGuardianAvatarPreview(null);
-  };
-
   // ── Player avatar handlers ────────────────────────────────────────────────
 
   const handlePlayerAvatarChange = async (file: File, index: number) => {
-    setPlayerAvatarFiles((prev) => ({ ...prev, [index]: file }));
-    setPlayerAvatarUploading((prev) => ({ ...prev, [index]: true }));
+    // Show preview immediately
     const reader = new FileReader();
     reader.onloadend = () =>
       setPlayerAvatarPreviews((prev) => ({
@@ -566,17 +581,36 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
         [index]: reader.result as string,
       }));
     reader.readAsDataURL(file);
+
     const player = players[index];
-    if (isEdit && player?._id) {
+    const hasRealId =
+      player?._id &&
+      !player._id.toString().startsWith('temp_') &&
+      player._id.toString().length === 24;
+
+    if (isEdit && hasRealId) {
+      // For existing players with real IDs, upload immediately
+      setPlayerAvatarUploading((prev) => ({ ...prev, [index]: true }));
+      setPlayerAvatarFiles((prev) => ({ ...prev, [index]: file }));
+
       try {
         const token = localStorage.getItem('token');
         const fd = new FormData();
         fd.append('avatar', file);
+
+        Swal.fire({
+          title: 'Uploading...',
+          text: 'Please wait while we upload the player avatar',
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading(),
+        });
+
         const response = await axios.put(
           `${API_BASE_URL}/upload/player/${player._id}/avatar`,
           fd,
           { headers: { Authorization: `Bearer ${token}` } },
         );
+
         setPlayers((prev) => {
           const updated = [...prev];
           updated[index] = {
@@ -585,6 +619,9 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
           };
           return updated;
         });
+
+        Swal.close();
+        swalToast('success', 'Player avatar uploaded successfully!');
       } catch (err) {
         console.error('Player avatar upload failed:', err);
         swalToast(
@@ -597,16 +634,17 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
           delete n[index];
           return n;
         });
-        setPlayerAvatarFiles((prev) => {
-          const n = { ...prev };
-          delete n[index];
-          return n;
-        });
       } finally {
         setPlayerAvatarUploading((prev) => ({ ...prev, [index]: false }));
       }
     } else {
-      setPlayerAvatarUploading((prev) => ({ ...prev, [index]: false }));
+      // For new players, store for later upload
+      setPendingPlayerAvatarFiles((prev) => ({ ...prev, [index]: file }));
+      swalToast(
+        'info',
+        'Avatar Saved',
+        'The avatar will be uploaded after you save the player.',
+      );
     }
   };
 
@@ -692,42 +730,89 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
 
   // ── Player add / remove ───────────────────────────────────────────────────
 
-  const validatePlayerForm = (player: PlayerFormDataType): ValidationErrors => {
+  const validatePlayer = (player: PlayerFormDataType): ValidationErrors => {
     const errs: ValidationErrors = {};
-    if (!validateName(player.fullName))
-      errs.fullName = 'Please enter a valid name (min 2 characters)';
-    if (!validateRequired(player.gender)) errs.gender = 'Gender is required';
-    if (!validateDateOfBirth(player.dob))
-      errs.dob = 'Please enter a valid date of birth';
-    if (!validateRequired(player.schoolName))
-      errs.schoolName = 'School name is required';
-    if (!validateGrade(player.grade))
-      errs.grade = 'Please select a valid grade';
+
+    const registrationPlayer = {
+      _id: player._id || '',
+      fullName: player.fullName,
+      gender: player.gender,
+      dob: player.dob,
+      schoolName: player.schoolName,
+      healthConcerns: player.healthConcerns,
+      aauNumber: player.aauNumber,
+      registrationYear: new Date().getFullYear(),
+      season: 'N/A',
+      grade: player.grade,
+      isGradeOverridden: player.isGradeOverridden || false,
+    };
+
+    const visibleFields = getPlayerVisibleFields(registrationPlayer);
+
+    // fullName is always required regardless of config
+    const nameError = validateFullName(player.fullName, true);
+    if (nameError) errs.fullName = nameError;
+
+    // Only validate fields that are visible/enabled in the config
+    visibleFields
+      .filter((f) => f.fieldName !== 'fullName' && f.fieldName !== 'age')
+      .forEach((field) => {
+        if (!field.isRequired) return;
+
+        if (field.fieldName === 'gender') {
+          if (!validateRequired(player.gender))
+            errs.gender = 'Gender is required';
+        } else if (field.fieldName === 'dob') {
+          if (!validateDateOfBirth(player.dob))
+            errs.dob = 'Please enter a valid date of birth';
+        } else if (field.fieldName === 'schoolName') {
+          if (!player.schoolName?.trim())
+            errs.schoolName = 'School name is required';
+        } else if (field.fieldName === 'grade') {
+          if (!validateGrade(player.grade))
+            errs.grade = 'Please select a valid grade';
+        }
+      });
+
     return errs;
   };
 
   const addPlayer = () => {
-    const errs = validatePlayerForm(newPlayer);
-    if (Object.keys(errs).length > 0) {
-      setPlayerErrors(errs);
-      return;
-    }
     const newIndex = players.length;
-    setPlayers((prev) => [
-      ...prev,
-      { ...newPlayer, id: Date.now().toString() },
-    ]);
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+
+    // Create properly formatted player object
+    const playerToAdd = {
+      ...newPlayer,
+      id: tempId,
+      _id: tempId,
+      fullName: newPlayer.fullName.trim(),
+      gender: newPlayer.gender,
+      dob: newPlayer.dob,
+      schoolName: newPlayer.schoolName.trim(),
+      grade: newPlayer.grade,
+      healthConcerns: newPlayer.healthConcerns?.trim() || '',
+      aauNumber: newPlayer.aauNumber?.trim() || '',
+      isGradeOverridden: newPlayer.isGradeOverridden || false,
+    };
+
+    setPlayers((prev) => [...prev, playerToAdd]);
+
+    // Transfer pending avatar if exists
     if (newPlayerAvatarFile) {
-      setPlayerAvatarFiles((prev) => ({
+      setPendingPlayerAvatarFiles((prev) => ({
         ...prev,
         [newIndex]: newPlayerAvatarFile,
       }));
-      if (newPlayerAvatarPreview)
+      if (newPlayerAvatarPreview) {
         setPlayerAvatarPreviews((prev) => ({
           ...prev,
           [newIndex]: newPlayerAvatarPreview,
         }));
+      }
     }
+
+    // Reset new player form
     setNewPlayer({
       fullName: '',
       gender: '',
@@ -742,9 +827,46 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
     setNewPlayerAvatarPreview(null);
     setShowPlayerForm(false);
     setPlayerErrors({});
+
+    swalToast('success', 'Player added successfully!');
   };
 
-  const removePlayer = (index: number) => {
+  const removePlayer = async (index: number) => {
+    const player = players[index];
+    const hasRealId =
+      player?._id &&
+      !player._id.toString().startsWith('temp_') &&
+      player._id.toString().length === 24;
+
+    if (isEdit && hasRealId) {
+      const result = await Swal.fire({
+        title: 'Remove Player?',
+        text: `Are you sure you want to remove ${player.fullName || 'this player'}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, remove',
+      });
+      if (!result.isConfirmed) return;
+
+      try {
+        const token = localStorage.getItem('token');
+        await axios.delete(`${API_BASE_URL}/players/${player._id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        swalToast('success', 'Player removed successfully!');
+      } catch (err) {
+        console.error('Player delete failed:', err);
+        swalToast(
+          'error',
+          'Failed',
+          'Failed to remove player. Please try again.',
+        );
+        return;
+      }
+    }
+
     setPlayers((prev) => prev.filter((_, i) => i !== index));
     const reindex = (prev: Record<number, any>) => {
       const updated: Record<number, any> = {};
@@ -760,109 +882,325 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
     setPlayerAvatarUploading(reindex);
   };
 
-  // ── Validation ────────────────────────────────────────────────────────────
-
-  const validateForm = (): boolean => {
+  // ── Parent validation with dynamic fields ─────────────────────────────────
+  const validateParentForm = (): ValidationErrors => {
     const newErrors: ValidationErrors = {};
-    if (!validateName(formData.fullName))
-      newErrors.fullName = 'Please enter a valid name (min 2 characters)';
-    if (!validateEmail(formData.email))
-      newErrors.email = 'Please enter a valid email address';
-    if (!isEdit && (!formData.password || formData.password.length < 6))
+
+    // Map form data to the format expected by dynamic fields
+    const mappedData = {
+      parentFullName: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      address: formData.address,
+      city: formData.address.city,
+      state: formData.address.state,
+      zip: formData.address.zip,
+      relationship: formData.relationship,
+      isCoach: formData.isCoach,
+      aauNumber: formData.aauNumber,
+    };
+
+    const visibleFields = getParentVisibleFields(mappedData as any);
+
+    visibleFields.forEach((field) => {
+      if (
+        field.fieldName === 'address' ||
+        field.fieldName === 'city' ||
+        field.fieldName === 'state' ||
+        field.fieldName === 'zip'
+      ) {
+        // Handle address fields
+        if (field.fieldName === 'address' && field.isRequired) {
+          if (!formData.address.street?.trim()) {
+            newErrors['address.street'] = 'Street address is required';
+          }
+        }
+        if (
+          field.fieldName === 'city' &&
+          field.isRequired &&
+          !formData.address.city?.trim()
+        ) {
+          newErrors['address.city'] = 'City is required';
+        }
+        if (field.fieldName === 'state' && field.isRequired) {
+          if (!formData.address.state?.trim()) {
+            newErrors['address.state'] = 'State is required';
+          } else if (!validateState(formData.address.state)) {
+            newErrors['address.state'] =
+              'Please enter a valid 2-letter state code';
+          }
+        }
+        if (field.fieldName === 'zip' && field.isRequired) {
+          if (!formData.address.zip?.trim()) {
+            newErrors['address.zip'] = 'ZIP code is required';
+          } else if (!validateZipCode(formData.address.zip)) {
+            newErrors['address.zip'] = 'Please enter a valid ZIP code';
+          }
+        }
+      } else if (field.fieldName === 'parentFullName') {
+        // Handle full name
+        if (field.isRequired) {
+          const nameError = validateFullName(formData.fullName, true);
+          if (nameError) newErrors.fullName = nameError;
+        }
+      } else if (field.fieldName === 'email') {
+        // Handle email
+        if (field.isRequired && !validateEmail(formData.email)) {
+          newErrors.email = 'Please enter a valid email address';
+        }
+      } else if (field.fieldName === 'phone') {
+        // Handle phone
+        if (field.isRequired && !validatePhoneNumber(formData.phone)) {
+          newErrors.phone = 'Please enter a valid 10-digit phone number';
+        }
+      } else if (field.fieldName === 'relationship') {
+        // Handle relationship
+        if (field.isRequired && !validateRequired(formData.relationship)) {
+          newErrors.relationship = 'Relationship to player is required';
+        }
+      } else if (field.fieldName === 'aauNumber' && formData.isCoach) {
+        // Handle AAU number for coaches
+        if (!formData.aauNumber?.trim()) {
+          newErrors.aauNumber = 'AAU number is required for coaches';
+        }
+      }
+    });
+
+    // Password validation for new parents
+    if (!isEdit && (!formData.password || formData.password.length < 6)) {
       newErrors.password = 'Password must be at least 6 characters';
-    if (!validatePhoneNumber(formData.phone))
-      newErrors.phone = 'Please enter a valid 10-digit phone number';
-    if (!validateRequired(formData.relationship))
-      newErrors.relationship = 'Relationship to player is required';
-    const address = formData.address;
-    if (!validateRequired(address.street))
-      newErrors['address.street'] = 'Street address is required';
-    if (!validateRequired(address.city))
-      newErrors['address.city'] = 'City is required';
-    if (!validateState(address.state))
-      newErrors['address.state'] = 'Please enter a valid 2-letter state code';
-    if (!validateZipCode(address.zip))
-      newErrors['address.zip'] = 'Please enter a valid ZIP code';
+    }
+
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
   };
 
-  const validateGuardianForm = (guardian: GuardianFormData): boolean => {
-    const newErrors: ValidationErrors = {};
-    if (!validateName(guardian.fullName))
-      newErrors.fullName = 'Please enter a valid name (min 2 characters)';
-    if (!validateEmail(guardian.email))
-      newErrors.email = 'Please enter a valid email address';
-    if (!validatePhoneNumber(guardian.phone))
-      newErrors.phone = 'Please enter a valid 10-digit phone number';
-    if (!validateRequired(guardian.relationship))
-      newErrors.relationship = 'Relationship to player is required';
-    if (!validateRequired(guardian.address.street))
-      newErrors['address.street'] = 'Street address is required';
-    if (!validateRequired(guardian.address.city))
-      newErrors['address.city'] = 'City is required';
-    if (!validateState(guardian.address.state))
-      newErrors['address.state'] = 'Please enter a valid 2-letter state code';
-    if (!validateZipCode(guardian.address.zip))
-      newErrors['address.zip'] = 'Please enter a valid ZIP code';
-    setGuardianErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const validateGuardian = (guardian: GuardianFormData): ValidationErrors => {
+  // ── Guardian validation with dynamic fields ──────────────────────────────
+  const validateGuardian = (
+    guardian: GuardianFormData,
+    index: number,
+  ): ValidationErrors => {
     const errs: ValidationErrors = {};
-    if (!validateName(guardian.fullName))
-      errs.fullName = 'Please enter a valid name (min 2 characters)';
-    if (!validateEmail(guardian.email))
-      errs.email = 'Please enter a valid email address';
-    if (!validatePhoneNumber(guardian.phone))
-      errs.phone = 'Please enter a valid 10-digit phone number';
-    if (!validateRequired(guardian.relationship))
-      errs.relationship = 'Relationship to player is required';
-    if (!validateRequired(guardian.address.street))
-      errs['address.street'] = 'Street address is required';
-    if (!validateRequired(guardian.address.city))
-      errs['address.city'] = 'City is required';
-    if (!validateState(guardian.address.state))
-      errs['address.state'] = 'Please enter a valid 2-letter state code';
-    if (!validateZipCode(guardian.address.zip))
-      errs['address.zip'] = 'Please enter a valid ZIP code';
+
+    const mappedData = {
+      guardianFullName: guardian.fullName,
+      email: guardian.email,
+      phone: guardian.phone,
+      address: guardian.address,
+      city: guardian.address.city,
+      state: guardian.address.state,
+      zip: guardian.address.zip,
+      relationship: guardian.relationship,
+      isCoach: guardian.isCoach,
+      aauNumber: guardian.aauNumber,
+    };
+
+    const visibleFields = getGuardianVisibleFields(mappedData as any);
+
+    visibleFields.forEach((field) => {
+      if (
+        field.fieldName === 'address' ||
+        field.fieldName === 'city' ||
+        field.fieldName === 'state' ||
+        field.fieldName === 'zip'
+      ) {
+        // Handle address fields
+        if (field.fieldName === 'address' && field.isRequired) {
+          if (!guardian.address.street?.trim()) {
+            errs['address.street'] = 'Street address is required';
+          }
+        }
+        if (
+          field.fieldName === 'city' &&
+          field.isRequired &&
+          !guardian.address.city?.trim()
+        ) {
+          errs['address.city'] = 'City is required';
+        }
+        if (field.fieldName === 'state' && field.isRequired) {
+          if (!guardian.address.state?.trim()) {
+            errs['address.state'] = 'State is required';
+          } else if (!validateState(guardian.address.state)) {
+            errs['address.state'] = 'Please enter a valid 2-letter state code';
+          }
+        }
+        if (field.fieldName === 'zip' && field.isRequired) {
+          if (!guardian.address.zip?.trim()) {
+            errs['address.zip'] = 'ZIP code is required';
+          } else if (!validateZipCode(guardian.address.zip)) {
+            errs['address.zip'] = 'Please enter a valid ZIP code';
+          }
+        }
+      } else if (field.fieldName === 'guardianFullName') {
+        // Handle full name
+        if (field.isRequired) {
+          const nameError = validateFullName(guardian.fullName, true);
+          if (nameError) errs.fullName = nameError;
+        }
+      } else if (field.fieldName === 'email') {
+        // Handle email
+        if (field.isRequired && !validateEmail(guardian.email)) {
+          errs.email = 'Please enter a valid email address';
+        }
+      } else if (field.fieldName === 'phone') {
+        // Handle phone
+        if (field.isRequired && !validatePhoneNumber(guardian.phone)) {
+          errs.phone = 'Please enter a valid 10-digit phone number';
+        }
+      } else if (field.fieldName === 'relationship') {
+        // Handle relationship
+        if (field.isRequired && !validateRequired(guardian.relationship)) {
+          errs.relationship = 'Relationship is required';
+        }
+      } else if (field.fieldName === 'aauNumber' && guardian.isCoach) {
+        // Handle AAU number for coaches
+        if (!guardian.aauNumber?.trim()) {
+          errs.aauNumber = 'AAU number is required for coaches';
+        }
+      }
+    });
+
+    if (!errs.fullName) {
+      const nameError = validateFullName(guardian.fullName, true);
+      if (nameError) errs.fullName = nameError;
+    }
+
     return errs;
   };
 
-  const validateExistingGuardians = (): boolean => {
-    if (!formData.additionalGuardians) return true;
-    let allValid = true;
-    formData.additionalGuardians.forEach((guardian, index) => {
-      const guardianErrs = validateGuardian(guardian);
-      if (Object.keys(guardianErrs).length > 0) {
-        allValid = false;
-        const el = document.getElementById(`guardian-${index}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          el.classList.add('border-danger');
-          setTimeout(() => el.classList.remove('border-danger'), 3000);
-        }
+  const addGuardian = (avatarFile?: File) => {
+    // Validate the new guardian form
+    const errs = validateGuardian(
+      newGuardian,
+      (formData.additionalGuardians || []).length,
+    );
+
+    if (Object.keys(errs).length > 0) {
+      setGuardianErrors(errs);
+
+      // Scroll to the first error
+      const firstErrorKey = Object.keys(errs)[0];
+      const fieldName = firstErrorKey.replace('address.', '');
+      const fieldEl = document.querySelector(
+        `[name="${fieldName}"], [name="address.${fieldName}"]`,
+      );
+      if (fieldEl) {
+        fieldEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        (fieldEl as HTMLElement).classList.add('error-highlight');
+        setTimeout(
+          () => (fieldEl as HTMLElement).classList.remove('error-highlight'),
+          3000,
+        );
       }
+      return;
+    }
+
+    const newIndex = (formData.additionalGuardians || []).length;
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+
+    // Create properly formatted guardian object
+    const guardianToAdd = {
+      ...newGuardian,
+      id: tempId,
+      _id: tempId,
+      fullName: newGuardian.fullName.trim(),
+      email: newGuardian.email.trim().toLowerCase(),
+      phone: newGuardian.phone.replace(/\D/g, ''),
+      relationship: newGuardian.relationship.trim(),
+      aauNumber: newGuardian.aauNumber?.trim() || '',
+      isCoach: newGuardian.isCoach || false,
+      address: {
+        street: newGuardian.address.street?.trim() || '',
+        street2: newGuardian.address.street2?.trim() || '',
+        city: newGuardian.address.city?.trim() || '',
+        state: newGuardian.address.state?.trim()?.toUpperCase() || '',
+        zip: newGuardian.address.zip?.trim() || '',
+      },
+    };
+
+    setFormData((prev) => ({
+      ...prev,
+      additionalGuardians: [...(prev.additionalGuardians || []), guardianToAdd],
+    }));
+
+    // Store avatar file for upload after save
+    if (avatarFile) {
+      setPendingGuardianAvatarFiles((prev) => ({
+        ...prev,
+        [newIndex]: avatarFile,
+      }));
+    }
+
+    // Reset new guardian form
+    setNewGuardian({
+      fullName: '',
+      email: '',
+      phone: '',
+      address: { street: '', street2: '', city: '', state: '', zip: '' },
+      relationship: '',
+      aauNumber: '',
+      isCoach: false,
     });
-    return allValid;
+    setShowGuardianForm(false);
+    setGuardianErrors({});
+
+    swalToast('success', 'Guardian added successfully!');
   };
 
-  const validateExistingPlayers = (): boolean => {
-    let allValid = true;
-    players.forEach((player, index) => {
-      const errs = validatePlayerForm(player);
-      if (Object.keys(errs).length > 0) {
-        allValid = false;
-        const el = document.getElementById(`player-${index}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          el.classList.add('border-danger');
-          setTimeout(() => el.classList.remove('border-danger'), 3000);
-        }
+  const removeGuardian = async (index: number) => {
+    const guardian = formData.additionalGuardians?.[index];
+    const hasRealId =
+      guardian?._id &&
+      !guardian._id.toString().startsWith('temp_') &&
+      guardian._id.toString().length === 24;
+
+    if (isEdit && formData._id && hasRealId) {
+      const result = await Swal.fire({
+        title: 'Remove Guardian?',
+        text: `Are you sure you want to remove ${guardian.fullName || 'this guardian'}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, remove',
+      });
+      if (!result.isConfirmed) return;
+
+      try {
+        const token = localStorage.getItem('token');
+        await axios.delete(
+          `${API_BASE_URL}/parent/${formData._id}/guardian/${guardian._id}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        swalToast('success', 'Guardian removed successfully!');
+      } catch (err) {
+        console.error('Guardian delete failed:', err);
+        swalToast(
+          'error',
+          'Failed',
+          'Failed to remove guardian. Please try again.',
+        );
+        return;
       }
+    }
+
+    setFormData((prev) => {
+      const updated = [...(prev.additionalGuardians || [])];
+      updated.splice(index, 1);
+      return { ...prev, additionalGuardians: updated };
     });
-    return allValid;
+    const reindex = (prev: Record<number, any>) => {
+      const updated: Record<number, any> = {};
+      Object.entries(prev).forEach(([key, val]) => {
+        const k = parseInt(key);
+        if (k < index) updated[k] = val;
+        else if (k > index) updated[k - 1] = val;
+      });
+      return updated;
+    };
+    setGuardianAvatarFiles(reindex);
+    setGuardianAvatarPreviews(reindex);
+    setGuardianAvatarUploading(reindex);
   };
 
   // ── Form handlers ─────────────────────────────────────────────────────────
@@ -947,113 +1285,208 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
     });
   };
 
-  const addGuardian = () => {
-    if (!validateGuardianForm(newGuardian)) return;
-    const newIndex = (formData.additionalGuardians || []).length;
-    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-    setFormData((prev) => ({
-      ...prev,
-      additionalGuardians: [
-        ...(prev.additionalGuardians || []),
-        { ...newGuardian, id: tempId, _id: tempId },
-      ],
-    }));
-    if (newGuardianAvatarFile) {
-      setGuardianAvatarFiles((prev) => ({
-        ...prev,
-        [newIndex]: newGuardianAvatarFile,
-      }));
-      if (newGuardianAvatarPreview)
-        setGuardianAvatarPreviews((prev) => ({
-          ...prev,
-          [newIndex]: newGuardianAvatarPreview,
-        }));
-    }
-    setNewGuardian({
-      fullName: '',
-      email: '',
-      phone: '',
-      address: { street: '', street2: '', city: '', state: '', zip: '' },
-      relationship: '',
-      aauNumber: '',
-      isCoach: false,
-    });
-    setNewGuardianAvatarFile(null);
-    setNewGuardianAvatarPreview(null);
-    setShowGuardianForm(false);
-    setGuardianErrors({});
-  };
-
-  const removeGuardian = (index: number) => {
-    setFormData((prev) => {
-      const updated = [...(prev.additionalGuardians || [])];
-      updated.splice(index, 1);
-      return { ...prev, additionalGuardians: updated };
-    });
-    const reindex = (prev: Record<number, any>) => {
-      const updated: Record<number, any> = {};
-      Object.entries(prev).forEach(([key, val]) => {
-        const k = parseInt(key);
-        if (k < index) updated[k] = val;
-        else if (k > index) updated[k - 1] = val;
-      });
-      return updated;
-    };
-    setGuardianAvatarFiles(reindex);
-    setGuardianAvatarPreviews(reindex);
-    setGuardianAvatarUploading(reindex);
-  };
-
   // ── Submit ────────────────────────────────────────────────────────────────
+
+  const buildAddress = (addr: typeof formData.address) => {
+    const a: Record<string, string> = {};
+    if (addr.street?.trim()) a.street = addr.street.trim();
+    if (addr.street2?.trim()) a.street2 = addr.street2.trim();
+    if (addr.city?.trim()) a.city = addr.city.trim();
+    if (addr.state?.trim()) a.state = addr.state.trim().toUpperCase();
+    if (addr.zip?.trim()) a.zip = addr.zip.trim();
+    return a;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
+
+    // Clear all previous errors
     setErrors({});
+    setGuardianErrors({});
+    setPlayerErrors({});
 
-    if (isEdit && (!formData._id || typeof formData._id !== 'string')) {
-      await swalError(
-        'Invalid ID',
-        'Invalid parent ID. Please refresh and try again.',
-      );
-      setIsSubmitting(false);
-      return;
+    // Track all errors
+    let hasErrors = false;
+    const allErrors: {
+      parent: ValidationErrors;
+      guardians: Record<number, ValidationErrors>;
+      players: Record<number, ValidationErrors>;
+      newGuardian?: ValidationErrors;
+      newPlayer?: ValidationErrors;
+    } = {
+      parent: {},
+      guardians: {},
+      players: {},
+    };
+
+    // 1. Validate Parent Form
+    const parentErrors = validateParentForm();
+    if (Object.keys(parentErrors).length > 0) {
+      hasErrors = true;
+      allErrors.parent = parentErrors;
+      setErrors(parentErrors);
     }
 
-    if (!validateForm()) {
-      const firstErrorKey = Object.keys(errors)[0];
-      if (firstErrorKey) {
-        const el = document.querySelector(
-          `[name="${firstErrorKey.replace('address.', '')}"]`,
-        );
-        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        const card = document.getElementById('primary-parent-card');
-        card?.classList.add('border-danger');
-        setTimeout(() => card?.classList.remove('border-danger'), 3000);
+    // 2. Validate NEW Guardian form if expanded
+    if (showGuardianForm) {
+      const newGuardianErrs = validateGuardian(
+        newGuardian,
+        formData.additionalGuardians?.length || 0,
+      );
+      if (Object.keys(newGuardianErrs).length > 0) {
+        hasErrors = true;
+        allErrors.newGuardian = newGuardianErrs;
+        setGuardianErrors(newGuardianErrs);
+      } else {
+        // Auto-add the guardian into the list before submitting
+        const tempId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+        const guardianToAdd = {
+          ...newGuardian,
+          id: tempId,
+          _id: tempId,
+        };
+        const newGuardianIndex = (formData.additionalGuardians || []).length;
+        formData.additionalGuardians = [
+          ...(formData.additionalGuardians || []),
+          guardianToAdd,
+        ];
+        setFormData((prev) => ({
+          ...prev,
+          additionalGuardians: [
+            ...(prev.additionalGuardians || []),
+            guardianToAdd,
+          ],
+        }));
+        if (newGuardianAvatarFile) {
+          setPendingGuardianAvatarFiles((prev) => ({
+            ...prev,
+            [newGuardianIndex]: newGuardianAvatarFile,
+          }));
+          pendingGuardianAvatarFiles[newGuardianIndex] = newGuardianAvatarFile;
+        }
       }
-      setIsSubmitting(false);
-      return;
     }
 
-    if (formData.additionalGuardians?.length && !validateExistingGuardians()) {
+    // 3. Validate ALL Existing Guardians
+    if (formData.additionalGuardians?.length) {
+      formData.additionalGuardians.forEach((guardian, index) => {
+        const guardianErrs = validateGuardian(guardian, index);
+        if (Object.keys(guardianErrs).length > 0) {
+          hasErrors = true;
+          allErrors.guardians[index] = guardianErrs;
+        }
+      });
+
+      if (Object.keys(allErrors.guardians).length > 0) {
+        const flatGuardianErrors: ValidationErrors = {};
+        Object.values(allErrors.guardians).forEach((errs) => {
+          Object.assign(flatGuardianErrors, errs);
+        });
+        setGuardianErrors((prev) => ({ ...prev, ...flatGuardianErrors }));
+      }
+    }
+
+    // 4. Validate NEW Player form if expanded
+    if (showPlayerForm) {
+      const newPlayerErrs = validatePlayer(newPlayer);
+      if (Object.keys(newPlayerErrs).length > 0) {
+        hasErrors = true;
+        allErrors.newPlayer = newPlayerErrs;
+        setPlayerErrors(newPlayerErrs);
+      } else {
+        // Auto-add the player into the list before submitting
+        const tempId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+        const playerToAdd = { ...newPlayer, id: tempId, _id: tempId };
+        const newPlayerIndex = players.length;
+        players.push(playerToAdd);
+        setPlayers((prev) => [...prev, playerToAdd]);
+        if (newPlayerAvatarFile) {
+          setPendingPlayerAvatarFiles((prev) => ({
+            ...prev,
+            [newPlayerIndex]: newPlayerAvatarFile,
+          }));
+          pendingPlayerAvatarFiles[newPlayerIndex] = newPlayerAvatarFile;
+        }
+      }
+    }
+
+    // 5. Validate ALL Existing Players
+    if (players.length) {
+      players.forEach((player, index) => {
+        const playerErrs = validatePlayer(player);
+        if (Object.keys(playerErrs).length > 0) {
+          hasErrors = true;
+          allErrors.players[index] = playerErrs;
+        }
+      });
+
+      if (Object.keys(allErrors.players).length > 0) {
+        const flatPlayerErrors: ValidationErrors = {};
+        Object.values(allErrors.players).forEach((errs) => {
+          Object.assign(flatPlayerErrors, errs);
+        });
+        setPlayerErrors((prev) => ({ ...prev, ...flatPlayerErrors }));
+      }
+    }
+
+    // 6. If errors exist, show them and return
+    if (hasErrors) {
+      setIsSubmitting(false);
+
+      // Scroll to first error
+      if (Object.keys(allErrors.parent).length > 0) {
+        document
+          .getElementById('primary-parent-card')
+          ?.scrollIntoView({ behavior: 'smooth' });
+      } else if (allErrors.newGuardian) {
+        document
+          .querySelector('.new-guardian-form')
+          ?.scrollIntoView({ behavior: 'smooth' });
+      } else if (Object.keys(allErrors.guardians).length > 0) {
+        const firstIndex = Math.min(
+          ...Object.keys(allErrors.guardians).map(Number),
+        );
+        document
+          .getElementById(`guardian-${firstIndex}`)
+          ?.scrollIntoView({ behavior: 'smooth' });
+      } else if (allErrors.newPlayer) {
+        document
+          .querySelector('.new-player-form')
+          ?.scrollIntoView({ behavior: 'smooth' });
+      } else if (Object.keys(allErrors.players).length > 0) {
+        const firstIndex = Math.min(
+          ...Object.keys(allErrors.players).map(Number),
+        );
+        document
+          .getElementById(`player-${firstIndex}`)
+          ?.scrollIntoView({ behavior: 'smooth' });
+      }
+
+      const totalErrors =
+        Object.keys(allErrors.parent).length +
+        (allErrors.newGuardian
+          ? Object.keys(allErrors.newGuardian).length
+          : 0) +
+        Object.values(allErrors.guardians).reduce(
+          (sum, errs) => sum + Object.keys(errs).length,
+          0,
+        ) +
+        (allErrors.newPlayer ? Object.keys(allErrors.newPlayer).length : 0) +
+        Object.values(allErrors.players).reduce(
+          (sum, errs) => sum + Object.keys(errs).length,
+          0,
+        );
+
       await swalError(
-        'Guardian Errors',
-        'Please fix all guardian errors before submitting',
+        'Validation Errors',
+        `Please fix ${totalErrors} error(s) across all forms.`,
       );
-      setIsSubmitting(false);
       return;
     }
 
-    if (players.length && !validateExistingPlayers()) {
-      await swalError(
-        'Player Errors',
-        'Please fix all player errors before submitting',
-      );
-      setIsSubmitting(false);
-      return;
-    }
-
+    // 7. Proceed with submission
     try {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Authentication token missing');
@@ -1061,40 +1494,45 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
       let parentId = formData._id;
       let parentData;
 
-      // ✅ FIX: Strip temp_ prefixed _id values before sending to backend
-      //    Real MongoDB ObjectIds are 24-char hex strings — temp IDs are not
-      const formatGuardiansForApi = (
-        guardians: any[],
-        includeRealIds: boolean,
-      ) =>
-        guardians.map((g) => {
+      // Format guardians for API - strip temp IDs
+      const formatGuardiansForApi = (guardians: any[]) => {
+        return guardians.map((g) => {
           const hasRealId =
             g._id &&
             !g._id.toString().startsWith('temp_') &&
             g._id.toString().length === 24;
+
           return {
-            ...(includeRealIds && hasRealId && { _id: g._id }),
-            fullName: g.fullName.trim(),
-            email: g.email.trim().toLowerCase(),
-            phone: g.phone.replace(/\D/g, ''),
-            relationship: g.relationship.trim(),
+            ...(hasRealId && { _id: g._id }),
+            fullName: g.fullName?.trim() || '',
+            email: g.email?.trim().toLowerCase() || '',
+            phone: g.phone?.replace(/\D/g, '') || '',
+            relationship: g.relationship?.trim() || '',
             aauNumber: g.aauNumber?.trim() || '',
             isCoach: g.isCoach || false,
             address: {
-              street: g.address.street.trim(),
-              ...(g.address.street2 && { street2: g.address.street2.trim() }),
-              city: g.address.city.trim(),
-              state: g.address.state.trim().toUpperCase(),
-              zip: g.address.zip.trim(),
+              ...(g.address?.street?.trim() && {
+                street: g.address.street.trim(),
+              }),
+              ...(g.address?.street2?.trim() && {
+                street2: g.address.street2.trim(),
+              }),
+              ...(g.address?.city?.trim() && { city: g.address.city.trim() }),
+              ...(g.address?.state?.trim() && {
+                state: g.address.state.trim().toUpperCase(),
+              }),
+              ...(g.address?.zip?.trim() && { zip: g.address.zip.trim() }),
             },
+            ...(g.avatar && { avatar: g.avatar }),
           };
         });
+      };
 
       if (isEdit) {
+        // UPDATE EXISTING PARENT
         const url = `${API_BASE_URL}/parent-full/${formData._id}`;
         const formattedGuardians = formatGuardiansForApi(
           formData.additionalGuardians || [],
-          true,
         );
 
         const payload = {
@@ -1105,37 +1543,37 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
           isCoach: formData.isCoach,
           aauNumber: formData.aauNumber?.trim() || '',
           address: {
-            street: formData.address.street.trim(),
-            ...(formData.address.street2 && {
-              street2: formData.address.street2.trim(),
-            }),
-            city: formData.address.city.trim(),
-            state: formData.address.state.trim().toUpperCase(),
-            zip: formData.address.zip.trim(),
+            street: formData.address.street?.trim() || '',
+            street2: formData.address.street2?.trim() || '',
+            city: formData.address.city?.trim() || '',
+            state: formData.address.state?.trim()?.toUpperCase() || '',
+            zip: formData.address.zip?.trim() || '',
           },
           additionalGuardians: formattedGuardians,
           ...(formData.avatar && { avatarUrl: formData.avatar }),
         };
 
-        const config: AxiosRequestConfig = {
+        console.log(
+          '📤 Submitting UPDATE payload:',
+          JSON.stringify(payload, null, 2),
+        );
+
+        const response = await axios.put(url, payload, {
           headers: {
             Authorization: `Bearer ${token}`,
-            ...(avatarFile ? {} : { 'Content-Type': 'application/json' }),
+            'Content-Type': 'application/json',
           },
-          timeout: 10000,
-        };
-
-        const response = avatarFile
-          ? await axios.put(url, createFormData(payload, avatarFile), config)
-          : await axios.put(url, payload, config);
+        });
 
         parentData = response.data.parent || response.data;
+        console.log('✅ Update response:', parentData);
       } else {
+        // CREATE NEW PARENT
         const url = `${API_BASE_URL}/register`;
-        // ✅ For new registration: never send _id (backend creates them)
+
+        // IMPORTANT: Format guardians before sending
         const formattedGuardians = formatGuardiansForApi(
           formData.additionalGuardians || [],
-          false,
         );
 
         const payload = {
@@ -1146,13 +1584,11 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
           isCoach: formData.isCoach,
           aauNumber: formData.aauNumber?.trim() || '',
           address: {
-            street: formData.address.street.trim(),
-            ...(formData.address.street2 && {
-              street2: formData.address.street2.trim(),
-            }),
-            city: formData.address.city.trim(),
-            state: formData.address.state.trim().toUpperCase(),
-            zip: formData.address.zip.trim(),
+            street: formData.address.street?.trim() || '',
+            street2: formData.address.street2?.trim() || '',
+            city: formData.address.city?.trim() || '',
+            state: formData.address.state?.trim()?.toUpperCase() || '',
+            zip: formData.address.zip?.trim() || '',
           },
           password: formData.password?.trim() || '',
           registerType: 'adminCreate',
@@ -1160,38 +1596,47 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
           additionalGuardians: formattedGuardians,
         };
 
-        const config: AxiosRequestConfig = {
+        console.log(
+          '📤 Submitting CREATE payload:',
+          JSON.stringify(payload, null, 2),
+        );
+
+        const response = await axios.post(url, payload, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          timeout: 10000,
-        };
+        });
 
-        const response = await axios.post(url, payload, config);
         parentData = response.data.parent || response.data;
         parentId = parentData._id || response.data._id;
+        console.log('✅ Create response:', parentData);
 
-        if (!parentId) throw new Error('Invalid parent ID in response');
-
-        if (avatarFile) {
-          const fd = new FormData();
-          fd.append('avatar', avatarFile);
-          await axios.put(
-            `${API_BASE_URL}/upload/parent/${parentId}/avatar`,
-            fd,
-            { headers: { Authorization: `Bearer ${token}` } },
-          );
+        // Upload parent avatar if pending
+        if (pendingAvatarFile) {
+          try {
+            const fd = new FormData();
+            fd.append('avatar', pendingAvatarFile);
+            await axios.put(
+              `${API_BASE_URL}/upload/parent/${parentId}/avatar`,
+              fd,
+              { headers: { Authorization: `Bearer ${token}` } },
+            );
+          } catch (error) {
+            console.error('Avatar upload failed:', error);
+          }
         }
       }
 
+      // 8. Handle Players
       const createdPlayers = [];
-      if (players.length) {
+      if (players.length > 0) {
         for (let i = 0; i < players.length; i++) {
           const player = players[i];
           let playerId = player._id;
 
-          if (playerId) {
+          if (playerId && !playerId.toString().startsWith('temp_')) {
+            // Update existing player
             await axios.put(
               `${API_BASE_URL}/players/${playerId}`,
               {
@@ -1207,6 +1652,7 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
             );
             createdPlayers.push({ ...player, _id: playerId });
           } else {
+            // Create new player
             const playerResponse = await axios.post(
               `${API_BASE_URL}/players/register`,
               {
@@ -1234,72 +1680,80 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
             createdPlayers.push({ ...player, _id: playerId });
           }
 
-          const playerAvatarFile = playerAvatarFiles[i];
-          if (playerAvatarFile && playerId) {
-            const fd = new FormData();
-            fd.append('avatar', playerAvatarFile);
-            await axios.put(
-              `${API_BASE_URL}/upload/player/${playerId}/avatar`,
-              fd,
-              { headers: { Authorization: `Bearer ${token}` } },
-            );
-          }
-        }
-      }
-
-      // Upload guardian avatars after parent is saved (so real _ids exist)
-      const formattedGuardiansForAvatars = formatGuardiansForApi(
-        formData.additionalGuardians || [],
-        true,
-      );
-      if (Object.keys(guardianAvatarFiles).length > 0) {
-        for (let i = 0; i < formattedGuardiansForAvatars.length; i++) {
-          const guardianAvatarFile = guardianAvatarFiles[i];
-          let savedGuardian = parentData.additionalGuardians?.[i];
-
-          if (!savedGuardian && parentId) {
-            const updatedParent = await fetchParentData(parentId);
-            savedGuardian = updatedParent?.additionalGuardians?.[i];
-          }
-
-          if (guardianAvatarFile && savedGuardian?._id) {
+          // Upload player avatar if pending
+          const pendingPlayerFile = pendingPlayerAvatarFiles[i];
+          if (pendingPlayerFile && playerId) {
             try {
-              Swal.fire({
-                title: 'Uploading...',
-                text: `Uploading avatar for ${savedGuardian.fullName || 'guardian'}`,
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading(),
-              });
               const fd = new FormData();
-              fd.append('avatar', guardianAvatarFile);
+              fd.append('avatar', pendingPlayerFile);
               await axios.put(
-                `${API_BASE_URL}/upload/guardian/${parentId}/${savedGuardian._id}/avatar`,
+                `${API_BASE_URL}/upload/player/${playerId}/avatar`,
                 fd,
                 { headers: { Authorization: `Bearer ${token}` } },
               );
-              Swal.close();
-              swalToast(
-                'success',
-                `Avatar uploaded for ${savedGuardian.fullName || 'guardian'}`,
-              );
-            } catch (err) {
-              console.error(`Failed to upload avatar for guardian ${i}:`, err);
-              swalToast(
-                'error',
-                'Upload Failed',
-                `Failed to upload avatar for ${savedGuardian?.fullName || 'guardian'}`,
+            } catch (avatarError) {
+              console.error(
+                `Failed to upload avatar for player ${i}:`,
+                avatarError,
               );
             }
           }
         }
       }
 
-      const updatedParent = await fetchParentData(parentId);
+      // 9. Upload guardian avatars
+      if (Object.keys(pendingGuardianAvatarFiles).length > 0) {
+        const updatedParent = await fetchParentData(parentId);
+        const savedGuardians = updatedParent?.additionalGuardians || [];
+
+        console.log('🖼️ Guardian avatar upload — parentId:', parentId);
+        console.log(
+          '🖼️ Pending keys:',
+          Object.keys(pendingGuardianAvatarFiles),
+        );
+        console.log(
+          '🖼️ Saved guardians:',
+          savedGuardians.map((g: any, i: number) => ({
+            i,
+            id: g._id,
+            name: g.fullName,
+          })),
+        );
+
+        const pendingEntries = Object.entries(pendingGuardianAvatarFiles);
+        for (const [idxStr, file] of pendingEntries) {
+          const idx = parseInt(idxStr);
+          const savedGuardian = savedGuardians[idx];
+          if (savedGuardian?._id) {
+            try {
+              const fd = new FormData();
+              fd.append('avatar', file);
+              await axios.put(
+                `${API_BASE_URL}/upload/guardian/${parentId}/${savedGuardian._id}/avatar`,
+                fd,
+                { headers: { Authorization: `Bearer ${token}` } },
+              );
+            } catch (avatarError) {
+              console.error(
+                `Failed to upload avatar for guardian ${idx}:`,
+                avatarError,
+              );
+            }
+          } else {
+            console.warn(
+              `No saved guardian found at index ${idx} for avatar upload`,
+            );
+          }
+        }
+      }
+
+      // 10. Fetch final parent data and navigate
+      const finalParent = await fetchParentData(parentId);
 
       navigate(`${all_routes.parentDetail}/${parentId}`, {
         state: {
-          parent: updatedParent,
-          guardians: updatedParent?.additionalGuardians || [],
+          parent: finalParent,
+          guardians: finalParent?.additionalGuardians || [],
           players: createdPlayers.length ? createdPlayers : players,
           ...(!isEdit && {
             newAccount: true,
@@ -1311,21 +1765,17 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
         replace: true,
       });
     } catch (error) {
-      console.error('Submission error:', error);
+      console.error('❌ Submission error:', error);
+
       let errorMessage = 'Submission failed. Please try again.';
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 401)
-          errorMessage = 'Session expired. Please log in again.';
-        else if (error.response?.status === 400)
-          errorMessage =
-            error.response.data?.error ||
-            error.response.data?.message ||
-            'Invalid data submitted';
-        else if (error.response?.status === 500)
-          errorMessage = 'Server error. Please try again later.';
+      if (axios.isAxiosError(error) && error.response?.data?.details) {
+        errorMessage = error.response.data.details;
+      } else if (axios.isAxiosError(error) && error.response?.data?.error) {
+        errorMessage = error.response.data.error;
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
+
       await swalError('Submission Failed', errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -1338,6 +1788,48 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
     fd.append('data', JSON.stringify(data));
     return fd;
   };
+
+  const allParentFields = getParentVisibleFields({
+    parentFullName: formData.fullName,
+    email: formData.email,
+    phone: formData.phone,
+    address: formData.address,
+    city: formData.address.city,
+    state: formData.address.state,
+    zip: formData.address.zip,
+    relationship: formData.relationship,
+    isCoach: formData.isCoach,
+    aauNumber: formData.aauNumber,
+  });
+
+  const allGuardianFields = getGuardianVisibleFields({
+    guardianFullName: newGuardian.fullName,
+    email: newGuardian.email,
+    phone: newGuardian.phone,
+    address: newGuardian.address,
+    city: newGuardian.address.city,
+    state: newGuardian.address.state,
+    zip: newGuardian.address.zip,
+    relationship: newGuardian.relationship,
+    isCoach: newGuardian.isCoach,
+    aauNumber: newGuardian.aauNumber,
+  });
+
+  console.log(
+    '📋 allGuardianFields:',
+    allGuardianFields.map((f) => ({
+      fieldName: f.fieldName,
+      label: f.label,
+    })),
+  );
+
+  const hasAddressField = allParentFields.some(
+    (f) =>
+      f.fieldName === 'address' ||
+      f.fieldName === 'city' ||
+      f.fieldName === 'state' ||
+      f.fieldName === 'zip',
+  );
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -1381,7 +1873,7 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
         </div>
         <div className='row'>
           <div className='col-md-12'>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} noValidate>
               <ParentForm
                 formData={formData}
                 errors={errors}
@@ -1394,10 +1886,12 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
                 handleAauNumberChange={(e) => handleAauNumberChange(e)}
                 isEdit={isEdit}
                 isUploading={isUploading}
+                visibleFields={allParentFields}
+                hasAddressField={hasAddressField}
               />
 
               {/* Additional Guardians Section */}
-              <div className='card mt-4'>
+              <div className='card mt-4' id='guardians-section'>
                 <div className='card-header bg-light'>
                   <div className='d-flex align-items-center justify-content-between'>
                     <div className='d-flex align-items-center'>
@@ -1431,21 +1925,31 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
                     )}
 
                   {formData.additionalGuardians?.map((guardian, index) => (
-                    <GuardianForm
-                      key={guardian.id || index}
-                      guardian={guardian}
-                      index={index}
-                      handleGuardianInputChange={handleGuardianInputChange}
-                      handleGuardianAddressChange={handleGuardianAddressChange}
-                      removeGuardian={removeGuardian}
-                      handleAauNumberChange={handleAauNumberChange}
-                      avatarPreview={guardianAvatarPreviews[index] || null}
-                      avatarUploading={guardianAvatarUploading[index] || false}
-                      onAvatarChange={(file: File) =>
-                        handleGuardianAvatarChange(file, index)
-                      }
-                      onAvatarRemove={() => handleGuardianAvatarRemove(index)}
-                    />
+                    <div
+                      id={`guardian-${index}`}
+                      key={guardian._id || guardian.id || index}
+                    >
+                      <GuardianForm
+                        guardian={guardian}
+                        index={index}
+                        handleGuardianInputChange={handleGuardianInputChange}
+                        handleGuardianAddressChange={
+                          handleGuardianAddressChange
+                        }
+                        removeGuardian={removeGuardian}
+                        handleAauNumberChange={handleAauNumberChange}
+                        avatarPreview={guardianAvatarPreviews[index] || null}
+                        avatarUploading={
+                          guardianAvatarUploading[index] || false
+                        }
+                        onAvatarChange={(file: File) =>
+                          handleGuardianAvatarChange(file, index)
+                        }
+                        onAvatarRemove={() => handleGuardianAvatarRemove(index)}
+                        visibleFields={allGuardianFields}
+                        errors={guardianErrors}
+                      />
+                    </div>
                   ))}
 
                   {formData.additionalGuardians &&
@@ -1456,6 +1960,7 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
                           type='button'
                           className='btn btn-outline-primary btn-sm'
                           onClick={() => setShowGuardianForm(true)}
+                          disabled={showGuardianForm}
                         >
                           <i className='ti ti-plus me-1' /> Add Another
                           Parent/Guardian
@@ -1464,23 +1969,27 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
                     )}
 
                   {showGuardianForm && (
-                    <NewGuardianForm
-                      newGuardian={newGuardian}
-                      guardianErrors={guardianErrors}
-                      setNewGuardian={setNewGuardian}
-                      setGuardianErrors={setGuardianErrors}
-                      setShowGuardianForm={setShowGuardianForm}
-                      addGuardian={addGuardian}
-                      avatarPreview={newGuardianAvatarPreview}
-                      onAvatarChange={handleNewGuardianAvatarChange}
-                      onAvatarRemove={handleNewGuardianAvatarRemove}
-                    />
+                    <div className='new-guardian-form'>
+                      <NewGuardianForm
+                        newGuardian={newGuardian}
+                        guardianErrors={guardianErrors}
+                        setNewGuardian={setNewGuardian}
+                        setGuardianErrors={setGuardianErrors}
+                        setShowGuardianForm={setShowGuardianForm}
+                        addGuardian={addGuardian}
+                        onAvatarFileChange={(file) =>
+                          setNewGuardianAvatarFile(file)
+                        }
+                        visibleFields={allGuardianFields}
+                        mainAddress={formData.address}
+                      />
+                    </div>
                   )}
                 </div>
               </div>
 
               {/* Players Section */}
-              <div className='card mt-4'>
+              <div className='card mt-4' id='players-section'>
                 <div className='card-header bg-light'>
                   <div className='d-flex align-items-center justify-content-between'>
                     <div className='d-flex align-items-center'>
@@ -1494,43 +2003,70 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
                 <div className='card-body'>
                   {players.length > 0 &&
                     players.map((player, index) => (
-                      <PlayerForm
+                      <div
+                        id={`player-${index}`}
                         key={player.id || player._id || index}
-                        player={player}
-                        index={index}
-                        handlePlayerInputChange={handlePlayerInputChange}
-                        handlePlayerSchoolChange={handlePlayerSchoolChange}
-                        removePlayer={removePlayer}
-                        avatarPreview={playerAvatarPreviews[index] || null}
-                        avatarUploading={playerAvatarUploading[index] || false}
-                        onAvatarChange={handlePlayerAvatarChange}
-                        onAvatarRemove={handlePlayerAvatarRemove}
-                        errors={playerErrors}
-                      />
+                      >
+                        <PlayerForm
+                          player={player}
+                          index={index}
+                          handlePlayerInputChange={handlePlayerInputChange}
+                          handlePlayerSchoolChange={handlePlayerSchoolChange}
+                          removePlayer={removePlayer}
+                          avatarPreview={playerAvatarPreviews[index] || null}
+                          avatarUploading={
+                            playerAvatarUploading[index] || false
+                          }
+                          onAvatarChange={handlePlayerAvatarChange}
+                          onAvatarRemove={handlePlayerAvatarRemove}
+                          errors={playerErrors}
+                        />
+                      </div>
                     ))}
 
-                  {!showPlayerForm && (
-                    <button
-                      type='button'
-                      className='btn btn-primary btn-sm'
-                      onClick={() => setShowPlayerForm(true)}
-                    >
-                      <i className='ti ti-plus me-2' /> Add Player
-                    </button>
+                  {players.length === 0 && !showPlayerForm && (
+                    <>
+                      <div className='mb-3'>
+                        No players currently listed. Please add at least one
+                        player.
+                      </div>
+                      <button
+                        type='button'
+                        className='btn btn-primary btn-sm'
+                        onClick={() => setShowPlayerForm(true)}
+                        disabled={showPlayerForm}
+                      >
+                        <i className='ti ti-plus me-1' /> Add Player
+                      </button>
+                    </>
+                  )}
+
+                  {players.length > 0 && !showPlayerForm && (
+                    <div className='mt-3'>
+                      <button
+                        type='button'
+                        className='btn btn-outline-primary btn-sm'
+                        onClick={() => setShowPlayerForm(true)}
+                      >
+                        <i className='ti ti-plus me-1' /> Add Another Player
+                      </button>
+                    </div>
                   )}
 
                   {showPlayerForm && (
-                    <NewPlayerForm
-                      newPlayer={newPlayer}
-                      playerErrors={playerErrors}
-                      setNewPlayer={setNewPlayer}
-                      setPlayerErrors={setPlayerErrors}
-                      setShowPlayerForm={setShowPlayerForm}
-                      addPlayer={addPlayer}
-                      avatarPreview={newPlayerAvatarPreview}
-                      onAvatarChange={handleNewPlayerAvatarChange}
-                      onAvatarRemove={handleNewPlayerAvatarRemove}
-                    />
+                    <div className='new-player-form'>
+                      <NewPlayerForm
+                        newPlayer={newPlayer}
+                        playerErrors={playerErrors}
+                        setNewPlayer={setNewPlayer}
+                        setPlayerErrors={setPlayerErrors}
+                        setShowPlayerForm={setShowPlayerForm}
+                        addPlayer={addPlayer}
+                        avatarPreview={newPlayerAvatarPreview}
+                        onAvatarChange={handleNewPlayerAvatarChange}
+                        onAvatarRemove={handleNewPlayerAvatarRemove}
+                      />
+                    </div>
                   )}
                 </div>
               </div>
@@ -1555,12 +2091,12 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
                         role='status'
                         aria-hidden='true'
                       />
-                      {isEdit ? 'Updating...' : 'Adding...'}
+                      {isEdit ? 'Updating...' : 'Saving...'}
                     </>
                   ) : isEdit ? (
                     'Update'
                   ) : (
-                    'Add'
+                    'Save'
                   )}
                 </button>
               </div>

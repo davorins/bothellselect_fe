@@ -1,11 +1,14 @@
-import React, { useRef, useState, useEffect } from 'react';
+// PlayerForm.tsx
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { PlayerFormData } from '../../../../types/types';
-import { Address } from '../../../../utils/address';
 import { getDefaultAvatar, getAvatarUrl } from '../../../../utils/r2Utils';
 import SchoolAutocomplete from '../../../../components/SchoolAutocomplete';
 import Select from 'react-select';
 import { commonHealthConditions } from '../../../constants/healthConditions';
 import NameInput from '../../../../components/NameInput';
+import DynamicFormField from '../../../../components/forms/DynamicFormField';
+import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
+import { Player as RegistrationPlayer } from '../../../../types/registration-types';
 
 interface PlayerFormProps {
   player: PlayerFormData;
@@ -21,21 +24,23 @@ interface PlayerFormProps {
   onAvatarChange?: (file: File, index: number) => void;
   onAvatarRemove?: (index: number) => void;
   errors?: Record<string, string>;
-  selectedConditions?: any[];
-  onConditionChange?: (selected: any) => void;
-  customCondition?: string;
-  onCustomConditionChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  showCustomInput?: boolean;
 }
 
-const gradeOptions = [
-  { value: 'PK', label: 'Pre-Kindergarten' },
-  { value: 'K', label: 'Kindergarten' },
-  ...Array.from({ length: 12 }, (_, i) => ({
-    value: `${i + 1}`,
-    label: `${i + 1}${i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th'} Grade`,
-  })),
-];
+// Convert PlayerFormData to the shape useDynamicFormFields expects
+const toRegistrationPlayer = (player: PlayerFormData): RegistrationPlayer => ({
+  _id: player._id || '',
+  fullName: player.fullName || '',
+  gender: player.gender || '',
+  dob: player.dob || '',
+  schoolName: player.schoolName || '',
+  healthConcerns: player.healthConcerns || '',
+  aauNumber: player.aauNumber || '',
+  registrationYear: new Date().getFullYear(),
+  season: 'N/A',
+  grade: player.grade || '',
+  isGradeOverridden: player.isGradeOverridden || false,
+  avatar: player.avatar || '',
+});
 
 const PlayerForm: React.FC<PlayerFormProps> = ({
   player,
@@ -48,12 +53,6 @@ const PlayerForm: React.FC<PlayerFormProps> = ({
   onAvatarChange,
   onAvatarRemove,
   errors = {},
-  // New props with defaults
-  selectedConditions: propSelectedConditions = [],
-  onConditionChange,
-  customCondition: propCustomCondition = '',
-  onCustomConditionChange,
-  showCustomInput: propShowCustomInput = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const defaultPlayerAvatar = getDefaultAvatar(
@@ -61,134 +60,138 @@ const PlayerForm: React.FC<PlayerFormProps> = ({
     player.gender as 'Male' | 'Female',
   );
 
-  // Use props if provided, otherwise use local state
-  const [localSelectedConditions, setLocalSelectedConditions] = useState<any[]>(
-    [],
+  // ── Dynamic fields ──────────────────────────────────────────────────────
+  const { getVisibleFields } = useDynamicFormFields('player', {
+    registrationYear: new Date().getFullYear(),
+  });
+
+  const visibleFields = useMemo(
+    () => getVisibleFields(toRegistrationPlayer(player)),
+    [player, getVisibleFields],
   );
-  const [localCustomCondition, setLocalCustomCondition] = useState('');
-  const [localShowCustomInput, setLocalShowCustomInput] = useState(false);
 
-  // Determine whether to use props or local state
-  const useLocalState = !onConditionChange;
+  // Fields we render manually; everything else goes through DynamicFormField
+  const dynamicFields = useMemo(
+    () =>
+      visibleFields.filter(
+        (f) =>
+          f.fieldName !== 'fullName' &&
+          f.fieldName !== 'schoolName' &&
+          f.fieldName !== 'age',
+      ),
+    [visibleFields],
+  );
 
-  const selectedConditions = useLocalState
-    ? localSelectedConditions
-    : propSelectedConditions;
-  const customCondition = useLocalState
-    ? localCustomCondition
-    : propCustomCondition;
-  const showCustomInput = useLocalState
-    ? localShowCustomInput
-    : propShowCustomInput;
+  const schoolField = visibleFields.find((f) => f.fieldName === 'schoolName');
 
-  // Local handlers for when component is used standalone
-  const handleLocalConditionChange = (selected: any) => {
-    setLocalSelectedConditions(selected || []);
-    const hasCustom = selected?.some((item: any) => item.value === 'custom');
-    setLocalShowCustomInput(hasCustom);
-    updateLocalHealthConcerns(selected || [], localCustomCondition);
-  };
+  // ── Health conditions state ─────────────────────────────────────────────
+  const [selectedConditions, setSelectedConditions] = useState<any[]>([]);
+  const [customCondition, setCustomCondition] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
 
-  const handleLocalCustomConditionChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const value = e.target.value;
-    setLocalCustomCondition(value);
-    updateLocalHealthConcerns(localSelectedConditions, value);
-  };
-
-  const updateLocalHealthConcerns = (conditions: any[], custom: string) => {
-    const selectedLabels = conditions
-      .filter((c: any) => c.value !== 'custom')
-      .map((c: any) => c.label);
-
-    let healthConcerns = selectedLabels.join(', ');
-
-    if (custom.trim() && localShowCustomInput) {
-      if (healthConcerns) {
-        healthConcerns += ', ' + custom.trim();
-      } else {
-        healthConcerns = custom.trim();
-      }
-    }
-
-    const syntheticEvent = {
-      target: {
-        name: 'healthConcerns',
-        value: healthConcerns,
-      },
-    } as React.ChangeEvent<HTMLInputElement>;
-
-    handlePlayerInputChange(syntheticEvent, index);
-  };
-
-  // Parse existing health concerns on mount (for local state mode)
   useEffect(() => {
-    if (useLocalState && player.healthConcerns) {
-      const concerns = player.healthConcerns.split(',').map((c) => c.trim());
-      const preSelected = concerns
-        .filter((c) =>
-          commonHealthConditions.some((condition) => condition.label === c),
-        )
-        .map((c) => {
-          const found = commonHealthConditions.find(
-            (condition) => condition.label === c,
-          );
-          return found || { value: 'custom', label: c };
-        });
-
-      const customConcerns = concerns
-        .filter(
-          (c) =>
-            !commonHealthConditions.some((condition) => condition.label === c),
-        )
-        .join(', ');
-
-      setLocalSelectedConditions(preSelected);
-      if (customConcerns) {
-        setLocalCustomCondition(customConcerns);
-        setLocalShowCustomInput(true);
-      }
+    if (!player.healthConcerns) return;
+    const concerns = player.healthConcerns.split(',').map((c) => c.trim());
+    const preSelected = concerns
+      .filter((c) => commonHealthConditions.some((cond) => cond.label === c))
+      .map(
+        (c) =>
+          commonHealthConditions.find((cond) => cond.label === c) || {
+            value: 'custom',
+            label: c,
+          },
+      );
+    const custom = concerns
+      .filter((c) => !commonHealthConditions.some((cond) => cond.label === c))
+      .join(', ');
+    setSelectedConditions(preSelected);
+    if (custom) {
+      setCustomCondition(custom);
+      setShowCustomInput(true);
     }
-  }, [player.healthConcerns, useLocalState]);
+  }, []); // only on mount
 
-  // Resolve existing saved avatar
+  // ── Avatar helpers ──────────────────────────────────────────────────────
   const existingAvatar = player.avatar
     ? getAvatarUrl(player.avatar, defaultPlayerAvatar)
     : null;
-
-  // Preview takes priority over saved avatar
   const displayAvatar = avatarPreview || existingAvatar;
   const hasAvatar = !!displayAvatar;
-  const hasSavedId = !!player._id;
+  const hasSavedId =
+    !!player._id &&
+    !player._id.toString().startsWith('temp_') &&
+    player._id.toString().length === 24;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0] && onAvatarChange) {
+    if (e.target.files?.[0] && onAvatarChange) {
       onAvatarChange(e.target.files[0], index);
     }
     e.target.value = '';
   };
 
-  const handleRemove = () => {
+  const handleRemoveAvatar = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (onAvatarRemove) onAvatarRemove(index);
   };
 
-  // Use the appropriate handler based on whether props are provided
-  const handleConditionChange = onConditionChange || handleLocalConditionChange;
-  const handleCustomConditionChange =
-    onCustomConditionChange || handleLocalCustomConditionChange;
-
-  // Custom styles for react-select
-  const selectStyles = {
-    control: (base: any) => ({
-      ...base,
-      minHeight: '38px',
-      borderColor: '#d9d9d9',
-      '&:hover': { borderColor: '#40a9ff' },
-    }),
+  // ── DynamicFormField change handler ────────────────────────────────────
+  const handleDynamicFieldChange = (fieldName: string, value: any) => {
+    handlePlayerInputChange(
+      {
+        target: { name: fieldName, value },
+      } as React.ChangeEvent<HTMLInputElement>,
+      index,
+    );
   };
 
+  // ── Health conditions ───────────────────────────────────────────────────
+  const updateHealthConcerns = (
+    conditions: any[],
+    custom: string,
+    showCustom: boolean,
+  ) => {
+    const labels = conditions
+      .filter((c) => c.value !== 'custom')
+      .map((c) => c.label);
+    let healthConcerns = labels.join(', ');
+    if (custom.trim() && showCustom) {
+      healthConcerns = healthConcerns
+        ? `${healthConcerns}, ${custom.trim()}`
+        : custom.trim();
+    }
+    handlePlayerInputChange(
+      { target: { name: 'healthConcerns', value: healthConcerns } } as any,
+      index,
+    );
+  };
+
+  const handleConditionChange = (selected: any) => {
+    const newSelected = selected || [];
+    const hasCustom = newSelected.some((item: any) => item.value === 'custom');
+    setSelectedConditions(newSelected);
+    setShowCustomInput(hasCustom);
+    updateHealthConcerns(newSelected, customCondition, hasCustom);
+  };
+
+  const handleCustomConditionChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const value = e.target.value;
+    setCustomCondition(value);
+    updateHealthConcerns(selectedConditions, value, showCustomInput);
+  };
+
+  // ── Column sizing ───────────────────────────────────────────────────────
+  const colClass = useMemo(() => {
+    const count = dynamicFields.length;
+    if (count === 1) return 'col-md-12';
+    if (count === 2) return 'col-md-6';
+    if (count === 3) return 'col-md-4';
+    if (count === 4) return 'col-md-6 col-lg-3';
+    return 'col-md-6 col-lg-4 col-xl-3';
+  }, [dynamicFields.length]);
+
+  // ── Render ──────────────────────────────────────────────────────────────
   return (
     <div id={`player-${index}`} className='card mb-4'>
       <div className='card-header d-flex align-items-center justify-content-between bg-light'>
@@ -202,8 +205,9 @@ const PlayerForm: React.FC<PlayerFormProps> = ({
           <i className='ti ti-trash me-1' /> Remove
         </button>
       </div>
+
       <div className='card-body pb-0'>
-        {/* Avatar upload section */}
+        {/* Avatar */}
         <div className='d-flex align-items-center flex-wrap row-gap-3 mb-3'>
           <div className='d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames'>
             {hasAvatar ? (
@@ -239,7 +243,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({
                 <button
                   type='button'
                   className='btn btn-primary mb-3 ms-2'
-                  onClick={handleRemove}
+                  onClick={handleRemoveAvatar}
                   disabled={avatarUploading}
                 >
                   Remove
@@ -263,9 +267,9 @@ const PlayerForm: React.FC<PlayerFormProps> = ({
           </div>
         </div>
 
-        {/* Player form fields */}
-        <div className='row row-cols-xxl-12 row-cols-md-12'>
-          <div className='col-xxl col-xl-6 col-md-12'>
+        {/* Full Name — always shown, always required */}
+        <div className='row'>
+          <div className='col-12'>
             <NameInput
               value={player.fullName}
               onChange={(val) =>
@@ -280,140 +284,116 @@ const PlayerForm: React.FC<PlayerFormProps> = ({
               required
             />
           </div>
-          <div className='col-xxl col-xl-6 col-md-12'>
-            <div className='mb-3'>
-              <label className='form-label'>School Name</label>
-              <SchoolAutocomplete
-                value={player.schoolName}
-                onChange={(val) => handlePlayerSchoolChange(val, index)}
-              />
-              {errors.schoolName && (
-                <div className='invalid-feedback d-block'>
-                  {errors.schoolName}
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
-        <div className='row row-cols-xxl-12 row-cols-md-12'>
-          <div className='col-xxl col-xl-3 col-md-12'>
-            <div className='mb-3'>
-              <label className='form-label'>Date of Birth</label>
-              <input
-                type='date'
-                className={`form-control ${errors.dob ? 'is-invalid' : ''}`}
-                name='dob'
-                value={player.dob}
-                onChange={(e) => handlePlayerInputChange(e, index)}
-                required
-              />
-              {errors.dob && (
-                <div className='invalid-feedback'>{errors.dob}</div>
-              )}
-            </div>
-          </div>
-          <div className='col-xxl col-xl-3 col-md-12'>
-            <div className='mb-3'>
-              <label className='form-label'>Gender</label>
-              <select
-                className={`form-control ${errors.gender ? 'is-invalid' : ''}`}
-                name='gender'
-                value={player.gender}
-                onChange={(e) => handlePlayerInputChange(e, index)}
-                required
-              >
-                <option value=''>Select Gender</option>
-                <option value='Male'>Male</option>
-                <option value='Female'>Female</option>
-              </select>
-              {errors.gender && (
-                <div className='invalid-feedback'>{errors.gender}</div>
-              )}
-            </div>
-          </div>
-          <div className='col-xxl col-xl-3 col-md-12'>
-            <div className='mb-3'>
-              <label className='form-label'>Grade</label>
-              <select
-                className={`form-control ${errors.grade ? 'is-invalid' : ''}`}
-                name='grade'
-                value={player.grade}
-                onChange={(e) => handlePlayerInputChange(e, index)}
-                required
-              >
-                <option value=''>Select Grade</option>
-                {gradeOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              {errors.grade && (
-                <div className='invalid-feedback'>{errors.grade}</div>
-              )}
-            </div>
-          </div>
-          <div className='col-xxl col-xl-3 col-md-12'>
-            <div className='mb-3'>
-              <label className='form-label'>AAU Number</label>
-              <input
-                type='text'
-                className='form-control'
-                name='aauNumber'
-                value={player.aauNumber || ''}
-                onChange={(e) => handlePlayerInputChange(e, index)}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Medical History Section - New */}
-        <div className='row row-cols-xxl-12 row-cols-md-12'>
-          <div className='col-xxl col-xl-12 col-md-12'>
-            <div className='card mt-3'>
-              <div className='card-header bg-light py-2'>
-                <div className='d-flex align-items-center'>
-                  <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
-                    <i className='ti ti-heartbeat fs-16' />
-                  </span>
-                  <h5 className='text-dark mb-0'>Medical History</h5>
-                </div>
-              </div>
-              <div className='card-body pb-1'>
-                <div className='row'>
-                  <div className='mb-3'>
-                    <label className='form-label'>Health Conditions</label>
-                    <Select
-                      isMulti
-                      name='healthConditions'
-                      options={commonHealthConditions}
-                      className='basic-multi-select'
-                      classNamePrefix='select'
-                      value={selectedConditions}
-                      onChange={handleConditionChange}
-                      styles={selectStyles}
-                      placeholder='Select health conditions...'
-                    />
-                    <small className='text-muted'>Select all that apply</small>
-                  </div>
-
-                  {showCustomInput && (
-                    <div className='mb-3'>
-                      <label className='form-label'>
-                        Specify Other Condition(s)
-                      </label>
-                      <input
-                        type='text'
-                        className='form-control'
-                        value={customCondition}
-                        onChange={handleCustomConditionChange}
-                        placeholder='Please describe any other health conditions...'
-                      />
-                    </div>
+        {/* School Name — dynamic visibility */}
+        {schoolField && (
+          <div className='row'>
+            <div className='col-12'>
+              <div className='mb-3'>
+                <label className='form-label'>
+                  {schoolField.label}
+                  {schoolField.isRequired && (
+                    <span className='text-danger ms-1'>*</span>
                   )}
-                </div>
+                </label>
+                <SchoolAutocomplete
+                  value={player.schoolName}
+                  onChange={(val) => handlePlayerSchoolChange(val, index)}
+                  isInvalid={!!errors.schoolName}
+                  placeholder='Enter school name'
+                />
+                {errors.schoolName && (
+                  <div className='invalid-feedback d-block'>
+                    {errors.schoolName}
+                  </div>
+                )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Dynamic fields — gender, dob, grade, aauNumber, etc. */}
+        <div className='row'>
+          {dynamicFields.map((field) => (
+            <div className={colClass} key={field.fieldName}>
+              <DynamicFormField
+                field={field}
+                value={
+                  (player[field.fieldName as keyof PlayerFormData] as string) ??
+                  ''
+                }
+                onChange={handleDynamicFieldChange}
+                error={errors[field.fieldName]}
+              />
+
+              {/* Grade auto-calc helper */}
+              {field.fieldName === 'grade' &&
+                player.dob &&
+                !player.isGradeOverridden &&
+                player.grade && (
+                  <div className='text-muted small mt-1'>
+                    Auto-calculated from DOB
+                    <button
+                      type='button'
+                      className='btn btn-link btn-sm p-0 ms-2'
+                      onClick={() =>
+                        handlePlayerInputChange(
+                          {
+                            target: { name: 'isGradeOverridden', value: true },
+                          } as any,
+                          index,
+                        )
+                      }
+                    >
+                      Adjust
+                    </button>
+                  </div>
+                )}
+            </div>
+          ))}
+        </div>
+
+        {/* Medical History — always shown */}
+        <div className='row row-cols-xxl-12 row-cols-md-12 p-3'>
+          <div className='card p-0'>
+            <div className='card-header bg-light py-2'>
+              <div className='d-flex align-items-center'>
+                <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
+                  <i className='ti ti-heartbeat fs-16' />
+                </span>
+                <h5 className='text-dark mb-0'>Medical History</h5>
+              </div>
+            </div>
+            <div className='card-body'>
+              <div className='mb-3'>
+                <label className='form-label'>Health Conditions</label>
+                <Select
+                  isMulti
+                  name='healthConditions'
+                  options={commonHealthConditions}
+                  className='basic-multi-select'
+                  classNamePrefix='select'
+                  value={selectedConditions}
+                  onChange={handleConditionChange}
+                  placeholder='Select health conditions...'
+                />
+                <small className='text-muted'>Select all that apply</small>
+              </div>
+              {showCustomInput && (
+                <div className='mb-3'>
+                  <label className='form-label'>
+                    Specify Other Condition(s)
+                  </label>
+                  <input
+                    type='text'
+                    className='form-control'
+                    value={customCondition}
+                    onChange={handleCustomConditionChange}
+                    placeholder='Please describe any other health conditions...'
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

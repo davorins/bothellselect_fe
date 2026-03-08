@@ -101,6 +101,7 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [visibleFields, setVisibleFields] = useState<VisibleField[]>([]);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
   // Health conditions state
   const [selectedConditions, setSelectedConditions] = useState<any[]>([]);
@@ -654,7 +655,13 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
     reader.onloadend = () => setAvatarPreview(reader.result as string);
     reader.readAsDataURL(file);
 
-    if (isEdit && formData.playerId) uploadAvatar(file);
+    if (isEdit && formData.playerId) {
+      // For existing players, upload immediately
+      uploadAvatar(file);
+    } else {
+      // For new players, store the file for later upload
+      setPendingAvatarFile(file);
+    }
   };
 
   const handleRemoveAvatar = () => {
@@ -763,6 +770,11 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
         ...(!isEdit && { parentId: formData.parentId }),
       };
 
+      // IMPORTANT: Include avatar URL if it exists (for existing players)
+      if (isEdit && formData.avatar) {
+        payload.avatar = formData.avatar;
+      }
+
       // Only add fields that are visible in the form
       visibleFields.forEach((field) => {
         const fieldName = field.fieldName;
@@ -819,6 +831,49 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
         response.data.player?._id ||
         formData.playerId;
 
+      // If this is a new player and there's a pending avatar file, upload it now
+      if (!isEdit && pendingAvatarFile && savedPlayerId) {
+        try {
+          // Update formData with the new playerId
+          setFormData((prev) => ({ ...prev, playerId: savedPlayerId }));
+
+          // Upload the avatar
+          const fd = new FormData();
+          fd.append('avatar', pendingAvatarFile);
+          const avatarResponse = await axios.put(
+            `${API_BASE_URL}/upload/player/${savedPlayerId}/avatar`,
+            fd,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data',
+              },
+            },
+          );
+
+          const avatarUrl =
+            avatarResponse.data.avatarUrl || avatarResponse.data.url || '';
+          if (avatarUrl) {
+            setFormData((prev) => ({ ...prev, avatar: avatarUrl }));
+            setAvatarPreview(avatarUrl);
+            setPendingAvatarFile(null);
+
+            // Update the response data with the avatar URL
+            if (response.data.player) {
+              response.data.player.avatar = avatarUrl;
+            } else {
+              response.data.avatar = avatarUrl;
+            }
+          }
+        } catch (avatarError) {
+          console.error(
+            'Error uploading avatar after player creation:',
+            avatarError,
+          );
+          // Don't fail the whole submission, just log the error
+        }
+      }
+
       if (isEdit && playerState?.from) {
         const updatedPlayer = response.data.player || response.data;
         const playerForNavigation = {
@@ -836,6 +891,7 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
           registrationYear:
             updatedPlayer.registrationYear || formData.registrationYear,
           season: updatedPlayer.season || formData.season,
+          avatar: updatedPlayer.avatar || formData.avatar, // Include avatar
           ...(updatedPlayer.seasons && { seasons: updatedPlayer.seasons }),
           ...(updatedPlayer.paymentStatus && {
             paymentStatus: updatedPlayer.paymentStatus,
@@ -940,7 +996,10 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
             // Navigate with COMPLETE state
             navigate(`${all_routes.playerDetail}/${savedPlayerId}`, {
               state: {
-                player: newPlayer,
+                player: {
+                  ...newPlayer,
+                  avatar: newPlayer.avatar || formData.avatar, // Include avatar
+                },
                 parentId: formData.parentId,
                 parent: parentData,
                 guardians: allGuardians,
@@ -957,7 +1016,10 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
             // Fallback - navigate with minimal data if fetch fails
             navigate(`${all_routes.playerDetail}/${savedPlayerId}`, {
               state: {
-                player: response.data.player || response.data,
+                player: {
+                  ...(response.data.player || response.data),
+                  avatar: formData.avatar, // Include avatar
+                },
                 parentId: formData.parentId,
                 from: 'add',
               },
@@ -969,7 +1031,10 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
           // No parentId (shouldn't happen for new players, but just in case)
           navigate(`${all_routes.playerDetail}/${savedPlayerId}`, {
             state: {
-              player: response.data.player || response.data,
+              player: {
+                ...(response.data.player || response.data),
+                avatar: formData.avatar, // Include avatar
+              },
               from: 'add',
             },
           });
@@ -1155,10 +1220,10 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
                                 className='mb-3 position-relative'
                                 ref={dropdownRef}
                               >
-                                <label className='form-label'>Parent *</label>
+                                Parent <span className='text-danger'>*</span>
                                 <input
                                   type='text'
-                                  className={`form-control ${errors.parentId ? 'is-invalid' : ''}`}
+                                  className={`form-control ${errors.parentId ? 'is-invalid' : ''} mt-2`}
                                   placeholder='Type parent name...'
                                   value={parentSearchTerm}
                                   onChange={handleParentSearch}
@@ -1183,7 +1248,6 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
                                   }}
                                   autoComplete='off'
                                 />
-
                                 {showParentDropdown && (
                                   <div
                                     className='position-absolute w-100 mt-1 bg-white border rounded shadow-lg'
@@ -1252,9 +1316,7 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
                                     ) : null}
                                   </div>
                                 )}
-
                                 <FieldError message={errors.parentId} />
-
                                 {selectedParent && (
                                   <div className='mt-2 p-2 bg-light rounded'>
                                     <small className='text-muted'>

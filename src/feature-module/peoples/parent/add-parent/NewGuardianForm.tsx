@@ -1,4 +1,5 @@
-import React, { useRef } from 'react';
+// NewGuardianForm.tsx
+import React, { useRef, useState } from 'react';
 import { GuardianFormData, ValidationErrors } from '../../../../types/types';
 import { Address } from '../../../../utils/address';
 import { formatPhoneNumber } from '../../../../utils/phone';
@@ -11,12 +12,10 @@ interface NewGuardianFormProps {
   setNewGuardian: React.Dispatch<React.SetStateAction<GuardianFormData>>;
   setGuardianErrors: React.Dispatch<React.SetStateAction<ValidationErrors>>;
   setShowGuardianForm: React.Dispatch<React.SetStateAction<boolean>>;
-  addGuardian: () => void;
-  hasGuardians?: boolean;
-  // ✅ Avatar props
-  avatarPreview?: string | null;
-  onAvatarChange?: (file: File) => void;
-  onAvatarRemove?: () => void;
+  addGuardian: (avatarFile?: File) => void;
+  onAvatarFileChange?: (file: File | null) => void;
+  visibleFields?: any[];
+  mainAddress?: Address;
 }
 
 const NewGuardianForm: React.FC<NewGuardianFormProps> = ({
@@ -26,65 +25,107 @@ const NewGuardianForm: React.FC<NewGuardianFormProps> = ({
   setGuardianErrors,
   setShowGuardianForm,
   addGuardian,
-  avatarPreview,
-  onAvatarChange,
-  onAvatarRemove,
+  onAvatarFileChange,
+  visibleFields = [],
+  mainAddress,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const DEFAULT_AVATAR = getDefaultAvatar('parent');
+  const [sameAsMain, setSameAsMain] = useState(false);
+
+  // ── Avatar state lives here — no dependency on parent props ──────────────
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+
+  const hasField = (fieldName: string) => {
+    if (visibleFields.length === 0) return true;
+    return visibleFields.some((f) => f.fieldName === fieldName);
+  };
+
+  // Log what's happening for debugging
+  console.log(
+    '🔍 NewGuardianForm - visibleFields:',
+    visibleFields.map((f) => f.fieldName),
+  );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0] && onAvatarChange) {
-      onAvatarChange(e.target.files[0]);
-    }
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    onAvatarFileChange?.(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setAvatarPreview(reader.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const handleRemoveAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    onAvatarFileChange?.(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
-    if (onAvatarRemove) onAvatarRemove();
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewGuardian((prev) => ({ ...prev, [name]: value }));
-    if (guardianErrors[name]) {
+    if (guardianErrors[name])
       setGuardianErrors((prev) => ({ ...prev, [name]: '' }));
-    }
   };
 
   const handleAddressChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     field: keyof Address,
   ) => {
-    const { value } = e.target;
     setNewGuardian((prev) => ({
       ...prev,
-      address: { ...prev.address, [field]: value },
+      address: { ...prev.address, [field]: e.target.value },
     }));
-    if (guardianErrors[`address.${field}`]) {
+    if (guardianErrors[`address.${field}`])
       setGuardianErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[`address.${field}`];
-        return newErrors;
+        const n = { ...prev };
+        delete n[`address.${field}`];
+        return n;
       });
-    }
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedPhone = formatPhoneNumber(e.target.value.replace(/\D/g, ''));
-    setNewGuardian((prev) => ({ ...prev, phone: formattedPhone }));
-    if (guardianErrors.phone) {
+    setNewGuardian((prev) => ({
+      ...prev,
+      phone: formatPhoneNumber(e.target.value.replace(/\D/g, '')),
+    }));
+    if (guardianErrors.phone)
       setGuardianErrors((prev) => ({ ...prev, phone: '' }));
-    }
   };
 
   const handleAauNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const hasAauNumber = e.target.value.trim().length > 0;
+    setNewGuardian((prev) => ({ ...prev, aauNumber: e.target.value }));
+  };
+
+  const handleCoachChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
     setNewGuardian((prev) => ({
       ...prev,
-      aauNumber: e.target.value,
-      isCoach: hasAauNumber,
+      isCoach: checked,
+      aauNumber: checked ? prev.aauNumber : '',
     }));
+  };
+
+  const handleSameAsMainChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    setSameAsMain(checked);
+    if (checked && mainAddress) {
+      setNewGuardian((prev) => ({
+        ...prev,
+        address: {
+          street: mainAddress.street || '',
+          street2: mainAddress.street2 || '',
+          city: mainAddress.city || '',
+          state: mainAddress.state || '',
+          zip: mainAddress.zip || '',
+        },
+      }));
+    }
   };
 
   const handleCancel = () => {
@@ -99,14 +140,19 @@ const NewGuardianForm: React.FC<NewGuardianFormProps> = ({
       isCoach: false,
     });
     setGuardianErrors({});
-    if (onAvatarRemove) onAvatarRemove();
+    handleRemoveAvatar();
+    setSameAsMain(false);
+  };
+
+  const handleSubmit = () => {
+    addGuardian(avatarFile ?? undefined);
   };
 
   return (
     <div className='border rounded p-3 mt-3'>
       <h5 className='mb-3'>Add New Parent/Guardian</h5>
 
-      {/* ✅ Avatar upload */}
+      {/* ── Avatar — self-contained, no save required ───────────────────── */}
       <div className='d-flex align-items-center flex-wrap row-gap-3 mb-3'>
         <div className='d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames'>
           {avatarPreview ? (
@@ -132,7 +178,7 @@ const NewGuardianForm: React.FC<NewGuardianFormProps> = ({
                 className='form-control image-sign'
                 ref={fileInputRef}
                 onChange={handleFileChange}
-                accept='image/jpeg, image/png'
+                accept='image/jpeg, image/png, image/webp'
               />
             </div>
             {avatarPreview && (
@@ -149,184 +195,302 @@ const NewGuardianForm: React.FC<NewGuardianFormProps> = ({
         </div>
       </div>
 
-      {/* Form fields */}
-      <div className='row row-cols-xxl-5 row-cols-md-6'>
-        {/* Full Name */}
-        <div className='col-xxl col-xl-3 col-md-6'>
-          <NameInput
-            value={newGuardian.fullName}
-            onChange={(val) =>
-              handleChange({
-                target: { name: 'fullName', value: val },
-              } as React.ChangeEvent<HTMLInputElement>)
-            }
-            error={guardianErrors.fullName}
-            required
-          />
+      {/* ── Full Name ────────────────────────────────────────────────────── */}
+      <div className='row'>
+        <div className='col-12'>
+          <div className='mb-3'>
+            <NameInput
+              value={newGuardian.fullName}
+              onChange={(val) => {
+                setNewGuardian((prev) => ({ ...prev, fullName: val }));
+                if (guardianErrors.fullName)
+                  setGuardianErrors((prev) => ({ ...prev, fullName: '' }));
+              }}
+              onClearError={() =>
+                setGuardianErrors((prev) => ({ ...prev, fullName: '' }))
+              }
+              error={guardianErrors.fullName}
+              required={true}
+            />
+          </div>
         </div>
       </div>
-      <div className='row row-cols-xxl-5 row-cols-md-6'>
-        <div className='col-xxl col-xl-3 col-amd-6'>
-          <div className='mb-3'>
-            <label className='form-label'>Email</label>
-            <input
-              type='email'
-              className={`form-control ${guardianErrors.email ? 'is-invalid' : ''}`}
-              name='email'
-              value={newGuardian.email}
-              onChange={handleChange}
-              required
-            />
-            {guardianErrors.email && (
-              <div className='invalid-feedback d-block'>
-                {guardianErrors.email}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className='col-xxl col-xl-3 col-md-6'>
-          <div className='mb-3'>
-            <label className='form-label'>Phone</label>
-            <input
-              type='tel'
-              className={`form-control ${guardianErrors.phone ? 'is-invalid' : ''}`}
-              name='phone'
-              value={newGuardian.phone}
-              onChange={handlePhoneChange}
-              required
-            />
-            {guardianErrors.phone && (
-              <div className='invalid-feedback d-block'>
-                {guardianErrors.phone}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className='col-xxl col-xl-3 col-md-6'>
-          <div className='mb-3'>
-            <label className='form-label'>Relationship</label>
-            <input
-              type='text'
-              className={`form-control ${guardianErrors.relationship ? 'is-invalid' : ''}`}
-              name='relationship'
-              value={newGuardian.relationship}
-              onChange={handleChange}
-              required
-            />
-            {guardianErrors.relationship && (
-              <div className='invalid-feedback d-block'>
-                {guardianErrors.relationship}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className='col-xxl col-xl-3 col-md-6'>
-          <div className='mb-3'>
-            <label className='form-label'>AAU Number</label>
-            <input
-              type='text'
-              className='form-control'
-              name='aauNumber'
-              value={newGuardian.aauNumber}
-              onChange={handleAauNumberChange}
-            />
-          </div>
-        </div>
-        <div className='col-xxl col-xl-3 col-md-6'>
-          <div className='mb-0'>
-            <div className='form-check form-switch'>
+
+      {/* ── First row: Email, Phone, Relationship ────────────────────────── */}
+      <div className='row'>
+        {hasField('email') && (
+          <div className='col-md-4'>
+            <div className='mb-3'>
+              <label className='form-label'>
+                Email
+                {visibleFields.find((f) => f.fieldName === 'email')
+                  ?.isRequired && <span className='text-danger ms-1'>*</span>}
+              </label>
               <input
-                type='hidden'
-                name='newGuardian.isCoach'
-                value={newGuardian.isCoach ? 'true' : 'false'}
+                type='email'
+                className={`form-control ${guardianErrors.email ? 'is-invalid' : ''}`}
+                name='email'
+                value={newGuardian.email}
+                onChange={handleChange}
               />
+              {guardianErrors.email && (
+                <div className='invalid-feedback d-block'>
+                  {guardianErrors.email}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {hasField('phone') && (
+          <div className='col-md-4'>
+            <div className='mb-3'>
+              <label className='form-label'>
+                Phone
+                {visibleFields.find((f) => f.fieldName === 'phone')
+                  ?.isRequired && <span className='text-danger ms-1'>*</span>}
+              </label>
+              <input
+                type='tel'
+                className={`form-control ${guardianErrors.phone ? 'is-invalid' : ''}`}
+                name='phone'
+                value={newGuardian.phone}
+                onChange={handlePhoneChange}
+                maxLength={14}
+              />
+              {guardianErrors.phone && (
+                <div className='invalid-feedback d-block'>
+                  {guardianErrors.phone}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {hasField('relationship') && (
+          <div className='col-md-4'>
+            <div className='mb-3'>
+              <label className='form-label'>
+                Relationship
+                {visibleFields.find((f) => f.fieldName === 'relationship')
+                  ?.isRequired && <span className='text-danger ms-1'>*</span>}
+              </label>
+              <input
+                type='text'
+                className={`form-control ${guardianErrors.relationship ? 'is-invalid' : ''}`}
+                name='relationship'
+                value={newGuardian.relationship}
+                onChange={handleChange}
+              />
+              {guardianErrors.relationship && (
+                <div className='invalid-feedback d-block'>
+                  {guardianErrors.relationship}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Second row: Coach checkbox + AAU ─────────────────────────────── */}
+      {hasField('isCoach') && (
+        <div className='row align-items-start'>
+          <div className='col-md-3'>
+            <div className='mb-3'>
+              <div className='form-check mt-2'>
+                <input
+                  type='checkbox'
+                  className='form-check-input'
+                  id='new-guardian-isCoach'
+                  checked={newGuardian.isCoach}
+                  onChange={handleCoachChange}
+                />
+                <label
+                  className='form-check-label'
+                  htmlFor='new-guardian-isCoach'
+                >
+                  This guardian is a coach
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {newGuardian.isCoach && (
+            <div className='col-md-9'>
+              <div className='mb-3'>
+                <label className='form-label'>
+                  AAU Number
+                  <span className='text-muted ms-1 fw-normal'>
+                    (Required for coaches)
+                  </span>
+                </label>
+                <input
+                  type='text'
+                  className={`form-control ${guardianErrors.aauNumber ? 'is-invalid' : ''}`}
+                  name='aauNumber'
+                  value={newGuardian.aauNumber}
+                  onChange={handleAauNumberChange}
+                  placeholder='Enter AAU number'
+                />
+                {guardianErrors.aauNumber && (
+                  <div className='invalid-feedback d-block'>
+                    {guardianErrors.aauNumber}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Same as main address ─────────────────────────────────────────── */}
+      {mainAddress && (
+        <div className='row mb-3'>
+          <div className='col-12'>
+            <div className='form-check'>
+              <input
+                type='checkbox'
+                className='form-check-input'
+                id='new-guardian-same-address'
+                checked={sameAsMain}
+                onChange={handleSameAsMainChange}
+              />
+              <label
+                className='form-check-label'
+                htmlFor='new-guardian-same-address'
+              >
+                Same as main address
+              </label>
             </div>
           </div>
         </div>
-      </div>
-      <div className='row row-cols-xxl-5 row-cols-md-6'>
-        <div className='col-xxl col-xl-1 col-md-3'>
-          <div className='mb-3'>
-            <label className='form-label'>Street Address</label>
-            <input
-              type='text'
-              className={`form-control ${guardianErrors['address.street'] ? 'is-invalid' : ''}`}
-              value={newGuardian.address.street}
-              onChange={(e) => handleAddressChange(e, 'street')}
-              required
-            />
-            {guardianErrors['address.street'] && (
-              <div className='invalid-feedback d-block'>
-                {guardianErrors['address.street']}
+      )}
+
+      {/* ── Address — each field checked independently ───────────────────── */}
+      {!sameAsMain &&
+        (hasField('address') ||
+          hasField('city') ||
+          hasField('state') ||
+          hasField('zip')) && (
+          <div className='row'>
+            {hasField('address') && (
+              <>
+                <div className='col-md-6'>
+                  <div className='mb-3'>
+                    <label className='form-label'>
+                      Street Address
+                      {visibleFields.find((f) => f.fieldName === 'address')
+                        ?.isRequired && (
+                        <span className='text-danger ms-1'>*</span>
+                      )}
+                    </label>
+                    <input
+                      type='text'
+                      className={`form-control ${guardianErrors['address.street'] ? 'is-invalid' : ''}`}
+                      value={newGuardian.address.street}
+                      onChange={(e) => handleAddressChange(e, 'street')}
+                    />
+                    {guardianErrors['address.street'] && (
+                      <div className='invalid-feedback d-block'>
+                        {guardianErrors['address.street']}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className='col-md-6'>
+                  <div className='mb-3'>
+                    <label className='form-label'>Apt/Suite (optional)</label>
+                    <input
+                      type='text'
+                      className='form-control'
+                      value={newGuardian.address.street2}
+                      onChange={(e) => handleAddressChange(e, 'street2')}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {hasField('city') && (
+              <div className='col-md-4'>
+                <div className='mb-3'>
+                  <label className='form-label'>
+                    City
+                    {visibleFields.find((f) => f.fieldName === 'city')
+                      ?.isRequired && (
+                      <span className='text-danger ms-1'>*</span>
+                    )}
+                  </label>
+                  <input
+                    type='text'
+                    className={`form-control ${guardianErrors['address.city'] ? 'is-invalid' : ''}`}
+                    value={newGuardian.address.city}
+                    onChange={(e) => handleAddressChange(e, 'city')}
+                  />
+                  {guardianErrors['address.city'] && (
+                    <div className='invalid-feedback d-block'>
+                      {guardianErrors['address.city']}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {hasField('state') && (
+              <div className='col-md-4'>
+                <div className='mb-3'>
+                  <label className='form-label'>
+                    State
+                    {visibleFields.find((f) => f.fieldName === 'state')
+                      ?.isRequired && (
+                      <span className='text-danger ms-1'>*</span>
+                    )}
+                  </label>
+                  <input
+                    type='text'
+                    className={`form-control ${guardianErrors['address.state'] ? 'is-invalid' : ''}`}
+                    value={newGuardian.address.state}
+                    onChange={(e) => handleAddressChange(e, 'state')}
+                    maxLength={2}
+                  />
+                  {guardianErrors['address.state'] && (
+                    <div className='invalid-feedback d-block'>
+                      {guardianErrors['address.state']}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {hasField('zip') && (
+              <div className='col-md-4'>
+                <div className='mb-3'>
+                  <label className='form-label'>
+                    ZIP Code
+                    {visibleFields.find((f) => f.fieldName === 'zip')
+                      ?.isRequired && (
+                      <span className='text-danger ms-1'>*</span>
+                    )}
+                  </label>
+                  <input
+                    type='text'
+                    className={`form-control ${guardianErrors['address.zip'] ? 'is-invalid' : ''}`}
+                    value={newGuardian.address.zip}
+                    onChange={(e) => handleAddressChange(e, 'zip')}
+                    maxLength={10}
+                  />
+                  {guardianErrors['address.zip'] && (
+                    <div className='invalid-feedback d-block'>
+                      {guardianErrors['address.zip']}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
-        </div>
-        <div className='col-xxl col-xl-1 col-md-3'>
-          <div className='mb-3'>
-            <label className='form-label'>Apt/Unit (optional)</label>
-            <input
-              type='text'
-              className='form-control'
-              value={newGuardian.address.street2}
-              onChange={(e) => handleAddressChange(e, 'street2')}
-            />
-          </div>
-        </div>
-        <div className='col-xxl col-xl-1 col-md-3'>
-          <div className='mb-3'>
-            <label className='form-label'>City</label>
-            <input
-              type='text'
-              className={`form-control ${guardianErrors['address.city'] ? 'is-invalid' : ''}`}
-              value={newGuardian.address.city}
-              onChange={(e) => handleAddressChange(e, 'city')}
-              required
-            />
-            {guardianErrors['address.city'] && (
-              <div className='invalid-feedback d-block'>
-                {guardianErrors['address.city']}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className='col-xxl col-xl-1 col-md-3'>
-          <div className='mb-3'>
-            <label className='form-label'>State</label>
-            <input
-              type='text'
-              className={`form-control ${guardianErrors['address.state'] ? 'is-invalid' : ''}`}
-              value={newGuardian.address.state}
-              onChange={(e) => handleAddressChange(e, 'state')}
-              maxLength={2}
-              required
-            />
-            {guardianErrors['address.state'] && (
-              <div className='invalid-feedback d-block'>
-                {guardianErrors['address.state']}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className='col-xxl col-xl-1 col-md-3'>
-          <div className='mb-3'>
-            <label className='form-label'>ZIP Code</label>
-            <input
-              type='text'
-              className={`form-control ${guardianErrors['address.zip'] ? 'is-invalid' : ''}`}
-              value={newGuardian.address.zip}
-              onChange={(e) => handleAddressChange(e, 'zip')}
-              maxLength={10}
-              required
-            />
-            {guardianErrors['address.zip'] && (
-              <div className='invalid-feedback d-block'>
-                {guardianErrors['address.zip']}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+        )}
+
+      {/* ── Buttons ──────────────────────────────────────────────────────── */}
       <div className='text-end'>
         <button
           type='button'
@@ -334,9 +498,6 @@ const NewGuardianForm: React.FC<NewGuardianFormProps> = ({
           onClick={handleCancel}
         >
           Cancel
-        </button>
-        <button type='button' className='btn btn-primary' onClick={addGuardian}>
-          Add Parent/Guardian
         </button>
       </div>
     </div>

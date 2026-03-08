@@ -1,12 +1,20 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { ValidationErrors } from '../../../../types/types';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
+import { ValidationErrors, PlayerFormData } from '../../../../types/types';
 import { getDefaultAvatar } from '../../../../utils/r2Utils';
 import { calculateGradeFromDOB } from '../../../../utils/gradeUtils';
 import SchoolAutocomplete from '../../../../components/SchoolAutocomplete';
-import { PlayerFormData } from '../../../../types/types';
 import Select from 'react-select';
 import { commonHealthConditions } from '../../../constants/healthConditions';
 import NameInput from '../../../../components/NameInput';
+import DynamicFormField from '../../../../components/forms/DynamicFormField';
+import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
+import { Player as RegistrationPlayer } from '../../../../types/registration-types';
+import { validateFullName } from '../../../../components/NameInput';
+import {
+  validateRequired,
+  validateDateOfBirth,
+  validateGrade,
+} from '../../../../utils/validation';
 
 interface NewPlayerFormProps {
   newPlayer: PlayerFormData;
@@ -21,14 +29,21 @@ interface NewPlayerFormProps {
   onAvatarRemove?: () => void;
 }
 
-const gradeOptions = [
-  { value: 'PK', label: 'Pre-Kindergarten' },
-  { value: 'K', label: 'Kindergarten' },
-  ...Array.from({ length: 12 }, (_, i) => ({
-    value: `${i + 1}`,
-    label: `${i + 1}${i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th'} Grade`,
-  })),
-];
+// Convert PlayerFormData to the shape useDynamicFormFields expects
+const toRegistrationPlayer = (player: PlayerFormData): RegistrationPlayer => ({
+  _id: player._id || '',
+  fullName: player.fullName || '',
+  gender: player.gender || '',
+  dob: player.dob || '',
+  schoolName: player.schoolName || '',
+  healthConcerns: player.healthConcerns || '',
+  aauNumber: player.aauNumber || '',
+  registrationYear: new Date().getFullYear(),
+  season: 'N/A',
+  grade: player.grade || '',
+  isGradeOverridden: player.isGradeOverridden || false,
+  avatar: '',
+});
 
 const NewPlayerForm: React.FC<NewPlayerFormProps> = ({
   newPlayer,
@@ -47,40 +62,69 @@ const NewPlayerForm: React.FC<NewPlayerFormProps> = ({
     newPlayer.gender as 'Male' | 'Female',
   );
 
-  // Health conditions state
+  // ── Dynamic fields ────────────────────────────────────────────────────────
+  const { getVisibleFields, validateField } = useDynamicFormFields('player', {
+    registrationYear: new Date().getFullYear(),
+  });
+
+  const visibleFields = useMemo(
+    () => getVisibleFields(toRegistrationPlayer(newPlayer)),
+    [newPlayer, getVisibleFields],
+  );
+
+  // Exclude fields we handle manually (fullName, schoolName) and purely informational ones (age)
+  const dynamicFields = useMemo(
+    () =>
+      visibleFields.filter(
+        (f) =>
+          f.fieldName !== 'fullName' &&
+          f.fieldName !== 'schoolName' &&
+          f.fieldName !== 'age',
+      ),
+    [visibleFields],
+  );
+
+  const hasField = (name: string) =>
+    visibleFields.some((f) => f.fieldName === name);
+
+  // ── Health conditions state ───────────────────────────────────────────────
   const [selectedConditions, setSelectedConditions] = useState<any[]>([]);
   const [customCondition, setCustomCondition] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
 
-  // Parse health concerns on mount and when newPlayer changes
+  // Parse existing health concerns on mount
   useEffect(() => {
-    if (newPlayer.healthConcerns) {
-      const concerns = newPlayer.healthConcerns.split(',').map((c) => c.trim());
-      const preSelected = concerns
-        .filter((c) =>
-          commonHealthConditions.some((condition) => condition.label === c),
-        )
-        .map((c) => {
-          const found = commonHealthConditions.find(
-            (condition) => condition.label === c,
-          );
-          return found || { value: 'custom', label: c };
-        });
-
-      const customConcerns = concerns
-        .filter(
-          (c) =>
-            !commonHealthConditions.some((condition) => condition.label === c),
-        )
-        .join(', ');
-
-      setSelectedConditions(preSelected);
-      if (customConcerns) {
-        setCustomCondition(customConcerns);
-        setShowCustomInput(true);
-      }
+    if (!newPlayer.healthConcerns) return;
+    const concerns = newPlayer.healthConcerns.split(',').map((c) => c.trim());
+    const preSelected = concerns
+      .filter((c) => commonHealthConditions.some((cond) => cond.label === c))
+      .map(
+        (c) =>
+          commonHealthConditions.find((cond) => cond.label === c) || {
+            value: 'custom',
+            label: c,
+          },
+      );
+    const custom = concerns
+      .filter((c) => !commonHealthConditions.some((cond) => cond.label === c))
+      .join(', ');
+    setSelectedConditions(preSelected);
+    if (custom) {
+      setCustomCondition(custom);
+      setShowCustomInput(true);
     }
-  }, [newPlayer.healthConcerns]);
+  }, []); // only on mount
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
+  const clearError = (name: string) => {
+    if (playerErrors[name])
+      setPlayerErrors((prev) => {
+        const n = { ...prev };
+        delete n[name];
+        return n;
+      });
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0] && onAvatarChange) {
@@ -93,59 +137,49 @@ const NewPlayerForm: React.FC<NewPlayerFormProps> = ({
     if (onAvatarRemove) onAvatarRemove();
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    const { name, value } = e.target;
-
+  // Handler for DynamicFormField (matches AddPlayer pattern)
+  const handleDynamicFieldChange = (fieldName: string, value: any) => {
     setNewPlayer((prev) => {
-      const updated = { ...prev, [name]: value };
-
+      const updated = { ...prev, [fieldName]: value };
       // Auto-calculate grade when DOB changes (unless overridden)
       if (
-        name === 'dob' &&
+        fieldName === 'dob' &&
         !prev.isGradeOverridden &&
-        value.match(/^\d{4}-\d{2}-\d{2}$/)
+        value?.match(/^\d{4}-\d{2}-\d{2}$/)
       ) {
         updated.grade = calculateGradeFromDOB(value, new Date().getFullYear());
       }
-
       return updated;
     });
-
-    if (playerErrors[name]) {
-      setPlayerErrors((prev) => {
-        const n = { ...prev };
-        delete n[name];
-        return n;
-      });
-    }
+    clearError(fieldName);
   };
 
   const handleSchoolChange = (val: string) => {
     setNewPlayer((prev) => ({ ...prev, schoolName: val }));
-    if (playerErrors.schoolName) {
-      setPlayerErrors((prev) => {
-        const n = { ...prev };
-        delete n.schoolName;
-        return n;
-      });
-    }
+    clearError('schoolName');
   };
 
   const handleGradeOverride = () => {
     setNewPlayer((prev) => ({ ...prev, isGradeOverridden: true }));
   };
 
-  // Health conditions handlers
+  const updateHealthConcerns = (conditions: any[], custom: string) => {
+    const labels = conditions
+      .filter((c) => c.value !== 'custom')
+      .map((c) => c.label);
+    let healthConcerns = labels.join(', ');
+    if (custom.trim() && showCustomInput) {
+      healthConcerns = healthConcerns
+        ? `${healthConcerns}, ${custom.trim()}`
+        : custom.trim();
+    }
+    setNewPlayer((prev) => ({ ...prev, healthConcerns }));
+  };
+
   const handleConditionChange = (selected: any) => {
     setSelectedConditions(selected || []);
-
-    // Check if "Other" is selected
     const hasCustom = selected?.some((item: any) => item.value === 'custom');
     setShowCustomInput(hasCustom);
-
-    // Update player healthConcerns
     updateHealthConcerns(selected || [], customCondition);
   };
 
@@ -157,22 +191,55 @@ const NewPlayerForm: React.FC<NewPlayerFormProps> = ({
     updateHealthConcerns(selectedConditions, value);
   };
 
-  const updateHealthConcerns = (conditions: any[], custom: string) => {
-    const selectedLabels = conditions
-      .filter((c: any) => c.value !== 'custom')
-      .map((c: any) => c.label);
+  // ── Validation (dynamic — mirrors AddPlayer.validateForm) ─────────────────
+  const validate = (): ValidationErrors => {
+    const errs: ValidationErrors = {};
 
-    let healthConcerns = selectedLabels.join(', ');
+    // fullName is always required regardless of config
+    const nameError = validateFullName(newPlayer.fullName, true);
+    if (nameError) errs.fullName = nameError;
 
-    if (custom.trim() && showCustomInput) {
-      if (healthConcerns) {
-        healthConcerns += ', ' + custom.trim();
-      } else {
-        healthConcerns = custom.trim();
-      }
+    // schoolName — check against visible fields
+    const schoolField = visibleFields.find((f) => f.fieldName === 'schoolName');
+    if (schoolField) {
+      const err = validateField(schoolField, newPlayer.schoolName || '');
+      if (err) errs.schoolName = err;
+    } else if (!newPlayer.schoolName?.trim()) {
+      // default required if not in config at all
+      errs.schoolName = 'School name is required';
     }
 
-    setNewPlayer((prev) => ({ ...prev, healthConcerns }));
+    // All other dynamic fields
+    visibleFields
+      .filter(
+        (f) =>
+          f.fieldName !== 'fullName' &&
+          f.fieldName !== 'schoolName' &&
+          f.fieldName !== 'age',
+      )
+      .forEach((field) => {
+        const raw = newPlayer[field.fieldName as keyof PlayerFormData];
+        const value = raw !== undefined && raw !== null ? String(raw) : '';
+        const err = validateField(field, value);
+        if (err) errs[field.fieldName] = err;
+      });
+
+    return errs;
+  };
+
+  // ── Submit / Cancel ───────────────────────────────────────────────────────
+
+  const handleSubmit = () => {
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      setPlayerErrors(errs);
+      // Scroll to first error
+      const firstKey = Object.keys(errs)[0];
+      const el = document.querySelector(`[name="${firstKey}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    addPlayer();
   };
 
   const handleCancel = () => {
@@ -194,21 +261,23 @@ const NewPlayerForm: React.FC<NewPlayerFormProps> = ({
     if (onAvatarRemove) onAvatarRemove();
   };
 
-  // Custom styles for react-select
-  const selectStyles = {
-    control: (base: any) => ({
-      ...base,
-      minHeight: '38px',
-      borderColor: '#d9d9d9',
-      '&:hover': { borderColor: '#40a9ff' },
-    }),
-  };
+  // ── Column sizing (mirrors AddPlayer) ─────────────────────────────────────
+  const colClass = useMemo(() => {
+    const count = dynamicFields.length;
+    if (count === 1) return 'col-md-12';
+    if (count === 2) return 'col-md-6';
+    if (count === 3) return 'col-md-4';
+    if (count === 4) return 'col-md-6 col-lg-3';
+    return 'col-md-6 col-lg-4 col-xl-3';
+  }, [dynamicFields.length]);
+
+  const schoolField = visibleFields.find((f) => f.fieldName === 'schoolName');
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className='border rounded p-3 mt-3'>
-      <h5 className='mb-3'>Add New Player</h5>
-
-      {/* Avatar upload — identical structure to NewGuardianForm */}
+      {/* Avatar upload */}
       <div className='d-flex align-items-center flex-wrap row-gap-3 mb-3'>
         <div className='d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames'>
           {avatarPreview ? (
@@ -251,125 +320,86 @@ const NewPlayerForm: React.FC<NewPlayerFormProps> = ({
         </div>
       </div>
 
-      {/* Row 1 — Full Name, Gender, DOB, School */}
-      <div className='row row-cols-xxl-12 row-cols-md-12'>
-        <div className='col-xxl col-xl-6 col-md-12'>
+      {/* Full Name — always shown, always required */}
+      <div className='row'>
+        <div className='col-12'>
           <NameInput
             value={newPlayer.fullName}
-            onChange={(val) =>
-              handleChange({
-                target: { name: 'fullName', value: val },
-              } as React.ChangeEvent<HTMLInputElement>)
-            }
+            onChange={(val) => {
+              setNewPlayer((prev) => ({ ...prev, fullName: val }));
+              clearError('fullName');
+            }}
             error={playerErrors.fullName}
             required
           />
         </div>
-        <div className='col-xxl col-xl-3 col-md-12'>
-          <div className='mb-3'>
-            <label className='form-label'>School Name</label>
-            <SchoolAutocomplete
-              value={newPlayer.schoolName}
-              onChange={handleSchoolChange}
-            />
-            {playerErrors.schoolName && (
-              <div className='invalid-feedback d-block'>
-                {playerErrors.schoolName}
-              </div>
-            )}
-          </div>
-        </div>
       </div>
-      <div className='row row-cols-xxl-12 row-cols-md-12'>
-        <div className='col-xxl col-xl-3 col-md-12'>
-          <div className='mb-3'>
-            <label className='form-label'>Gender</label>
-            <select
-              className={`form-control ${playerErrors.gender ? 'is-invalid' : ''}`}
-              name='gender'
-              value={newPlayer.gender}
-              onChange={handleChange}
-              required
-            >
-              <option value=''>Select Gender</option>
-              <option value='Male'>Male</option>
-              <option value='Female'>Female</option>
-            </select>
-            {playerErrors.gender && (
-              <div className='invalid-feedback d-block'>
-                {playerErrors.gender}
-              </div>
-            )}
+
+      {/* School Name — dynamic visibility */}
+      {(schoolField || !visibleFields.length) && (
+        <div className='row'>
+          <div className='col-12'>
+            <div className='mb-3'>
+              <label className='form-label'>
+                {schoolField?.label || 'School Name'}
+                {(schoolField?.isRequired ?? true) && (
+                  <span className='text-danger ms-1'>*</span>
+                )}
+              </label>
+              <SchoolAutocomplete
+                value={newPlayer.schoolName}
+                onChange={handleSchoolChange}
+                isInvalid={!!playerErrors.schoolName}
+                placeholder='Enter school name'
+              />
+              {playerErrors.schoolName && (
+                <div className='invalid-feedback d-block'>
+                  {playerErrors.schoolName}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        <div className='col-xxl col-xl-3 col-md-12'>
-          <div className='mb-3'>
-            <label className='form-label'>Date of Birth</label>
-            <input
-              type='date'
-              className={`form-control ${playerErrors.dob ? 'is-invalid' : ''}`}
-              name='dob'
-              value={newPlayer.dob}
-              onChange={handleChange}
-              required
+      )}
+
+      {/* Dynamic fields — gender, dob, grade, aauNumber, etc. */}
+      <div className='row'>
+        {dynamicFields.map((field) => (
+          <div className={colClass} key={field.fieldName}>
+            <DynamicFormField
+              field={field}
+              value={
+                (newPlayer[
+                  field.fieldName as keyof PlayerFormData
+                ] as string) ?? ''
+              }
+              onChange={handleDynamicFieldChange}
+              error={playerErrors[field.fieldName]}
             />
-            {playerErrors.dob && (
-              <div className='invalid-feedback d-block'>{playerErrors.dob}</div>
-            )}
+
+            {/* Grade auto-calc helper */}
+            {field.fieldName === 'grade' &&
+              newPlayer.dob &&
+              !newPlayer.isGradeOverridden &&
+              newPlayer.grade && (
+                <div className='text-muted small mt-1'>
+                  Auto-calculated from DOB
+                  <button
+                    type='button'
+                    className='btn btn-link btn-sm p-0 ms-2'
+                    onClick={handleGradeOverride}
+                  >
+                    Adjust
+                  </button>
+                </div>
+              )}
           </div>
-        </div>
-        <div className='col-xxl col-xl-3 col-md-12'>
-          <div className='mb-3'>
-            <label className='form-label'>Grade</label>
-            <select
-              className={`form-control ${playerErrors.grade ? 'is-invalid' : ''}`}
-              name='grade'
-              value={newPlayer.grade}
-              onChange={handleChange}
-              required
-            >
-              <option value=''>Select Grade</option>
-              {gradeOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            {/* Auto-calc helper text */}
-            {newPlayer.dob && !newPlayer.isGradeOverridden && (
-              <div className='text-muted small mt-1'>
-                Auto-calculated from DOB
-                <button
-                  type='button'
-                  className='btn btn-link btn-sm p-0 ms-2'
-                  onClick={handleGradeOverride}
-                >
-                  Adjust
-                </button>
-              </div>
-            )}
-            {playerErrors.grade && (
-              <div className='invalid-feedback d-block'>
-                {playerErrors.grade}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className='col-xxl col-xl-3 col-md-12'>
-          <div className='mb-3'>
-            <label className='form-label'>AAU Number</label>
-            <input
-              type='text'
-              className='form-control'
-              name='aauNumber'
-              value={newPlayer.aauNumber}
-              onChange={handleChange}
-            />
-          </div>
-        </div>
+        ))}
       </div>
-      <div className='row row-cols-xxl-12 row-cols-md-12'>
-        <div className='card mt-3'>
+
+      {/* Medical History */}
+      <div className='row p-3'>
+        <div className='card p-0'>
           <div className='card-header bg-light py-2'>
             <div className='d-flex align-items-center'>
               <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
@@ -378,43 +408,38 @@ const NewPlayerForm: React.FC<NewPlayerFormProps> = ({
               <h5 className='text-dark mb-0'>Medical History</h5>
             </div>
           </div>
-          <div className='card-body pb-1'>
-            <div className='row'>
-              <div className='mb-3'>
-                <label className='form-label'>Health Conditions</label>
-                <Select
-                  isMulti
-                  name='healthConditions'
-                  options={commonHealthConditions}
-                  className='basic-multi-select'
-                  classNamePrefix='select'
-                  value={selectedConditions}
-                  onChange={handleConditionChange}
-                  styles={selectStyles}
-                  placeholder='Select health conditions...'
-                />
-                <small className='text-muted'>Select all that apply</small>
-              </div>
-
-              {showCustomInput && (
-                <div className='mb-3'>
-                  <label className='form-label'>
-                    Specify Other Condition(s)
-                  </label>
-                  <input
-                    type='text'
-                    className='form-control'
-                    value={customCondition}
-                    onChange={handleCustomConditionChange}
-                    placeholder='Please describe any other health conditions...'
-                  />
-                </div>
-              )}
+          <div className='card-body'>
+            <div className='mb-3'>
+              <label className='form-label'>Health Conditions</label>
+              <Select
+                isMulti
+                name='healthConditions'
+                options={commonHealthConditions}
+                className='basic-multi-select'
+                classNamePrefix='select'
+                value={selectedConditions}
+                onChange={handleConditionChange}
+                placeholder='Select health conditions...'
+              />
+              <small className='text-muted'>Select all that apply</small>
             </div>
+            {showCustomInput && (
+              <div className='mb-3'>
+                <label className='form-label'>Specify Other Condition(s)</label>
+                <input
+                  type='text'
+                  className='form-control'
+                  value={customCondition}
+                  onChange={handleCustomConditionChange}
+                  placeholder='Please describe any other health conditions...'
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
 
+      {/* Buttons */}
       <div className='text-end'>
         <button
           type='button'
@@ -422,9 +447,6 @@ const NewPlayerForm: React.FC<NewPlayerFormProps> = ({
           onClick={handleCancel}
         >
           Cancel
-        </button>
-        <button type='button' className='btn btn-primary' onClick={addPlayer}>
-          Add Player
         </button>
       </div>
     </div>

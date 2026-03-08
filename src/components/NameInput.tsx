@@ -4,9 +4,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 interface NameInputProps {
   value: string;
   onChange: (fullName: string) => void;
+  onClearError?: () => void;
   error?: string;
   label?: string;
   required?: boolean;
+  onBlur?: () => void;
 }
 
 export const SUFFIXES = [
@@ -29,6 +31,77 @@ export interface ParsedName {
   lastName: string;
   suffix: string;
 }
+
+// Capitalizes first letter, lowercases the rest.
+// Handles hyphenated names like "Mary-Jane" → "Mary-Jane"
+const capitalizeName = (name: string): string => {
+  if (!name || !name.trim()) return name;
+  return name
+    .trim()
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join('-');
+};
+
+/**
+ * Normalizes a middle name value according to these rules:
+ *
+ *  Single letter    "j"        → "J."
+ *  Two letters      "jo"       → "Jo"   (treated as a short full name, not initial)
+ *  Multi-char with dots "a.b." → "A.B." (compact initials, no spaces)
+ *  Multi-char no dots "ab"     → "A.B." (each char becomes an initial)
+ *  3+ letters       "andrew"   → "Andrew" (full name, normal capitalize)
+ *
+ *  Multiple words   "anne charlotte" → each word processed independently
+ *  Hyphenated       "anne-charlotte" → "Anne-Charlotte"
+ */
+const normalizeMiddleName = (middle: string): string => {
+  if (!middle || !middle.trim()) return middle;
+
+  // If it contains spaces, process each word independently and rejoin
+  if (middle.trim().includes(' ')) {
+    return middle
+      .trim()
+      .split(/\s+/)
+      .map((word) => normalizeMiddleName(word))
+      .join(' ');
+  }
+
+  // Strip all dots to inspect raw letters
+  const stripped = middle.trim().replace(/\./g, '');
+
+  // All dots / empty after stripping — just return as-is
+  if (!stripped) return middle.trim();
+
+  // Check if original input looks like initials (contains dots, e.g. "a.b" / "A.B.")
+  const looksLikeInitials = middle.includes('.');
+
+  if (looksLikeInitials) {
+    // Treat each letter segment as an initial: "a.b." → "A.B."
+    return stripped
+      .split('')
+      .map((ch) => ch.toUpperCase() + '.')
+      .join('');
+  }
+
+  const len = stripped.length;
+
+  if (len === 1) {
+    // Single letter → initial with dot: "j" → "J."
+    return stripped.toUpperCase() + '.';
+  }
+
+  if (len === 2) {
+    // Two letters → treat as a short full name: "jo" → "Jo"
+    return capitalizeName(stripped);
+  }
+
+  // 3+ letters with no dots → full name: "andrew" → "Andrew"
+  // But if every character is a letter and there are only 2–3 chars that look
+  // like packed initials (all consonants or no vowels), still treat as full name —
+  // we can't reliably detect intent, so we default to full name for 3+ chars.
+  return capitalizeName(stripped);
+};
 
 // Export these functions so they can be used in other files
 export const parseName = (fullName: string): ParsedName => {
@@ -102,10 +175,10 @@ const buildFullName = (
   suffix: string,
 ) => {
   const parts = [];
-  if (firstName?.trim()) parts.push(firstName.trim());
-  if (middleName?.trim()) parts.push(middleName.trim());
-  if (lastName?.trim()) parts.push(lastName.trim());
-  if (suffix?.trim()) parts.push(suffix.trim());
+  if (firstName?.trim()) parts.push(capitalizeName(firstName));
+  if (middleName?.trim()) parts.push(normalizeMiddleName(middleName));
+  if (lastName?.trim()) parts.push(capitalizeName(lastName));
+  if (suffix?.trim()) parts.push(suffix.trim()); // suffixes keep their own casing (Jr., PhD, etc.)
   return parts.join(' ');
 };
 
@@ -115,6 +188,8 @@ const NameInput: React.FC<NameInputProps> = ({
   error,
   label = 'Full Name',
   required = false,
+  onClearError,
+  onBlur,
 }) => {
   // Initialize state
   const [firstName, setFirstName] = useState('');
@@ -181,24 +256,32 @@ const NameInput: React.FC<NameInputProps> = ({
     const newValue = e.target.value;
     setFirstName(newValue);
     emit(newValue, middleName, lastName, suffix);
+    if (onClearError) onClearError();
   };
 
   const handleMiddleName = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setMiddleName(newValue);
     emit(firstName, newValue, lastName, suffix);
+    if (onClearError) onClearError();
   };
 
   const handleLastName = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setLastName(newValue);
     emit(firstName, middleName, newValue, suffix);
+    if (onClearError) onClearError();
   };
 
   const handleSuffix = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newValue = e.target.value;
     setSuffix(newValue);
     emit(firstName, middleName, lastName, newValue);
+    if (onClearError) onClearError();
+  };
+
+  const handleBlur = () => {
+    if (onBlur) onBlur();
   };
 
   const toggleMiddle = () => {
@@ -256,6 +339,7 @@ const NameInput: React.FC<NameInputProps> = ({
             placeholder='First name *'
             value={firstName}
             onChange={handleFirstName}
+            onBlur={handleBlur}
             required={required}
           />
         </div>
@@ -268,6 +352,7 @@ const NameInput: React.FC<NameInputProps> = ({
               placeholder='Middle name'
               value={middleName}
               onChange={handleMiddleName}
+              onBlur={handleBlur}
             />
           </div>
         )}
@@ -279,6 +364,7 @@ const NameInput: React.FC<NameInputProps> = ({
             placeholder='Last name *'
             value={lastName}
             onChange={handleLastName}
+            onBlur={handleBlur}
             required={required}
           />
         </div>
@@ -289,6 +375,7 @@ const NameInput: React.FC<NameInputProps> = ({
               className='form-control'
               value={suffix}
               onChange={handleSuffix}
+              onBlur={handleBlur}
             >
               {SUFFIXES.map((s) => (
                 <option key={s} value={s}>
