@@ -28,7 +28,7 @@ interface UseDynamicFormFieldsReturn {
 }
 
 export const useDynamicFormFields = (
-  formType: 'parent' | 'player' | 'guardian',
+  formType: 'parent' | 'player' | 'guardian' | 'team',
   context: DynamicFormContext = {},
 ): UseDynamicFormFieldsReturn => {
   const [fields, setFields] = useState<FormFieldConfig[]>([]);

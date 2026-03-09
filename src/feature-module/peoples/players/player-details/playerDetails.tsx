@@ -627,10 +627,7 @@ const PlayerDetails = () => {
                       </span>
                       <div>
                         <p className='text-dark fw-medium mb-1'>Health Notes</p>
-                        <p className='mb-0'>
-                          {playerData.healthConcerns ||
-                            'No medical history on file'}
-                        </p>
+                        <p className='mb-0'>{playerData.healthConcerns}</p>
                       </div>
                     </div>
                   </div>

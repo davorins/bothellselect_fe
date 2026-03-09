@@ -4,8 +4,8 @@
 .team-detail-tabs {
   &.ant-tabs {
     .ant-tabs-nav {
-      margin-bottom: 16px;
-      border-bottom: 1px solid #e8e8e8;
+      margin-bottom: 0 !important;
+      border-bottom: 0 !important;
 
       // Position tabs on the right
       .ant-tabs-nav-wrap {
@@ -18,12 +18,12 @@
         transition: all 0.3s;
 
         &:hover {
-          color: #0d6efd;
+          color: #594230 !important;
         }
 
         &.ant-tabs-tab-active {
           .ant-tabs-tab-btn {
-            color: #0d6efd;
+            color: #594230 !important;
             font-weight: 500;
           }
         }
@@ -31,7 +31,144 @@
 
       // Active tab indicator
       .ant-tabs-ink-bar {
-        background: #0d6efd;
+        background: #594230 !important;
+      }
+    }
+  }
+}
+
+// Team header with row per page and tabs
+.team-header-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  // Left side - team info and badges
+  .team-info-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+
+    .team-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      h2 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0;
+        color: #0f172a;
+      }
+
+      .team-meta-tag {
+        background: #e6edf5;
+        border-radius: 40px;
+        padding: 4px 16px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #594230 !important;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+    }
+
+    .row-per-page-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f8fafc;
+      padding: 4px 16px;
+      border-radius: 40px;
+
+      .label {
+        color: #334155;
+        font-weight: 500;
+        font-size: 0.95rem;
+      }
+
+      .ant-select {
+        min-width: 80px;
+      }
+    }
+
+    .stats-pills {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .stat-pill {
+        background: #eef2ff;
+        border-radius: 30px;
+        padding: 4px 16px;
+        font-weight: 600;
+        color: #594230 !important;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+
+        .anticon,
+        i {
+          font-size: 0.85rem;
+        }
+      }
+    }
+  }
+
+  .btn-outline-primary {
+    &:hover {
+      color: #ffffff !important;
+      background: #594230 !important;
+    }
+
+    &.active {
+      background: #ffffff !important;
+      color: #594230 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  // Right side - tabs container (Players, Coaches, Team Info)
+  .team-tabs-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: 48px;
+
+    .tab-button {
+      padding: 8px 24px;
+      border: none;
+      background: transparent;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #594230;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: #ffffff !important;
+        background: #594230 !important;
+      }
+
+      &.active {
+        background: #ffffff !important;
+        color: #594230 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      .anticon,
+      i {
+        margin-right: 8px;
+        font-size: 0.95rem;
       }
     }
   }
@@ -48,6 +185,7 @@
     .ant-pagination-options {
       order: 2;
       margin-left: 8px;
+      margin-top: 26px !important;
     }
 
     .ant-pagination-item,
@@ -59,8 +197,39 @@
     .ant-pagination-total-text {
       order: 0;
       margin-right: auto;
-      color: #6c757d;
+      color: #594230 !important;
     }
+  }
+}
+
+// Table styling
+.players-table {
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+
+    &.all-paid {
+      background: #d1fae5;
+      color: #065f46;
+
+      &:before {
+        content: '•';
+        font-size: 1.2rem;
+        line-height: 1;
+        margin-right: 4px;
+      }
+    }
+  }
+
+  .aau-number {
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: #594230 !important;
   }
 }
 
@@ -80,7 +249,8 @@
       h6 {
         font-size: 14px;
         font-weight: 600;
-        color: #495057;
+        color: #594230 !important;
+        margin: 0;
       }
     }
 
@@ -90,9 +260,61 @@
   }
 }
 
+// Action buttons at bottom
+.action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e8e8e8;
+
+  .btn {
+    padding: 8px 20px;
+    border-radius: 40px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+
+    &.btn-outline-primary {
+      border: 1px solid #594230 !important;
+      color: #594230 !important;
+      background: transparent;
+
+      &:hover {
+        background: #594230 !important;
+        color: white;
+      }
+    }
+
+    &.btn-primary {
+      background: #594230 !important;
+      border: 1px solid #594230 !important;
+      color: white;
+
+      &:hover {
+        background: #594230 !important;
+        border-color: #594230 !important;
+      }
+    }
+
+    i,
+    .anticon {
+      font-size: 0.9rem;
+    }
+  }
+}
+
 // Avatar hover effects
 .avatar {
   transition: transform 0.3s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
 
   &:hover {
     transform: scale(1.05);
@@ -107,6 +329,7 @@
     .dropdown-item {
       padding: 8px 12px;
       border-radius: 4px;
+      cursor: pointer;
 
       &:hover {
         background-color: #f8f9fa;
@@ -118,5 +341,28 @@
         font-size: 14px;
       }
     }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .team-header-section {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .team-tabs-right {
+      width: 100%;
+      justify-content: stretch;
+
+      .tab-button {
+        flex: 1;
+        text-align: center;
+      }
+    }
+  }
+
+  .action-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 }

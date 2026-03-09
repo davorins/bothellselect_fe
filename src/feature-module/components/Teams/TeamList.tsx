@@ -6,26 +6,31 @@ import React, {
   useMemo,
   useCallback,
 } from 'react';
-import { Link } from 'react-router-dom';
-import { Table, Button, Alert, Space, Select, Input, message } from 'antd';
+import { Link, useSearchParams, useLocation } from 'react-router-dom';
+import { Table, Button, Alert, Select, message, Tabs } from 'antd';
 import {
-  PlusOutlined,
   TeamOutlined,
-  EditOutlined,
-  DeleteOutlined,
   FilterOutlined,
   SortAscendingOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import Swal from 'sweetalert2'; // Add this import
+import Swal from 'sweetalert2';
 import { InternalTeamTableData } from '../../../types/teamTypes';
 import { useAuth } from '../../../context/AuthContext';
-import { all_routes } from '../../router/all_routes';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import { debounce } from 'lodash';
+import {
+  getTeamTableColumns,
+  TeamTableSkeleton,
+} from '../Tables/TeamTableColumns';
+import { TeamListHeader } from '../Headers/TeamListHeader';
+import { TeamFilters } from '../Filters/TeamFilters';
+import { TeamSortOptions } from '../Filters/TeamSortOptions';
+import { Moment } from 'moment';
 import './TeamList.scss';
 
 const { Option } = Select;
+const { TabPane } = Tabs;
 
 interface TeamFilterParams {
   nameFilter: string;
@@ -33,27 +38,41 @@ interface TeamFilterParams {
   gradeFilter: string | null;
   genderFilter: string | null;
   statusFilter: string | null;
+  dateRange: [Moment, Moment] | null;
 }
 
+export type TeamSortOrder = 'asc' | 'desc' | 'recent' | 'recentlyAdded' | null;
+
+// Define routes for teams if they don't exist in all_routes
+const teamRoutes = {
+  teamList: '/teams',
+  teamGrid: '/teams/grid',
+  createTeam: '/teams/create',
+  teamDetail: '/teams/detail',
+  editTeam: '/teams/edit',
+};
+
 const TeamList: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [teams, setTeams] = useState<InternalTeamTableData[]>([]);
   const [loading, setLoading] = useState(true);
   const [tableLoading, setTableLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
+  const { getAuthToken, currentUser } = useAuth();
 
-  const [filters, setFilters] = useState<TeamFilterParams>({
+  // ── Filter state ───────────────────────────────────────────────────────────
+  const [localFilters, setLocalFilters] = useState<TeamFilterParams>({
     nameFilter: '',
-    yearFilter: null,
-    gradeFilter: null,
-    genderFilter: null,
-    statusFilter: null,
+    yearFilter: searchParams.get('year') || null,
+    gradeFilter: searchParams.get('grade') || null,
+    genderFilter: searchParams.get('gender') || null,
+    statusFilter: searchParams.get('status') || null,
+    dateRange: null,
   });
 
-  const [sortOrder, setSortOrder] = useState<
-    'asc' | 'desc' | 'recentlyAdded' | null
-  >(null);
-
+  const [localSortOrder, setLocalSortOrder] = useState<TeamSortOrder>('recent');
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -64,7 +83,6 @@ const TeamList: React.FC = () => {
     grades: [] as string[],
     tryoutSeasons: [] as string[],
   });
-  const { getAuthToken } = useAuth();
 
   // Generate grades 1-12 for the filter dropdown
   const gradeOptions = useMemo(() => {
@@ -121,6 +139,10 @@ const TeamList: React.FC = () => {
           status: team.status,
           tryoutSeason: team.tryoutSeason,
           tryoutYear: team.tryoutYear,
+          coachIds: team.coachIds || [],
+          playerIds: team.playerIds || [],
+          levelOfCompetition: team.levelOfCompetition,
+          tournaments: team.tournaments || [],
         })),
       );
     } catch (err) {
@@ -148,7 +170,7 @@ const TeamList: React.FC = () => {
         console.log('Metadata received:', data);
         setMetadata({
           years: data.years || [],
-          grades: data.grades || [], // Keep this but we'll use gradeOptions for display
+          grades: data.grades || [],
           tryoutSeasons: data.tryoutSeasons || [],
         });
       } else {
@@ -178,51 +200,17 @@ const TeamList: React.FC = () => {
   const debouncedFilterChange = useMemo(
     () =>
       debounce((newFilters: Partial<TeamFilterParams>) => {
-        setFilters((prev) => ({ ...prev, ...newFilters }));
+        setLocalFilters((prev) => ({ ...prev, ...newFilters }));
         setPagination((prev) => ({ ...prev, current: 1 }));
       }, 300),
     [],
   );
 
-  // Filter teams
-  const filteredTeams = useMemo(() => {
-    return teams.filter((team) => {
-      const matchesName = team.name
-        .toLowerCase()
-        .includes(filters.nameFilter.toLowerCase());
-      const matchesYear =
-        !filters.yearFilter || team.year.toString() === filters.yearFilter;
-      const matchesGrade =
-        !filters.gradeFilter || team.grade === filters.gradeFilter;
-      const matchesGender =
-        !filters.genderFilter || team.gender === filters.genderFilter;
-      const matchesStatus =
-        !filters.statusFilter || team.status === filters.statusFilter;
-
-      return (
-        matchesName &&
-        matchesYear &&
-        matchesGrade &&
-        matchesGender &&
-        matchesStatus
-      );
-    });
-  }, [teams, filters]);
-
-  // Sort teams
-  const sortedTeams = useMemo(() => {
-    if (!sortOrder) return filteredTeams;
-    return [...filteredTeams].sort((a, b) => {
-      if (sortOrder === 'asc') {
-        return a.name.localeCompare(b.name);
-      } else if (sortOrder === 'desc') {
-        return b.name.localeCompare(a.name);
-      } else if (sortOrder === 'recentlyAdded') {
-        return b.year - a.year;
-      }
-      return 0;
-    });
-  }, [filteredTeams, sortOrder]);
+  useEffect(() => {
+    return () => {
+      debouncedFilterChange.cancel();
+    };
+  }, [debouncedFilterChange]);
 
   const handleFilterChange = useCallback(
     (newFilters: Partial<TeamFilterParams>) => {
@@ -232,15 +220,80 @@ const TeamList: React.FC = () => {
   );
 
   const handleResetFilters = useCallback(() => {
-    setFilters({
+    setLocalFilters({
       nameFilter: '',
       yearFilter: null,
       gradeFilter: null,
       genderFilter: null,
       statusFilter: null,
+      dateRange: null,
     });
+    setLocalSortOrder('recent');
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    message.info('Filters reset');
+  }, []);
+
+  const handleDateRangeChange = useCallback(
+    (range: [Moment, Moment] | null) => {
+      handleFilterChange({ dateRange: range });
+    },
+    [handleFilterChange],
+  );
+
+  const handleSortChange = useCallback((newSortOrder: TeamSortOrder) => {
+    setLocalSortOrder(newSortOrder);
     setPagination((prev) => ({ ...prev, current: 1 }));
   }, []);
+
+  // Filter teams
+  const filteredTeams = useMemo(() => {
+    return teams.filter((team) => {
+      const matchesName = team.name
+        .toLowerCase()
+        .includes(localFilters.nameFilter.toLowerCase());
+      const matchesYear =
+        !localFilters.yearFilter ||
+        team.year.toString() === localFilters.yearFilter;
+      const matchesGrade =
+        !localFilters.gradeFilter || team.grade === localFilters.gradeFilter;
+      const matchesGender =
+        !localFilters.genderFilter || team.gender === localFilters.genderFilter;
+      const matchesStatus =
+        !localFilters.statusFilter || team.status === localFilters.statusFilter;
+
+      // Date range filter - if you still want to use date filtering, you'll need to add createdAt back
+      // For now, we'll skip date filtering since we removed createdAt
+      let matchesDateRange = true;
+
+      return (
+        matchesName &&
+        matchesYear &&
+        matchesGrade &&
+        matchesGender &&
+        matchesStatus &&
+        matchesDateRange
+      );
+    });
+  }, [teams, localFilters]);
+
+  // Sort teams
+  const sortedTeams = useMemo(() => {
+    if (!localSortOrder) return filteredTeams;
+    return [...filteredTeams].sort((a, b) => {
+      if (localSortOrder === 'asc') {
+        return a.name.localeCompare(b.name);
+      } else if (localSortOrder === 'desc') {
+        return b.name.localeCompare(a.name);
+      } else if (
+        localSortOrder === 'recent' ||
+        localSortOrder === 'recentlyAdded'
+      ) {
+        // Without createdAt, fall back to sorting by year
+        return (b.year || 0) - (a.year || 0);
+      }
+      return 0;
+    });
+  }, [filteredTeams, localSortOrder]);
 
   const handleTableChange = useCallback((newPagination: any) => {
     setTableLoading(true);
@@ -251,7 +304,7 @@ const TeamList: React.FC = () => {
     setTimeout(() => setTableLoading(false), 100);
   }, []);
 
-  // Updated delete function with SweetAlert2 and hard delete
+  // Delete function with SweetAlert2
   const handleDeleteTeam = async (teamId: string, teamName: string) => {
     try {
       const result = await Swal.fire({
@@ -295,7 +348,6 @@ const TeamList: React.FC = () => {
       });
 
       if (result.isConfirmed) {
-        // Remove the deleted team from state
         setTeams((prevTeams) => prevTeams.filter((team) => team.id !== teamId));
 
         await Swal.fire({
@@ -322,156 +374,32 @@ const TeamList: React.FC = () => {
     }
   };
 
-  const columns = [
-    {
-      title: 'Team Name',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text: string, record: InternalTeamTableData) => {
-        // Use your custom images based on gender
-        const avatarUrl =
-          record.gender === 'Female'
-            ? 'https://partizan-be.onrender.com/uploads/avatars/girl.png'
-            : 'https://partizan-be.onrender.com/uploads/avatars/boy.png';
+  const handleRefresh = useCallback(() => {
+    fetchTeams();
+    message.success('Refreshing teams...');
+  }, []);
 
-        return (
-          <div className='d-flex align-items-center'>
-            <div className='avatar avatar-sm flex-shrink-0 me-2'>
-              <img
-                src={avatarUrl}
-                className='img-fluid rounded-circle'
-                alt={`${text} avatar`}
-                style={{
-                  width: '28px',
-                  height: '28px',
-                  objectFit: 'cover',
-                  border: '1px solid #e8e8e8',
-                }}
-              />
-            </div>
-            <Link
-              to={`${all_routes.teamDetail}/${record.id}`}
-              className='text-primary fw-medium'
-            >
-              {text} {record.year}
-            </Link>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Year',
-      dataIndex: 'year',
-      key: 'year',
-    },
-    {
-      title: 'Grade',
-      dataIndex: 'grade',
-      key: 'grade',
-      render: (grade: string) => {
-        if (!grade) return '-';
-        const gradeNum = parseInt(grade);
-        if (isNaN(gradeNum)) return grade;
+  // Columns — depend on actions and dynamic field names
+  const columns = useMemo(() => {
+    try {
+      const cols = getTeamTableColumns({
+        handleDeleteTeam,
+        location,
+        loading: loading && teams.length === 0,
+        currentUserRole: currentUser?.role,
+      });
+      return Array.isArray(cols) ? cols : [];
+    } catch (error) {
+      console.error('Error generating columns:', error);
+      return [];
+    }
+  }, [handleDeleteTeam, location, loading, teams.length, currentUser?.role]);
 
-        let suffix = 'th';
-        if (gradeNum === 1) suffix = 'st';
-        else if (gradeNum === 2) suffix = 'nd';
-        else if (gradeNum === 3) suffix = 'rd';
-
-        return `${gradeNum}${suffix} Grade`;
-      },
-    },
-    {
-      title: 'Gender',
-      dataIndex: 'gender',
-      key: 'gender',
-    },
-    {
-      title: 'Players',
-      dataIndex: 'playerCount',
-      key: 'playerCount',
-      align: 'center' as const,
-    },
-    {
-      title: 'Coaches',
-      dataIndex: 'coachCount',
-      key: 'coachCount',
-      align: 'center' as const,
-    },
-    {
-      title: 'Tryout Season',
-      dataIndex: 'tryoutSeason',
-      key: 'tryoutSeason',
-      render: (tryoutSeason: string) => (
-        <span className='text-muted'>{tryoutSeason || '-'}</span>
-      ),
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => (
-        <span
-          className={`badge badge-soft-${
-            status === 'active'
-              ? 'success'
-              : status === 'pending'
-                ? 'warning'
-                : 'danger'
-          } d-inline-flex align-items-center`}
-        >
-          <i
-            className={`ti ti-circle-filled fs-5 me-1 ${
-              status === 'active'
-                ? 'text-success'
-                : status === 'pending'
-                  ? 'text-warning'
-                  : 'text-danger'
-            }`}
-          ></i>
-          {status === 'active'
-            ? 'Active'
-            : status === 'pending'
-              ? 'Pending Payment'
-              : 'Inactive'}
-        </span>
-      ),
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      align: 'center' as const,
-      render: (_: unknown, record: InternalTeamTableData) => (
-        <Space>
-          <Link to={`${all_routes.editTeam}/${record.id}`}>
-            <Button
-              type='link'
-              className='btn-outline-primary btn-sm'
-              icon={<EditOutlined />}
-            >
-              Edit
-            </Button>
-          </Link>
-          <Button
-            type='link'
-            danger
-            className='btn-outline-danger btn-sm'
-            icon={<DeleteOutlined />}
-            onClick={() => handleDeleteTeam(record.id, record.name)}
-          >
-            Delete
-          </Button>
-        </Space>
-      ),
-    },
-  ];
-
-  // Clean up debounce on unmount
-  useEffect(() => {
-    return () => {
-      debouncedFilterChange.cancel();
-    };
-  }, [debouncedFilterChange]);
+  // Pagination data
+  const dataSource = useMemo(() => {
+    const start = (pagination.current - 1) * pagination.pageSize;
+    return sortedTeams.slice(start, start + pagination.pageSize);
+  }, [sortedTeams, pagination]);
 
   if (loading && teams.length === 0) {
     return (
@@ -513,125 +441,60 @@ const TeamList: React.FC = () => {
   return (
     <div className='page-wrapper'>
       <div className='content'>
-        <div className='d-md-flex d-block align-items-center justify-content-between mb-3'>
-          <div className='my-auto mb-2'>
-            <h3 className='page-title mb-1'>Team Management</h3>
+        <TeamListHeader teamData={teams} onRefresh={handleRefresh} />
+        {localFilters.gradeFilter && (
+          <div className='alert alert-info d-flex align-items-center justify-content-between mb-3'>
+            <span>
+              <i className='ti ti-school me-2' />
+              Showing teams for grade:{' '}
+              <strong>Grade {localFilters.gradeFilter}</strong>
+            </span>
+            <button
+              className='btn btn-sm btn-outline-secondary'
+              onClick={() => {
+                setLocalFilters((prev) => ({ ...prev, gradeFilter: null }));
+                setPagination((prev) => ({ ...prev, current: 1 }));
+              }}
+            >
+              <i className='ti ti-x me-1' />
+              Clear
+            </button>
           </div>
-        </div>
+        )}
+
         <div className='card'>
           <div className='card-header d-flex align-items-center justify-content-between flex-wrap pb-0'>
             <h4 className='mb-5'></h4>
             <div className='d-flex align-items-center flex-wrap'>
-              <Link to={all_routes.createTeam}>
-                <Button
-                  className='btn btn-primary d-flex align-items-center mb-3 me-2'
-                  icon={<PlusOutlined />}
-                >
-                  Create New Team
-                </Button>
-              </Link>
-              <div className='dropdown mb-3 me-2'>
-                <Link
-                  to='#'
-                  className='btn btn-outline-light bg-white dropdown-toggle'
-                  data-bs-toggle='dropdown'
-                  data-bs-auto-close='outside'
-                >
-                  <FilterOutlined className='me-2' />
-                  Filter
-                </Link>
-                <div className='dropdown-menu drop-width' ref={dropdownMenuRef}>
-                  <div className='p-3'>
-                    <h5>Filter Teams</h5>
-                    <div className='mb-3'>
-                      <label className='form-label'>Team Name</label>
-                      <Input
-                        type='text'
-                        className='form-control'
-                        value={filters.nameFilter}
-                        onChange={(e) =>
-                          handleFilterChange({ nameFilter: e.target.value })
-                        }
-                        placeholder='Search team name...'
+              {/* Date Range Picker - only for admin/coach */}
+              {(currentUser?.role === 'admin' || currentUser?.isCoach) && (
+                <>
+                  <div className='dropdown mb-3 me-2'>
+                    <Link
+                      to='#'
+                      className='btn btn-outline-light bg-white dropdown-toggle'
+                      data-bs-toggle='dropdown'
+                      data-bs-auto-close='outside'
+                    >
+                      <FilterOutlined className='me-2' />
+                      Filter
+                    </Link>
+                    <div
+                      className='dropdown-menu drop-width'
+                      ref={dropdownMenuRef}
+                    >
+                      <TeamFilters
+                        filters={localFilters}
+                        onFilterChange={handleFilterChange}
+                        onReset={handleResetFilters}
+                        gradeOptions={gradeOptions}
+                        yearOptions={metadata.years}
                       />
                     </div>
-                    <div className='mb-3'>
-                      <label className='form-label'>Year</label>
-                      <Select
-                        style={{ width: '100%' }}
-                        value={filters.yearFilter}
-                        onChange={(value) =>
-                          handleFilterChange({ yearFilter: value })
-                        }
-                        allowClear
-                        placeholder='Select year'
-                      >
-                        {(metadata.years || []).map((year: number) => (
-                          <Option key={year} value={year.toString()}>
-                            {year}
-                          </Option>
-                        ))}
-                      </Select>
-                    </div>
-                    <div className='mb-3'>
-                      <label className='form-label'>Grade</label>
-                      <Select
-                        style={{ width: '100%' }}
-                        value={filters.gradeFilter}
-                        onChange={(value) =>
-                          handleFilterChange({ gradeFilter: value })
-                        }
-                        allowClear
-                        placeholder='Select grade'
-                      >
-                        {/* Use gradeOptions instead of metadata.grades */}
-                        {gradeOptions.map((grade) => (
-                          <Option key={grade.value} value={grade.value}>
-                            {grade.label}
-                          </Option>
-                        ))}
-                      </Select>
-                    </div>
-                    <div className='mb-3'>
-                      <label className='form-label'>Gender</label>
-                      <Select
-                        style={{ width: '100%' }}
-                        value={filters.genderFilter}
-                        onChange={(value) =>
-                          handleFilterChange({ genderFilter: value })
-                        }
-                        allowClear
-                        placeholder='Select gender'
-                      >
-                        <Option value='Male'>Male</Option>
-                        <Option value='Female'>Female</Option>
-                      </Select>
-                    </div>
-                    <div className='mb-3'>
-                      <label className='form-label'>Status</label>
-                      <Select
-                        style={{ width: '100%' }}
-                        value={filters.statusFilter}
-                        onChange={(value) =>
-                          handleFilterChange({ statusFilter: value })
-                        }
-                        allowClear
-                        placeholder='Select status'
-                      >
-                        <Option value='active'>Active</Option>
-                        <Option value='pending'>Pending Payment</Option>
-                        <Option value='inactive'>Inactive</Option>
-                      </Select>
-                    </div>
-                    <button
-                      className='btn btn-outline-secondary w-100'
-                      onClick={handleResetFilters}
-                    >
-                      Reset Filters
-                    </button>
                   </div>
-                </div>
-              </div>
+                </>
+              )}
+
               <div className='dropdown mb-3'>
                 <Link
                   to='#'
@@ -639,50 +502,72 @@ const TeamList: React.FC = () => {
                   data-bs-toggle='dropdown'
                 >
                   <SortAscendingOutlined className='me-2' />
-                  {sortOrder === 'asc'
+                  {localSortOrder === 'asc'
                     ? 'A-Z'
-                    : sortOrder === 'desc'
+                    : localSortOrder === 'desc'
                       ? 'Z-A'
-                      : sortOrder === 'recentlyAdded'
-                        ? 'Recently Added'
+                      : localSortOrder === 'recent' ||
+                          localSortOrder === 'recentlyAdded'
+                        ? 'Most Recent'
                         : 'Sort by'}
                 </Link>
-                <div className='dropdown-menu'>
-                  <Link
-                    className='dropdown-item'
-                    to='#'
-                    onClick={() => setSortOrder('asc')}
-                  >
-                    Sort by A-Z
-                  </Link>
-                  <Link
-                    className='dropdown-item'
-                    to='#'
-                    onClick={() => setSortOrder('desc')}
-                  >
-                    Sort by Z-A
-                  </Link>
-                  <Link
-                    className='dropdown-item'
-                    to='#'
-                    onClick={() => setSortOrder('recentlyAdded')}
-                  >
-                    Sort by Recently Added
-                  </Link>
-                </div>
+                <TeamSortOptions
+                  sortOrder={localSortOrder}
+                  onSortChange={handleSortChange}
+                />
               </div>
             </div>
           </div>
+
           <div className='card-body p-0 py-3'>
             {/* Loading indicators */}
-            {loading && (
-              <div className='alert alert-info mb-3'>
+            {loading && teams.length > 0 && (
+              <div className='alert alert-info mb-3 mx-3'>
                 <i className='ti ti-loader me-2'></i>
-                Loading teams... Please wait.
+                Updating teams... Please wait.
               </div>
             )}
 
-            {/* Error alert */}
+            {loading && teams.length === 0 ? (
+              <TeamTableSkeleton rows={10} />
+            ) : (
+              <>
+                {columns && columns.length > 0 ? (
+                  <div className='table-responsive'>
+                    <Table
+                      columns={columns}
+                      dataSource={dataSource}
+                      rowKey='id'
+                      pagination={{
+                        current: pagination.current,
+                        pageSize: pagination.pageSize,
+                        total: sortedTeams.length,
+                        showSizeChanger: true,
+                        pageSizeOptions: ['10', '20', '50', '100'],
+                      }}
+                      onChange={handleTableChange}
+                      loading={tableLoading}
+                      scroll={{ x: true }}
+                      style={{
+                        marginTop: '-28px',
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className='text-center p-4'>
+                    <i className='ti ti-database fs-1 text-muted mb-3'></i>
+                    <p className='text-muted'>Unable to load table columns</p>
+                    <button
+                      className='btn btn-primary btn-sm'
+                      onClick={() => window.location.reload()}
+                    >
+                      Refresh Page
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+
             {error && (
               <Alert
                 message='Error'
@@ -695,7 +580,7 @@ const TeamList: React.FC = () => {
               />
             )}
 
-            {filteredTeams.length === 0 && !loading ? (
+            {!loading && filteredTeams.length === 0 && (
               <div className='text-center py-5'>
                 <TeamOutlined style={{ fontSize: '48px', color: '#ccc' }} />
                 <h4 className='mt-3'>No Teams Found</h4>
@@ -714,24 +599,6 @@ const TeamList: React.FC = () => {
                     </Button>
                   </div>
                 )}
-              </div>
-            ) : (
-              <div className='table-responsive'>
-                <Table
-                  columns={columns}
-                  dataSource={sortOrder ? sortedTeams : filteredTeams}
-                  rowKey='id'
-                  pagination={{
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                    total: filteredTeams.length,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50', '100'],
-                  }}
-                  onChange={handleTableChange}
-                  loading={tableLoading}
-                  scroll={{ x: true }}
-                />
               </div>
             )}
           </div>

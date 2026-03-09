@@ -1,30 +1,24 @@
 // components/Teams/TeamDetail.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import {
-  Button,
-  Space,
-  Tabs,
-  Table,
-  Alert,
-  Descriptions,
-  notification,
-} from 'antd';
+import { Button, Tabs, Table, Alert, Descriptions, notification } from 'antd';
 import {
   TeamOutlined,
   UserOutlined,
   EditOutlined,
-  ArrowLeftOutlined,
   FileExcelOutlined,
   FilePdfOutlined,
-  EyeOutlined,
   MailOutlined,
 } from '@ant-design/icons';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../../context/AuthContext';
 import { all_routes } from '../../router/all_routes';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
+import { TeamListHeader } from '../Headers/TeamListHeader';
+import { getPlayerTableColumns } from '../Tables/PlayerTableColumns';
+import { PlayerTableData } from '../../../types/playerTypes';
 import axios from 'axios';
+import AcceptanceEmailModal, { EmailPayload } from './AcceptanceEmailModal';
 import './TeamDetail.scss';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
@@ -32,11 +26,16 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 const TeamDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getAuthToken } = useAuth();
+  const { getAuthToken, currentUser } = useAuth();
 
   const [team, setTeam] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [playersWithDetails, setPlayersWithDetails] = useState<any[]>([]);
+  const [playerPageSize, setPlayerPageSize] = useState<number>(10);
+  const [coachPageSize, setCoachPageSize] = useState<number>(10);
+  const [showAcceptanceModal, setShowAcceptanceModal] = useState(false);
 
   useEffect(() => {
     fetchTeamDetail();
@@ -48,23 +47,21 @@ const TeamDetail: React.FC = () => {
       const token = await getAuthToken();
 
       const response = await fetch(`${API_BASE_URL}/internal-teams/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch team details');
-      }
+      if (!response.ok) throw new Error('Failed to fetch team details');
 
       const teamData = await response.json();
       setTeam(teamData);
+
+      if (teamData.playerIds && teamData.playerIds.length > 0) {
+        await fetchPlayersDetails(teamData.playerIds);
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to load team details',
       );
-
-      // Show SweetAlert2 error
       Swal.fire({
         icon: 'error',
         title: 'Error Loading Team',
@@ -77,14 +74,49 @@ const TeamDetail: React.FC = () => {
     }
   };
 
+  const fetchPlayersDetails = async (players: any[]) => {
+    try {
+      setTableLoading(true);
+      const token = await getAuthToken();
+      const detailedPlayers = [];
+
+      for (const player of players) {
+        const playerId = player._id || player.id;
+        try {
+          const response = await axios.get(
+            `${API_BASE_URL}/player/${playerId}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          );
+          detailedPlayers.push(response.data);
+        } catch (error) {
+          console.error(
+            `Failed to fetch details for player ${playerId}:`,
+            error,
+          );
+          detailedPlayers.push(player);
+        }
+      }
+
+      setPlayersWithDetails(detailedPlayers);
+    } catch (error) {
+      console.error('Error fetching player details:', error);
+    } finally {
+      setTableLoading(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    setTableLoading(true);
+    fetchTeamDetail().finally(() => setTableLoading(false));
+  };
+
   const handlePlayerClick = async (playerRecord: any) => {
     try {
       const token = await getAuthToken();
-      const playerId = playerRecord._id || playerRecord.id;
+      const playerId = playerRecord.id || playerRecord._id;
 
-      console.log('TeamDetail - Starting player navigation for:', playerId);
-
-      // Show loading alert
       Swal.fire({
         title: 'Loading Player...',
         html: 'Please wait while we fetch player details',
@@ -94,48 +126,32 @@ const TeamDetail: React.FC = () => {
         },
       });
 
-      // Use the CORRECT API endpoints - these are likely different from what you have
       const [playerResponse, guardiansResponse] = await Promise.all([
-        // Try different player endpoints
         axios
           .get(`${API_BASE_URL}/player/${playerId}`, {
             headers: { Authorization: `Bearer ${token}` },
           })
-          .catch(async (error) => {
-            // If first endpoint fails, try alternative
-            console.log('First player endpoint failed, trying alternative...');
-            return await axios.get(`${API_BASE_URL}/players/get/${playerId}`, {
+          .catch(async () =>
+            axios.get(`${API_BASE_URL}/players/get/${playerId}`, {
               headers: { Authorization: `Bearer ${token}` },
-            });
-          }),
-        // Try different guardian endpoints
+            }),
+          ),
         axios
           .get(`${API_BASE_URL}/player/${playerId}/guardians`, {
             headers: { Authorization: `Bearer ${token}` },
           })
-          .catch(async (error) => {
-            console.log(
-              'First guardian endpoint failed, trying alternative...',
-            );
-            return await axios.get(
-              `${API_BASE_URL}/guardians/player/${playerId}`,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              },
-            );
-          }),
+          .catch(async () =>
+            axios.get(`${API_BASE_URL}/guardians/player/${playerId}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          ),
       ]);
 
-      // Close loading alert
       Swal.close();
 
       const fullPlayerData = playerResponse.data;
       const guardiansData = guardiansResponse.data;
 
-      console.log('TeamDetail - Full player data from API:', fullPlayerData);
-      console.log('TeamDetail - Raw guardians data from API:', guardiansData);
-
-      // TRANSFORM GUARDIAN DATA
       const transformedGuardians = Array.isArray(guardiansData)
         ? guardiansData.map((guardian: any) => ({
             _id: guardian._id || guardian.id,
@@ -151,13 +167,10 @@ const TeamDetail: React.FC = () => {
           }))
         : [];
 
-      console.log('TeamDetail - Transformed guardians:', transformedGuardians);
-
-      // Create the data structure
       const completePlayerData = {
         ...fullPlayerData,
         _id: playerId,
-        playerId: playerId,
+        playerId,
         id: playerId,
         name: fullPlayerData.fullName || fullPlayerData.name,
         fullName: fullPlayerData.fullName || fullPlayerData.name,
@@ -180,12 +193,6 @@ const TeamDetail: React.FC = () => {
         imgSrc: fullPlayerData.avatar,
       };
 
-      console.log(
-        'TeamDetail - Complete player data being passed:',
-        completePlayerData,
-      );
-
-      // Navigate to player details
       navigate(`${all_routes.playerDetail}/${playerId}`, {
         state: {
           player: completePlayerData,
@@ -197,35 +204,26 @@ const TeamDetail: React.FC = () => {
               ?.address,
           },
           key: Date.now(),
-          timestamp: Date.now(),
         },
       });
     } catch (error) {
       console.error('TeamDetail - Failed to fetch player details:', error);
-
-      // Close any open alerts
       Swal.close();
-
-      // Show error alert
       Swal.fire({
         icon: 'error',
         title: 'Navigation Error',
         text: 'Failed to load player details. Navigating with basic information.',
         confirmButtonColor: '#3085d6',
       });
-
-      // SIMPLIFIED FALLBACK - Just navigate and let PlayerDetails handle data fetching
-      console.log('TeamDetail - Using simplified fallback navigation');
-
       navigate(
-        `${all_routes.playerDetail}/${playerRecord._id || playerRecord.id}`,
+        `${all_routes.playerDetail}/${playerRecord.id || playerRecord._id}`,
         {
           state: {
             player: {
               ...playerRecord,
-              _id: playerRecord._id || playerRecord.id,
-              playerId: playerRecord._id || playerRecord.id,
-              id: playerRecord._id || playerRecord.id,
+              _id: playerRecord.id || playerRecord._id,
+              playerId: playerRecord.id || playerRecord._id,
+              id: playerRecord.id || playerRecord._id,
             },
             key: Date.now(),
           },
@@ -234,13 +232,8 @@ const TeamDetail: React.FC = () => {
     }
   };
 
-  // Add this function for coach click handling
   const handleCoachClick = async (coachRecord: any) => {
     const coachId = coachRecord._id || coachRecord.id;
-
-    console.log('TeamDetail - Navigating to coach profile:', coachId);
-
-    // Show loading alert
     Swal.fire({
       title: 'Loading Coach...',
       html: 'Please wait while we load coach details',
@@ -250,7 +243,6 @@ const TeamDetail: React.FC = () => {
         Swal.showLoading();
       },
     });
-
     navigate(`${all_routes.parentDetail}/${coachId}`, {
       state: {
         parent: {
@@ -265,7 +257,129 @@ const TeamDetail: React.FC = () => {
     });
   };
 
-  // NEW FUNCTION: Export Parents' Emails
+  const handleEditPlayer = async (playerRecord: any) => {
+    try {
+      const token = await getAuthToken();
+      const playerId = playerRecord.id || playerRecord._id;
+
+      Swal.fire({
+        title: 'Loading Player...',
+        html: 'Please wait while we fetch player details for editing',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
+      const playerResponse = await axios
+        .get(`${API_BASE_URL}/player/${playerId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .catch(async () =>
+          axios.get(`${API_BASE_URL}/players/get/${playerId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        );
+
+      Swal.close();
+      const fullPlayerData = playerResponse.data;
+
+      navigate(`${all_routes.editPlayer}/${playerId}`, {
+        state: {
+          player: {
+            ...fullPlayerData,
+            _id: playerId,
+            playerId,
+            id: playerId,
+            fullName: fullPlayerData.fullName || fullPlayerData.name,
+            name: fullPlayerData.fullName || fullPlayerData.name,
+            gender: fullPlayerData.gender,
+            dob: fullPlayerData.dob,
+            schoolName: fullPlayerData.schoolName,
+            grade: fullPlayerData.grade,
+            aauNumber: fullPlayerData.aauNumber,
+            healthConcerns: fullPlayerData.healthConcerns || '',
+            avatar: fullPlayerData.avatar,
+            seasons: fullPlayerData.seasons || [],
+          },
+          from: window.location.pathname,
+          key: Date.now(),
+        },
+      });
+    } catch (error) {
+      console.error('Failed to fetch player for edit:', error);
+      Swal.close();
+      Swal.fire({
+        icon: 'error',
+        title: 'Edit Failed',
+        text: 'Failed to load player details for editing.',
+        confirmButtonColor: '#3085d6',
+      });
+    }
+  };
+
+  // ── Send Acceptance Email ─────────────────────────────────────────────────
+  const handleSendAcceptanceEmail = async (payload: EmailPayload) => {
+    const token = await getAuthToken();
+    const playerList = team?.playerIds || [];
+    const recipientEmails: Array<{ email: string; playerName: string }> = [];
+
+    for (const player of playerList) {
+      const playerId = player._id || player.id;
+      try {
+        const res = await axios
+          .get(`${API_BASE_URL}/player/${playerId}/guardians`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          .catch(() =>
+            axios.get(`${API_BASE_URL}/guardians/player/${playerId}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          );
+        const guardians = res.data;
+        if (Array.isArray(guardians)) {
+          guardians.forEach((g: any) => {
+            if (g.email) {
+              recipientEmails.push({
+                email: g.email,
+                playerName: player.fullName || player.name || 'your child',
+              });
+            }
+          });
+        }
+      } catch {
+        // skip if guardians fetch fails
+      }
+    }
+
+    if (recipientEmails.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'No Email Addresses Found',
+        text: 'No parent email addresses were found for the players on this team.',
+        confirmButtonColor: '#3085d6',
+      });
+      return;
+    }
+
+    await axios.post(
+      `${API_BASE_URL}/internal-teams/${team._id}/send-acceptance-email`,
+      { ...payload, recipients: recipientEmails },
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+
+    setShowAcceptanceModal(false);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Emails Sent!',
+      text: `Acceptance emails sent to ${recipientEmails.length} parent${recipientEmails.length !== 1 ? 's' : ''}.`,
+      timer: 3000,
+      showConfirmButton: false,
+    });
+  };
+
+  // ── Export helpers (unchanged) ────────────────────────────────────────────
   const exportParentEmails = async () => {
     try {
       if (!team?.playerIds || team.playerIds.length === 0) {
@@ -278,7 +392,6 @@ const TeamDetail: React.FC = () => {
         return;
       }
 
-      // Show loading alert
       Swal.fire({
         title: 'Collecting Parent Emails...',
         html: 'Please wait while we gather all parent email addresses',
@@ -296,26 +409,20 @@ const TeamDetail: React.FC = () => {
         relationship?: string;
       }> = [];
 
-      // Fetch parents for each player
       for (const player of team.playerIds) {
         const playerId = player._id || player.id;
-
         try {
-          // Try to get guardians for this player
           const guardiansResponse = await axios
             .get(`${API_BASE_URL}/player/${playerId}/guardians`, {
               headers: { Authorization: `Bearer ${token}` },
             })
-            .catch(async () => {
-              // Try alternative endpoint
-              return await axios.get(
-                `${API_BASE_URL}/guardians/player/${playerId}`,
-                { headers: { Authorization: `Bearer ${token}` } },
-              );
-            });
+            .catch(async () =>
+              axios.get(`${API_BASE_URL}/guardians/player/${playerId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+            );
 
           const guardians = guardiansResponse.data;
-
           if (Array.isArray(guardians) && guardians.length > 0) {
             guardians.forEach((guardian: any) => {
               if (guardian.email) {
@@ -327,30 +434,15 @@ const TeamDetail: React.FC = () => {
                 });
               }
             });
-          } else {
-            // If no guardians found, add placeholder
-            parentEmails.push({
-              playerName: player.fullName || player.name || 'Unknown',
-              parentName: 'No guardian data',
-              email: 'No email available',
-              relationship: 'N/A',
-            });
           }
         } catch (error) {
           console.error(
             `Error fetching guardians for player ${playerId}:`,
             error,
           );
-          parentEmails.push({
-            playerName: player.fullName || player.name || 'Unknown',
-            parentName: 'Error fetching data',
-            email: 'Error',
-            relationship: 'N/A',
-          });
         }
       }
 
-      // Close loading alert
       Swal.close();
 
       if (parentEmails.length === 0) {
@@ -363,14 +455,12 @@ const TeamDetail: React.FC = () => {
         return;
       }
 
-      // Create CSV content with emails
       const headers = ['Player Name', 'Parent Name', 'Email', 'Relationship'];
       const csvContent = [
         headers.join(','),
         ...parentEmails.map((row) =>
           Object.values(row)
             .map((value) => {
-              // Escape commas and quotes in CSV
               if (
                 typeof value === 'string' &&
                 (value.includes(',') || value.includes('"'))
@@ -383,26 +473,14 @@ const TeamDetail: React.FC = () => {
         ),
       ].join('\n');
 
-      // Create a plain text version with just emails (for easy copy-paste)
       const plainEmails = parentEmails
-        .filter(
-          (item) =>
-            item.email &&
-            item.email !== 'No email available' &&
-            item.email !== 'Error',
-        )
+        .filter((item) => item.email)
         .map((item) => item.email)
         .join('\n');
 
-      // Show dialog with options
       const result = await Swal.fire({
         title: 'Export Parent Emails',
-        html: `
-          <div style="text-align: left;">
-            <p>Found <strong>${parentEmails.filter((e) => e.email && e.email !== 'No email available' && e.email !== 'Error').length}</strong> valid email addresses.</p>
-            <p>Choose export format:</p>
-          </div>
-        `,
+        html: `<div style="text-align: left;"><p>Found <strong>${parentEmails.length}</strong> valid email addresses.</p><p>Choose export format:</p></div>`,
         icon: 'question',
         showCancelButton: true,
         showDenyButton: true,
@@ -415,23 +493,19 @@ const TeamDetail: React.FC = () => {
       });
 
       if (result.isConfirmed) {
-        // Copy plain emails to clipboard
         await navigator.clipboard.writeText(plainEmails);
-
         Swal.fire({
           icon: 'success',
           title: 'Copied!',
-          text: `${parentEmails.filter((e) => e.email && e.email !== 'No email available' && e.email !== 'Error').length} email addresses copied to clipboard.`,
+          text: `${parentEmails.length} email addresses copied to clipboard.`,
           timer: 2000,
           showConfirmButton: false,
         });
-
         notification.success({
           message: 'Emails Copied',
           description: 'Parent email addresses copied to clipboard.',
         });
       } else if (result.isDenied) {
-        // Download CSV
         const blob = new Blob([csvContent], {
           type: 'text/csv;charset=utf-8;',
         });
@@ -446,7 +520,6 @@ const TeamDetail: React.FC = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-
         Swal.fire({
           icon: 'success',
           title: 'Downloaded!',
@@ -454,7 +527,6 @@ const TeamDetail: React.FC = () => {
           timer: 2000,
           showConfirmButton: false,
         });
-
         notification.success({
           message: 'Export Successful',
           description: 'Parent emails exported to CSV successfully.',
@@ -462,95 +534,39 @@ const TeamDetail: React.FC = () => {
       }
     } catch (error) {
       console.error('Error exporting parent emails:', error);
-
       Swal.fire({
         icon: 'error',
         title: 'Export Failed',
         text: 'Failed to export parent email addresses.',
         confirmButtonColor: '#3085d6',
       });
-
-      notification.error({
-        message: 'Export Failed',
-        description: 'Failed to export parent email addresses.',
-      });
     }
   };
 
   const exportPlayersToExcel = async (players: any[]) => {
     try {
-      // Show loading alert
       Swal.fire({
         title: 'Preparing Export...',
-        html: 'Please wait while we gather parent email addresses',
+        html: 'Please wait while we gather player data',
         allowOutsideClick: false,
         didOpen: () => {
           Swal.showLoading();
         },
       });
 
-      const token = await getAuthToken();
+      const excelData = players.map((player, index) => ({
+        'No.': index + 1,
+        'Player Name': player.fullName || 'N/A',
+        Gender: player.gender || 'N/A',
+        Grade: player.grade || 'N/A',
+        School: player.schoolName || 'N/A',
+        'Date of Birth': player.dob
+          ? new Date(player.dob).toLocaleDateString()
+          : 'N/A',
+      }));
 
-      // Prepare data for Excel export
-      const excelData = [];
-
-      for (let index = 0; index < players.length; index++) {
-        const player = players[index];
-        const playerId = player._id || player.id;
-
-        // Fetch parent emails for this player
-        let parentEmails = 'N/A';
-
-        try {
-          // Try to get guardians for this player
-          const guardiansResponse = await axios
-            .get(`${API_BASE_URL}/player/${playerId}/guardians`, {
-              headers: { Authorization: `Bearer ${token}` },
-            })
-            .catch(async () => {
-              // Try alternative endpoint
-              return await axios.get(
-                `${API_BASE_URL}/guardians/player/${playerId}`,
-                { headers: { Authorization: `Bearer ${token}` } },
-              );
-            });
-
-          const guardians = guardiansResponse.data;
-
-          if (Array.isArray(guardians) && guardians.length > 0) {
-            // Collect all emails
-            const emails = guardians
-              .filter((g: any) => g.email)
-              .map((g: any) => g.email);
-
-            parentEmails = emails.length > 0 ? emails.join('; ') : 'N/A';
-          }
-        } catch (error) {
-          console.error(
-            `Error fetching guardians for player ${playerId}:`,
-            error,
-          );
-          parentEmails = 'Error fetching';
-        }
-
-        // Add player data with parent emails
-        excelData.push({
-          'No.': index + 1,
-          'Player Name': player.fullName || 'N/A',
-          'Parent Email(s)': parentEmails, // Now this will have actual emails
-          Gender: player.gender || 'N/A',
-          Grade: player.grade || 'N/A',
-          School: player.schoolName || 'N/A',
-          'Date of Birth': player.dob
-            ? new Date(player.dob).toLocaleDateString()
-            : 'N/A',
-        });
-      }
-
-      // Close loading alert
       Swal.close();
 
-      // Create CSV content
       const headers = Object.keys(excelData[0]).join(',');
       const csvContent = [
         headers,
@@ -558,15 +574,13 @@ const TeamDetail: React.FC = () => {
           Object.values(row)
             .map((value) => {
               if (typeof value === 'string') {
-                // Escape quotes and handle commas
                 const escapedValue = value.replace(/"/g, '""');
                 if (
                   escapedValue.includes(',') ||
                   escapedValue.includes('"') ||
                   escapedValue.includes('\n')
-                ) {
+                )
                   return `"${escapedValue}"`;
-                }
                 return escapedValue;
               }
               return value;
@@ -575,7 +589,6 @@ const TeamDetail: React.FC = () => {
         ),
       ].join('\n');
 
-      // Create and download file
       const blob = new Blob(['\uFEFF' + csvContent], {
         type: 'text/csv;charset=utf-8;',
       });
@@ -591,158 +604,33 @@ const TeamDetail: React.FC = () => {
       link.click();
       document.body.removeChild(link);
 
-      // Show success with SweetAlert2
       Swal.fire({
         icon: 'success',
         title: 'Export Successful',
-        text: `Player data with parent emails exported to CSV successfully.`,
+        text: 'Player data exported to CSV successfully.',
         timer: 2000,
         showConfirmButton: false,
       });
-
       notification.success({
         message: 'Export Successful',
-        description: `Player data with parent emails exported to CSV successfully.`,
+        description: 'Player data exported to CSV successfully.',
       });
     } catch (error) {
       console.error('Error exporting to Excel:', error);
-
-      // Close any open alerts
       Swal.close();
-
-      // Show error with SweetAlert2
       Swal.fire({
         icon: 'error',
         title: 'Export Failed',
-        text: 'Failed to export player data to Excel.',
+        text: 'Failed to export player data.',
         confirmButtonColor: '#3085d6',
-      });
-
-      notification.error({
-        message: 'Export Failed',
-        description: 'Failed to export player data to Excel.',
       });
     }
   };
 
   const exportPlayersToPDF = (players: any[]) => {
     try {
-      // Create a printable HTML content
-      const printContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>${team?.name} - Player Roster</title>
-          <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              margin: 20px; 
-              color: #333;
-            }
-            .header { 
-              text-align: center; 
-              margin-bottom: 30px; 
-              border-bottom: 2px solid #333; 
-              padding-bottom: 20px;
-            }
-            h1 { 
-              color: #333; 
-              margin: 0;
-              font-size: 24px;
-            }
-            .team-info { 
-              margin: 15px 0; 
-              text-align: center;
-            }
-            .team-info p { 
-              margin: 5px 0; 
-              font-size: 14px;
-            }
-            table { 
-              width: 100%; 
-              border-collapse: collapse; 
-              margin-top: 20px;
-              font-size: 12px;
-            }
-            th, td { 
-              border: 1px solid #ddd; 
-              padding: 10px; 
-              text-align: left; 
-            }
-            th { 
-              background-color: #f5f5f5; 
-              font-weight: bold;
-              color: #333;
-            }
-            tr:nth-child(even) { 
-              background-color: #f9f9f9; 
-            }
-            .footer {
-              margin-top: 30px;
-              text-align: center;
-              font-size: 12px;
-              color: #666;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>${team?.name} - Player Roster</h1>
-            <div class="team-info">
-              <p><strong>Team:</strong> ${
-                team?.name
-              } | <strong>Year:</strong> ${
-                team?.year
-              } | <strong>Grade:</strong> ${team?.grade} | <strong>Gender:</strong> ${
-                team?.gender
-              }</p>
-              <p><strong>Total Players:</strong> ${
-                players.length
-              } | <strong>Export Date:</strong> ${new Date().toLocaleDateString()}</p>
-            </div>
-          </div>
-          
-          <table>
-            <thead>
-              <tr>
-                <th>No.</th>
-                <th>Player Name</th>
-                <th>Gender</th>
-                <th>Grade</th>
-                <th>School</th>
-                <th>Date of Birth</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${players
-                .map(
-                  (player, index) => `
-                <tr>
-                  <td>${index + 1}</td>
-                  <td>${player.fullName || 'N/A'}</td>
-                  <td>${player.gender || 'N/A'}</td>
-                  <td>${player.grade || 'N/A'}</td>
-                  <td>${player.schoolName || 'N/A'}</td>
-                  <td>${
-                    player.dob
-                      ? new Date(player.dob).toLocaleDateString()
-                      : 'N/A'
-                  }</td>
-                </tr>
-              `,
-                )
-                .join('')}
-            </tbody>
-          </table>
-          
-          <div class="footer">
-            <p>Generated on ${new Date().toLocaleString()}</p>
-          </div>
-        </body>
-        </html>
-      `;
+      const printContent = `<!DOCTYPE html><html><head><title>${team?.name} - Player Roster</title><style>body{font-family:Arial,sans-serif;margin:20px;color:#333}.header{text-align:center;margin-bottom:30px;border-bottom:2px solid #333;padding-bottom:20px}h1{color:#333;margin:0;font-size:24px}.team-info{margin:15px 0;text-align:center}.team-info p{margin:5px 0;font-size:14px}table{width:100%;border-collapse:collapse;margin-top:20px;font-size:12px}th,td{border:1px solid #ddd;padding:10px;text-align:left}th{background-color:#f5f5f5;font-weight:bold;color:#333}tr:nth-child(even){background-color:#f9f9f9}.footer{margin-top:30px;text-align:center;font-size:12px;color:#666}</style></head><body><div class="header"><h1>${team?.name} - Player Roster</h1><div class="team-info"><p><strong>Team:</strong> ${team?.name} | <strong>Year:</strong> ${team?.year} | <strong>Grade:</strong> ${team?.grade} | <strong>Gender:</strong> ${team?.gender}</p><p><strong>Total Players:</strong> ${players.length} | <strong>Export Date:</strong> ${new Date().toLocaleDateString()}</p></div></div><table><thead><tr><th>No.</th><th>Player Name</th><th>Gender</th><th>Grade</th><th>School</th><th>Date of Birth</th></tr></thead><tbody>${players.map((player, index) => `<tr><td>${index + 1}</td><td>${player.fullName || 'N/A'}</td><td>${player.gender || 'N/A'}</td><td>${player.grade || 'N/A'}</td><td>${player.schoolName || 'N/A'}</td><td>${player.dob ? new Date(player.dob).toLocaleDateString() : 'N/A'}</td></tr>`).join('')}</tbody></table><div class="footer"><p>Generated on ${new Date().toLocaleString()}</p></div></body></html>`;
 
-      // Show loading alert
       Swal.fire({
         title: 'Generating PDF...',
         html: 'Please wait while we prepare the PDF',
@@ -752,21 +640,14 @@ const TeamDetail: React.FC = () => {
         },
       });
 
-      // Open print dialog for PDF
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(printContent);
         printWindow.document.close();
-
-        // Wait for content to load then trigger print
         printWindow.onload = () => {
           printWindow.focus();
           printWindow.print();
-
-          // Close loading alert
           Swal.close();
-
-          // Show success message
           Swal.fire({
             icon: 'success',
             title: 'PDF Ready',
@@ -779,26 +660,16 @@ const TeamDetail: React.FC = () => {
 
       notification.success({
         message: 'PDF Ready',
-        description:
-          "Player roster opened for printing. Use your browser's print dialog to save as PDF.",
+        description: 'Player roster opened for printing.',
       });
     } catch (error) {
       console.error('Error exporting to PDF:', error);
-
-      // Close any open alerts
       Swal.close();
-
-      // Show error with SweetAlert2
       Swal.fire({
         icon: 'error',
         title: 'Export Failed',
         text: 'Failed to generate PDF. Please try again.',
         confirmButtonColor: '#3085d6',
-      });
-
-      notification.error({
-        message: 'Export Failed',
-        description: 'Failed to generate PDF. Please try again.',
       });
     }
   };
@@ -813,11 +684,6 @@ const TeamDetail: React.FC = () => {
         text: 'There are no players in this team to export.',
         confirmButtonColor: '#3085d6',
       });
-
-      notification.warning({
-        message: 'No Players',
-        description: 'There are no players in this team to export.',
-      });
     }
   };
 
@@ -825,203 +691,137 @@ const TeamDetail: React.FC = () => {
     if (team?.playerIds && team.playerIds.length > 0) {
       exportPlayersToPDF(team.playerIds);
     } else {
-      // Show warning with SweetAlert2
       Swal.fire({
         icon: 'warning',
         title: 'No Players',
         text: 'There are no players in this team to export.',
         confirmButtonColor: '#3085d6',
       });
-
-      notification.warning({
-        message: 'No Players',
-        description: 'There are no players in this team to export.',
-      });
     }
   };
 
-  // Player table columns
-  const playerColumns = [
-    {
-      title: 'Player Name',
-      dataIndex: 'fullName',
-      key: 'fullName',
-      width: 200,
-      render: (text: string, record: any) => {
-        const avatarUrl =
-          record.avatar ||
-          (record.gender === 'Female'
+  // ── Table data ────────────────────────────────────────────────────────────
+  const transformedPlayers = useMemo((): PlayerTableData[] => {
+    if (!playersWithDetails || playersWithDetails.length === 0) return [];
+    return playersWithDetails.map((player: any) => {
+      const playerId = player._id || player.id;
+      return {
+        id: playerId,
+        key: playerId,
+        name: player.fullName || player.name || 'N/A',
+        fullName: player.fullName || player.name || 'N/A',
+        gender: player.gender || 'N/A',
+        dob: player.dob || '',
+        age: player.dob
+          ? Math.floor(
+              (Date.now() - new Date(player.dob).getTime()) /
+                (365.25 * 24 * 60 * 60 * 1000),
+            )
+          : 0,
+        section: player.schoolName || player.section || 'No School',
+        schoolName: player.schoolName || player.section || 'No School',
+        class: player.grade || 'N/A',
+        grade: player.grade || 'N/A',
+        aauNumber: player.aauNumber || 'N/A',
+        healthConcerns: player.healthConcerns || 'None',
+        status: player.status || 'Inactive',
+        paymentStatus: player.paymentStatus || 'pending',
+        paymentComplete: player.paymentComplete || false,
+        registrationYear: player.registrationYear || new Date().getFullYear(),
+        season: player.season || '',
+        createdAt: player.createdAt || new Date().toISOString(),
+        updatedAt: player.updatedAt || new Date().toISOString(),
+        DateofJoin: player.createdAt || new Date().toISOString(),
+        parentId: player.parentId,
+        avatar: player.avatar,
+        imgSrc:
+          player.avatar ||
+          (player.gender === 'Female'
             ? 'https://partizan-be.onrender.com/uploads/avatars/girl.png'
-            : 'https://partizan-be.onrender.com/uploads/avatars/boy.png');
+            : 'https://partizan-be.onrender.com/uploads/avatars/boy.png'),
+        parents: player.parents || [],
+        seasons: player.seasons || [],
+        registrationComplete: player.registrationComplete || false,
+        paymentInfo: player.paymentInfo,
+        siblings: player.siblings || [],
+        isOwnPlayer: false,
+      } as PlayerTableData;
+    });
+  }, [playersWithDetails]);
 
-        return (
-          <div className='d-flex align-items-center'>
-            <div className='avatar avatar-md cursor-pointer flex-shrink-0'>
-              <img
-                src={avatarUrl}
-                className='img-fluid rounded-circle'
-                alt={`${text} avatar`}
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src =
-                    record.gender === 'Female'
-                      ? 'https://partizan-be.onrender.com/uploads/avatars/girl.png'
-                      : 'https://partizan-be.onrender.com/uploads/avatars/boy.png';
-                }}
-              />
-            </div>
-            <div className='ms-2 flex-grow-1 min-width-0'>
-              <p
-                className='cursor-pointer text-primary mb-0 text-truncate'
-                style={{ maxWidth: '150px' }}
-                title={text}
+  const playerColumns = useMemo(() => {
+    const columns = getPlayerTableColumns({
+      handlePlayerClick,
+      location: window.location,
+      currentUserRole: currentUser?.role,
+      isCoach: currentUser?.isCoach,
+      activeTab: 'all-players',
+      visibleFields: undefined,
+    });
+    if (!columns) return [];
+    return columns.map((col) => {
+      const isActionColumn =
+        col.key === 'action' ||
+        ('dataIndex' in col && col.dataIndex === 'action');
+      if (isActionColumn) {
+        return {
+          ...col,
+          render: (_: unknown, record: any) => (
+            <div className='d-flex align-items-center gap-2'>
+              <button
+                onClick={() => handlePlayerClick(record)}
+                className='btn btn-sm btn-icon btn-outline-secondary'
+                title='View Details'
+                style={{ width: '32px', height: '32px' }}
               >
-                <span
-                  onClick={() => handlePlayerClick(record)}
-                  className='cursor-pointer'
-                >
-                  {text}
-                </span>
-              </p>
+                <i className='ti ti-eye fs-16' />
+              </button>
+              <button
+                onClick={() => handleEditPlayer(record)}
+                className='btn btn-sm btn-icon btn-outline-warning'
+                title='Edit'
+                style={{ width: '32px', height: '32px' }}
+              >
+                <i className='ti ti-edit fs-16' />
+              </button>
             </div>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Gender',
-      dataIndex: 'gender',
-      key: 'gender',
-      width: 100,
-      render: (text: string) => <span>{text}</span>,
-    },
-    {
-      title: 'Grade',
-      dataIndex: 'grade',
-      key: 'grade',
-      width: 100,
-    },
-    {
-      title: 'School',
-      dataIndex: 'schoolName',
-      key: 'schoolName',
-      width: 150,
-      render: (text: string) => (
-        <span
-          className='text-truncate d-inline-block'
-          style={{ maxWidth: '140px' }}
-          title={text}
-        >
-          {text || 'N/A'}
-        </span>
-      ),
-    },
-    {
-      title: 'Date of Birth',
-      dataIndex: 'dob',
-      key: 'dob',
-      width: 120,
-      render: (dob: string) =>
-        dob ? new Date(dob).toLocaleDateString() : 'N/A',
-    },
-    {
-      title: 'Action',
-      key: 'action',
-      width: 80,
-      render: (_: unknown, record: any) => {
-        const playerId = record._id || record.id;
-
-        const handleEditClick = (e: React.MouseEvent) => {
-          e.preventDefault();
-          e.stopPropagation();
-
-          console.log('Edit clicked for player:', playerId, record);
-
-          // Navigate programmatically to ensure state is passed
-          navigate(`${all_routes.editPlayer}/${playerId}`, {
-            state: {
-              player: {
-                ...record,
-                _id: playerId,
-                playerId: playerId,
-                id: playerId,
-                fullName: record.fullName || record.name,
-                name: record.fullName || record.name,
-                gender: record.gender,
-                dob: record.dob,
-                schoolName: record.schoolName,
-                grade: record.grade,
-                aauNumber: record.aauNumber,
-                avatar: record.avatar,
-              },
-              from: window.location.pathname,
-              key: Date.now(),
-            },
-          });
+          ),
         };
+      }
+      return col;
+    });
+  }, [
+    handlePlayerClick,
+    handleEditPlayer,
+    currentUser?.role,
+    currentUser?.isCoach,
+  ]);
 
-        return (
-          <div className='d-flex align-items-center'>
-            <div className='dropdown'>
-              <Link
-                to='#'
-                className='btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0'
-                data-bs-toggle='dropdown'
-                aria-expanded='false'
-                onClick={(e) => e.preventDefault()}
-              >
-                <i className='ti ti-dots-vertical fs-14' />
-              </Link>
-              <ul className='dropdown-menu dropdown-menu-right p-3'>
-                <li>
-                  <div
-                    className='dropdown-item rounded-1 cursor-pointer'
-                    onClick={() => handlePlayerClick(record)}
-                  >
-                    <i className='ti ti-menu me-2' />
-                    View
-                  </div>
-                </li>
-                <li>
-                  <div
-                    className='dropdown-item rounded-1 cursor-pointer'
-                    onClick={handleEditClick}
-                  >
-                    <i className='ti ti-edit me-2' />
-                    Edit
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-        );
-      },
-    },
-  ];
-
-  // Coach table columns - UPDATED WITH CLICK FUNCTIONALITY
   const coachColumns = [
     {
       title: 'Coach Name',
       dataIndex: 'fullName',
       key: 'fullName',
-      width: 200,
+      width: 220,
       render: (text: string, record: any) => (
         <div className='d-flex align-items-center'>
-          <div
-            className='avatar avatar-md cursor-pointer flex-shrink-0'
-            onClick={() => handleCoachClick(record)}
-          >
+          <div className='avatar avatar-sm flex-shrink-0 me-2'>
             <img
               src={'https://partizan-be.onrender.com/uploads/avatars/coach.png'}
               className='img-fluid rounded-circle'
               alt={`${text} avatar`}
+              style={{
+                width: '32px',
+                height: '32px',
+                objectFit: 'cover',
+                border: '1px solid #e8e8e8',
+              }}
             />
           </div>
-          <div className='ms-2 flex-grow-1 min-width-0'>
+          <div className='flex-grow-1 min-width-0'>
             <p
               className='cursor-pointer text-primary mb-0 text-truncate'
-              style={{ maxWidth: '150px' }}
+              style={{ maxWidth: '170px' }}
               title={text}
               onClick={() => handleCoachClick(record)}
             >
@@ -1056,36 +856,23 @@ const TeamDetail: React.FC = () => {
     {
       title: 'Action',
       key: 'action',
-      width: 80,
+      width: 120,
+      align: 'center' as const,
       render: (_: unknown, record: any) => (
-        <div className='d-flex align-items-center'>
-          <div className='dropdown'>
-            <Link
-              to='#'
-              className='btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0'
-              data-bs-toggle='dropdown'
-              aria-expanded='false'
-            >
-              <i className='ti ti-dots-vertical fs-14' />
-            </Link>
-            <ul className='dropdown-menu dropdown-menu-right p-3'>
-              <li>
-                <div
-                  className='dropdown-item rounded-1 cursor-pointer'
-                  onClick={() => handleCoachClick(record)}
-                >
-                  <EyeOutlined className='me-2' />
-                  View Coach
-                </div>
-              </li>
-            </ul>
-          </div>
+        <div className='d-flex align-items-center justify-content-center gap-2'>
+          <button
+            onClick={() => handleCoachClick(record)}
+            className='btn btn-sm btn-icon btn-outline-secondary'
+            title='View Coach'
+            style={{ width: '32px', height: '32px' }}
+          >
+            <i className='ti ti-eye fs-16' />
+          </button>
         </div>
       ),
     },
   ];
 
-  // Define tab items
   const tabItems = [
     {
       key: 'players',
@@ -1096,27 +883,26 @@ const TeamDetail: React.FC = () => {
         </span>
       ),
       children:
-        team?.playerIds && team.playerIds.length > 0 ? (
-          <div className='p-3'>
-            <div className='table-responsive'>
-              <Table
-                columns={playerColumns}
-                dataSource={team.playerIds}
-                rowKey='_id'
-                pagination={{
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  showTotal: (total, range) =>
-                    `Showing ${range[0]}-${range[1]} of ${total} players`,
-                }}
-                scroll={{ x: true }}
-              />
-            </div>
+        transformedPlayers.length > 0 ? (
+          <div className='table-responsive'>
+            <Table
+              columns={playerColumns}
+              dataSource={transformedPlayers}
+              rowKey='id'
+              pagination={{
+                pageSize: playerPageSize,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50', '100'],
+                onShowSizeChange: (_, size) => setPlayerPageSize(size),
+              }}
+              loading={tableLoading}
+              scroll={{ x: true }}
+            />
           </div>
         ) : (
-          <div className='p-5 text-center'>
-            <UserOutlined style={{ fontSize: '48px', color: '#6c757d' }} />
-            <h4 className='mt-3 text-muted'>No Players</h4>
+          <div className='text-center py-5'>
+            <UserOutlined style={{ fontSize: '48px', color: '#ccc' }} />
+            <h4 className='mt-3'>No Players</h4>
             <p className='text-muted'>
               No players have been added to this team yet.
             </p>
@@ -1133,26 +919,27 @@ const TeamDetail: React.FC = () => {
       ),
       children:
         team?.coachIds && team.coachIds.length > 0 ? (
-          <div className='p-3'>
-            <div className='table-responsive'>
-              <Table
-                columns={coachColumns}
-                dataSource={team.coachIds}
-                rowKey='_id'
-                pagination={{
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  showTotal: (total, range) =>
-                    `Showing ${range[0]}-${range[1]} of ${total} coaches`,
-                }}
-                scroll={{ x: true }}
-              />
-            </div>
+          <div className='table-responsive'>
+            <Table
+              columns={coachColumns}
+              dataSource={team?.coachIds || []}
+              rowKey={(record) =>
+                record._id || record.id || Math.random().toString()
+              }
+              pagination={{
+                pageSize: coachPageSize,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50', '100'],
+                onShowSizeChange: (_, size) => setCoachPageSize(size),
+              }}
+              loading={tableLoading}
+              scroll={{ x: true }}
+            />
           </div>
         ) : (
-          <div className='p-5 text-center'>
-            <TeamOutlined style={{ fontSize: '48px', color: '#6c757d' }} />
-            <h4 className='mt-3 text-muted'>No Coaches</h4>
+          <div className='text-center py-5'>
+            <TeamOutlined style={{ fontSize: '48px', color: '#ccc' }} />
+            <h4 className='mt-3'>No Coaches</h4>
             <p className='text-muted'>
               No coaches have been assigned to this team yet.
             </p>
@@ -1163,28 +950,21 @@ const TeamDetail: React.FC = () => {
       key: 'info',
       label: (
         <span className='d-flex align-items-center'>
-          <i className='ti ti-info-circle me-2'></i>
-          Team Info
+          <i className='ti ti-info-circle me-2'></i>Team Info
         </span>
       ),
       children: (
         <div className='p-3 team-info-cards'>
           <div className='row mx-2'>
-            {/* First Column - Basic Information */}
             <div className='col-md-4 ps-1 pe-2'>
               <div className='card border-1 shadow-sm h-100'>
                 <div className='card-header bg-transparent border-0'>
                   <h6 className='card-title mb-0'>
-                    <i className='ti ti-info-circle me-2'></i>
-                    Basic Information
+                    <i className='ti ti-info-circle me-2'></i>Basic Information
                   </h6>
                 </div>
                 <div className='card-body'>
-                  <Descriptions
-                    column={1}
-                    size='small'
-                    className='team-info-descriptions'
-                  >
+                  <Descriptions column={1} size='small'>
                     <Descriptions.Item label='Team Name'>
                       {team?.name}
                     </Descriptions.Item>
@@ -1205,22 +985,10 @@ const TeamDetail: React.FC = () => {
                     </Descriptions.Item>
                     <Descriptions.Item label='Status'>
                       <span
-                        className={`badge badge-soft-${
-                          team?.status === 'active'
-                            ? 'success'
-                            : team?.status === 'pending'
-                              ? 'warning'
-                              : 'danger'
-                        } d-inline-flex align-items-center`}
+                        className={`badge badge-soft-${team?.status === 'active' ? 'success' : team?.status === 'pending' ? 'warning' : 'danger'} d-inline-flex align-items-center`}
                       >
                         <i
-                          className={`ti ti-circle-filled fs-5 me-1 ${
-                            team?.status === 'active'
-                              ? 'text-success'
-                              : team?.status === 'pending'
-                                ? 'text-warning'
-                                : 'text-danger'
-                          }`}
+                          className={`ti ti-circle-filled fs-5 me-1 ${team?.status === 'active' ? 'text-success' : team?.status === 'pending' ? 'text-warning' : 'text-danger'}`}
                         ></i>
                         {team?.status?.charAt(0).toUpperCase() +
                           team?.status?.slice(1)}
@@ -1230,14 +998,11 @@ const TeamDetail: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* Second Column - Statistics */}
             <div className='col-md-4 px-2'>
               <div className='card border-1 shadow-sm h-100'>
                 <div className='card-header bg-transparent border-0'>
                   <h6 className='card-title mb-0'>
-                    <i className='ti ti-chart-bar me-2'></i>
-                    Statistics
+                    <i className='ti ti-chart-bar me-2'></i>Statistics
                   </h6>
                 </div>
                 <div className='card-body'>
@@ -1262,14 +1027,11 @@ const TeamDetail: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* Third Column - Notes */}
             <div className='col-md-4 ps-2 pe-1'>
               <div className='card border-1 shadow-sm h-100'>
                 <div className='card-header bg-transparent border-0'>
                   <h6 className='card-title mb-0'>
-                    <i className='ti ti-notes me-2'></i>
-                    Notes
+                    <i className='ti ti-notes me-2'></i>Notes
                   </h6>
                 </div>
                 <div className='card-body'>
@@ -1306,59 +1068,45 @@ const TeamDetail: React.FC = () => {
   return (
     <div className='page-wrapper'>
       <div className='content'>
+        <TeamListHeader teamData={[team]} onRefresh={handleRefresh} />
+
         <div className='card'>
           <div className='card-header d-flex align-items-center justify-content-between flex-wrap pb-0'>
-            {/* Left side - Back button and team info */}
             <div className='d-flex align-items-center'>
-              <Link to={all_routes.teams}>
-                <Button
-                  className='btn btn-primary d-flex align-items-center me-3'
-                  icon={<ArrowLeftOutlined />}
-                >
-                  Back to Teams
-                </Button>
-              </Link>
-              <div>
-                <h4 className='mb-1'>
-                  <TeamOutlined className='me-2' />
-                  {team.name} {team.year}
-                </h4>
-                <p className='text-muted mb-0'>
-                  {team.grade} Grade • {team.gender} •{' '}
-                  <span
-                    className={`text-${
-                      team.status === 'active'
-                        ? 'success'
-                        : team.status === 'pending'
-                          ? 'warning'
-                          : 'danger'
-                    }`}
-                  >
-                    {team.status?.charAt(0).toUpperCase() +
-                      team.status?.slice(1)}
-                  </span>
-                </p>
-              </div>
+              <h4 className='mb-1'>
+                <TeamOutlined className='me-2' />
+                {team.grade} Grade • {team.gender}
+              </h4>
             </div>
 
-            {/* Right side - Action buttons (styled like TeamList) */}
             <div className='d-flex align-items-center flex-wrap'>
+              {/* ── NEW: Send Acceptance Email ── */}
               <Button
-                className='btn btn-outline-info d-flex align-items-center mb-3 me-2 btn-export-emails'
+                className='btn btn-success d-flex align-items-center mb-3 me-2'
+                icon={<MailOutlined />}
+                onClick={() => setShowAcceptanceModal(true)}
+              >
+                Send Acceptance Email
+              </Button>
+
+              {/* ── Existing: Export Emails (unchanged) ── */}
+              <Button
+                className='btn d-flex align-items-center mb-3 me-2'
                 icon={<MailOutlined />}
                 onClick={exportParentEmails}
               >
                 Export Emails
               </Button>
+
               <Button
-                className='btn btn-outline-primary d-flex align-items-center mb-3 me-2'
+                className='btn d-flex align-items-center mb-3 me-2'
                 icon={<FileExcelOutlined />}
                 onClick={handleExportExcel}
               >
                 Export Excel
               </Button>
               <Button
-                className='btn btn-outline-primary d-flex align-items-center mb-3 me-2'
+                className='btn d-flex align-items-center mb-3 me-2'
                 icon={<FilePdfOutlined />}
                 onClick={handleExportPDF}
               >
@@ -1379,15 +1127,22 @@ const TeamDetail: React.FC = () => {
             <Tabs
               defaultActiveKey='players'
               items={tabItems}
-              className='team-detail-tabs px-3'
-              tabBarStyle={{
-                marginBottom: '16px',
-                borderBottom: '1px solid #e8e8e8',
-              }}
+              className='team-detail-tabs'
+              tabBarStyle={{ marginTop: '-16px' }}
             />
           </div>
         </div>
       </div>
+
+      {/* Acceptance Email Modal */}
+      {showAcceptanceModal && (
+        <AcceptanceEmailModal
+          team={team}
+          players={team?.playerIds || []}
+          onSend={handleSendAcceptanceEmail}
+          onClose={() => setShowAcceptanceModal(false)}
+        />
+      )}
     </div>
   );
 };
