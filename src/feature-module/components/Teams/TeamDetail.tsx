@@ -6,10 +6,9 @@ import {
   TeamOutlined,
   UserOutlined,
   EditOutlined,
-  FileExcelOutlined,
-  FilePdfOutlined,
   MailOutlined,
 } from '@ant-design/icons';
+import TooltipOption from '../../../core/common/tooltipOption';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../../context/AuthContext';
 import { all_routes } from '../../router/all_routes';
@@ -1080,7 +1079,27 @@ const TeamDetail: React.FC = () => {
             </div>
 
             <div className='d-flex align-items-center flex-wrap'>
-              {/* ── NEW: Send Acceptance Email ── */}
+              {/* ── Export / Refresh menu ── */}
+              <TooltipOption
+                onExportPDF={handleExportPDF}
+                onExportExcel={handleExportExcel}
+                onExportEmails={exportParentEmails}
+                onRefresh={handleRefresh}
+                showEmailExport={true}
+                showRefresh={true}
+              />
+
+              {/* ── Edit Team ── */}
+              <Link to={`${all_routes.editTeam}/${team._id}`}>
+                <Button
+                  className='btn btn-primary d-flex align-items-center mb-3 me-2'
+                  icon={<EditOutlined />}
+                >
+                  Edit Team
+                </Button>
+              </Link>
+
+              {/* ── Send Acceptance Email ── */}
               <Button
                 className='btn btn-success d-flex align-items-center mb-3 me-2'
                 icon={<MailOutlined />}
@@ -1088,38 +1107,6 @@ const TeamDetail: React.FC = () => {
               >
                 Send Acceptance Email
               </Button>
-
-              {/* ── Existing: Export Emails (unchanged) ── */}
-              <Button
-                className='btn d-flex align-items-center mb-3 me-2'
-                icon={<MailOutlined />}
-                onClick={exportParentEmails}
-              >
-                Export Emails
-              </Button>
-
-              <Button
-                className='btn d-flex align-items-center mb-3 me-2'
-                icon={<FileExcelOutlined />}
-                onClick={handleExportExcel}
-              >
-                Export Excel
-              </Button>
-              <Button
-                className='btn d-flex align-items-center mb-3 me-2'
-                icon={<FilePdfOutlined />}
-                onClick={handleExportPDF}
-              >
-                Export PDF
-              </Button>
-              <Link to={`${all_routes.editTeam}/${team._id}`}>
-                <Button
-                  className='btn btn-primary d-flex align-items-center mb-3'
-                  icon={<EditOutlined />}
-                >
-                  Edit Team
-                </Button>
-              </Link>
             </div>
           </div>
 

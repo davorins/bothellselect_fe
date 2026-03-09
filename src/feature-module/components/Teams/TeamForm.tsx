@@ -382,7 +382,9 @@ const TeamForm: React.FC = () => {
                 <li className='breadcrumb-item'>
                   <Link to={all_routes.adminDashboard}>Dashboard</Link>
                 </li>
-                <li className='breadcrumb-item'>Teams</li>
+                <li className='breadcrumb-item'>
+                  <Link to={all_routes.teams}>Teams</Link>
+                </li>
               </ol>
             </nav>
           </div>
