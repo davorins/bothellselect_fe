@@ -823,7 +823,7 @@ const TeamDetail: React.FC = () => {
 
     if (!columns) return [];
 
-    // Filter out DOB, School Name, and Seasons columns
+    // Filter out DOB, School Name, Seasons, and Gender columns
     const filteredColumns = columns.filter((col) => {
       // Skip DOB column
       if (
@@ -850,6 +850,13 @@ const TeamDetail: React.FC = () => {
       if (
         col.key === 'seasons' ||
         ('dataIndex' in col && col.dataIndex === 'seasons')
+      ) {
+        return false;
+      }
+      // Skip Gender column
+      if (
+        col.key === 'gender' ||
+        ('dataIndex' in col && col.dataIndex === 'gender')
       ) {
         return false;
       }
