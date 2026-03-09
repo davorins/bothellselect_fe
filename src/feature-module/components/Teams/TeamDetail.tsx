@@ -378,6 +378,29 @@ const TeamDetail: React.FC = () => {
     });
   };
 
+  // ── Toggle Payment Received ───────────────────────────────────────────────
+  const handleTogglePaymentReceived = async () => {
+    try {
+      const token = await getAuthToken();
+      const res = await axios.patch(
+        `${API_BASE_URL}/internal-teams/${team._id}/payment-received`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      setTeam((prev: any) => ({
+        ...prev,
+        paymentReceived: res.data.paymentReceived,
+      }));
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: 'Could not update payment status. Please try again.',
+        confirmButtonColor: '#3085d6',
+      });
+    }
+  };
+
   // ── Export helpers (unchanged) ────────────────────────────────────────────
   const exportParentEmails = async () => {
     try {
@@ -762,6 +785,37 @@ const TeamDetail: React.FC = () => {
       const isActionColumn =
         col.key === 'action' ||
         ('dataIndex' in col && col.dataIndex === 'action');
+      const isStatusColumn =
+        col.key === 'status' ||
+        ('dataIndex' in col && col.dataIndex === 'status');
+      if (isStatusColumn) {
+        return {
+          ...col,
+          title: 'Payment',
+          render: () => (
+            <div className='d-flex align-items-center gap-2'>
+              <div
+                className='form-check form-switch mb-0'
+                style={{ paddingLeft: '2.5em' }}
+              >
+                <input
+                  className='form-check-input'
+                  type='checkbox'
+                  role='switch'
+                  checked={!!team?.paymentReceived}
+                  onChange={handleTogglePaymentReceived}
+                  style={{ cursor: 'pointer', width: '2.2em', height: '1.2em' }}
+                />
+              </div>
+              <span
+                className={`fw-semibold small ${team?.paymentReceived ? 'text-success' : 'text-muted'}`}
+              >
+                {team?.paymentReceived ? 'Received' : 'Pending'}
+              </span>
+            </div>
+          ),
+        };
+      }
       if (isActionColumn) {
         return {
           ...col,
@@ -792,6 +846,8 @@ const TeamDetail: React.FC = () => {
   }, [
     handlePlayerClick,
     handleEditPlayer,
+    handleTogglePaymentReceived,
+    team?.paymentReceived,
     currentUser?.role,
     currentUser?.isCoach,
   ]);
@@ -982,16 +1038,34 @@ const TeamDetail: React.FC = () => {
                     <Descriptions.Item label='Tryout Year'>
                       {team?.tryoutYear || 'N/A'}
                     </Descriptions.Item>
-                    <Descriptions.Item label='Status'>
-                      <span
-                        className={`badge badge-soft-${team?.status === 'active' ? 'success' : team?.status === 'pending' ? 'warning' : 'danger'} d-inline-flex align-items-center`}
-                      >
-                        <i
-                          className={`ti ti-circle-filled fs-5 me-1 ${team?.status === 'active' ? 'text-success' : team?.status === 'pending' ? 'text-warning' : 'text-danger'}`}
-                        ></i>
-                        {team?.status?.charAt(0).toUpperCase() +
-                          team?.status?.slice(1)}
-                      </span>
+                    <Descriptions.Item label='Payment Received'>
+                      <div className='d-flex align-items-center gap-2'>
+                        <div
+                          className='form-check form-switch mb-0'
+                          style={{ paddingLeft: '2.5em' }}
+                        >
+                          <input
+                            className='form-check-input'
+                            type='checkbox'
+                            role='switch'
+                            id='paymentReceivedToggle'
+                            checked={!!team?.paymentReceived}
+                            onChange={handleTogglePaymentReceived}
+                            style={{
+                              cursor: 'pointer',
+                              width: '2.5em',
+                              height: '1.3em',
+                            }}
+                          />
+                        </div>
+                        <label
+                          htmlFor='paymentReceivedToggle'
+                          className={`mb-0 fw-semibold ${team?.paymentReceived ? 'text-success' : 'text-muted'}`}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {team?.paymentReceived ? 'Received' : 'Not Received'}
+                        </label>
+                      </div>
                     </Descriptions.Item>
                   </Descriptions>
                 </div>
@@ -1079,6 +1153,15 @@ const TeamDetail: React.FC = () => {
             </div>
 
             <div className='d-flex align-items-center flex-wrap'>
+              {/* ── Send Acceptance Email ── */}
+              <Button
+                className='btn btn-success d-flex align-items-center mb-3 me-2'
+                icon={<MailOutlined />}
+                onClick={() => setShowAcceptanceModal(true)}
+              >
+                Send Acceptance Email
+              </Button>
+
               {/* ── Export / Refresh menu ── */}
               <TooltipOption
                 onExportPDF={handleExportPDF}
@@ -1092,21 +1175,12 @@ const TeamDetail: React.FC = () => {
               {/* ── Edit Team ── */}
               <Link to={`${all_routes.editTeam}/${team._id}`}>
                 <Button
-                  className='btn btn-primary d-flex align-items-center mb-3 me-2'
+                  className='btn btn-primary d-flex align-items-center mb-3'
                   icon={<EditOutlined />}
                 >
                   Edit Team
                 </Button>
               </Link>
-
-              {/* ── Send Acceptance Email ── */}
-              <Button
-                className='btn btn-success d-flex align-items-center mb-3 me-2'
-                icon={<MailOutlined />}
-                onClick={() => setShowAcceptanceModal(true)}
-              >
-                Send Acceptance Email
-              </Button>
             </div>
           </div>
 
