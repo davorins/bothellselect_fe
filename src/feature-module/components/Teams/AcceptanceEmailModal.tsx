@@ -89,11 +89,11 @@ const AcceptanceEmailModal: React.FC<AcceptanceEmailModalProps> = ({
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
   <div style="max-width:600px;margin:30px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
-    <div style="background:#594230;padding:30px 20px;text-align:center;">
+    <div style="background:#f3f4f6;padding:30px 20px;text-align:center;">
       <img src="https://partizanhoops.com/assets/img/logo.png" alt="Partizan Basketball"
            style="max-width:160px;height:auto;margin-bottom:16px;" />
-      <h1 style="margin:0;color:#fff;font-size:24px;">Congratulations!</h1>
-            <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:15px;">
+      <h1 style="margin:0;color:#000;font-size:24px;">Congratulations!</h1>
+            <p style="margin:8px 0 0;color:rgba(0,0,0,0.85);font-size:15px;">
               Your child has been accepted to join the Partizan Family!
             </p>
     </div>
