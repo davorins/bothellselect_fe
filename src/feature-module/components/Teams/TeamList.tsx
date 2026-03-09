@@ -14,6 +14,7 @@ import {
   SortAscendingOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
+import axios from 'axios';
 import Swal from 'sweetalert2';
 import { InternalTeamTableData } from '../../../types/teamTypes';
 import { useAuth } from '../../../context/AuthContext';
@@ -32,6 +33,8 @@ import './TeamList.scss';
 const { Option } = Select;
 const { TabPane } = Tabs;
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 interface TeamFilterParams {
   nameFilter: string;
   yearFilter: string | null;
@@ -42,15 +45,6 @@ interface TeamFilterParams {
 }
 
 export type TeamSortOrder = 'asc' | 'desc' | 'recent' | 'recentlyAdded' | null;
-
-// Define routes for teams if they don't exist in all_routes
-const teamRoutes = {
-  teamList: '/teams',
-  teamGrid: '/teams/grid',
-  createTeam: '/teams/create',
-  teamDetail: '/teams/detail',
-  editTeam: '/teams/edit',
-};
 
 const TeamList: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -73,10 +67,7 @@ const TeamList: React.FC = () => {
   });
 
   const [localSortOrder, setLocalSortOrder] = useState<TeamSortOrder>('recent');
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-  });
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
 
   const [metadata, setMetadata] = useState({
     years: [] as number[],
@@ -84,7 +75,6 @@ const TeamList: React.FC = () => {
     tryoutSeasons: [] as string[],
   });
 
-  // Generate grades 1-12 for the filter dropdown
   const gradeOptions = useMemo(() => {
     const grades = [];
     for (let i = 1; i <= 12; i++) {
@@ -92,11 +82,7 @@ const TeamList: React.FC = () => {
       if (i === 1) suffix = 'st';
       else if (i === 2) suffix = 'nd';
       else if (i === 3) suffix = 'rd';
-
-      grades.push({
-        value: i.toString(),
-        label: `${i}${suffix} Grade`,
-      });
+      grades.push({ value: i.toString(), label: `${i}${suffix} Grade` });
     }
     return grades;
   }, []);
@@ -106,16 +92,10 @@ const TeamList: React.FC = () => {
       setLoading(true);
       const token = await getAuthToken();
       const queryParams = new URLSearchParams(filterParams).toString();
-
-      const url = `${process.env.REACT_APP_API_BASE_URL}/internal-teams${
-        queryParams ? `?${queryParams}` : ''
-      }`;
-      console.log('Fetching teams from:', url);
+      const url = `${API_BASE_URL}/internal-teams${queryParams ? `?${queryParams}` : ''}`;
 
       const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {
@@ -124,8 +104,6 @@ const TeamList: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log('Teams data received:', data);
-
       setTeams(
         data.map((team: any) => ({
           id: team._id,
@@ -156,25 +134,17 @@ const TeamList: React.FC = () => {
   const fetchMetadata = async () => {
     try {
       const token = await getAuthToken();
-      const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL}/internal-teams/metadata`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
+      const response = await fetch(`${API_BASE_URL}/internal-teams/metadata`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (response.ok) {
         const data = await response.json();
-        console.log('Metadata received:', data);
         setMetadata({
           years: data.years || [],
           grades: data.grades || [],
           tryoutSeasons: data.tryoutSeasons || [],
         });
       } else {
-        console.warn('Failed to fetch metadata, using defaults');
         setMetadata({
           years: [2024, 2025],
           grades: [],
@@ -182,7 +152,6 @@ const TeamList: React.FC = () => {
         });
       }
     } catch (err) {
-      console.error('Failed to fetch metadata:', err);
       setMetadata({
         years: [2024, 2025],
         grades: [],
@@ -196,7 +165,39 @@ const TeamList: React.FC = () => {
     fetchMetadata();
   }, []);
 
-  // Debounced filter changes
+  // ── Toggle team status inline ──────────────────────────────────────────────
+  const handleToggleTeamStatus = useCallback(
+    async (teamId: string, currentStatus: string) => {
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      // Optimistic update
+      setTeams((prev) =>
+        prev.map((t) => (t.id === teamId ? { ...t, status: newStatus } : t)),
+      );
+      try {
+        const token = await getAuthToken();
+        await axios.patch(
+          `${API_BASE_URL}/internal-teams/${teamId}/status`,
+          { status: newStatus },
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+      } catch (err) {
+        // Revert on failure
+        setTeams((prev) =>
+          prev.map((t) =>
+            t.id === teamId ? { ...t, status: currentStatus } : t,
+          ),
+        );
+        Swal.fire({
+          icon: 'error',
+          title: 'Update Failed',
+          text: 'Could not update team status. Please try again.',
+          confirmButtonColor: '#3085d6',
+        });
+      }
+    },
+    [getAuthToken],
+  );
+
   const debouncedFilterChange = useMemo(
     () =>
       debounce((newFilters: Partial<TeamFilterParams>) => {
@@ -233,19 +234,11 @@ const TeamList: React.FC = () => {
     message.info('Filters reset');
   }, []);
 
-  const handleDateRangeChange = useCallback(
-    (range: [Moment, Moment] | null) => {
-      handleFilterChange({ dateRange: range });
-    },
-    [handleFilterChange],
-  );
-
   const handleSortChange = useCallback((newSortOrder: TeamSortOrder) => {
     setLocalSortOrder(newSortOrder);
     setPagination((prev) => ({ ...prev, current: 1 }));
   }, []);
 
-  // Filter teams
   const filteredTeams = useMemo(() => {
     return teams.filter((team) => {
       const matchesName = team.name
@@ -260,37 +253,23 @@ const TeamList: React.FC = () => {
         !localFilters.genderFilter || team.gender === localFilters.genderFilter;
       const matchesStatus =
         !localFilters.statusFilter || team.status === localFilters.statusFilter;
-
-      // Date range filter - if you still want to use date filtering, you'll need to add createdAt back
-      // For now, we'll skip date filtering since we removed createdAt
-      let matchesDateRange = true;
-
       return (
         matchesName &&
         matchesYear &&
         matchesGrade &&
         matchesGender &&
-        matchesStatus &&
-        matchesDateRange
+        matchesStatus
       );
     });
   }, [teams, localFilters]);
 
-  // Sort teams
   const sortedTeams = useMemo(() => {
     if (!localSortOrder) return filteredTeams;
     return [...filteredTeams].sort((a, b) => {
-      if (localSortOrder === 'asc') {
-        return a.name.localeCompare(b.name);
-      } else if (localSortOrder === 'desc') {
-        return b.name.localeCompare(a.name);
-      } else if (
-        localSortOrder === 'recent' ||
-        localSortOrder === 'recentlyAdded'
-      ) {
-        // Without createdAt, fall back to sorting by year
+      if (localSortOrder === 'asc') return a.name.localeCompare(b.name);
+      if (localSortOrder === 'desc') return b.name.localeCompare(a.name);
+      if (localSortOrder === 'recent' || localSortOrder === 'recentlyAdded')
         return (b.year || 0) - (a.year || 0);
-      }
       return 0;
     });
   }, [filteredTeams, localSortOrder]);
@@ -304,7 +283,6 @@ const TeamList: React.FC = () => {
     setTimeout(() => setTableLoading(false), 100);
   }, []);
 
-  // Delete function with SweetAlert2
   const handleDeleteTeam = async (teamId: string, teamName: string) => {
     try {
       const result = await Swal.fire({
@@ -321,7 +299,7 @@ const TeamList: React.FC = () => {
           try {
             const token = await getAuthToken();
             const response = await fetch(
-              `${process.env.REACT_APP_API_BASE_URL}/internal-teams/${teamId}`,
+              `${API_BASE_URL}/internal-teams/${teamId}`,
               {
                 method: 'DELETE',
                 headers: {
@@ -330,12 +308,10 @@ const TeamList: React.FC = () => {
                 },
               },
             );
-
             if (!response.ok) {
               const errorData = await response.json();
               throw new Error(errorData.error || 'Failed to delete team');
             }
-
             return await response.json();
           } catch (error) {
             Swal.showValidationMessage(
@@ -349,7 +325,6 @@ const TeamList: React.FC = () => {
 
       if (result.isConfirmed) {
         setTeams((prevTeams) => prevTeams.filter((team) => team.id !== teamId));
-
         await Swal.fire({
           title: 'Deleted!',
           text: `Team "${teamName}" has been permanently deleted.`,
@@ -357,19 +332,16 @@ const TeamList: React.FC = () => {
           timer: 2000,
           showConfirmButton: false,
         });
-
         message.success(`Team "${teamName}" deleted permanently`);
       }
     } catch (err) {
       console.error('Delete error:', err);
-
       await Swal.fire({
         title: 'Error!',
         text: err instanceof Error ? err.message : 'Failed to delete team',
         icon: 'error',
         confirmButtonColor: '#3085d6',
       });
-
       setError(err instanceof Error ? err.message : 'Failed to delete team');
     }
   };
@@ -379,11 +351,12 @@ const TeamList: React.FC = () => {
     message.success('Refreshing teams...');
   }, []);
 
-  // Columns — depend on actions and dynamic field names
+  // Columns — pass handleToggleTeamStatus so status column can render inline toggle
   const columns = useMemo(() => {
     try {
       const cols = getTeamTableColumns({
         handleDeleteTeam,
+        handleToggleTeamStatus,
         location,
         loading: loading && teams.length === 0,
         currentUserRole: currentUser?.role,
@@ -393,9 +366,15 @@ const TeamList: React.FC = () => {
       console.error('Error generating columns:', error);
       return [];
     }
-  }, [handleDeleteTeam, location, loading, teams.length, currentUser?.role]);
+  }, [
+    handleDeleteTeam,
+    handleToggleTeamStatus,
+    location,
+    loading,
+    teams.length,
+    currentUser?.role,
+  ]);
 
-  // Pagination data
   const dataSource = useMemo(() => {
     const start = (pagination.current - 1) * pagination.pageSize;
     return sortedTeams.slice(start, start + pagination.pageSize);
@@ -466,33 +445,30 @@ const TeamList: React.FC = () => {
           <div className='card-header d-flex align-items-center justify-content-between flex-wrap pb-0'>
             <h4 className='mb-5'></h4>
             <div className='d-flex align-items-center flex-wrap'>
-              {/* Date Range Picker - only for admin/coach */}
               {(currentUser?.role === 'admin' || currentUser?.isCoach) && (
-                <>
-                  <div className='dropdown mb-3 me-2'>
-                    <Link
-                      to='#'
-                      className='btn btn-outline-light bg-white dropdown-toggle'
-                      data-bs-toggle='dropdown'
-                      data-bs-auto-close='outside'
-                    >
-                      <FilterOutlined className='me-2' />
-                      Filter
-                    </Link>
-                    <div
-                      className='dropdown-menu drop-width'
-                      ref={dropdownMenuRef}
-                    >
-                      <TeamFilters
-                        filters={localFilters}
-                        onFilterChange={handleFilterChange}
-                        onReset={handleResetFilters}
-                        gradeOptions={gradeOptions}
-                        yearOptions={metadata.years}
-                      />
-                    </div>
+                <div className='dropdown mb-3 me-2'>
+                  <Link
+                    to='#'
+                    className='btn btn-outline-light bg-white dropdown-toggle'
+                    data-bs-toggle='dropdown'
+                    data-bs-auto-close='outside'
+                  >
+                    <FilterOutlined className='me-2' />
+                    Filter
+                  </Link>
+                  <div
+                    className='dropdown-menu drop-width'
+                    ref={dropdownMenuRef}
+                  >
+                    <TeamFilters
+                      filters={localFilters}
+                      onFilterChange={handleFilterChange}
+                      onReset={handleResetFilters}
+                      gradeOptions={gradeOptions}
+                      yearOptions={metadata.years}
+                    />
                   </div>
-                </>
+                </div>
               )}
 
               <div className='dropdown mb-3'>
@@ -520,11 +496,10 @@ const TeamList: React.FC = () => {
           </div>
 
           <div className='card-body p-0 py-3'>
-            {/* Loading indicators */}
             {loading && teams.length > 0 && (
               <div className='alert alert-info mb-3 mx-3'>
-                <i className='ti ti-loader me-2'></i>
-                Updating teams... Please wait.
+                <i className='ti ti-loader me-2'></i>Updating teams... Please
+                wait.
               </div>
             )}
 
@@ -548,9 +523,7 @@ const TeamList: React.FC = () => {
                       onChange={handleTableChange}
                       loading={tableLoading}
                       scroll={{ x: true }}
-                      style={{
-                        marginTop: '-28px',
-                      }}
+                      style={{ marginTop: '-28px' }}
                     />
                   </div>
                 ) : (

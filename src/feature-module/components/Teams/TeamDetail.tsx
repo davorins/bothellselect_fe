@@ -378,24 +378,64 @@ const TeamDetail: React.FC = () => {
     });
   };
 
-  // ── Toggle Payment Received ───────────────────────────────────────────────
-  const handleTogglePaymentReceived = async () => {
+  // ── Toggle Team Status (active / inactive) ───────────────────────────────
+  const handleToggleTeamStatus = async () => {
+    const newStatus = team?.status === 'active' ? 'inactive' : 'active';
     try {
       const token = await getAuthToken();
-      const res = await axios.patch(
-        `${API_BASE_URL}/internal-teams/${team._id}/payment-received`,
-        {},
+      await axios.patch(
+        `${API_BASE_URL}/internal-teams/${team._id}/status`,
+        { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      setTeam((prev: any) => ({
-        ...prev,
-        paymentReceived: res.data.paymentReceived,
-      }));
+      setTeam((prev: any) => ({ ...prev, status: newStatus }));
     } catch (err) {
       Swal.fire({
         icon: 'error',
         title: 'Update Failed',
-        text: 'Could not update payment status. Please try again.',
+        text: 'Could not update team status. Please try again.',
+        confirmButtonColor: '#3085d6',
+      });
+    }
+  };
+
+  // ── Toggle per-player payment (paid / unpaid) ────────────────────────────
+  const handleTogglePlayerPayment = async (player: any) => {
+    const isPaid =
+      player.paymentStatus === 'paid' || player.paymentComplete === true;
+    const newStatus = isPaid ? 'pending' : 'paid';
+    // Optimistic UI update
+    setPlayersWithDetails((prev: any[]) =>
+      prev.map((p: any) =>
+        (p._id || p.id) === (player.id || player._id)
+          ? { ...p, paymentStatus: newStatus, paymentComplete: !isPaid }
+          : p,
+      ),
+    );
+    try {
+      const token = await getAuthToken();
+      await axios.patch(
+        `${API_BASE_URL}/players/${player.id || player._id}/payment-status`,
+        { paymentStatus: newStatus, paymentComplete: !isPaid },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+    } catch (err) {
+      // Revert on failure
+      setPlayersWithDetails((prev: any[]) =>
+        prev.map((p: any) =>
+          (p._id || p.id) === (player.id || player._id)
+            ? {
+                ...p,
+                paymentStatus: isPaid ? 'paid' : 'pending',
+                paymentComplete: isPaid,
+              }
+            : p,
+        ),
+      );
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: 'Could not update player payment. Please try again.',
         confirmButtonColor: '#3085d6',
       });
     }
@@ -780,74 +820,95 @@ const TeamDetail: React.FC = () => {
       activeTab: 'all-players',
       visibleFields: undefined,
     });
+
     if (!columns) return [];
+
     return columns.map((col) => {
-      const isActionColumn =
-        col.key === 'action' ||
-        ('dataIndex' in col && col.dataIndex === 'action');
+      // Check if this is the status column
       const isStatusColumn =
         col.key === 'status' ||
-        ('dataIndex' in col && col.dataIndex === 'status');
+        ('dataIndex' in col &&
+          (col.dataIndex === 'status' || col.key === 'status'));
+
       if (isStatusColumn) {
         return {
           ...col,
-          title: 'Payment',
-          render: () => (
-            <div className='d-flex align-items-center gap-2'>
-              <div
-                className='form-check form-switch mb-0'
-                style={{ paddingLeft: '2.5em' }}
-              >
-                <input
-                  className='form-check-input'
-                  type='checkbox'
-                  role='switch'
-                  checked={!!team?.paymentReceived}
-                  onChange={handleTogglePaymentReceived}
-                  style={{ cursor: 'pointer', width: '2.2em', height: '1.2em' }}
-                />
+          width: 120,
+          render: (_: unknown, record: any) => {
+            const isPaid =
+              record.paymentStatus === 'paid' ||
+              record.paymentComplete === true;
+            return (
+              <div className='d-flex align-items-center gap-2'>
+                <div
+                  className='form-check form-switch mb-0'
+                  style={{ paddingLeft: '2.5em' }}
+                >
+                  <input
+                    className='form-check-input'
+                    type='checkbox'
+                    role='switch'
+                    checked={isPaid}
+                    onChange={() => handleTogglePlayerPayment(record)}
+                    style={{
+                      cursor: 'pointer',
+                      width: '2.2em',
+                      height: '1.2em',
+                    }}
+                  />
+                </div>
+                <span
+                  className={`fw-semibold small ${isPaid ? 'text-success' : 'text-muted'}`}
+                >
+                  {isPaid ? 'Paid' : 'Pending'}
+                </span>
               </div>
-              <span
-                className={`fw-semibold small ${team?.paymentReceived ? 'text-success' : 'text-muted'}`}
-              >
-                {team?.paymentReceived ? 'Received' : 'Pending'}
-              </span>
-            </div>
-          ),
+            );
+          },
         };
       }
+
+      // Check if this is the action column - keep it but remove the toggle
+      const isActionColumn =
+        col.key === 'action' ||
+        ('dataIndex' in col && col.dataIndex === 'action');
+
       if (isActionColumn) {
         return {
           ...col,
-          render: (_: unknown, record: any) => (
-            <div className='d-flex align-items-center gap-2'>
-              <button
-                onClick={() => handlePlayerClick(record)}
-                className='btn btn-sm btn-icon btn-outline-secondary'
-                title='View Details'
-                style={{ width: '32px', height: '32px' }}
-              >
-                <i className='ti ti-eye fs-16' />
-              </button>
-              <button
-                onClick={() => handleEditPlayer(record)}
-                className='btn btn-sm btn-icon btn-outline-warning'
-                title='Edit'
-                style={{ width: '32px', height: '32px' }}
-              >
-                <i className='ti ti-edit fs-16' />
-              </button>
-            </div>
-          ),
+          width: 120,
+          render: (_: unknown, record: any) => {
+            return (
+              <div className='d-flex align-items-center gap-2'>
+                <button
+                  onClick={() => handlePlayerClick(record)}
+                  className='btn btn-sm btn-icon btn-outline-secondary'
+                  title='View Details'
+                  style={{ width: '32px', height: '32px' }}
+                >
+                  <i className='ti ti-eye fs-16' />
+                </button>
+                <button
+                  onClick={() => handleEditPlayer(record)}
+                  className='btn btn-sm btn-icon btn-outline-warning'
+                  title='Edit'
+                  style={{ width: '32px', height: '32px' }}
+                >
+                  <i className='ti ti-edit fs-16' />
+                </button>
+              </div>
+            );
+          },
         };
       }
+
+      // For all other columns, return as is
       return col;
     });
   }, [
     handlePlayerClick,
     handleEditPlayer,
-    handleTogglePaymentReceived,
-    team?.paymentReceived,
+    handleTogglePlayerPayment,
     currentUser?.role,
     currentUser?.isCoach,
   ]);
@@ -1038,7 +1099,7 @@ const TeamDetail: React.FC = () => {
                     <Descriptions.Item label='Tryout Year'>
                       {team?.tryoutYear || 'N/A'}
                     </Descriptions.Item>
-                    <Descriptions.Item label='Payment Received'>
+                    <Descriptions.Item label='Status'>
                       <div className='d-flex align-items-center gap-2'>
                         <div
                           className='form-check form-switch mb-0'
@@ -1048,9 +1109,9 @@ const TeamDetail: React.FC = () => {
                             className='form-check-input'
                             type='checkbox'
                             role='switch'
-                            id='paymentReceivedToggle'
-                            checked={!!team?.paymentReceived}
-                            onChange={handleTogglePaymentReceived}
+                            id='teamStatusToggle'
+                            checked={team?.status === 'active'}
+                            onChange={handleToggleTeamStatus}
                             style={{
                               cursor: 'pointer',
                               width: '2.5em',
@@ -1059,11 +1120,11 @@ const TeamDetail: React.FC = () => {
                           />
                         </div>
                         <label
-                          htmlFor='paymentReceivedToggle'
-                          className={`mb-0 fw-semibold ${team?.paymentReceived ? 'text-success' : 'text-muted'}`}
+                          htmlFor='teamStatusToggle'
+                          className={`mb-0 fw-semibold ${team?.status === 'active' ? 'text-success' : 'text-danger'}`}
                           style={{ cursor: 'pointer' }}
                         >
-                          {team?.paymentReceived ? 'Received' : 'Not Received'}
+                          {team?.status === 'active' ? 'Active' : 'Inactive'}
                         </label>
                       </div>
                     </Descriptions.Item>

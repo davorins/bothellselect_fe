@@ -8,7 +8,6 @@ import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { InternalTeamTableData } from '../../../types/teamTypes';
 
-// Define routes for teams if they don't exist in all_routes
 const teamRoutes = {
   teamDetail: '/teams/detail',
   editTeam: '/teams/edit',
@@ -16,13 +15,12 @@ const teamRoutes = {
 
 interface TeamTableColumnsProps {
   handleDeleteTeam: (teamId: string, teamName: string) => void;
+  handleToggleTeamStatus: (teamId: string, currentStatus: string) => void;
   location: any;
   loading?: boolean;
   currentUserRole?: string;
-  // Remove visibleFields prop since we're not using dynamic fields
 }
 
-// Skeleton loader for table rows
 export const TeamTableSkeleton: React.FC<{ rows?: number }> = ({
   rows = 10,
 }) => {
@@ -167,6 +165,7 @@ export const exportTeamsToExcel = <T extends InternalTeamTableData>(
 
 export const getTeamTableColumns = ({
   handleDeleteTeam,
+  handleToggleTeamStatus,
   location,
   loading = false,
   currentUserRole,
@@ -297,7 +296,6 @@ export const getTeamTableColumns = ({
     ];
   }
 
-  // ── Team Name column — always shown ─────────────────────────────────────────
   const nameCol = {
     title: 'Team Name',
     dataIndex: 'name',
@@ -343,7 +341,6 @@ export const getTeamTableColumns = ({
       (a.name || '').localeCompare(b.name || ''),
   };
 
-  // Year column
   const yearCol = {
     title: 'Year',
     dataIndex: 'year',
@@ -352,7 +349,6 @@ export const getTeamTableColumns = ({
       (a.year || 0) - (b.year || 0),
   };
 
-  // Grade column
   const gradeCol = {
     title: 'Grade',
     dataIndex: 'grade',
@@ -367,14 +363,10 @@ export const getTeamTableColumns = ({
       else if (gradeNum === 3) suffix = 'rd';
       return `${gradeNum}${suffix} Grade`;
     },
-    sorter: (a: InternalTeamTableData, b: InternalTeamTableData) => {
-      const aNum = parseInt(a.grade || '0');
-      const bNum = parseInt(b.grade || '0');
-      return aNum - bNum;
-    },
+    sorter: (a: InternalTeamTableData, b: InternalTeamTableData) =>
+      parseInt(a.grade || '0') - parseInt(b.grade || '0'),
   };
 
-  // Gender column
   const genderCol = {
     title: 'Gender',
     dataIndex: 'gender',
@@ -383,7 +375,6 @@ export const getTeamTableColumns = ({
       (a.gender || '').localeCompare(b.gender || ''),
   };
 
-  // Players count
   const playersCol = {
     title: 'Players',
     dataIndex: 'playerCount',
@@ -393,7 +384,6 @@ export const getTeamTableColumns = ({
       (a.playerCount || 0) - (b.playerCount || 0),
   };
 
-  // Coaches count
   const coachesCol = {
     title: 'Coaches',
     dataIndex: 'coachCount',
@@ -403,7 +393,6 @@ export const getTeamTableColumns = ({
       (a.coachCount || 0) - (b.coachCount || 0),
   };
 
-  // Tryout Season column
   const tryoutSeasonCol = {
     title: 'Tryout Season',
     dataIndex: 'tryoutSeason',
@@ -415,25 +404,46 @@ export const getTeamTableColumns = ({
       (a.tryoutSeason || '').localeCompare(b.tryoutSeason || ''),
   };
 
-  // Status column
+  // Status column — admin gets inline toggle, others get badge
   const statusCol = {
     title: 'Status',
     key: 'status',
-    width: 130,
+    width: 150,
     render: (_: unknown, record: InternalTeamTableData) => {
-      const status = getTeamStatus(record);
-      const badgeColor =
-        status === 'Active'
-          ? 'success'
-          : status === 'Pending Payment'
-            ? 'warning'
-            : 'danger';
+      const isActive = record.status === 'active';
+      if (currentUserRole === 'admin') {
+        return (
+          <div className='d-flex align-items-center gap-2'>
+            <div
+              className='form-check form-switch mb-0'
+              style={{ paddingLeft: '2.5em' }}
+            >
+              <input
+                className='form-check-input'
+                type='checkbox'
+                role='switch'
+                checked={isActive}
+                onChange={() =>
+                  handleToggleTeamStatus(record.id, record.status || 'active')
+                }
+                style={{ cursor: 'pointer', width: '2.2em', height: '1.2em' }}
+              />
+            </div>
+            <span
+              className={`fw-semibold small ${isActive ? 'text-success' : 'text-danger'}`}
+            >
+              {isActive ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+        );
+      }
+      const badgeColor = isActive ? 'success' : 'danger';
       return (
         <span
           className={`badge badge-soft-${badgeColor} d-inline-flex align-items-center`}
         >
           <i className={`ti ti-circle-filled fs-5 me-1 text-${badgeColor}`}></i>
-          {status}
+          {isActive ? 'Active' : 'Inactive'}
         </span>
       );
     },
@@ -441,7 +451,6 @@ export const getTeamTableColumns = ({
       getTeamStatus(a).localeCompare(getTeamStatus(b)),
   };
 
-  // Action column
   const actionCol = {
     title: 'Actions',
     key: 'actions',
@@ -450,7 +459,6 @@ export const getTeamTableColumns = ({
     render: (_: unknown, record: InternalTeamTableData) => {
       const canEdit =
         currentUserRole === 'admin' || currentUserRole === 'coach';
-
       return (
         <div className='d-flex align-items-center justify-content-center gap-2'>
           <Link
@@ -470,10 +478,7 @@ export const getTeamTableColumns = ({
               <Link
                 to={`${teamRoutes.editTeam}/${record.id}`}
                 state={{
-                  team: {
-                    ...record,
-                    _id: record.id,
-                  },
+                  team: { ...record, _id: record.id },
                   from: location.pathname,
                 }}
               >
