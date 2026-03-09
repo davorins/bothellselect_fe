@@ -65,42 +65,81 @@ const AcceptanceEmailModal: React.FC<AcceptanceEmailModalProps> = ({
     return Object.keys(errs).length === 0;
   };
 
-  const buildPaymentBlock = () => {
-    const lines: string[] = [];
+  // ── Builds payment rows for the HTML preview ─────────────────────────────
+  const buildPaymentRowsHtml = () => {
+    let html = '';
     if (paymentType === 'square' || paymentType === 'both') {
-      lines.push(`Square: ${squareLink || '[Square link]'}`);
+      html += `<tr><td style="padding:10px 0;border-bottom:1px solid #eee;">
+        <strong>Square</strong><br/>
+        <a href="${squareLink || '#'}" style="color:#594230;word-break:break-all;">${squareLink || '[Square link]'}</a>
+      </td></tr>`;
     }
     if (paymentType === 'zelle' || paymentType === 'both') {
-      lines.push(`Zelle: ${zelleInfo || '[Zelle info]'}`);
+      html += `<tr><td style="padding:10px 0;border-bottom:1px solid #eee;">
+        <strong>Zelle</strong><br/>
+        <span style="color:#333;">${zelleInfo || '[Zelle info]'}</span>
+      </td></tr>`;
     }
-    return lines.join('\n');
+    return html;
   };
 
-  // ── Email preview (plain-text style shown in a styled box) ───────────────
-  const buildPreview =
-    () => `Subject: Congratulations! Your Child Has Been Accepted to ${teamDisplayName}
-
-Dear Parent/Guardian,
-
-We are thrilled to inform you that your child has been officially selected to join the ${teamDisplayName} team! After careful evaluation of all tryout participants, your player demonstrated the skill, dedication, and character that makes them a perfect fit for our program.
-
-Please take a moment to celebrate this achievement — it is well deserved!
-
-──────────────────────────────
-NEXT STEPS — ACTION REQUIRED
-──────────────────────────────
-
-To secure your child's spot on the team, payment must be completed within ${paymentDeadlineHours} hour${paymentDeadlineHours !== 1 ? 's' : ''} of receiving this email. Failure to complete payment within this window may result in the spot being offered to the next player on the waitlist.
-
-Payment Options:
-${buildPaymentBlock()}
-${additionalInfo.trim() ? `\n──────────────────────────────\nADDITIONAL INFORMATION\n──────────────────────────────\n${additionalInfo.trim()}\n` : ''}
-If you have any questions, please don't hesitate to reach out.
-
-We look forward to a great season ahead!
-
-Best regards,
-${teamDisplayName} Coaching Staff`;
+  // ── HTML email preview — matches what parents will actually receive ───────
+  const buildPreview = () => `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+  <div style="max-width:600px;margin:30px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+    <div style="background:#594230;padding:30px 20px;text-align:center;">
+      <img src="https://partizanhoops.com/assets/img/logo.png" alt="Partizan Basketball"
+           style="max-width:160px;height:auto;margin-bottom:16px;" />
+      <h1 style="margin:0;color:#fff;font-size:24px;">Congratulations!</h1>
+            <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:15px;">
+              Your child has been accepted to join the Partizan Family!
+            </p>
+    </div>
+    <div style="padding:30px 24px;">
+      <p style="font-size:16px;color:#333;margin-top:0;">Dear Parent/Guardian,</p>
+      <p style="font-size:15px;color:#444;line-height:1.7;">
+        We are happy to inform you that your child has been selected to join the team! We look forward to a successful season and your child improving their basketball skills, basketball IQ, and improving their leadership skills as well.
+      </p>
+      <div style="background:#fff8e1;border-left:4px solid #f59e0b;padding:16px;border-radius:4px;margin:24px 0;">
+        <h3 style="margin:0 0 8px;color:#92400e;font-size:16px;">⚠️ Action Required — Payment Deadline</h3>
+        <p style="margin:0;color:#78350f;font-size:14px;line-height:1.6;">
+          To secure your child's spot on the team, payment must be completed within
+          <strong>${paymentDeadlineHours} hour${paymentDeadlineHours !== 1 ? 's' : ''}</strong>
+          of receiving this email.
+        </p>
+      </div>
+      <h3 style="color:#594230;font-size:16px;margin-bottom:8px;">Payment Options</h3>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;overflow:hidden;">
+        <tbody>${buildPaymentRowsHtml()}</tbody>
+      </table>
+      ${
+        additionalInfo.trim()
+          ? `
+      <div style="background:#f0f4f8;padding:15px;border-radius:5px;margin:20px 0;border-left:4px solid #594230;">
+        <h3 style="margin-top:0;color:#594230;">Additional Information</h3>
+        <p style="margin:0;white-space:pre-line;color:#333;">${additionalInfo.trim()}</p>
+      </div>`
+          : ''
+      }
+      <p style="font-size:14px;color:#555;margin-top:24px;">
+        If you have any questions please reach out at
+        <a href="mailto:partizanhoops@proton.me" style="color:#594230;">partizanhoops@proton.me</a>.
+      </p>
+      <p style="font-size:15px;font-weight:bold;color:#333;">We look forward to a great season ahead!</p>
+      <p style="font-size:14px;color:#555;margin-bottom:0;">
+        Best regards,<br/>
+        <strong>${teamDisplayName} Coaching Staff</strong><br/>
+        Partizan Basketball
+      </p>
+    </div>
+    <div style="background:#f3f4f6;padding:16px 24px;text-align:center;font-size:12px;color:#6b7280;">
+      <p style="margin:0;">Partizan Basketball &nbsp;|&nbsp; partizanhoops@proton.me</p>
+    </div>
+  </div>
+</body>
+</html>`;
 
   const handleSend = async () => {
     if (!validate()) return;
@@ -368,22 +407,21 @@ ${teamDisplayName} Coaching Staff`;
               <div>
                 <div className='alert alert-info py-2 mb-3'>
                   <i className='ti ti-info-circle me-2' />
-                  This is a preview of the email that will be sent. Each parent
-                  will receive a personalized version with their child's name.
+                  Live preview of the email parents will receive.{' '}
+                  <strong>[Player Name]</strong> will be replaced with each
+                  player's actual name.
                 </div>
-                <div
-                  className='border rounded p-4'
+                <iframe
+                  srcDoc={buildPreview()}
+                  title='Email Preview'
                   style={{
-                    background: '#fafafa',
-                    fontFamily: 'monospace',
-                    fontSize: '13px',
-                    whiteSpace: 'pre-wrap',
-                    lineHeight: '1.7',
-                    color: '#333',
+                    width: '100%',
+                    height: '520px',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '6px',
+                    background: '#fff',
                   }}
-                >
-                  {buildPreview()}
-                </div>
+                />
               </div>
             )}
           </div>
