@@ -823,7 +823,33 @@ const TeamDetail: React.FC = () => {
 
     if (!columns) return [];
 
-    return columns.map((col) => {
+    // Filter out DOB and School Name columns
+    const filteredColumns = columns.filter((col) => {
+      // Skip DOB column
+      if (
+        col.key === 'dob' ||
+        ('dataIndex' in col && col.dataIndex === 'dob')
+      ) {
+        return false;
+      }
+      // Skip School Name column
+      if (
+        col.key === 'section' ||
+        ('dataIndex' in col && col.dataIndex === 'section')
+      ) {
+        return false;
+      }
+      // Skip School Name column (alternative name)
+      if (
+        col.key === 'schoolName' ||
+        ('dataIndex' in col && col.dataIndex === 'schoolName')
+      ) {
+        return false;
+      }
+      return true;
+    });
+
+    return filteredColumns.map((col) => {
       // Check if this is the status column
       const isStatusColumn =
         col.key === 'status' ||
