@@ -199,6 +199,7 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
           cloverConfig?: {
             merchantId?: string;
             environment?: string;
+            accessToken?: string;
           };
         }>(`${API_BASE_URL}/payment-configuration/frontend/config`);
 
@@ -466,17 +467,28 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
         cardDetails?.exp_year || cardDetails?.expYear || '',
       );
 
-      // Determine endpoint based on registration type ONLY
-      // REMOVE the clover-specific endpoint logic
       let endpoint = 'process';
+      let backendEndpoint = 'process';
+
       if (registrationType === 'tournament') {
-        endpoint = 'tournament-teams';
+        backendEndpoint = 'tournament-teams';
       } else if (registrationType === 'tryout') {
-        endpoint = 'tryout';
+        // Use the generic process endpoint for tryouts
+        backendEndpoint = 'process';
+        console.log(
+          '📝 Using generic process endpoint for tryout registration',
+        );
       } else if (registrationType === 'training') {
-        endpoint = 'training';
+        // Use the generic process endpoint for training
+        backendEndpoint = 'process';
+        console.log(
+          '📝 Using generic process endpoint for training registration',
+        );
+      } else {
+        backendEndpoint = 'process';
       }
-      // NO clover-specific endpoint needed!
+
+      endpoint = backendEndpoint;
 
       // Prepare common payment data
       const paymentData: any = {
@@ -841,8 +853,9 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
       );
     } else if (paymentSystem === 'clover') {
       const merchantId = paymentConfig?.cloverConfig?.merchantId;
+      const accessToken = paymentConfig?.cloverConfig?.accessToken;
 
-      if (!merchantId) {
+      if (!merchantId || !accessToken) {
         return (
           <div className='alert alert-warning'>
             <i className='ti ti-alert-triangle me-2'></i>
@@ -855,6 +868,7 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
       return (
         <CloverPaymentForm
           merchantId={merchantId}
+          accessToken={accessToken}
           onTokenReceived={handleCloverToken}
           amount={calculatedAmount / 100}
           email={localCustomerEmail}
