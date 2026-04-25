@@ -488,19 +488,24 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
 
       endpoint = backendEndpoint;
 
-      // Prepare common payment data - FLATTEN card details for backend
       const paymentData: any = {
         token,
         sourceId: token,
         amount: calculatedAmount,
         email: localCustomerEmail,
         registrationType,
+        // Nested (for form submissions and tryout)
         cardDetails: {
           last_4: last4,
           card_brand: brand,
           exp_month: parseInt(expMonth),
           exp_year: parseInt(expYear),
         },
+        // Flattened (for paymentProcessRoutes validation)
+        cardExpYear: parseInt(expYear),
+        cardExpMonth: parseInt(expMonth),
+        cardLastFour: last4,
+        cardBrand: brand,
         paymentSystem: activeSystem,
       };
 
