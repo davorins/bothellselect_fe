@@ -473,13 +473,11 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
       if (registrationType === 'tournament') {
         backendEndpoint = 'tournament-teams';
       } else if (registrationType === 'tryout') {
-        // Use the generic process endpoint for tryouts
         backendEndpoint = 'process';
         console.log(
           '📝 Using generic process endpoint for tryout registration',
         );
       } else if (registrationType === 'training') {
-        // Use the generic process endpoint for training
         backendEndpoint = 'process';
         console.log(
           '📝 Using generic process endpoint for training registration',
@@ -490,20 +488,19 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
 
       endpoint = backendEndpoint;
 
-      // Prepare common payment data
+      // Prepare common payment data - FLATTEN card details for backend
       const paymentData: any = {
         token,
         sourceId: token,
         amount: calculatedAmount,
         email: localCustomerEmail,
         registrationType,
-        cardDetails: {
-          last_4: last4,
-          card_brand: brand,
-          exp_month: expMonth,
-          exp_year: expYear,
-        },
-        paymentSystem: activeSystem, // This tells backend which system to use
+        // ✅ Flatten card details to top level (backend expects cardExpYear, cardExpMonth)
+        cardLastFour: last4,
+        cardBrand: brand,
+        cardExpMonth: parseInt(expMonth),
+        cardExpYear: parseInt(expYear),
+        paymentSystem: activeSystem,
       };
 
       // Add parentId
@@ -555,7 +552,6 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
             .map((player: Player) => {
               const tryoutId = effectiveEventData?.eventId;
 
-              // Validate required fields
               if (!tryoutId || tryoutId.trim() === '') {
                 throw new Error('Tryout event ID is required');
               }
@@ -630,7 +626,6 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
           totalAmount: paymentData.amount / 100,
         };
 
-        // Call success callbacks
         if (onPaymentSuccess) {
           onPaymentSuccess({
             ...response.data,
