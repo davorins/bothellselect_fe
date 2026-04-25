@@ -853,13 +853,12 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
       );
     } else if (paymentSystem === 'clover') {
       const merchantId = paymentConfig?.cloverConfig?.merchantId;
-      const accessToken = paymentConfig?.cloverConfig?.accessToken;
       const cloverEnvironment: 'sandbox' | 'production' =
         paymentConfig?.cloverConfig?.environment === 'production'
           ? 'production'
           : 'sandbox';
 
-      if (!merchantId || !accessToken) {
+      if (!merchantId) {
         return (
           <div className='alert alert-warning'>
             <i className='ti ti-alert-triangle me-2'></i>
