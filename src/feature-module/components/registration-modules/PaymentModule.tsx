@@ -855,9 +855,9 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
     } else if (paymentSystem === 'clover') {
       const merchantId = paymentConfig?.cloverConfig?.merchantId;
       const cloverEnvironment: 'sandbox' | 'production' =
-        paymentConfig?.cloverConfig?.environment === 'production'
-          ? 'production'
-          : 'sandbox';
+        paymentConfig?.cloverConfig?.environment === 'sandbox'
+          ? 'sandbox'
+          : 'production'; // ← default to production
 
       if (!merchantId) {
         return (
