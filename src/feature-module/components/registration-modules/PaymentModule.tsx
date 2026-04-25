@@ -307,14 +307,13 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
   const effectiveTeams = teams.length > 0 ? teams : team ? [team] : [];
 
   const effectiveEventData = useMemo(() => {
-    return (
-      eventData ||
-      formData?.eventData || {
-        season: 'Basketball',
-        year: new Date().getFullYear(),
-        eventId: 'default-event',
-      }
-    );
+    const base = eventData || formData?.eventData || {};
+    return {
+      season: base.season || 'Basketball',
+      year: base.year || new Date().getFullYear(),
+      eventId:
+        base.eventId || base._id || base.tryoutId || base.id || 'default-event',
+    };
   }, [eventData, formData]);
 
   // Calculate effective player/team count
@@ -473,15 +472,9 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
       if (registrationType === 'tournament') {
         backendEndpoint = 'tournament-teams';
       } else if (registrationType === 'tryout') {
-        backendEndpoint = 'process';
-        console.log(
-          '📝 Using generic process endpoint for tryout registration',
-        );
+        backendEndpoint = 'tryout';
       } else if (registrationType === 'training') {
-        backendEndpoint = 'process';
-        console.log(
-          '📝 Using generic process endpoint for training registration',
-        );
+        backendEndpoint = 'training';
       } else {
         backendEndpoint = 'process';
       }
