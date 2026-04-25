@@ -109,10 +109,10 @@ const CloverPaymentForm: React.FC<CloverPaymentFormProps> = ({
 
       // Extract card details
       const cardDetails = {
-        last4: cardNumber.slice(-4),
-        brand: getCardBrand(cardNumber),
-        expMonth: cardExpiry.split('/')[0],
-        expYear: '20' + cardExpiry.split('/')[1],
+        last_4: cardNumber.slice(-4),
+        card_brand: getCardBrand(cardNumber),
+        exp_month: parseInt(cardExpiry.split('/')[0]),
+        exp_year: parseInt('20' + cardExpiry.split('/')[1]),
       };
 
       onTokenReceived(data.token, cardDetails);
