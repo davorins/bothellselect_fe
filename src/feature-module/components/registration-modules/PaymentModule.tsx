@@ -494,18 +494,18 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
         amount: calculatedAmount,
         email: localCustomerEmail,
         registrationType,
-        // Nested (for form submissions and tryout)
+        players: effectivePlayers.map((p) => ({
+          playerId: p._id,
+          season: effectiveEventData?.season || 'Tryout',
+          year: effectiveEventData?.year || new Date().getFullYear(),
+          tryoutId: effectiveEventData?.eventId,
+        })),
         cardDetails: {
           last_4: last4,
           card_brand: brand,
           exp_month: parseInt(expMonth),
           exp_year: parseInt(expYear),
         },
-        // Flattened (for paymentProcessRoutes validation)
-        cardExpYear: parseInt(expYear),
-        cardExpMonth: parseInt(expMonth),
-        cardLastFour: last4,
-        cardBrand: brand,
         paymentSystem: activeSystem,
       };
 
