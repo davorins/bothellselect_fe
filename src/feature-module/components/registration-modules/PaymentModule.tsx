@@ -495,11 +495,12 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
         amount: calculatedAmount,
         email: localCustomerEmail,
         registrationType,
-        // ✅ Flatten card details to top level (backend expects cardExpYear, cardExpMonth)
-        cardLastFour: last4,
-        cardBrand: brand,
-        cardExpMonth: parseInt(expMonth),
-        cardExpYear: parseInt(expYear),
+        cardDetails: {
+          last_4: last4,
+          card_brand: brand,
+          exp_month: parseInt(expMonth),
+          exp_year: parseInt(expYear),
+        },
         paymentSystem: activeSystem,
       };
 
