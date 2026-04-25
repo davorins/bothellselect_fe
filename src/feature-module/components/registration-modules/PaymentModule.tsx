@@ -872,7 +872,6 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
       return (
         <CloverPaymentForm
           merchantId={merchantId}
-          accessToken={accessToken}
           onTokenReceived={handleCloverToken}
           amount={calculatedAmount / 100}
           email={localCustomerEmail}

@@ -4,7 +4,6 @@ import { CreditCard, Shield } from 'lucide-react';
 
 interface CloverPaymentFormProps {
   merchantId: string;
-  accessToken: string;
   onTokenReceived: (token: string, cardDetails: any) => void;
   amount: number;
   email: string;
@@ -14,7 +13,6 @@ interface CloverPaymentFormProps {
 
 const CloverPaymentForm: React.FC<CloverPaymentFormProps> = ({
   merchantId,
-  accessToken,
   onTokenReceived,
   amount,
   email,
