@@ -494,7 +494,7 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
         amount: calculatedAmount,
         email: localCustomerEmail,
         registrationType,
-        players: effectivePlayers.map((p) => ({
+        players: effectivePlayers.map((p: any) => ({
           playerId: p._id,
           season: effectiveEventData?.season || 'Tryout',
           year: effectiveEventData?.year || new Date().getFullYear(),
