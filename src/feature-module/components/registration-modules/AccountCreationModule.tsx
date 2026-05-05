@@ -40,7 +40,7 @@ const AccountCreationModule: React.FC<Props> = ({
 
   const validateConfirmPassword = (
     confirmPassword: string,
-    password: string
+    password: string,
   ): string => {
     if (!confirmPassword) return 'Please confirm your password';
     if (password !== confirmPassword) return 'Passwords do not match';
@@ -112,7 +112,7 @@ const AccountCreationModule: React.FC<Props> = ({
     setIsSubmitting(true);
     try {
       console.log(
-        '✅ [AccountCreationModule] Form validated, calling onComplete'
+        '✅ [AccountCreationModule] Form validated, calling onComplete',
       );
 
       // JUST pass the data to the parent - let the wizard handle the API call
@@ -167,75 +167,55 @@ const AccountCreationModule: React.FC<Props> = ({
               </div>
             </div>
 
-            <div className='col-md-6'>
-              <div className='mb-3'>
-                <label className='form-label'>Password</label>
-                <div className='pass-group'>
-                  <input
-                    type={passwordVisibility.password ? 'text' : 'password'}
-                    name='password'
-                    className={`pass-input form-control ${
-                      errors.password ? 'is-invalid' : ''
-                    }`}
-                    value={password}
-                    onChange={handlePasswordChange}
-                    disabled={isSubmitting}
-                    required
-                    aria-label='Password'
-                    minLength={6}
-                    placeholder='Enter password'
-                  />
-                  <span
-                    className={`ti toggle-passwords ${
-                      passwordVisibility.password ? 'ti-eye' : 'ti-eye-off'
-                    }`}
-                    onClick={() => togglePasswordVisibility('password')}
-                    style={{ cursor: 'pointer' }}
-                  ></span>
-                </div>
-                {errors.password && (
-                  <div className='invalid-feedback d-block'>
-                    {errors.password}
-                  </div>
-                )}
+            {/* Password */}
+            <div className='col-md-6 mb-3'>
+              <label className='form-label'>Password</label>
+              <div className='pass-group'>
+                <input
+                  type={passwordVisibility.password ? 'text' : 'password'}
+                  name='password'
+                  className={`pass-input form-control ${errors.password ? 'is-invalid' : ''}`}
+                  value={password}
+                  onChange={handlePasswordChange}
+                  disabled={isSubmitting}
+                  placeholder='Enter password'
+                  minLength={6}
+                  required
+                />
+                <span
+                  className={`ti toggle-passwords ${passwordVisibility.password ? 'ti-eye' : 'ti-eye-off'}`}
+                  onClick={() => togglePasswordVisibility('password')}
+                />
               </div>
+              {errors.password && (
+                <div className='invalid-feedback'>{errors.password}</div>
+              )}
             </div>
 
-            <div className='col-md-6'>
-              <div className='mb-3'>
-                <label className='form-label'>Confirm Password</label>
-                <div className='pass-group'>
-                  <input
-                    type={
-                      passwordVisibility.confirmPassword ? 'text' : 'password'
-                    }
-                    name='confirmPassword'
-                    className={`pass-input form-control ${
-                      errors.confirm ? 'is-invalid' : ''
-                    }`}
-                    value={confirmPassword}
-                    onChange={handlePasswordChange}
-                    disabled={isSubmitting}
-                    required
-                    aria-label='Confirm Password'
-                    placeholder='Confirm your password'
-                  />
-                  <span
-                    className={`ti toggle-passwords ${
-                      passwordVisibility.confirmPassword
-                        ? 'ti-eye'
-                        : 'ti-eye-off'
-                    }`}
-                    onClick={() => togglePasswordVisibility('confirmPassword')}
-                    style={{ cursor: 'pointer' }}
-                  ></span>
-                </div>
-                {errors.confirm && (
-                  <div className='invalid-feedback d-block'>
-                    {errors.confirm}
-                  </div>
-                )}
+            {/* Confirm Password */}
+            <div className='col-md-6 mb-3'>
+              <label className='form-label'>Confirm Password</label>
+              <div className='pass-group'>
+                <input
+                  type={
+                    passwordVisibility.confirmPassword ? 'text' : 'password'
+                  }
+                  name='confirmPassword'
+                  className={`pass-input form-control ${errors.confirm ? 'is-invalid' : ''}`}
+                  value={confirmPassword}
+                  onChange={handlePasswordChange}
+                  disabled={isSubmitting}
+                  placeholder='Confirm your password'
+                  required
+                />
+                <span
+                  className={`ti toggle-passwords ${passwordVisibility.confirmPassword ? 'ti-eye' : 'ti-eye-off'}`}
+                  onClick={() => togglePasswordVisibility('confirmPassword')}
+                />
               </div>
+              {errors.confirm && (
+                <div className='invalid-feedback'>{errors.confirm}</div>
+              )}
             </div>
           </div>
 

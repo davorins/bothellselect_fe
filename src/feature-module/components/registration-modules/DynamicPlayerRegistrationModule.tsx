@@ -1,5 +1,11 @@
 // src/feature-module/components/registration-modules/DynamicPlayerRegistrationModule.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import { Player } from '../../../types/registration-types';
 import { useDynamicFormFields } from '../../hooks/useDynamicFormFields';
 import GradeConfirmationBanner from './GradeConfirmationBanner';
@@ -29,7 +35,7 @@ interface DynamicPlayerRegistrationModuleProps {
   maxPlayers?: number;
   allowMultiple?: boolean;
   requiresPayment?: boolean;
-  hideUI?: boolean; // New prop to hide all UI elements
+  hideUI?: boolean;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -42,15 +48,6 @@ const isSamePlayer = (p1: Player, p2: Player): boolean =>
   p1.fullName?.trim().toLowerCase() === p2.fullName?.trim().toLowerCase() &&
   p1.dob === p2.dob &&
   p1.gender === p2.gender;
-
-const useDebounce = (value: any, delay: number) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  useEffect(() => {
-    const h = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(h);
-  }, [value, delay]);
-  return debouncedValue;
-};
 
 const parseHealthConcerns = (healthConcerns: string = '') => {
   const concerns = healthConcerns
@@ -96,7 +93,7 @@ const DynamicPlayerRegistrationModule: React.FC<
   maxPlayers = 10,
   allowMultiple = true,
   requiresPayment = true,
-  hideUI = false, // Default to false
+  hideUI = false,
 }) => {
   const [showNewPlayerForm, setShowNewPlayerForm] = useState(false);
   const [validationErrors, setValidationErrors] = useState<
@@ -104,7 +101,6 @@ const DynamicPlayerRegistrationModule: React.FC<
   >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveErrors, setSaveErrors] = useState<Record<string, string>>({});
-  const [hasSavedPlayers, setHasSavedPlayers] = useState(false);
   const [gradeConfirmed, setGradeConfirmed] = useState<Record<number, boolean>>(
     {},
   );
@@ -120,6 +116,18 @@ const DynamicPlayerRegistrationModule: React.FC<
     Record<number, boolean>
   >({});
 
+  // ── Anti-duplicate refs ───────────────────────────────────────────────────────
+  // These refs provide synchronous guards that React state cannot — state updates
+  // are batched and async, so two rapid calls can both pass a `useState` check.
+  const isSubmittingRef = useRef(false); // prevents concurrent submits
+  const hasSavedPlayersRef = useRef(false); // set BEFORE the API call fires
+  const lastSubmitTimestampRef = useRef(0); // time-based debounce (2 s)
+
+  // Validation loop-prevention refs
+  const isValidatingRef = useRef(false);
+  const validationTimeoutRef = useRef<NodeJS.Timeout>();
+  const prevValidationKeyRef = useRef<string>('');
+
   // Use the dynamic form fields hook
   const {
     getVisibleFields,
@@ -127,8 +135,6 @@ const DynamicPlayerRegistrationModule: React.FC<
     processFieldValue,
     loading: fieldsLoading,
   } = useDynamicFormFields('player', { registrationYear });
-
-  const debouncedPlayers = useDebounce(players, 500);
 
   // ── Player helpers ───────────────────────────────────────────────────────────
 
@@ -159,6 +165,93 @@ const DynamicPlayerRegistrationModule: React.FC<
     () => paidPlayers.length > 0,
     [paidPlayers],
   );
+
+  // ── Validation ───────────────────────────────────────────────────────────────
+
+  const validateAllPlayers = useCallback(() => {
+    const errors: Record<string, string> = {};
+    const hasSelectedUnpaid = selectedPlayerIds.length > 0;
+    const hasNew = players.some((p) => !p._id && p.fullName?.trim());
+    const hasAny = hasSelectedUnpaid || hasNew;
+
+    if (!hasAny) {
+      errors.general =
+        'Please select at least one player or add a new player to continue.';
+      setValidationErrors(errors);
+      onValidationChange?.(false);
+      return false;
+    }
+
+    // Skip detailed validation during an active submission
+    if (isSubmittingRef.current || isSubmitting) {
+      return true;
+    }
+
+    let newPlayersValid = true;
+    players.forEach((player, index) => {
+      if (!player._id) {
+        const visibleFields = getVisibleFields(player);
+
+        visibleFields.forEach((field) => {
+          if (!field.isEnabled) return;
+          if (!field.isRequired) {
+            const value = player[field.fieldName as keyof Player];
+            if (!value || (typeof value === 'string' && !value.trim())) return;
+          }
+
+          const value = player[field.fieldName as keyof Player];
+          const error = validateField(field, value);
+          if (error) {
+            errors[`player${index}_${field.fieldName}`] = error;
+            newPlayersValid = false;
+          }
+        });
+
+        const hasGradeValue = player.grade && player.grade.trim();
+        if (hasGradeValue && !gradeConfirmed[index]) {
+          errors[`player${index}_grade`] =
+            'Please confirm the grade is correct';
+          newPlayersValid = false;
+        }
+      }
+    });
+
+    if (hasNew && !newPlayersValid) {
+      errors.general =
+        'Please complete all required information for new players.';
+    }
+
+    setValidationErrors((prev) => {
+      if (JSON.stringify(prev) === JSON.stringify(errors)) return prev;
+      return errors;
+    });
+
+    const valid = hasAny && (!hasNew || newPlayersValid);
+    onValidationChange?.(valid);
+    return valid;
+  }, [
+    players,
+    selectedPlayerIds,
+    gradeConfirmed,
+    onValidationChange,
+    getVisibleFields,
+    validateField,
+    isSubmitting,
+  ]);
+
+  const validationKey = useMemo(() => {
+    return JSON.stringify({
+      playersLength: players.length,
+      newPlayersCount: players.filter((p) => !p._id).length,
+      selectedCount: selectedPlayerIds.length,
+      gradeConfirmedKeys: Object.keys(gradeConfirmed).length,
+      playerGrades: players.map((p) => ({
+        id: p._id,
+        grade: p.grade,
+        dob: p.dob,
+      })),
+    });
+  }, [players, selectedPlayerIds, gradeConfirmed]);
 
   // ── Health conditions ────────────────────────────────────────────────────────
 
@@ -216,7 +309,46 @@ const DynamicPlayerRegistrationModule: React.FC<
     });
   }, [players.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Field change with auto-calculation ─────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      // Reset submission guards on unmount so re-mounting starts clean
+      isSubmittingRef.current = false;
+      hasSavedPlayersRef.current = false;
+      if (validationTimeoutRef.current) {
+        clearTimeout(validationTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // ── Validation effect ────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (isSubmittingRef.current || isSubmitting) return;
+
+    if (validationTimeoutRef.current) {
+      clearTimeout(validationTimeoutRef.current);
+    }
+
+    validationTimeoutRef.current = setTimeout(() => {
+      if (
+        !isValidatingRef.current &&
+        validationKey !== prevValidationKeyRef.current
+      ) {
+        isValidatingRef.current = true;
+        validateAllPlayers();
+        prevValidationKeyRef.current = validationKey;
+        isValidatingRef.current = false;
+      }
+    }, 300);
+
+    return () => {
+      if (validationTimeoutRef.current) {
+        clearTimeout(validationTimeoutRef.current);
+      }
+    };
+  }, [validationKey, validateAllPlayers, isSubmitting]);
+
+  // ── Field change with auto-calculation ──────────────────────────────────────
 
   const handlePlayerChange = (
     index: number,
@@ -225,47 +357,37 @@ const DynamicPlayerRegistrationModule: React.FC<
   ) => {
     const updated = [...players];
     const currentPlayer = updated[index];
-
-    // Create updated player with the changed field
     const updatedPlayer = { ...currentPlayer, [field]: value };
 
-    // If DOB changed, auto-calculate age and grade using the hook
     if (field === 'dob' && value) {
-      // Create a temporary form data object with the new DOB
       const tempFormData = { ...updatedPlayer, dob: value };
-
-      // Get visible fields for this player
       const visibleFields = getVisibleFields(tempFormData);
 
-      // Process each field to get calculated values
       visibleFields.forEach((f) => {
-        if (f.calculation?.type === 'fromDOB') {
+        if (f.fieldName === 'grade' || f.fieldName === 'age') {
           const calculatedValue = processFieldValue(f, tempFormData, {
             registrationYear,
           });
           if (calculatedValue !== undefined) {
-            // Use type assertion to handle the dynamic field assignment
             const fieldName = f.fieldName as keyof Player;
-            // Type-safe assignment based on field type
             if (fieldName === 'age') {
               updatedPlayer.age = calculatedValue as number;
             } else if (fieldName === 'grade') {
               updatedPlayer.grade = calculatedValue as string;
-            } else {
-              // For any other calculated fields, use a more generic approach
-              (updatedPlayer as any)[fieldName] = calculatedValue;
+              setGradeConfirmed((prev) => ({ ...prev, [index]: true }));
             }
           }
         }
       });
+    }
 
-      // Reset grade confirmation when DOB changes
-      setGradeConfirmed((prev) => ({ ...prev, [index]: false }));
+    if (field === 'grade' && value && !updatedPlayer.dob) {
+      updatedPlayer.isGradeOverridden = true;
+      setGradeConfirmed((prev) => ({ ...prev, [index]: true }));
     }
 
     updated[index] = updatedPlayer;
 
-    // Clear validation error for this field
     if (validationErrors[`player${index}_${field}`]) {
       setValidationErrors((prev) => {
         const n = { ...prev };
@@ -368,67 +490,7 @@ const DynamicPlayerRegistrationModule: React.FC<
     }
   };
 
-  // ── Validation using dynamic fields ───────────────────────────────────────
-
-  const validateAllPlayers = useCallback(() => {
-    const errors: Record<string, string> = {};
-    const hasSelectedUnpaid = selectedPlayerIds.length > 0;
-    const hasNew = players.some((p) => !p._id && p.fullName?.trim());
-    const hasAny = hasSelectedUnpaid || hasNew;
-
-    if (!hasAny) {
-      errors.general =
-        'Please select at least one player or add a new player to continue.';
-      setValidationErrors(errors);
-      onValidationChange?.(false);
-      return false;
-    }
-
-    let newPlayersValid = true;
-    players.forEach((player, index) => {
-      if (!player._id) {
-        getVisibleFields(player).forEach((field) => {
-          const error = validateField(
-            field,
-            player[field.fieldName as keyof Player],
-          );
-          if (error) {
-            errors[`player${index}_${field.fieldName}`] = error;
-            newPlayersValid = false;
-          }
-        });
-
-        // Special handling for grade confirmation
-        if (player.dob && player.grade && !gradeConfirmed[index]) {
-          errors[`player${index}_grade`] =
-            'Please confirm the grade is correct';
-          newPlayersValid = false;
-        }
-      }
-    });
-
-    if (hasNew && !newPlayersValid)
-      errors.general =
-        'Please complete all required information for new players.';
-
-    setValidationErrors(errors);
-    const valid = hasAny && (!hasNew || newPlayersValid);
-    onValidationChange?.(valid);
-    return valid;
-  }, [
-    players,
-    selectedPlayerIds,
-    gradeConfirmed,
-    onValidationChange,
-    getVisibleFields,
-    validateField,
-  ]);
-
-  useEffect(() => {
-    if (debouncedPlayers.length > 0 || selectedPlayerIds.length > 0)
-      validateAllPlayers();
-  }, [debouncedPlayers, selectedPlayerIds, gradeConfirmed, validateAllPlayers]);
-
+  // Initial player setup for existing users
   useEffect(() => {
     if (isExistingUser && allExistingPlayersPaid() && players.length === 0) {
       onPlayersChange([
@@ -458,92 +520,127 @@ const DynamicPlayerRegistrationModule: React.FC<
       setSaveErrors({ general: 'Authentication required. Please try again.' });
       return false;
     }
-    if (hasSavedPlayers) return true;
 
     try {
+      // Deduplicate within the batch being saved
+      const uniquePlayerMap = new Map<string, Player>();
+
       const newPlayersToSave = playersToSave.filter((p) => {
         if (p._id) return false;
-        return ![...existingPlayers, ...paidPlayers].some((e) =>
+
+        // Skip players that already exist in account
+        const alreadyExists = [...existingPlayers, ...paidPlayers].some((e) =>
           isSamePlayer(e, p),
         );
+        if (alreadyExists) return false;
+
+        // Deduplicate within the current batch using a composite key
+        const uniqueKey = `${p.fullName?.trim().toLowerCase()}|${p.dob}|${p.gender}`;
+        if (uniquePlayerMap.has(uniqueKey)) {
+          console.log(
+            'Duplicate player detected in batch, skipping:',
+            p.fullName,
+          );
+          return false;
+        }
+        uniquePlayerMap.set(uniqueKey, p);
+        return true;
       });
 
+      console.log('Unique new players to save:', newPlayersToSave.length);
+
       if (newPlayersToSave.length === 0) {
-        setHasSavedPlayers(true);
         return true;
       }
 
       const savedPlayers: Player[] = [];
+
+      // Sequential saves to avoid race conditions on the server side.
+      // Promise.all fires all requests simultaneously which can cause the
+      // server to process two identical payloads before either completes,
+      // bypassing any duplicate check that relies on a prior record existing.
       for (const player of newPlayersToSave) {
-        // Validate using dynamic fields
         const isValid = getVisibleFields(player).every(
           (f) => !validateField(f, player[f.fieldName as keyof Player]),
         );
+
         if (!isValid) {
-          setSaveErrors((prev) => ({
-            ...prev,
-            [player.fullName]: 'Missing required fields',
-          }));
+          console.log('Invalid player, skipping save:', player.fullName);
           continue;
         }
 
-        const response = await axios.post(
-          `${API_BASE_URL}/players/register`,
-          {
-            fullName: player.fullName.trim(),
-            gender: player.gender,
-            dob: player.dob,
-            schoolName: player.schoolName?.trim() || '',
-            healthConcerns: player.healthConcerns || '',
-            aauNumber: player.aauNumber || '',
-            registrationYear,
-            season,
-            parentId,
-            grade: player.grade || '',
-            isGradeOverridden: player.isGradeOverridden || false,
-            skipSeasonRegistration: !requiresPayment,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-              'Content-Type': 'application/json',
+        try {
+          const response = await axios.post(
+            `${API_BASE_URL}/players/register`,
+            {
+              fullName: player.fullName.trim(),
+              gender: player.gender,
+              dob: player.dob,
+              schoolName: player.schoolName?.trim() || '',
+              healthConcerns: player.healthConcerns || '',
+              aauNumber: player.aauNumber || '',
+              registrationYear,
+              season,
+              parentId,
+              grade: player.grade || '',
+              isGradeOverridden: player.isGradeOverridden || false,
+              skipSeasonRegistration: !requiresPayment,
             },
-          },
-        );
+            {
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+                'Content-Type': 'application/json',
+              },
+            },
+          );
 
-        if (response.data.error?.includes('already exists')) {
-          if (response.data.duplicatePlayerId)
-            savedPlayers.push({
-              ...player,
-              _id: response.data.duplicatePlayerId,
-            });
-          continue;
+          if (response.data.error?.includes('already exists')) {
+            if (response.data.duplicatePlayerId) {
+              savedPlayers.push({
+                ...player,
+                _id: response.data.duplicatePlayerId,
+              });
+            }
+          } else {
+            savedPlayers.push(response.data.player || response.data);
+          }
+        } catch (err: any) {
+          console.error(`Error saving player ${player.fullName}:`, err);
+
+          // Treat duplicate errors as soft successes — surface the existing ID
+          if (
+            err.response?.data?.error?.includes('already exists') ||
+            err.response?.data?.error?.includes('duplicate')
+          ) {
+            const duplicateId = err.response.data.duplicatePlayerId;
+            if (duplicateId) {
+              savedPlayers.push({ ...player, _id: duplicateId });
+            }
+          }
+          // For other errors we continue saving the remaining players rather
+          // than aborting the whole batch
         }
-        savedPlayers.push(response.data.player || response.data);
       }
 
+      console.log(`Successfully saved ${savedPlayers.length} players`);
+
       if (savedPlayers.length > 0) {
-        onPlayersChange(
-          players.map((orig) => {
-            if (orig._id) return orig;
-            return (
-              savedPlayers.find(
-                (s) =>
-                  s.fullName.trim().toLowerCase() ===
-                    orig.fullName.trim().toLowerCase() &&
-                  s.dob === orig.dob &&
-                  s.gender === orig.gender,
-              ) || orig
-            );
-          }),
-        );
-        setHasSavedPlayers(true);
-        return true;
+        const updatedPlayers = players.map((orig) => {
+          if (orig._id) return orig;
+          const saved = savedPlayers.find((s) => isSamePlayer(s, orig));
+          return saved || orig;
+        });
+
+        if (JSON.stringify(updatedPlayers) !== JSON.stringify(players)) {
+          onPlayersChange(updatedPlayers);
+        }
       }
 
       setSaveErrors({});
       return true;
     } catch (error: any) {
+      console.error('Save players error:', error);
+
       if (
         error.response?.data?.error?.includes('already exists') ||
         error.response?.data?.error?.includes('duplicate')
@@ -552,15 +649,16 @@ const DynamicPlayerRegistrationModule: React.FC<
         if (duplicateId) {
           const playerName =
             error.response.data.error.match(/Player "([^"]+)"/)?.[1];
-          onPlayersChange(
-            players.map((p) =>
+          if (playerName) {
+            const updatedPlayers = players.map((p) =>
               p.fullName === playerName ? { ...p, _id: duplicateId } : p,
-            ),
-          );
-          setSaveErrors({
-            general: `Player "${playerName}" already exists in your account. They have been added to your selection.`,
-          });
-          return true;
+            );
+            onPlayersChange(updatedPlayers);
+            setSaveErrors({
+              general: `Player "${playerName}" already exists in your account. They have been added to your selection.`,
+            });
+            return true;
+          }
         }
         setSaveErrors({
           general:
@@ -585,37 +683,85 @@ const DynamicPlayerRegistrationModule: React.FC<
   // ── Submit ────────────────────────────────────────────────────────────────────
 
   const handleSubmit = async () => {
+    // ── Guard 1: time-based debounce (2 seconds) ──────────────────────────────
+    // Catches double-clicks that happen faster than React can re-render the
+    // disabled state on the button.
+    const now = Date.now();
+    if (now - lastSubmitTimestampRef.current < 2000) {
+      console.log('Submit debounced — too soon after last attempt.');
+      return;
+    }
+
+    // ── Guard 2: synchronous in-flight check ──────────────────────────────────
+    // isSubmittingRef is set synchronously (unlike isSubmitting setState) so
+    // a second call that arrives before the first await resolves is blocked here.
+    if (isSubmittingRef.current) {
+      console.log('Submission already in progress, skipping.');
+      return;
+    }
+
+    // ── Guard 3: players already saved ───────────────────────────────────────
+    // hasSavedPlayersRef is set to true BEFORE the API call, not after.
+    // This means even if handleSubmit is somehow called again mid-await the
+    // save block will not execute a second time.
+    if (hasSavedPlayersRef.current) {
+      console.log('Players already saved, proceeding to complete.');
+      setTimeout(() => onComplete?.(), 100);
+      return;
+    }
+
+    // Lock all three guards before any await
+    lastSubmitTimestampRef.current = now;
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     setSaveErrors({});
+
     if (!validateAllPlayers()) {
       setIsSubmitting(false);
+      isSubmittingRef.current = false;
       window.scrollTo(0, 0);
       return;
     }
+
     try {
       const brandNew = players.filter((p) => !p._id);
-      if (brandNew.length > 0 && !hasSavedPlayers) {
+
+      if (brandNew.length > 0) {
+        // Set the ref BEFORE the await so any concurrent call hitting Guard 3
+        // sees it immediately and does not fire a second save.
+        hasSavedPlayersRef.current = true;
+
         const ok = await savePlayersToBackend(brandNew);
+
         if (!ok) {
+          // Reset the ref on failure so the user can retry
+          hasSavedPlayersRef.current = false;
           setIsSubmitting(false);
+          isSubmittingRef.current = false;
           window.scrollTo(0, 0);
           return;
         }
-        setHasSavedPlayers(true);
       }
-      onComplete?.();
-    } catch {
+
+      setTimeout(() => onComplete?.(), 100);
+    } catch (error) {
+      console.error('Submission error:', error);
+      // Reset save guard on unexpected error so the user can retry
+      hasSavedPlayersRef.current = false;
       setSaveErrors({
         general: 'An unexpected error occurred. Please try again.',
       });
     } finally {
+      // Always release the submission lock so the UI is not stuck
       setIsSubmitting(false);
+      isSubmittingRef.current = false;
     }
   };
 
-  // ── Render: existing player list (hidden when hideUI is true) ─────────────────
+  // ── Render: existing player list ──────────────────────────────────────────────
+
   const renderPlayerList = () => {
-    if (hideUI) return null; // Hide when in form-only mode
+    if (hideUI) return null;
     if (
       !isExistingUser ||
       (allExistingPlayers().length === 0 && !showCheckboxes)
@@ -757,14 +903,13 @@ const DynamicPlayerRegistrationModule: React.FC<
     );
   };
 
-  // ── Render: new player form using PlayerFormFields ─────────────────────────
+  // ── Render: new player form ───────────────────────────────────────────────────
 
   const renderNewPlayerForm = () => {
     if (!showNewPlayerForm && players.filter((p) => !p._id).length === 0)
       return null;
     const newPlayers = players.filter((p) => !p._id);
 
-    // If hideUI is true, just render the PlayerFormFields without any wrapper
     if (hideUI) {
       return (
         <>
@@ -859,7 +1004,6 @@ const DynamicPlayerRegistrationModule: React.FC<
       );
     }
 
-    // Original render with card wrapper for non-hideUI mode
     return (
       <div className='card'>
         <div className='card-header d-flex justify-content-between align-items-center'>
@@ -993,10 +1137,10 @@ const DynamicPlayerRegistrationModule: React.FC<
     );
   };
 
-  // ── Render: CTA (hidden when hideUI is true) ──────────────────────────────────
+  // ── Render: CTA ───────────────────────────────────────────────────────────────
 
   const renderUniversalCTA = () => {
-    if (hideUI) return null; // Hide when in form-only mode
+    if (hideUI) return null;
 
     const hasSelectedUnpaid = selectedPlayerIds.length > 0;
     const hasNew = players.some((p) => !p._id && p.fullName?.trim());
@@ -1014,12 +1158,14 @@ const DynamicPlayerRegistrationModule: React.FC<
 
     const isFormValid = hasAny && (hasNew ? areNewValid : true);
 
+    // Button is disabled while submitting OR while the ref guard is active to
+    // cover the window between the click and the React state update
     const ctaButton = (label: React.ReactNode) => (
       <button
         type='button'
         className={`btn btn-lg ${isFormValid ? 'btn-primary' : 'btn-secondary'}`}
         onClick={handleSubmit}
-        disabled={isSubmitting || !isFormValid}
+        disabled={isSubmitting || isSubmittingRef.current || !isFormValid}
       >
         {isSubmitting ? (
           <>
@@ -1151,7 +1297,7 @@ const DynamicPlayerRegistrationModule: React.FC<
     );
   };
 
-  // ── New user path (hidden when hideUI is true) ───────────────────────────────
+  // ── New user path ─────────────────────────────────────────────────────────────
 
   if (!isExistingUser && !hideUI) {
     const allValid = players.every((p, idx) => {
@@ -1219,7 +1365,12 @@ const DynamicPlayerRegistrationModule: React.FC<
                   type='button'
                   className={`btn btn-lg ${allValid ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={handleSubmit}
-                  disabled={isSubmitting || players.length === 0 || !allValid}
+                  disabled={
+                    isSubmitting ||
+                    isSubmittingRef.current ||
+                    players.length === 0 ||
+                    !allValid
+                  }
                 >
                   {isSubmitting ? (
                     <>
@@ -1245,7 +1396,7 @@ const DynamicPlayerRegistrationModule: React.FC<
     );
   }
 
-  // ── Existing user path (hide UI elements when hideUI is true) ─────────────────
+  // ── Existing user path ────────────────────────────────────────────────────────
 
   if (fieldsLoading && !hideUI) {
     return (
@@ -1258,12 +1409,10 @@ const DynamicPlayerRegistrationModule: React.FC<
     );
   }
 
-  // When hideUI is true, just render the form without any wrappers
   if (hideUI) {
     return <>{renderNewPlayerForm()}</>;
   }
 
-  // Full render with all UI elements
   return (
     <div>
       {saveErrors.general && (

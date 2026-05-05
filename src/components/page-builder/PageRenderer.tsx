@@ -41,6 +41,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
 
   const { isAuthenticated, checkAuth } = useAuth();
   const navigate = useNavigate();
+  const [activeFormIds, setActiveFormIds] = useState<Set<string>>(new Set());
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -54,6 +55,40 @@ const PageRenderer: React.FC<PageRendererProps> = ({
     // Fetch form configs for any page that might have registration sections
     fetchAllFormConfigs();
   }, []);
+
+  useEffect(() => {
+    const fetchActiveForms = async () => {
+      try {
+        // Fetch all published forms to know which are active
+        const response = await fetch(`${API_BASE_URL}/forms/published`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data && Array.isArray(data.data)) {
+            const activeIds = new Set<string>(
+              data.data
+                .filter((form: any) => form.status === 'published')
+                .map((form: any) => {
+                  // Ensure _id is a string
+                  const id = form._id?.toString();
+                  if (!id) {
+                    console.warn('Form missing _id:', form);
+                    return null;
+                  }
+                  return id;
+                })
+                .filter((id: string | null): id is string => id !== null), // Type guard to filter out nulls
+            );
+            setActiveFormIds(activeIds);
+            console.log('✅ Active form IDs loaded:', Array.from(activeIds));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching active forms:', err);
+      }
+    };
+
+    fetchActiveForms();
+  }, [API_BASE_URL]);
 
   const fetchPage = async () => {
     try {
@@ -970,7 +1005,10 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           );
         }
 
-        // Render a wrapper that will conditionally show/hide based on form status
+        const formId = section.config.formId;
+        // Check if this form ID is active (exists in our set of published forms)
+        const isFormActive = activeFormIds.has(formId);
+
         return (
           <div className={`form-section ${section.styles?.className || ''}`}>
             {/* Show section title if configured */}
@@ -991,11 +1029,16 @@ const PageRenderer: React.FC<PageRendererProps> = ({
                 <h3 className='form-title mb-3'>{section.config.formTitle}</h3>
               )}
 
-            {/* FormEmbedWrapper handles the conditional rendering */}
-            <FormEmbed
-              formId={section.config.formId}
-              wrapperClassName='card p-5'
-            />
+            {/* ONLY render FormEmbed if the form is ACTIVE */}
+            {isFormActive ? (
+              <FormEmbed
+                formId={formId}
+                isActive={true}
+                wrapperClassName='card p-5'
+              />
+            ) : // Show nothing when form is inactive - don't fetch
+            // Or optionally show a message
+            null}
           </div>
         );
 

@@ -28,6 +28,7 @@ SquarePaymentFormWithRef.displayName = 'SquarePaymentFormWithRef';
 
 interface FormEmbedProps {
   formId: string;
+  isActive?: boolean;
   onPaymentComplete?: (paymentData: any) => void;
   onFormSubmit?: (submissionData: any) => void;
   wrapperClassName?: string;
@@ -122,6 +123,7 @@ interface FormData {
 
 const FormEmbed: React.FC<FormEmbedProps> = ({
   formId,
+  isActive = true,
   onPaymentComplete,
   onFormSubmit,
   wrapperClassName = '',
@@ -151,6 +153,12 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
   // Load form data
   useEffect(() => {
     const loadForm = async () => {
+      if (!isActive) {
+        console.log('Form is inactive, skipping load');
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
@@ -180,16 +188,22 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
         }
       } catch (err: any) {
         console.error('Error loading form:', err);
-        setError('Failed to load form. Please try again.');
+        // Only show error if the form should be active
+        if (isActive) {
+          setError('Failed to load form. Please try again.');
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    if (formId) {
+    if (formId && isActive) {
       loadForm();
+    } else if (!isActive) {
+      setLoading(false);
+      setFormData(null);
     }
-  }, [formId]);
+  }, [formId, isActive]);
 
   // ========== TOURNAMENT INFO RENDERER ==========
   const renderTournamentInfo = () => {

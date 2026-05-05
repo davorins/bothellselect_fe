@@ -14913,7 +14913,8 @@ aside {
   z-index: 100001;
   border-top-left-radius: 15px;
   border-bottom-left-radius: 15px;
-  box-shadow: rgba(50, 50, 93, 0.25) 0px 13px 27px -5px,
+  box-shadow:
+    rgba(50, 50, 93, 0.25) 0px 13px 27px -5px,
     rgba(0, 0, 0, 0.3) 0px 8px 16px -8px;
   overflow-y: auto;
   -webkit-transition: all 0.5s ease;
@@ -18467,7 +18468,9 @@ fieldset:disabled .btn {
 
 .form-select.is-invalid:not([multiple]):not([size]) {
   padding-right: 1.125rem;
-  background-size: 16px 28px, calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+  background-size:
+    16px 28px,
+    calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
 }
 
 .invoice-quantity-container
@@ -21059,7 +21062,9 @@ caption {
 }
 .table tbody tr td .userslist-img.bg-img img {
   border: 1px solid var(--stroke-table, #e8ebed);
-  background: url(), lightgray 50% / cover no-repeat;
+  background:
+    url(),
+    lightgray 50% / cover no-repeat;
 }
 .table tbody tr td a {
   color: #ffa201;
@@ -21384,7 +21389,9 @@ table td .shield {
 }
 .table tbody tr td .userslist-img.bg-img img {
   border: 1px solid var(--stroke-table, #e8ebed);
-  background: url(), lightgray 50% / cover no-repeat;
+  background:
+    url(),
+    lightgray 50% / cover no-repeat;
 }
 .table tbody tr td a {
   color: #565e5e;
@@ -23917,7 +23924,9 @@ table .edit-delete-action.data {
   width: 82px;
   padding: 8px 0;
   color: #fff;
-  font: 500 16px/1 Lato, sans-serif;
+  font:
+    500 16px/1 Lato,
+    sans-serif;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
   text-transform: capitalize;
   text-align: center;
@@ -27648,9 +27657,12 @@ div.badge-status {
   -transform: scale(0.707) rotate(45deg);
   z-index: 1;
   background: #f6f6f6;
-  -webkit-box-shadow: 2px -2px 0 1px #fff,
+  -webkit-box-shadow:
+    2px -2px 0 1px #fff,
     3px -3px 0 2px rgba(255, 255, 255, 0.1);
-  box-shadow: 2px -2px 0 1px #fff, 3px -3px 0 2px rgba(255, 255, 255, 0.1);
+  box-shadow:
+    2px -2px 0 1px #fff,
+    3px -3px 0 2px rgba(255, 255, 255, 0.1);
   border-radius: 0 5px 0 50px;
 }
 .pipeline-list ul li a.bg-info {
@@ -29627,7 +29639,7 @@ fieldset#first-field-file {
   -ms-transform: translateY(-50%);
   position: absolute;
   top: 50%;
-  right: 10px;
+  right: 5px;
 }
 .login-wrapper .login-content .toggle-password:hover {
   color: #e41f07;
@@ -29653,7 +29665,7 @@ fieldset#first-field-file {
   -ms-transform: translateY(-50%);
   position: absolute;
   top: 50%;
-  right: 10px;
+  right: 5px;
 }
 .login-wrapper .login-content .toggle-passwords:hover {
   color: #e41f07;
@@ -29679,7 +29691,7 @@ fieldset#first-field-file {
   -ms-transform: translateY(-50%);
   position: absolute;
   top: 50%;
-  right: 10px;
+  right: 5px;
 }
 .login-wrapper .login-content .toggle-password-new:hover {
   color: #e41f07;

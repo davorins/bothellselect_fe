@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UserRegistrationModule from '../registration-modules/UserRegistrationModule';
-import PlayerRegistrationModule from '../registration-modules/PlayerRegistrationModule';
+import DynamicPlayerRegistrationModule from '../registration-modules/DynamicPlayerRegistrationModule';
 import AccountCreationModule from '../registration-modules/AccountCreationModule';
 import EmailVerificationStep from '../../auth/emailVerification/emailVerificationStep';
 import StepIndicator from '../../../components/common/StepIndicator';
@@ -70,7 +70,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
       },
       ...formConfig,
     }),
-    [formConfig]
+    [formConfig],
   );
 
   const defaultSeasonEvent = useMemo(
@@ -80,7 +80,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
         year: formConfig?.year || new Date().getFullYear(),
         eventId: formConfig?.eventId || 'partizan-2026',
       },
-    [seasonEvent, formConfig]
+    [seasonEvent, formConfig],
   );
 
   type RegistrationStep =
@@ -98,7 +98,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   const [localSavedUserData, setLocalSavedUserData] =
     useState<UserRegistrationData | null>(savedUserData || null);
   const [localSavedPlayers, setLocalSavedPlayers] = useState<Player[]>(
-    savedPlayers || []
+    savedPlayers || [],
   );
   const [hasCompletedUserRegistration, setHasCompletedUserRegistration] =
     useState(!!savedUserData || isAuthenticated);
@@ -136,7 +136,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     allSteps.map((step, index) => ({
       ...step,
       number: index + 1,
-    }))
+    })),
   );
 
   const currentStepIndex = steps.findIndex((step) => step.id === currentStep);
@@ -154,7 +154,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   const isStepAccessible = (
     stepId: string,
     stepIndex: number,
-    currentStepIndex: number
+    currentStepIndex: number,
   ): boolean => {
     // For new users going through the flow
     if (!isAuthenticated && !isExistingUser && !hasCompletedUserRegistration) {
@@ -294,7 +294,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
 
   // ✅ Save user data function
   const saveUserData = async (
-    userData: UserRegistrationData
+    userData: UserRegistrationData,
   ): Promise<UserRegistrationData | null> => {
     try {
       const password = userData.password || formData.tempAccount?.password;
@@ -354,12 +354,12 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
               Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
-          }
+          },
         );
       } else {
         response = await axios.post(
           `${API_BASE_URL}/register`,
-          registrationData
+          registrationData,
         );
       }
 
@@ -437,7 +437,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                 Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
               },
-            }
+            },
           );
 
           if (response.data.error?.includes('already exists')) {
@@ -472,7 +472,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
             (sp) =>
               sp.fullName === p.fullName &&
               sp.dob === p.dob &&
-              sp.gender === p.gender
+              sp.gender === p.gender,
           );
           return savedPlayer || p;
         });
@@ -553,7 +553,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     setIsSubmitting(true);
     setFormError(null);
 
-    // Validate we have players to save
     const hasPlayers = players.length > 0 || selectedPlayerIds.length > 0;
     if (!hasPlayers) {
       setFormError('Please add at least one player');
@@ -563,18 +562,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     }
 
     try {
-      // Filter only new players (without _id) to save
-      const playersToSave = players.filter((p) => !p._id);
-
-      if (playersToSave.length > 0) {
-        const playersSaved = await savePlayerData(playersToSave);
-        if (!playersSaved) {
-          setIsSubmitting(false);
-          return;
-        }
-      }
-
-      // Combine selected existing players and new players
       const allPlayers = [
         ...(userPlayers?.filter((p) => selectedPlayerIds.includes(p._id!)) ||
           []),
@@ -587,16 +574,14 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
         onPlayerRegistrationComplete(allPlayers);
       }
 
-      // Set registration timestamp and show success message
       setRegistrationTimestamp(new Date().toLocaleString());
       setRegistrationCompleted(true);
       setCurrentStep('success');
 
-      // Clear localStorage
       localStorage.removeItem('pendingRegistrationUser');
       localStorage.removeItem('pendingRegistrationPlayers');
     } catch (error: any) {
-      setFormError(error.message || 'Failed to save player information');
+      setFormError(error.message || 'Failed to complete registration');
     } finally {
       setIsSubmitting(false);
     }
@@ -670,7 +655,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   const renderPlayerStep = () => {
     return (
       <div className='player-step-container'>
-        <PlayerRegistrationModule {...playerModuleProps} />
+        <DynamicPlayerRegistrationModule {...playerModuleProps} />
       </div>
     );
   };

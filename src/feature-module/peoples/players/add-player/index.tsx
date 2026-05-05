@@ -349,17 +349,34 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
         }
       }
 
-      if (player.parentId) {
+      const fetchedPlayer = player; // Create a const reference
+      if (fetchedPlayer && fetchedPlayer.parentId) {
         try {
-          const token = localStorage.getItem('token');
-          const parentResponse = await axios.get(
-            `${API_BASE_URL}/parent/${player.parentId}`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            },
-          );
-          setSelectedParent(parentResponse.data);
-          setParentSearchTerm(parentResponse.data.fullName);
+          // parentId may be a populated object or a plain string ID
+          const isPopulated =
+            typeof fetchedPlayer.parentId === 'object' &&
+            fetchedPlayer.parentId !== null;
+
+          if (isPopulated) {
+            // Already have the data — no fetch needed
+            const parentObj = fetchedPlayer.parentId as any;
+            setSelectedParent(parentObj);
+            setParentSearchTerm(parentObj.fullName || '');
+            setFormData((prev) => ({ ...prev, parentId: parentObj._id || '' }));
+          } else {
+            // Plain string ID — fetch as before
+            const token = localStorage.getItem('token');
+            const parentResponse = await axios.get(
+              `${API_BASE_URL}/parent/${fetchedPlayer.parentId}`,
+              { headers: { Authorization: `Bearer ${token}` } },
+            );
+            setSelectedParent(parentResponse.data);
+            setParentSearchTerm(parentResponse.data.fullName);
+            setFormData((prev) => ({
+              ...prev,
+              parentId: fetchedPlayer.parentId as string,
+            }));
+          }
         } catch (error) {
           console.error('Error fetching parent:', error);
         }
@@ -404,7 +421,10 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
         grade: player?.grade || player?.class || '',
         healthConcerns: player?.healthConcerns || '',
         aauNumber: player?.aauNumber || '',
-        parentId: player?.parentId || '',
+        parentId:
+          typeof player?.parentId === 'object' && player?.parentId !== null
+            ? (player.parentId as any)._id
+            : player?.parentId || '',
         avatar: avatarUrl,
         isGradeOverridden: playerWithGradeOverride.isGradeOverridden || false,
       }));
@@ -767,7 +787,12 @@ const AddPlayer = ({ isEdit }: { isEdit: boolean }) => {
       const payload: any = {
         registrationYear: formData.registrationYear,
         season: formData.season,
-        ...(!isEdit && { parentId: formData.parentId }),
+        ...(!isEdit && {
+          parentId:
+            typeof formData.parentId === 'object'
+              ? (formData.parentId as any)._id
+              : formData.parentId,
+        }),
       };
 
       // IMPORTANT: Include avatar URL if it exists (for existing players)
