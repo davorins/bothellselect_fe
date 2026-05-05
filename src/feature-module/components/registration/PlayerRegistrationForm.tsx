@@ -602,11 +602,12 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   };
 
   const handleComplete = () => {
+    // Call onSuccess if it exists, but ALWAYS navigate to profile
     if (onSuccess) {
       onSuccess(formData);
-    } else {
-      navigate(routes.adminDashboard);
     }
+    // Always redirect to profile
+    navigate('/pages/profile');
   };
 
   const handleAddMorePlayers = () => {
@@ -726,10 +727,10 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                         className='list-group-item d-flex justify-content-between'
                       >
                         <div>
-                          <strong>{player.fullName}</strong>
+                          <strong>{player.fullName} • </strong>
                           <span className='text-muted small'>
-                            {player.grade} Grade • {player.gender} •{' '}
-                            {player.schoolName || 'School not specified'}
+                            {player.grade} Grade • {player.gender}
+                            {/* {player.schoolName || 'School not specified'} */}
                           </span>
                         </div>
                         <span className='badge bg-success'>Registered</span>

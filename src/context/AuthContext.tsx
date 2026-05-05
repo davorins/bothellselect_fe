@@ -119,26 +119,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const logout = useCallback(() => {
-    console.log('Starting logout...');
     localStorage.removeItem('token');
-    console.log('Token removed from localStorage');
     localStorage.removeItem('parentId');
     localStorage.removeItem('parent');
-    console.log('Parent data removed from localStorage');
+    localStorage.removeItem('role');
+    localStorage.removeItem('tempToken');
+    localStorage.removeItem('pendingEmail');
+
     setIsAuthenticated(false);
-    console.log('isAuthenticated set to false');
     setParent(null);
-    console.log('Parent set to null');
+    setPlayers([]);
+    setIsEmailVerified(false);
 
-    navigate('/login');
-
-    // Force page refresh to clear all user data from memory
-    setTimeout(() => {
-      window.location.reload();
-    }, 50);
-
-    console.log('Redirected to login page and page refreshed');
-  }, [navigate]);
+    window.location.href = '/login';
+  }, []);
 
   const fetchPlayersData = useCallback(
     async (playerIds: string[], queryParams = '') => {
