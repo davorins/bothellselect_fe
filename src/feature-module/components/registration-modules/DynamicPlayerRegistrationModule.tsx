@@ -1,4 +1,5 @@
 // src/feature-module/components/registration-modules/DynamicPlayerRegistrationModule.tsx
+
 import React, {
   useState,
   useEffect,
@@ -489,23 +490,10 @@ const DynamicPlayerRegistrationModule: React.FC<
   // Initial player setup for existing users
   useEffect(() => {
     if (isExistingUser && allExistingPlayersPaid() && players.length === 0) {
-      onPlayersChange([
-        {
-          fullName: '',
-          gender: '',
-          dob: '',
-          schoolName: '',
-          healthConcerns: '',
-          aauNumber: '',
-          registrationYear,
-          season,
-          grade: '',
-        },
-      ]);
-      setShowNewPlayerForm(true);
-      onPaymentCalculation?.(1);
+      // Don't auto-add a player - wait for user to click Add New Player button
+      setShowNewPlayerForm(false);
     }
-  }, [isExistingUser, allExistingPlayersPaid, players.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isExistingUser, allExistingPlayersPaid(), players.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Backend save ─────────────────────────────────────────────────────────────
 
@@ -729,8 +717,6 @@ const DynamicPlayerRegistrationModule: React.FC<
   };
 
   // ── Shared player form renderer ───────────────────────────────────────────────
-  // Extracted to avoid duplication between hideUI and normal paths
-
   const renderPlayerFormItem = (
     player: Player,
     actualIndex: number,
@@ -822,6 +808,20 @@ const DynamicPlayerRegistrationModule: React.FC<
       (allExistingPlayers().length === 0 && !showCheckboxes)
     )
       return null;
+
+    // Don't show the Your Players card if there are no unpaid players and we're in initial state
+    const hasNoUnpaidPlayers = !hasUnpaidPlayers();
+    const hasNotStartedAdding =
+      !showNewPlayerForm && players.filter((p) => !p._id).length === 0;
+
+    if (
+      hasNoUnpaidPlayers &&
+      hasNotStartedAdding &&
+      selectedPlayerIds.length === 0
+    ) {
+      return null;
+    }
+
     return (
       <div className='card mb-4'>
         <div className='card-header bg-light'>
@@ -919,49 +919,17 @@ const DynamicPlayerRegistrationModule: React.FC<
               })}
             </div>
           )}
-
-          <div className='text-center mt-4'>
-            <button
-              type='button'
-              className='btn btn-primary'
-              onClick={addPlayer}
-            >
-              <i className='ti ti-plus me-2'></i>
-              {requiresPayment
-                ? allExistingPlayersPaid()
-                  ? 'Register New Player'
-                  : 'Add Additional Player'
-                : isExistingUser &&
-                    (existingPlayers.length > 0 || paidPlayers.length > 0)
-                  ? 'Add New Player to Account'
-                  : 'Add New Player'}
-            </button>
-            {allExistingPlayersPaid() && requiresPayment && (
-              <p className='text-muted mt-2 small'>
-                All your current players are registered and paid. Add a new
-                player to register them for this season.
-              </p>
-            )}
-            {!requiresPayment &&
-              isExistingUser &&
-              (existingPlayers.length > 0 || paidPlayers.length > 0) && (
-                <p className='text-muted mt-2 small'>
-                  Add a new player to your account for future season
-                  registrations.
-                </p>
-              )}
-          </div>
         </div>
       </div>
     );
   };
 
-  // ── Render: new player form ───────────────────────────────────────────────────
+  // ── Render: new player form (styled like Case 2) ───────────────────────────────────
 
   const renderNewPlayerForm = () => {
     const newPlayers = players.filter((p) => !p._id);
 
-    // For existing-user path: only show if user clicked "Add Player"
+    // For existing-user path: only show if user clicked "Add Player" OR there are new players
     if (isExistingUser && !showNewPlayerForm && newPlayers.length === 0) {
       return null;
     }
@@ -982,6 +950,19 @@ const DynamicPlayerRegistrationModule: React.FC<
             );
           })}
 
+          {allowMultiple && newPlayers.length < maxPlayers && (
+            <div className='text-center mt-4'>
+              <button
+                type='button'
+                className='btn btn-outline-primary'
+                onClick={addPlayer}
+              >
+                <i className='ti ti-plus me-2'></i>
+                Add Another Player
+              </button>
+            </div>
+          )}
+
           {Object.keys(validationErrors).length > 0 && !hideUI && (
             <div className='alert alert-warning mt-3'>
               <i className='ti ti-alert-triangle me-2'></i>
@@ -992,42 +973,78 @@ const DynamicPlayerRegistrationModule: React.FC<
       );
     }
 
+    // For existing users, style like Case 2 (inline, no outer card wrapper)
+    if (isExistingUser) {
+      return (
+        <div className='card mb-4'>
+          <div className='card-header bg-light'>
+            <div className='d-flex align-items-center'>
+              <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
+                <i className='ti ti-users fs-16' />
+              </span>
+              <h4 className='text-dark'>Add New Player</h4>
+            </div>
+          </div>
+          <div className='card-body'>
+            <div>
+              <div className='mb-4'>
+                <p className='text-muted'>
+                  Add information for each player you'd like to add to your
+                  account.
+                </p>
+              </div>
+
+              {newPlayers.map((player, index) => {
+                const actualIndex = players.findIndex((p) => p === player);
+                return renderPlayerFormItem(
+                  player,
+                  actualIndex,
+                  index,
+                  newPlayers.length,
+                );
+              })}
+
+              {allowMultiple && newPlayers.length < maxPlayers && (
+                <div className='text-center mt-4'>
+                  <button
+                    type='button'
+                    className='btn btn-outline-primary'
+                    onClick={addPlayer}
+                  >
+                    <i className='ti ti-plus me-2'></i>
+                    Add Another Player
+                  </button>
+                </div>
+              )}
+
+              {Object.keys(validationErrors).length > 0 && (
+                <div className='alert alert-warning mt-3'>
+                  <i className='ti ti-alert-triangle me-2'></i>
+                  Please complete all required player information to continue.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // New user path (Case 2) - keep original styling
     return (
       <div className='card'>
-        <div className='card-header d-flex justify-content-between align-items-center'>
+        <div className='card-header bg-light'>
           <div className='d-flex align-items-center'>
             <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
-              <i className='ti ti-users fs-16' />
+              <i className='ti ti-shirt-sport fs-16' />
             </span>
-            <h5>
-              {newPlayers.length > 1
-                ? 'New Players Information'
-                : 'New Player Information'}
-            </h5>
+            <h4 className='text-dark'>Player Information</h4>
           </div>
-          {/* Only show Cancel for existing-user path */}
-          {isExistingUser && newPlayers.length > 0 && (
-            <button
-              type='button'
-              className='btn btn-sm btn-outline-danger'
-              onClick={() => {
-                setShowNewPlayerForm(false);
-                onPlayersChange(players.filter((p) => p._id));
-                onPaymentCalculation?.(selectedPlayerIds.length);
-              }}
-            >
-              Cancel
-            </button>
-          )}
         </div>
         <div className='card-body'>
           <div className='mb-4'>
-            <h5>
-              Register New Player{newPlayers.length > 1 ? 's' : ''} for {season}
-            </h5>
+            <h5>Register Players for {season}</h5>
             <p className='text-muted'>
-              Add information for the new player
-              {newPlayers.length > 1 ? 's' : ''} you'd like to register.
+              Add information for each player you'd like to register.
             </p>
           </div>
 
@@ -1040,6 +1057,19 @@ const DynamicPlayerRegistrationModule: React.FC<
               newPlayers.length,
             );
           })}
+
+          {allowMultiple && newPlayers.length < maxPlayers && (
+            <div className='text-center mt-4'>
+              <button
+                type='button'
+                className='btn btn-outline-primary'
+                onClick={addPlayer}
+              >
+                <i className='ti ti-plus me-2'></i>
+                Add Another Player
+              </button>
+            </div>
+          )}
 
           {Object.keys(validationErrors).length > 0 && (
             <div className='alert alert-warning mt-3'>
@@ -1154,7 +1184,7 @@ const DynamicPlayerRegistrationModule: React.FC<
     );
   };
 
-  // ── New user path ─────────────────────────────────────────────────────────────
+  // ── New user path (Case 2) ─────────────────────────────────────────────────────────────
 
   if (!isExistingUser && !hideUI) {
     const newPlayers = players.filter((p) => !p._id);
@@ -1188,7 +1218,6 @@ const DynamicPlayerRegistrationModule: React.FC<
               </p>
             </div>
 
-            {/* Render each new player's form inline (no inner card wrapper) */}
             {newPlayers.length > 0 && (
               <div>
                 {newPlayers.map((player, index) => {
@@ -1203,7 +1232,6 @@ const DynamicPlayerRegistrationModule: React.FC<
               </div>
             )}
 
-            {/* Add Player / Add Another Player button — always visible */}
             {allowMultiple && newPlayers.length < maxPlayers && (
               <div className='text-center mt-4'>
                 <button
@@ -1219,7 +1247,6 @@ const DynamicPlayerRegistrationModule: React.FC<
               </div>
             )}
 
-            {/* If allowMultiple is false, only show Add Player when no players exist */}
             {!allowMultiple && newPlayers.length === 0 && (
               <div className='text-center mt-4'>
                 <button
@@ -1299,7 +1326,7 @@ const DynamicPlayerRegistrationModule: React.FC<
     );
   }
 
-  // ── Existing user path ────────────────────────────────────────────────────────
+  // ── Existing user path (Case 1) ────────────────────────────────────────────────────────
 
   if (fieldsLoading && !hideUI) {
     return (
@@ -1316,6 +1343,15 @@ const DynamicPlayerRegistrationModule: React.FC<
     return <>{renderNewPlayerForm()}</>;
   }
 
+  // Determine what to show for existing user
+  const hasNewPlayers = players.some((p) => !p._id && p.fullName?.trim());
+  const hasSelectedAny = selectedPlayerIds.length > 0;
+  const shouldShowReadySection = hasNewPlayers || hasSelectedAny;
+  const isInInitialState =
+    !showNewPlayerForm &&
+    players.filter((p) => !p._id).length === 0 &&
+    !hasSelectedAny;
+
   return (
     <div>
       {saveErrors.general && (
@@ -1324,18 +1360,57 @@ const DynamicPlayerRegistrationModule: React.FC<
           {saveErrors.general}
         </div>
       )}
+
+      {/* Your Players card - shows existing players */}
       {renderPlayerList()}
-      {renderNewPlayerForm()}
-      {renderUniversalCTA()}
+
+      {/* Initial State Card - Add New Player to Account (matches Case 2 styling) */}
+      {isInInitialState && (
+        <div className='card mb-4'>
+          <div className='card-header bg-light'>
+            <div className='d-flex align-items-center'>
+              <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
+                <i className='ti ti-user-plus fs-16' />
+              </span>
+              <h4 className='text-dark'>Add Players to Account</h4>
+            </div>
+          </div>
+          <div className='card-body text-center py-5'>
+            <i className='ti ti-users fs-1 text-muted mb-3 d-block'></i>
+            <h5 className='mb-2'>Ready to Add Players</h5>
+            <p className='text-muted mb-4'>
+              Add a new player to your account for future season and training
+              registrations.
+            </p>
+            <button
+              type='button'
+              className='btn btn-primary btn-lg'
+              onClick={() => setShowNewPlayerForm(true)}
+            >
+              <i className='ti ti-plus me-2'></i>
+              Add New Player to Account
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* New Player Information section (shown after clicking Add New Player button) */}
+      {!isInInitialState && renderNewPlayerForm()}
+
+      {/* Ready to Add Players CTA - shown after adding players */}
+      {shouldShowReadySection && renderUniversalCTA()}
+
+      {/* Info alert for edge cases */}
       {requiresPayment &&
         !hasUnpaidPlayers() &&
         !showNewPlayerForm &&
-        selectedPlayerIds.length === 0 && (
-          <div className='alert alert-info text-center'>
+        players.filter((p) => !p._id).length === 0 &&
+        selectedPlayerIds.length === 0 &&
+        !allExistingPlayersPaid() && (
+          <div className='alert alert-info text-center mt-4'>
             <i className='ti ti-info-circle me-2'></i>
-            {allExistingPlayersPaid()
-              ? 'All your players are already registered and paid. Click "Register New Player" to add another player.'
-              : 'Please select existing players to register or add new players to continue.'}
+            Please select existing players or click "Add New Player to Account"
+            to continue.
           </div>
         )}
     </div>
