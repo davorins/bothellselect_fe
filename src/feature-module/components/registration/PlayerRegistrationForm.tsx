@@ -1,3 +1,5 @@
+// PlayerRegistrationForm.tsx - FULLY FUNCTIONAL with DynamicPlayerRegistrationModule
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UserRegistrationModule from '../registration-modules/UserRegistrationModule';
@@ -52,7 +54,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   const {
     isAuthenticated,
     isLoading: authLoading,
-    isEmailVerified,
     user: currentUser,
     createTempAccount,
     checkAuth,
@@ -106,14 +107,38 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   const [registrationTimestamp, setRegistrationTimestamp] =
     useState<string>('');
 
-  // Player state
-  const [players, setPlayers] = useState<Player[]>([]);
+  // ── Player state ──────────────────────────────────────────────────────────────
+  // Seed one blank player immediately for brand-new users so
+  // DynamicPlayerRegistrationModule never receives an empty array on first
+  // render (which would hide the form because showNewPlayerForm starts false).
+  const [players, setPlayers] = useState<Player[]>(() => {
+    if (savedPlayers && savedPlayers.length > 0) return savedPlayers;
+    // Only pre-seed for genuinely new users who are not returning with
+    // existing account players.
+    if (!isExistingUser && !savedUserData) {
+      return [
+        {
+          fullName: '',
+          gender: '',
+          dob: '',
+          schoolName: '',
+          healthConcerns: '',
+          aauNumber: '',
+          registrationYear: formConfig?.year || new Date().getFullYear(),
+          season: formConfig?.season || 'Partizan Team',
+          grade: '',
+        },
+      ];
+    }
+    return [];
+  });
+
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [playerValidation, setPlayerValidation] = useState(false);
-  const [paidPlayers] = useState<Player[]>([]); // Empty for basic player registration
+  const [paidPlayers] = useState<Player[]>([]);
 
-  // Define all possible steps - ALWAYS SHOW ALL 4 STEPS
+  // Define all possible steps
   const allSteps = [
     { id: 'account', label: 'Account', number: 1, icon: 'ti ti-user-plus' },
     {
@@ -131,7 +156,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     { id: 'player', label: 'Player Info', number: 4, icon: 'ti ti-users' },
   ];
 
-  // Initialize steps - ALWAYS show all 4 steps
   const [steps] = useState<any[]>(() =>
     allSteps.map((step, index) => ({
       ...step,
@@ -150,33 +174,25 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     players: savedPlayers || [],
   });
 
-  // Custom function to determine if a step is accessible for clicking
   const isStepAccessible = (
     stepId: string,
     stepIndex: number,
     currentStepIndex: number,
   ): boolean => {
-    // For new users going through the flow
     if (!isAuthenticated && !isExistingUser && !hasCompletedUserRegistration) {
-      // Allow clicking on completed steps
       return stepIndex <= currentStepIndex;
     }
-
-    // For authenticated users or those who completed user registration
     if (isAuthenticated || hasCompletedUserRegistration) {
-      // Allow clicking on 'user' and 'player' steps only
       if (stepId === 'user' || stepId === 'player') {
         return stepIndex <= currentStepIndex;
       }
-      // Don't allow clicking on 'account' or 'verifyEmail' for authenticated users
       return false;
     }
-
-    // Default: allow clicking on completed steps
     return stepIndex <= currentStepIndex;
   };
 
-  // ✅ Initialize current step
+  // ── Initialize current step ───────────────────────────────────────────────────
+
   useEffect(() => {
     if (authLoading || isLoadingUserData) return;
 
@@ -200,61 +216,53 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     isExistingUser,
   ]);
 
-  // ✅ Initialize players
+  // ── Initialize players when stepping into player step ────────────────────────
+  // This handles the case where the user navigates back and forth between steps.
+  // We only add a blank player if there are truly no new (unsaved) players yet
+  // and the user is not an existing account holder with saved players.
+
   useEffect(() => {
-    if (savedPlayers && savedPlayers.length > 0) {
-      setPlayers(savedPlayers);
-    } else if (
-      currentStep === 'player' &&
-      players.length === 0 &&
-      (!userPlayers || userPlayers.length === 0) &&
-      !isExistingUser
-    ) {
-      const blankPlayer: Player = {
-        fullName: '',
-        gender: '',
-        dob: '',
-        schoolName: '',
-        healthConcerns: '',
-        aauNumber: '',
-        registrationYear: defaultSeasonEvent.year,
-        season: defaultSeasonEvent.season,
-        grade: '',
-      };
-      setPlayers([blankPlayer]);
+    if (currentStep !== 'player') return;
+    if (savedPlayers && savedPlayers.length > 0) return;
+
+    // For a truly new user with no existing account players and no players yet
+    const hasNoPlayers = players.length === 0;
+    const isNewUser =
+      !isExistingUser && !(userPlayers && userPlayers.length > 0);
+
+    if (hasNoPlayers && isNewUser) {
+      setPlayers([
+        {
+          fullName: '',
+          gender: '',
+          dob: '',
+          schoolName: '',
+          healthConcerns: '',
+          aauNumber: '',
+          registrationYear: defaultSeasonEvent.year,
+          season: defaultSeasonEvent.season,
+          grade: '',
+        },
+      ]);
     }
-  }, [
-    currentStep,
-    players.length,
-    userPlayers,
-    defaultSeasonEvent.year,
-    defaultSeasonEvent.season,
-    isExistingUser,
-    savedPlayers,
-  ]);
+  }, [currentStep]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateFormData = (newData: Partial<FormData>) => {
     setFormData((prev) => ({ ...prev, ...newData }));
   };
 
-  // ✅ Handle step navigation - FIXED VERSION
   const handleStepClick = (stepId: string) => {
     const stepIndex = steps.findIndex((step) => step.id === stepId);
     const currentIndex = steps.findIndex((step) => step.id === currentStep);
-
-    // Check if step is accessible using our custom function
     const isAccessible = isStepAccessible(stepId, stepIndex, currentIndex);
-    if (!isAccessible) {
-      return; // Don't navigate to inaccessible steps
-    }
-
-    // Only allow navigation to previous steps (can't skip ahead)
+    if (!isAccessible) return;
     if (stepIndex <= currentIndex) {
       setCurrentStep(stepId as RegistrationStep);
     }
   };
 
-  // ✅ Account creation handler
+  // ── Account creation handler ──────────────────────────────────────────────────
+
   const handleAccountCreated = async ({
     email,
     password,
@@ -292,7 +300,8 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     setCurrentStep('user');
   };
 
-  // ✅ Save user data function
+  // ── Save user data ────────────────────────────────────────────────────────────
+
   const saveUserData = async (
     userData: UserRegistrationData,
   ): Promise<UserRegistrationData | null> => {
@@ -321,7 +330,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
         aauNumber: userData.aauNumber?.trim() || '',
         agreeToTerms: userData.agreeToTerms,
         registerType: 'self',
-        // Add additional guardians to the registration data
         additionalGuardians:
           userData.additionalGuardians?.map((guardian) => ({
             fullName: guardian.fullName.trim(),
@@ -329,7 +337,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
             phone: guardian.phone.replace(/\D/g, ''),
             relationship: guardian.relationship.trim(),
             address: guardian.usePrimaryAddress
-              ? normalizedAddress // Use primary address if checked
+              ? normalizedAddress
               : {
                   street: guardian.address.street?.trim() || '',
                   street2: guardian.address.street2?.trim() || '',
@@ -373,7 +381,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
       const savedData =
         response.data.user || response.data.parent || response.data;
 
-      // Also save the additional guardians from the response
       if (response.data.additionalGuardians) {
         savedData.additionalGuardians = response.data.additionalGuardians;
       }
@@ -394,7 +401,8 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     }
   };
 
-  // ✅ Save player data function
+  // ── Save player data ──────────────────────────────────────────────────────────
+
   const savePlayerData = async (playersToSave: Player[]): Promise<boolean> => {
     try {
       const token = localStorage.getItem('token');
@@ -455,10 +463,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
           if (error.response?.data?.error?.includes('already exists')) {
             const duplicateId = error.response.data.duplicatePlayerId;
             if (duplicateId) {
-              savedPlayers.push({
-                ...player,
-                _id: duplicateId,
-              });
+              savedPlayers.push({ ...player, _id: duplicateId });
               continue;
             }
           }
@@ -497,7 +502,8 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     }
   };
 
-  // ✅ User registration completion
+  // ── User registration completion ──────────────────────────────────────────────
+
   const handleUserComplete = async (userData: any) => {
     try {
       const userDataToSave = userData.user || userData;
@@ -514,19 +520,39 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
         onUserRegistrationComplete(savedUser);
       }
 
+      // Ensure there is at least one blank player ready for the player step
+      setPlayers((prev) => {
+        if (prev.length === 0) {
+          return [
+            {
+              fullName: '',
+              gender: '',
+              dob: '',
+              schoolName: '',
+              healthConcerns: '',
+              aauNumber: '',
+              registrationYear: defaultSeasonEvent.year,
+              season: defaultSeasonEvent.season,
+              grade: '',
+            },
+          ];
+        }
+        return prev;
+      });
+
       setCurrentStep('player');
     } catch (error: any) {
       setFormError(error.message || 'Failed to save user information');
     }
   };
 
-  // ✅ Handle player change from module
+  // ── Player handlers ───────────────────────────────────────────────────────────
+
   const handlePlayersChange = (updatedPlayers: Player[]) => {
     setPlayers(updatedPlayers);
     updateFormData({ players: updatedPlayers });
   };
 
-  // ✅ Handle player selection
   const handlePlayerSelection = (playerId: string) => {
     setSelectedPlayerIds((prev) => {
       if (prev.includes(playerId)) {
@@ -537,18 +563,16 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     });
   };
 
-  // ✅ Handle payment calculation
   const handlePaymentCalculation = (playerCount: number) => {
-    // No payment for basic player registration
     console.log(`Player count for registration: ${playerCount}`);
   };
 
-  // ✅ Handle player validation change
   const handlePlayerValidationChange = (isValid: boolean) => {
     setPlayerValidation(isValid);
   };
 
-  // ✅ Player registration completion
+  // ── Player registration completion ────────────────────────────────────────────
+
   const handlePlayerComplete = async () => {
     setIsSubmitting(true);
     setFormError(null);
@@ -602,44 +626,53 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   };
 
   const handleComplete = () => {
-    // Call onSuccess if it exists, but ALWAYS navigate to profile
     if (onSuccess) {
       onSuccess(formData);
     }
-    // Always redirect to profile
     navigate('/pages/profile');
   };
 
   const handleAddMorePlayers = () => {
     setRegistrationCompleted(false);
     setCurrentStep('player');
-    // Reset players for new registration
-    const blankPlayer: Player = {
-      fullName: '',
-      gender: '',
-      dob: '',
-      schoolName: '',
-      healthConcerns: '',
-      aauNumber: '',
-      registrationYear: defaultSeasonEvent.year,
-      season: defaultSeasonEvent.season,
-      grade: '',
-    };
-    setPlayers([blankPlayer]);
+    setPlayers([
+      {
+        fullName: '',
+        gender: '',
+        dob: '',
+        schoolName: '',
+        healthConcerns: '',
+        aauNumber: '',
+        registrationYear: defaultSeasonEvent.year,
+        season: defaultSeasonEvent.season,
+        grade: '',
+      },
+    ]);
   };
 
-  // ✅ Create the props object for PlayerRegistrationModule
+  // ── Compute isExistingUser for the module ─────────────────────────────────────
+  // A user who just completed the guardian step is NOT an "existing user" in
+  // the module's sense (which controls whether the "Your Players" list renders).
+  // We only pass isExistingUser=true when the user genuinely has saved players
+  // on their account already (returned user flow).
+  const moduleIsExistingUser =
+    isExistingUser || (isAuthenticated && (userPlayers?.length ?? 0) > 0);
+
+  const moduleExistingPlayers = moduleIsExistingUser ? userPlayers || [] : [];
+
+  // ── Build module props ────────────────────────────────────────────────────────
+
   const playerModuleProps: PlayerRegistrationProps = {
     players: players,
     onPlayersChange: handlePlayersChange,
     registrationYear: defaultSeasonEvent.year,
     season: defaultSeasonEvent.season,
-    isExistingUser:
-      isExistingUser || isAuthenticated || hasCompletedUserRegistration,
-    existingPlayers: userPlayers || [],
+    isExistingUser: moduleIsExistingUser,
+    existingPlayers: moduleExistingPlayers,
     paidPlayers: paidPlayers,
     onValidationChange: handlePlayerValidationChange,
-    showCheckboxes: isAuthenticated && userPlayers && userPlayers.length > 0,
+    showCheckboxes:
+      isAuthenticated && userPlayers != null && userPlayers.length > 0,
     selectedPlayerIds,
     onPlayerSelection: handlePlayerSelection,
     onPaymentCalculation: handlePaymentCalculation,
@@ -652,7 +685,8 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     requiresPayment: false,
   };
 
-  // ✅ Render player step using PlayerRegistrationModule
+  // ── Render player step ────────────────────────────────────────────────────────
+
   const renderPlayerStep = () => {
     return (
       <div className='player-step-container'>
@@ -661,7 +695,8 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     );
   };
 
-  // ✅ Render success message with receipt
+  // ── Render success ────────────────────────────────────────────────────────────
+
   const renderSuccessMessage = () => {
     const registeredPlayers = [...(userPlayers || []), ...players];
     const playerNames = registeredPlayers
@@ -683,7 +718,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
             </p>
           </div>
 
-          {/* Registration Receipt */}
           <div className='receipt-card mb-4'>
             <div className='card border'>
               <div className='card-header bg-light'>
@@ -730,7 +764,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                           <strong>{player.fullName} • </strong>
                           <span className='text-muted small'>
                             {player.grade} Grade • {player.gender}
-                            {/* {player.schoolName || 'School not specified'} */}
                           </span>
                         </div>
                         <span className='badge bg-success'>Registered</span>
@@ -768,7 +801,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className='d-flex justify-content-between'>
             <button
               type='button'
@@ -792,7 +824,8 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     );
   };
 
-  // Show loading state
+  // ── Loading state ─────────────────────────────────────────────────────────────
+
   if (authLoading || isLoadingUserData) {
     return (
       <div className='form-content text-center p-5'>
@@ -804,7 +837,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
 
   return (
     <div>
-      {/* Header */}
       <div className='form-header'>
         <h2 className='mt-3'>Player Registration</h2>
         <p>
@@ -814,7 +846,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
         </p>
       </div>
 
-      {/* Step Indicator - Only show for non-success steps */}
       {currentStep !== 'success' && steps.length > 0 && (
         <StepIndicator
           steps={steps}
@@ -823,7 +854,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
         />
       )}
 
-      {/* Main Form Content */}
       <div className='form-content'>
         {formError && (
           <div className='alert alert-danger mb-4 border-0'>

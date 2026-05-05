@@ -21,6 +21,8 @@ interface GuardianRegistrationModuleProps {
   showUsePrimaryAddress?: boolean;
   errors?: Record<string, string>;
   registrationYear?: number;
+  isEmailReadOnly?: boolean;
+  emailLabel?: string;
 }
 
 const GuardianRegistrationModule: React.FC<GuardianRegistrationModuleProps> = ({
