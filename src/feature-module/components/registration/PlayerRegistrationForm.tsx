@@ -716,8 +716,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
 
   // ── Render success ────────────────────────────────────────────────────────────
 
-  // ── Render success ────────────────────────────────────────────────────────────
-
   const renderSuccessMessage = () => {
     const registeredPlayers = userPlayers || localSavedPlayers || [];
 
