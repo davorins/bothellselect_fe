@@ -12,7 +12,6 @@ import { useDynamicFormFields } from '../../hooks/useDynamicFormFields';
 import GradeConfirmationBanner from './GradeConfirmationBanner';
 import PlayerFormFields from '../../../components/forms/PlayerFormFields';
 import { commonHealthConditions } from '../../constants/healthConditions';
-import axios from 'axios';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,7 +28,7 @@ interface DynamicPlayerRegistrationModuleProps {
   selectedPlayerIds?: string[];
   onPlayerSelection?: (playerId: string) => void;
   onPaymentCalculation?: (playerCount: number) => void;
-  onComplete?: () => void;
+  onComplete?: (players: Player[]) => void;
   onBack?: () => void;
   parentId?: string;
   authToken?: string;
@@ -37,11 +36,8 @@ interface DynamicPlayerRegistrationModuleProps {
   allowMultiple?: boolean;
   requiresPayment?: boolean;
   hideUI?: boolean;
+  onSaveComplete?: () => void;
 }
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -95,18 +91,20 @@ const DynamicPlayerRegistrationModule: React.FC<
   allowMultiple = true,
   requiresPayment = true,
   hideUI = false,
+  onSaveComplete,
 }) => {
   const [showNewPlayerForm, setShowNewPlayerForm] = useState(false);
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [saveErrors, setSaveErrors] = useState<Record<string, string>>({});
   const [gradeConfirmed, setGradeConfirmed] = useState<Record<number, boolean>>(
     {},
   );
 
-  // Health conditions keyed by player index
+  // ── KEY FIX: Only show validation errors after first submit attempt ─────────
+  const hasAttemptedSubmitRef = useRef(false);
+
   const [playerHealthConditions, setPlayerHealthConditions] = useState<
     Record<number, any[]>
   >({});
@@ -117,12 +115,9 @@ const DynamicPlayerRegistrationModule: React.FC<
     Record<number, boolean>
   >({});
 
-  // ── Anti-duplicate refs ───────────────────────────────────────────────────────
   const isSubmittingRef = useRef(false);
   const hasSavedPlayersRef = useRef(false);
   const lastSubmitTimestampRef = useRef(0);
-
-  // Validation loop-prevention refs
   const isValidatingRef = useRef(false);
   const validationTimeoutRef = useRef<NodeJS.Timeout>();
   const prevValidationKeyRef = useRef<string>('');
@@ -134,12 +129,7 @@ const DynamicPlayerRegistrationModule: React.FC<
     loading: fieldsLoading,
   } = useDynamicFormFields('player', { registrationYear });
 
-  // ── Player helpers ───────────────────────────────────────────────────────────
-
-  const allExistingPlayers = useCallback(
-    () => [...(existingPlayers || []), ...(paidPlayers || [])],
-    [existingPlayers, paidPlayers],
-  );
+  // ── Player helpers ────────────────────────────────────────────────────────────
 
   const unpaidExistingPlayers = useCallback(
     () =>
@@ -147,11 +137,6 @@ const DynamicPlayerRegistrationModule: React.FC<
         (p) => !paidPlayers.some((pp) => pp._id === p._id),
       ),
     [existingPlayers, paidPlayers],
-  );
-
-  const allExistingPlayersPaid = useCallback(
-    () => unpaidExistingPlayers().length === 0 && existingPlayers.length > 0,
-    [unpaidExistingPlayers, existingPlayers],
   );
 
   const hasUnpaidPlayers = useCallback(
@@ -164,9 +149,9 @@ const DynamicPlayerRegistrationModule: React.FC<
     [paidPlayers],
   );
 
-  // ── Validation ───────────────────────────────────────────────────────────────
+  // ── Validation ────────────────────────────────────────────────────────────────
 
-  const validateAllPlayers = useCallback(() => {
+  const validateAllPlayers = useCallback((): boolean => {
     const errors: Record<string, string> = {};
     const hasSelectedUnpaid = selectedPlayerIds.length > 0;
     const hasNew = players.some((p) => !p._id && p.fullName?.trim());
@@ -250,7 +235,7 @@ const DynamicPlayerRegistrationModule: React.FC<
     });
   }, [players, selectedPlayerIds, gradeConfirmed]);
 
-  // ── Health conditions ────────────────────────────────────────────────────────
+  // ── Health conditions ─────────────────────────────────────────────────────────
 
   const updatePlayerHealthConcerns = useCallback(
     (index: number, conditions: any[], custom: string, showCustom: boolean) => {
@@ -316,9 +301,10 @@ const DynamicPlayerRegistrationModule: React.FC<
     };
   }, []);
 
-  // ── Validation effect ────────────────────────────────────────────────────────
-
+  // ── KEY FIX: Only run background validation after first submit attempt ────────
   useEffect(() => {
+    // Don't run validation on mount — wait until user tries to submit
+    if (!hasAttemptedSubmitRef.current) return;
     if (isSubmittingRef.current || isSubmitting) return;
 
     if (validationTimeoutRef.current) {
@@ -344,7 +330,7 @@ const DynamicPlayerRegistrationModule: React.FC<
     };
   }, [validationKey, validateAllPlayers, isSubmitting]);
 
-  // ── Field change with auto-calculation ──────────────────────────────────────
+  // ── Field change ──────────────────────────────────────────────────────────────
 
   const handlePlayerChange = (
     index: number,
@@ -377,7 +363,7 @@ const DynamicPlayerRegistrationModule: React.FC<
       });
     }
 
-    if (field === 'grade' && value && !updatedPlayer.dob) {
+    if (field === 'grade' && value) {
       updatedPlayer.isGradeOverridden = true;
       setGradeConfirmed((prev) => ({ ...prev, [index]: true }));
     }
@@ -399,10 +385,10 @@ const DynamicPlayerRegistrationModule: React.FC<
     const updated = [...players];
     updated[index] = { ...updated[index], isGradeOverridden: true };
     onPlayersChange(updated);
-    setGradeConfirmed((prev) => ({ ...prev, [index]: false }));
+    setGradeConfirmed((prev) => ({ ...prev, [index]: true }));
   };
 
-  // ── Add / remove ─────────────────────────────────────────────────────────────
+  // ── Add / remove ──────────────────────────────────────────────────────────────
 
   const addPlayer = () => {
     if (players.filter((p) => !p._id).length >= maxPlayers) return;
@@ -458,7 +444,7 @@ const DynamicPlayerRegistrationModule: React.FC<
     if (updated.every((p) => p._id)) setShowNewPlayerForm(false);
   };
 
-  // ── Existing player selection ────────────────────────────────────────────────
+  // ── Existing player selection ─────────────────────────────────────────────────
 
   const handlePlayerSelection = (playerId: string) => {
     if (!requiresPayment || !onPlayerSelection) return;
@@ -487,23 +473,20 @@ const DynamicPlayerRegistrationModule: React.FC<
     }
   };
 
-  // Initial player setup for existing users
-  useEffect(() => {
-    if (isExistingUser && allExistingPlayersPaid() && players.length === 0) {
-      // Don't auto-add a player - wait for user to click Add New Player button
-      setShowNewPlayerForm(false);
-    }
-  }, [isExistingUser, allExistingPlayersPaid(), players.length]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Backend save ─────────────────────────────────────────────────────────────
+  // ── Backend save ──────────────────────────────────────────────────────────────
 
   const savePlayersToBackend = async (
     playersToSave: Player[],
   ): Promise<boolean> => {
     if (!parentId || !authToken) {
-      setSaveErrors({ general: 'Authentication required. Please try again.' });
+      setValidationErrors({
+        general: 'Authentication required. Please try again.',
+      });
       return false;
     }
+
+    const axios = (await import('axios')).default;
+    const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
     try {
       const uniquePlayerMap = new Map<string, Player>();
@@ -517,22 +500,12 @@ const DynamicPlayerRegistrationModule: React.FC<
         if (alreadyExists) return false;
 
         const uniqueKey = `${p.fullName?.trim().toLowerCase()}|${p.dob}|${p.gender}`;
-        if (uniquePlayerMap.has(uniqueKey)) {
-          console.log(
-            'Duplicate player detected in batch, skipping:',
-            p.fullName,
-          );
-          return false;
-        }
+        if (uniquePlayerMap.has(uniqueKey)) return false;
         uniquePlayerMap.set(uniqueKey, p);
         return true;
       });
 
-      console.log('Unique new players to save:', newPlayersToSave.length);
-
-      if (newPlayersToSave.length === 0) {
-        return true;
-      }
+      if (newPlayersToSave.length === 0) return true;
 
       const savedPlayers: Player[] = [];
 
@@ -540,11 +513,7 @@ const DynamicPlayerRegistrationModule: React.FC<
         const isValid = getVisibleFields(player).every(
           (f) => !validateField(f, player[f.fieldName as keyof Player]),
         );
-
-        if (!isValid) {
-          console.log('Invalid player, skipping save:', player.fullName);
-          continue;
-        }
+        if (!isValid) continue;
 
         try {
           const response = await axios.post(
@@ -582,8 +551,6 @@ const DynamicPlayerRegistrationModule: React.FC<
             savedPlayers.push(response.data.player || response.data);
           }
         } catch (err: any) {
-          console.error(`Error saving player ${player.fullName}:`, err);
-
           if (
             err.response?.data?.error?.includes('already exists') ||
             err.response?.data?.error?.includes('duplicate')
@@ -596,60 +563,32 @@ const DynamicPlayerRegistrationModule: React.FC<
         }
       }
 
-      console.log(`Successfully saved ${savedPlayers.length} players`);
-
       if (savedPlayers.length > 0) {
         const updatedPlayers = players.map((orig) => {
           if (orig._id) return orig;
           const saved = savedPlayers.find((s) => isSamePlayer(s, orig));
           return saved || orig;
         });
-
         if (JSON.stringify(updatedPlayers) !== JSON.stringify(players)) {
           onPlayersChange(updatedPlayers);
         }
+        onSaveComplete?.();
       }
 
-      setSaveErrors({});
       return true;
     } catch (error: any) {
       console.error('Save players error:', error);
-
       if (
         error.response?.data?.error?.includes('already exists') ||
         error.response?.data?.error?.includes('duplicate')
       ) {
-        const duplicateId = error.response.data.duplicatePlayerId;
-        if (duplicateId) {
-          const playerName =
-            error.response.data.error.match(/Player "([^"]+)"/)?.[1];
-          if (playerName) {
-            const updatedPlayers = players.map((p) =>
-              p.fullName === playerName ? { ...p, _id: duplicateId } : p,
-            );
-            onPlayersChange(updatedPlayers);
-            setSaveErrors({
-              general: `Player "${playerName}" already exists in your account. They have been added to your selection.`,
-            });
-            return true;
-          }
-        }
-        setSaveErrors({
-          general:
-            'A player with this information already exists. Please check your player list.',
-        });
-      } else if (error.response?.status === 409) {
-        setSaveErrors({
-          general:
-            'This player appears to already exist in the system. Please check your existing players list.',
-        });
-      } else {
-        setSaveErrors({
-          general:
-            error.response?.data?.error ||
-            'Failed to save players. Please try again.',
-        });
+        return true;
       }
+      setValidationErrors({
+        general:
+          error.response?.data?.error ||
+          'Failed to save players. Please try again.',
+      });
       return false;
     }
   };
@@ -658,26 +597,14 @@ const DynamicPlayerRegistrationModule: React.FC<
 
   const handleSubmit = async () => {
     const now = Date.now();
-    if (now - lastSubmitTimestampRef.current < 2000) {
-      console.log('Submit debounced — too soon after last attempt.');
-      return;
-    }
+    if (now - lastSubmitTimestampRef.current < 2000) return;
+    if (isSubmittingRef.current) return;
 
-    if (isSubmittingRef.current) {
-      console.log('Submission already in progress, skipping.');
-      return;
-    }
-
-    if (hasSavedPlayersRef.current) {
-      console.log('Players already saved, proceeding to complete.');
-      setTimeout(() => onComplete?.(), 100);
-      return;
-    }
-
+    hasAttemptedSubmitRef.current = true;
     lastSubmitTimestampRef.current = now;
     isSubmittingRef.current = true;
     setIsSubmitting(true);
-    setSaveErrors({});
+    setValidationErrors({});
 
     if (!validateAllPlayers()) {
       setIsSubmitting(false);
@@ -685,38 +612,13 @@ const DynamicPlayerRegistrationModule: React.FC<
       window.scrollTo(0, 0);
       return;
     }
-
-    try {
-      const brandNew = players.filter((p) => !p._id);
-
-      if (brandNew.length > 0) {
-        hasSavedPlayersRef.current = true;
-
-        const ok = await savePlayersToBackend(brandNew);
-
-        if (!ok) {
-          hasSavedPlayersRef.current = false;
-          setIsSubmitting(false);
-          isSubmittingRef.current = false;
-          window.scrollTo(0, 0);
-          return;
-        }
-      }
-
-      setTimeout(() => onComplete?.(), 100);
-    } catch (error) {
-      console.error('Submission error:', error);
-      hasSavedPlayersRef.current = false;
-      setSaveErrors({
-        general: 'An unexpected error occurred. Please try again.',
-      });
-    } finally {
-      setIsSubmitting(false);
-      isSubmittingRef.current = false;
-    }
+    setTimeout(() => onComplete?.(players), 100);
+    setIsSubmitting(false);
+    isSubmittingRef.current = false;
   };
 
-  // ── Shared player form renderer ───────────────────────────────────────────────
+  // ── Player form item renderer ─────────────────────────────────────────────────
+
   const renderPlayerFormItem = (
     player: Player,
     actualIndex: number,
@@ -733,7 +635,7 @@ const DynamicPlayerRegistrationModule: React.FC<
       >
         {totalNew > 1 && (
           <div className='d-flex justify-content-between align-items-center mb-3'>
-            <h6 className='text-primary'>New Player {displayIndex + 1}</h6>
+            <h6 className='text-primary'>Player {displayIndex + 1}</h6>
             <button
               type='button'
               className='btn btn-sm btn-outline-danger'
@@ -800,27 +702,15 @@ const DynamicPlayerRegistrationModule: React.FC<
   };
 
   // ── Render: existing player list ──────────────────────────────────────────────
+  // KEY FIX: Always render this when isExistingUser=true and there are any
+  // players (paid or unpaid). Previously it hid itself when all were paid
+  // and nothing was selected, making paid players invisible.
 
   const renderPlayerList = () => {
     if (hideUI) return null;
-    if (
-      !isExistingUser ||
-      (allExistingPlayers().length === 0 && !showCheckboxes)
-    )
-      return null;
-
-    // Don't show the Your Players card if there are no unpaid players and we're in initial state
-    const hasNoUnpaidPlayers = !hasUnpaidPlayers();
-    const hasNotStartedAdding =
-      !showNewPlayerForm && players.filter((p) => !p._id).length === 0;
-
-    if (
-      hasNoUnpaidPlayers &&
-      hasNotStartedAdding &&
-      selectedPlayerIds.length === 0
-    ) {
-      return null;
-    }
+    if (!isExistingUser) return null;
+    // Show the list if there are any paid OR unpaid players
+    if (paidPlayers.length === 0 && existingPlayers.length === 0) return null;
 
     return (
       <div className='card mb-4'>
@@ -833,6 +723,7 @@ const DynamicPlayerRegistrationModule: React.FC<
           </div>
         </div>
         <div className='card-body'>
+          {/* ── Paid players ── */}
           {hasPaidPlayers() && requiresPayment && (
             <div className='mb-4'>
               <h6 className='text-success mb-3'>
@@ -847,7 +738,7 @@ const DynamicPlayerRegistrationModule: React.FC<
                   <div>
                     <strong>{player.fullName}</strong>
                     <span className='text-muted ms-2'>
-                      - {player.grade} Grade
+                      — {player.grade} Grade
                     </span>
                   </div>
                   <span className='badge bg-success'>
@@ -858,6 +749,7 @@ const DynamicPlayerRegistrationModule: React.FC<
             </div>
           )}
 
+          {/* ── Unpaid / selectable players ── */}
           {hasUnpaidPlayers() && (
             <div className='mb-4'>
               <h6 className='text-warning mb-3'>
@@ -872,7 +764,9 @@ const DynamicPlayerRegistrationModule: React.FC<
                   return (
                     <div
                       key={player._id}
-                      className={`d-flex justify-content-between align-items-center p-3 border rounded mb-2 ${isSelected ? 'border-primary bg-light' : ''}`}
+                      className={`d-flex justify-content-between align-items-center p-3 border rounded mb-2 ${
+                        isSelected ? 'border-primary bg-light' : ''
+                      }`}
                       style={{ cursor: 'pointer' }}
                       onClick={() => handlePlayerSelection(player._id!)}
                     >
@@ -887,15 +781,12 @@ const DynamicPlayerRegistrationModule: React.FC<
                         <div>
                           <strong>{player.fullName}</strong>
                           <span className='text-muted ms-2'>
-                            - {player.grade} Grade
+                            — {player.grade} Grade
                           </span>
                         </div>
                       </div>
                       <span className='badge bg-warning text-dark'>
-                        <i className='ti ti-clock me-1'></i>
-                        {requiresPayment
-                          ? 'Payment Pending'
-                          : 'Registration Pending'}
+                        <i className='ti ti-clock me-1'></i>Payment Pending
                       </span>
                     </div>
                   );
@@ -908,7 +799,7 @@ const DynamicPlayerRegistrationModule: React.FC<
                     <div>
                       <strong>{player.fullName}</strong>
                       <span className='text-muted ms-2'>
-                        - {player.grade} Grade
+                        — {player.grade} Grade
                       </span>
                     </div>
                     <span className='badge bg-info'>
@@ -924,17 +815,15 @@ const DynamicPlayerRegistrationModule: React.FC<
     );
   };
 
-  // ── Render: new player form (styled like Case 2) ───────────────────────────────────
+  // ── Render: new player forms ──────────────────────────────────────────────────
 
-  const renderNewPlayerForm = () => {
+  const renderNewPlayerForms = () => {
     const newPlayers = players.filter((p) => !p._id);
 
-    // For existing-user path: only show if user clicked "Add Player" OR there are new players
     if (isExistingUser && !showNewPlayerForm && newPlayers.length === 0) {
       return null;
     }
 
-    // Nothing to render yet
     if (newPlayers.length === 0) return null;
 
     if (hideUI) {
@@ -949,7 +838,6 @@ const DynamicPlayerRegistrationModule: React.FC<
               newPlayers.length,
             );
           })}
-
           {allowMultiple && newPlayers.length < maxPlayers && (
             <div className='text-center mt-4'>
               <button
@@ -957,96 +845,53 @@ const DynamicPlayerRegistrationModule: React.FC<
                 className='btn btn-outline-primary'
                 onClick={addPlayer}
               >
-                <i className='ti ti-plus me-2'></i>
-                Add Another Player
+                <i className='ti ti-plus me-2'></i>Add Another Player
               </button>
-            </div>
-          )}
-
-          {Object.keys(validationErrors).length > 0 && !hideUI && (
-            <div className='alert alert-warning mt-3'>
-              <i className='ti ti-alert-triangle me-2'></i>
-              Please complete all required player information to continue.
             </div>
           )}
         </>
       );
     }
 
-    // For existing users, style like Case 2 (inline, no outer card wrapper)
-    if (isExistingUser) {
-      return (
-        <div className='card mb-4'>
-          <div className='card-header bg-light'>
-            <div className='d-flex align-items-center'>
-              <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
-                <i className='ti ti-users fs-16' />
-              </span>
-              <h4 className='text-dark'>Add New Player</h4>
-            </div>
-          </div>
-          <div className='card-body'>
-            <div>
-              <div className='mb-4'>
-                <p className='text-muted'>
-                  Add information for each player you'd like to add to your
-                  account.
-                </p>
-              </div>
-
-              {newPlayers.map((player, index) => {
-                const actualIndex = players.findIndex((p) => p === player);
-                return renderPlayerFormItem(
-                  player,
-                  actualIndex,
-                  index,
-                  newPlayers.length,
-                );
-              })}
-
-              {allowMultiple && newPlayers.length < maxPlayers && (
-                <div className='text-center mt-4'>
-                  <button
-                    type='button'
-                    className='btn btn-outline-primary'
-                    onClick={addPlayer}
-                  >
-                    <i className='ti ti-plus me-2'></i>
-                    Add Another Player
-                  </button>
-                </div>
-              )}
-
-              {Object.keys(validationErrors).length > 0 && (
-                <div className='alert alert-warning mt-3'>
-                  <i className='ti ti-alert-triangle me-2'></i>
-                  Please complete all required player information to continue.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // New user path (Case 2) - keep original styling
     return (
-      <div className='card'>
-        <div className='card-header bg-light'>
+      <div className='card mb-4'>
+        <div className='card-header bg-light d-flex justify-content-between align-items-center'>
           <div className='d-flex align-items-center'>
             <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
-              <i className='ti ti-shirt-sport fs-16' />
+              <i className='ti ti-users fs-16' />
             </span>
-            <h4 className='text-dark'>Player Information</h4>
+            <h4 className='text-dark mb-0'>
+              {isExistingUser ? 'Add New Player' : 'Player Information'}
+            </h4>
           </div>
+          {isExistingUser && (
+            <button
+              type='button'
+              className='btn btn-sm btn-outline-secondary'
+              onClick={() => {
+                setShowNewPlayerForm(false);
+                onPlayersChange(players.filter((p) => p._id));
+                onPaymentCalculation?.(selectedPlayerIds.length);
+              }}
+            >
+              Cancel
+            </button>
+          )}
         </div>
         <div className='card-body'>
-          <div className='mb-4'>
-            <h5>Register Players for {season}</h5>
-            <p className='text-muted'>
-              Add information for each player you'd like to register.
+          {!isExistingUser && (
+            <div className='mb-4'>
+              <h5>Register Players for {season}</h5>
+              <p className='text-muted'>
+                Add information for each player you'd like to register.
+              </p>
+            </div>
+          )}
+          {isExistingUser && (
+            <p className='text-muted mb-4'>
+              Add information for each new player you'd like to register.
             </p>
-          </div>
+          )}
 
           {newPlayers.map((player, index) => {
             const actualIndex = players.findIndex((p) => p === player);
@@ -1065,31 +910,35 @@ const DynamicPlayerRegistrationModule: React.FC<
                 className='btn btn-outline-primary'
                 onClick={addPlayer}
               >
-                <i className='ti ti-plus me-2'></i>
-                Add Another Player
+                <i className='ti ti-plus me-2'></i>Add Another Player
               </button>
             </div>
           )}
 
-          {Object.keys(validationErrors).length > 0 && (
-            <div className='alert alert-warning mt-3'>
-              <i className='ti ti-alert-triangle me-2'></i>
-              Please complete all required player information to continue.
-            </div>
-          )}
+          {/* Only show field-level warnings after submit attempt */}
+          {hasAttemptedSubmitRef.current &&
+            Object.keys(validationErrors).some((k) => k !== 'general') && (
+              <div className='alert alert-warning mt-3'>
+                <i className='ti ti-alert-triangle me-2'></i>
+                Please complete all required player information to continue.
+              </div>
+            )}
         </div>
       </div>
     );
   };
 
-  // ── Render: CTA ───────────────────────────────────────────────────────────────
+  // ── Render: CTA card ──────────────────────────────────────────────────────────
 
   const renderUniversalCTA = () => {
     if (hideUI) return null;
 
     const hasSelectedUnpaid = selectedPlayerIds.length > 0;
-    const hasNew = players.some((p) => !p._id && p.fullName?.trim());
-    const hasAny = hasSelectedUnpaid || hasNew;
+    const hasNewFilled = players.some((p) => !p._id && p.fullName?.trim());
+    const hasNewForm = showNewPlayerForm || players.some((p) => !p._id);
+    const hasAny = hasSelectedUnpaid || hasNewFilled;
+
+    const newPlayerCount = players.filter((p) => !p._id).length;
 
     const areNewValid = players
       .filter((p) => !p._id)
@@ -1101,60 +950,35 @@ const DynamicPlayerRegistrationModule: React.FC<
         return fieldsValid && player.grade && gradeConfirmed[actualIndex];
       });
 
-    const isFormValid = hasAny && (hasNew ? areNewValid : true);
+    const isFormValid = hasAny && (hasNewFilled ? areNewValid : true);
 
-    let buttonText = '';
-    let titleText = '';
-    let subtitleText = '';
+    let buttonText = requiresPayment
+      ? 'Continue to Payment'
+      : existingPlayers.length > 0 || paidPlayers.length > 0
+        ? 'Add Players to Account'
+        : 'Complete Registration';
 
-    if (!requiresPayment) {
-      const isInitial =
-        !isExistingUser ||
-        (existingPlayers.length === 0 && paidPlayers.length === 0);
-      const isPostPayment =
-        isExistingUser &&
-        (existingPlayers.length > 0 || paidPlayers.length > 0);
-
-      if (isInitial) {
-        titleText = 'Ready to Complete Registration';
-        buttonText = 'Complete Registration';
-        subtitleText = hasAny
-          ? hasNew
-            ? `${players.filter((p) => !p._id).length} new player(s) ready to be registered`
-            : `${selectedPlayerIds.length} existing player(s) selected`
-          : 'Add or select players to continue';
-      } else if (isPostPayment) {
-        titleText = 'Ready to Add Players';
-        buttonText = 'Add Players to Account';
-        subtitleText = hasNew
-          ? `${players.filter((p) => !p._id).length} new player(s) ready to be added`
-          : 'Add a new player to continue';
-      }
-    } else {
-      titleText = 'Ready to Make Payment';
-      buttonText = 'Continue to Payment';
-      const total =
-        selectedPlayerIds.length + players.filter((p) => !p._id).length;
-      subtitleText = hasAny
-        ? total > 0
-          ? `${total} player(s) ready for payment`
-          : 'Add or select players to continue'
-        : 'Add or select players to continue';
-    }
+    const total = selectedPlayerIds.length + newPlayerCount;
 
     return (
       <div className='card mt-4'>
         <div className='card-body'>
           <div className='d-flex justify-content-between align-items-center'>
             <div>
-              <h5 className='mb-1'>{titleText}</h5>
-              <p className='text-muted mb-0'>{subtitleText}</p>
-              {!isFormValid && hasAny && (
+              <h5 className='mb-1'>
+                {requiresPayment
+                  ? 'Ready to Make Payment'
+                  : 'Ready to Register'}
+              </h5>
+              <p className='text-muted mb-0'>
+                {total > 0
+                  ? `${total} player${total !== 1 ? 's' : ''} ready`
+                  : 'Select or add players to continue'}
+              </p>
+              {hasNewForm && !areNewValid && hasNewFilled && (
                 <p className='text-warning small mb-0 mt-1'>
                   <i className='ti ti-alert-triangle me-1'></i>
-                  {hasNew && !areNewValid
-                    ? 'Complete all required information for new players'
-                    : 'Select at least one player or add a new player'}
+                  Complete all required information for new players
                 </p>
               )}
             </div>
@@ -1184,14 +1008,14 @@ const DynamicPlayerRegistrationModule: React.FC<
     );
   };
 
-  // ── New user path (Case 2) ─────────────────────────────────────────────────────────────
+  // ── New user path ─────────────────────────────────────────────────────────────
 
   if (!isExistingUser && !hideUI) {
     const newPlayers = players.filter((p) => !p._id);
 
     const allValid =
       newPlayers.length > 0 &&
-      newPlayers.every((p, _i) => {
+      newPlayers.every((p) => {
         const idx = players.findIndex((pl) => pl === p);
         const fieldsValid = getVisibleFields(p).every(
           (f) => !validateField(f, p[f.fieldName as keyof Player]),
@@ -1218,49 +1042,30 @@ const DynamicPlayerRegistrationModule: React.FC<
               </p>
             </div>
 
-            {newPlayers.length > 0 && (
-              <div>
-                {newPlayers.map((player, index) => {
-                  const actualIndex = players.findIndex((p) => p === player);
-                  return renderPlayerFormItem(
-                    player,
-                    actualIndex,
-                    index,
-                    newPlayers.length,
-                  );
-                })}
-              </div>
-            )}
+            {newPlayers.map((player, index) => {
+              const actualIndex = players.findIndex((p) => p === player);
+              return renderPlayerFormItem(
+                player,
+                actualIndex,
+                index,
+                newPlayers.length,
+              );
+            })}
 
-            {allowMultiple && newPlayers.length < maxPlayers && (
-              <div className='text-center mt-4'>
-                <button
-                  type='button'
-                  className='btn btn-outline-primary'
-                  onClick={addPlayer}
-                >
-                  <i className='ti ti-plus me-2'></i>
-                  {newPlayers.length === 0
-                    ? 'Add Player'
-                    : 'Add Another Player'}
-                </button>
-              </div>
-            )}
+            <div className='text-center mt-4'>
+              <button
+                type='button'
+                className='btn btn-outline-primary'
+                onClick={addPlayer}
+                disabled={newPlayers.length >= maxPlayers}
+              >
+                <i className='ti ti-plus me-2'></i>
+                {newPlayers.length === 0 ? 'Add Player' : 'Add Another Player'}
+              </button>
+            </div>
 
-            {!allowMultiple && newPlayers.length === 0 && (
-              <div className='text-center mt-4'>
-                <button
-                  type='button'
-                  className='btn btn-outline-primary'
-                  onClick={addPlayer}
-                >
-                  <i className='ti ti-plus me-2'></i>
-                  Add Player
-                </button>
-              </div>
-            )}
-
-            {Object.keys(validationErrors).length > 0 &&
+            {hasAttemptedSubmitRef.current &&
+              Object.keys(validationErrors).length > 0 &&
               newPlayers.length > 0 && (
                 <div className='alert alert-warning mt-3'>
                   <i className='ti ti-alert-triangle me-2'></i>
@@ -1270,63 +1075,57 @@ const DynamicPlayerRegistrationModule: React.FC<
           </div>
         </div>
 
-        {newPlayers.length > 0 && (
-          <div className='card mt-4'>
-            <div className='card-body'>
-              <div className='d-flex justify-content-between align-items-center'>
-                <div>
-                  <h5 className='mb-1'>
-                    {requiresPayment
-                      ? 'Ready to Make Payment'
-                      : 'Ready to Complete Registration'}
-                  </h5>
-                  <p className='text-muted mb-0'>
-                    {newPlayers.length} player
-                    {newPlayers.length !== 1 ? 's' : ''} added
+        <div className='card mt-4'>
+          <div className='card-body'>
+            <div className='d-flex justify-content-between align-items-center'>
+              <div>
+                <h5 className='mb-1'>
+                  {requiresPayment
+                    ? 'Ready to Make Payment'
+                    : 'Ready to Complete Registration'}
+                </h5>
+                <p className='text-muted mb-0'>
+                  {newPlayers.length > 0
+                    ? `${newPlayers.length} player${newPlayers.length !== 1 ? 's' : ''} added`
+                    : 'No players added yet — click "Add Player" above'}
+                </p>
+                {newPlayers.length > 0 && !allValid && (
+                  <p className='text-warning small mb-0 mt-1'>
+                    <i className='ti ti-alert-triangle me-1'></i>
+                    Complete all required information for each player
                   </p>
-                  {!allValid && (
-                    <p className='text-warning small mb-0 mt-1'>
-                      <i className='ti ti-alert-triangle me-1'></i>Complete all
-                      required information for players
-                    </p>
-                  )}
-                </div>
-                <button
-                  type='button'
-                  className={`btn btn-lg ${allValid ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={handleSubmit}
-                  disabled={
-                    isSubmitting ||
-                    isSubmittingRef.current ||
-                    newPlayers.length === 0 ||
-                    !allValid
-                  }
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span className='spinner-border spinner-border-sm me-2'></span>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <i
-                        className={`${requiresPayment ? 'ti ti-credit-card' : 'ti ti-check'} me-2`}
-                      ></i>
-                      {requiresPayment
-                        ? 'Continue to Payment'
-                        : 'Complete Registration'}
-                    </>
-                  )}
-                </button>
+                )}
               </div>
+              <button
+                type='button'
+                className={`btn btn-lg ${allValid ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={handleSubmit}
+                disabled={isSubmitting || isSubmittingRef.current || !allValid}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className='spinner-border spinner-border-sm me-2'></span>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <i
+                      className={`${requiresPayment ? 'ti ti-credit-card' : 'ti ti-check'} me-2`}
+                    ></i>
+                    {requiresPayment
+                      ? 'Continue to Payment'
+                      : 'Complete Registration'}
+                  </>
+                )}
+              </button>
             </div>
           </div>
-        )}
+        </div>
       </div>
     );
   }
 
-  // ── Existing user path (Case 1) ────────────────────────────────────────────────────────
+  // ── Existing user path ────────────────────────────────────────────────────────
 
   if (fieldsLoading && !hideUI) {
     return (
@@ -1340,31 +1139,33 @@ const DynamicPlayerRegistrationModule: React.FC<
   }
 
   if (hideUI) {
-    return <>{renderNewPlayerForm()}</>;
+    return <>{renderNewPlayerForms()}</>;
   }
 
-  // Determine what to show for existing user
-  const hasNewPlayers = players.some((p) => !p._id && p.fullName?.trim());
+  const newPlayers = players.filter((p) => !p._id);
   const hasSelectedAny = selectedPlayerIds.length > 0;
-  const shouldShowReadySection = hasNewPlayers || hasSelectedAny;
+  const shouldShowCTA =
+    showNewPlayerForm || newPlayers.length > 0 || hasSelectedAny;
+
+  // "Initial state" for existing users = no new form open, nothing selected
+  // KEY FIX: This no longer hides renderPlayerList — paid players always show
   const isInInitialState =
-    !showNewPlayerForm &&
-    players.filter((p) => !p._id).length === 0 &&
-    !hasSelectedAny;
+    !showNewPlayerForm && newPlayers.length === 0 && !hasSelectedAny;
 
   return (
     <div>
-      {saveErrors.general && (
+      {/* Only show the general validation error after a submit attempt */}
+      {hasAttemptedSubmitRef.current && validationErrors.general && (
         <div className='alert alert-danger mb-4'>
           <i className='ti ti-alert-circle me-2'></i>
-          {saveErrors.general}
+          {validationErrors.general}
         </div>
       )}
 
-      {/* Your Players card - shows existing players */}
+      {/* Always render paid/unpaid player list for existing users */}
       {renderPlayerList()}
 
-      {/* Initial State Card - Add New Player to Account (matches Case 2 styling) */}
+      {/* "Add New Player" prompt — shown in initial state (nothing selected/added yet) */}
       {isInInitialState && (
         <div className='card mb-4'>
           <div className='card-header bg-light'>
@@ -1372,47 +1173,52 @@ const DynamicPlayerRegistrationModule: React.FC<
               <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
                 <i className='ti ti-user-plus fs-16' />
               </span>
-              <h4 className='text-dark'>Add Players to Account</h4>
+              <h4 className='text-dark'>
+                {hasPaidPlayers()
+                  ? 'Register Another Player'
+                  : 'Add Players to Account'}
+              </h4>
             </div>
           </div>
           <div className='card-body text-center py-5'>
             <i className='ti ti-users fs-1 text-muted mb-3 d-block'></i>
-            <h5 className='mb-2'>Ready to Add Players</h5>
+            <h5 className='mb-2'>
+              {hasPaidPlayers()
+                ? 'Register an Additional Player'
+                : 'Ready to Add Players'}
+            </h5>
             <p className='text-muted mb-4'>
-              Add a new player to your account for future season and training
-              registrations.
+              {hasPaidPlayers()
+                ? 'Would you like to register another player for this event?'
+                : 'Add a new player to your account for this registration.'}
             </p>
+            {hasUnpaidPlayers() && (
+              <p className='text-warning mb-3'>
+                <i className='ti ti-arrow-up me-1'></i>
+                You also have players above with pending payment — select them
+                to register.
+              </p>
+            )}
             <button
               type='button'
               className='btn btn-primary btn-lg'
-              onClick={() => setShowNewPlayerForm(true)}
+              onClick={() => {
+                addPlayer();
+                setShowNewPlayerForm(true);
+              }}
             >
               <i className='ti ti-plus me-2'></i>
-              Add New Player to Account
+              Add New Player
             </button>
           </div>
         </div>
       )}
 
-      {/* New Player Information section (shown after clicking Add New Player button) */}
-      {!isInInitialState && renderNewPlayerForm()}
+      {/* New player form(s) */}
+      {!isInInitialState && renderNewPlayerForms()}
 
-      {/* Ready to Add Players CTA - shown after adding players */}
-      {shouldShowReadySection && renderUniversalCTA()}
-
-      {/* Info alert for edge cases */}
-      {requiresPayment &&
-        !hasUnpaidPlayers() &&
-        !showNewPlayerForm &&
-        players.filter((p) => !p._id).length === 0 &&
-        selectedPlayerIds.length === 0 &&
-        !allExistingPlayersPaid() && (
-          <div className='alert alert-info text-center mt-4'>
-            <i className='ti ti-info-circle me-2'></i>
-            Please select existing players or click "Add New Player to Account"
-            to continue.
-          </div>
-        )}
+      {/* CTA submit card */}
+      {shouldShowCTA && renderUniversalCTA()}
     </div>
   );
 };

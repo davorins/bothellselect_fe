@@ -162,6 +162,11 @@ const GuardianRegistrationModule: React.FC<GuardianRegistrationModuleProps> = ({
       }
     });
 
+    // ✅ AAU validation for coaches (static field)
+    if (guardian.isCoach && !guardian.aauNumber?.trim()) {
+      isValid = false;
+    }
+
     onValidationChangeRef.current?.(isValid);
     return isValid;
   }, [guardian, visibleFields, validateField]);
@@ -178,6 +183,8 @@ const GuardianRegistrationModule: React.FC<GuardianRegistrationModuleProps> = ({
     guardian.address?.city,
     guardian.address?.state,
     guardian.address?.zip,
+    guardian.isCoach,
+    guardian.aauNumber,
     visibleFields,
     validateForm,
   ]);

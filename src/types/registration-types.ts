@@ -184,9 +184,10 @@ export interface PlayerRegistrationProps {
   onPaymentCalculation?: (playerCount: number) => void;
   parentId?: string;
   authToken?: string;
-  onComplete?: () => void;
+  onComplete?: (players: Player[]) => void;
   onBack?: () => void;
   requiresPayment?: boolean;
+  onSaveComplete?: () => void;
 }
 
 export interface TeamRegistrationProps {

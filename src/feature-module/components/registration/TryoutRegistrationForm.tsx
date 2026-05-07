@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import UserRegistrationModule from '../registration-modules/UserRegistrationModule';
 import PaymentModule from '../registration-modules/PaymentModule';
 import AccountCreationModule from '../registration-modules/AccountCreationModule';
 import EmailVerificationStep from '../../auth/emailVerification/emailVerificationStep';
-import PlayerRegistrationModule from '../registration-modules/PlayerRegistrationModule';
+import DynamicPlayerRegistrationModule from '../registration-modules/DynamicPlayerRegistrationModule';
 import StepIndicator from '../../../components/common/StepIndicator';
+import { all_routes } from '../../router/all_routes';
 import {
   FormData,
   RegistrationFormConfig,
@@ -12,6 +14,7 @@ import {
   Player,
   SeasonRegistration,
   TryoutSpecificConfig,
+  Address,
 } from '../../../types/registration-types';
 import { useAuth } from '../../../context/AuthContext';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
@@ -30,11 +33,6 @@ interface TryoutRegistrationFormProps {
 }
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-
-// Helper function to check if config is a tryout config
-const isTryoutConfig = (config: any): config is TryoutSpecificConfig => {
-  return config && typeof config === 'object' && 'tryoutName' in config;
-};
 
 const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
   onSuccess,
@@ -56,6 +54,9 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
     players: userPlayers,
   } = useAuth();
 
+  const navigate = useNavigate();
+  const routes = all_routes;
+
   // State for loaded tryout config
   const [loadedTryoutConfig, setLoadedTryoutConfig] =
     useState<TryoutSpecificConfig | null>(null);
@@ -63,7 +64,10 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
   const [configError, setConfigError] = useState<string | null>(null);
 
   // Player states
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [players, setPlayers] = useState<Player[]>(() => {
+    if (savedPlayers && savedPlayers.length > 0) return savedPlayers;
+    return [];
+  });
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [playerValidation, setPlayerValidation] = useState(false);
   const [playersForTryout, setPlayersForTryout] = useState<Player[]>([]);
@@ -82,6 +86,7 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
     useState<any>(savedUserData);
   const [registrationTimestamp, setRegistrationTimestamp] =
     useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const defaultSeasonEvent = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -95,7 +100,6 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
       };
     }
 
-    // Use seasonEvent if available
     if (seasonEvent) {
       return {
         season: seasonEvent.season,
@@ -104,7 +108,6 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
       };
     }
 
-    // Fallback
     return {
       season: 'Spring Tryout 2026',
       year: currentYear,
@@ -222,7 +225,7 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
     return allSteps;
   });
 
-  // ✅ Initialize step
+  // Initialize step
   useEffect(() => {
     if (authLoading || isLoadingConfig) return;
 
@@ -246,7 +249,6 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
     skipToPlayerStep,
   ]);
 
-  // ✅ Initialize formData with correct season
   const [formData, setFormData] = useState<FormData>({
     eventData: {
       season: defaultSeasonEvent.season,
@@ -267,23 +269,18 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
     }));
   }, [defaultSeasonEvent]);
 
-  // ✅ Initialize players with correct season
+  // Initialize players when stepping into player step
   useEffect(() => {
-    if (savedPlayers && savedPlayers.length > 0) {
-      setPlayers(savedPlayers);
-    } else if (currentStep === 'player' && players.length === 0) {
-      console.log('🔍 Player initialization check:', {
-        userPlayersLength: userPlayers?.length,
-        currentPlayersLength: players.length,
-        currentStep,
-      });
+    if (currentStep !== 'player') return;
+    if (savedPlayers && savedPlayers.length > 0) return;
 
-      // Check if user already has any players in their account
-      const userHasExistingPlayers = userPlayers && userPlayers.length > 0;
+    const hasNoPlayers = players.length === 0;
+    const isNewUser =
+      !isExistingUser && !(userPlayers && userPlayers.length > 0);
 
-      if (!userHasExistingPlayers) {
-        // Only show blank form if user doesn't have any existing players
-        const blankPlayer: Player = {
+    if (hasNoPlayers && isNewUser) {
+      setPlayers([
+        {
           fullName: '',
           gender: '',
           dob: '',
@@ -293,18 +290,16 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
           registrationYear: defaultSeasonEvent.year,
           season: defaultSeasonEvent.season,
           grade: '',
-        };
-        setPlayers([blankPlayer]);
-        console.log('🆕 Created blank player form for first-time registration');
-      }
+        },
+      ]);
     }
   }, [
     currentStep,
     players.length,
-    defaultSeasonEvent.year,
-    defaultSeasonEvent.season,
-    savedPlayers,
+    isExistingUser,
     userPlayers,
+    savedPlayers,
+    defaultSeasonEvent,
   ]);
 
   const updateFormData = (newData: Partial<FormData>) => {
@@ -316,219 +311,56 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
 
     const tryoutSeason = defaultSeasonEvent.season;
     const tryoutYear = defaultSeasonEvent.year;
-    const tryoutEventId = defaultSeasonEvent.eventId;
-
-    console.log('🔍 Tryout: Checking paid players for:', {
-      tryoutSeason,
-      tryoutYear,
-      tryoutEventId,
-      totalPlayers: userPlayers.length,
-    });
 
     return userPlayers.filter((player) => {
       const hasPaidForThisTryout = player.seasons?.some(
         (season: SeasonRegistration) => {
-          // Check for exact season name match (case-sensitive)
           const exactSeasonMatch = season.season === tryoutSeason;
           const exactYearMatch = season.year === tryoutYear;
           const isPaid =
             season.paymentStatus === 'paid' || season.paymentComplete === true;
 
-          const result = exactSeasonMatch && exactYearMatch && isPaid;
-
-          if (result) {
-            console.log(`✅ Player ${player.fullName} paid for this tryout:`, {
-              seasonInDB: season.season,
-              yearInDB: season.year,
-              currentSeason: tryoutSeason,
-              currentYear: tryoutYear,
-              paymentStatus: season.paymentStatus,
-            });
-          }
-
-          return result;
+          return exactSeasonMatch && exactYearMatch && isPaid;
         },
       );
 
       return hasPaidForThisTryout;
     });
-  }, [
-    userPlayers,
-    defaultSeasonEvent.season,
-    defaultSeasonEvent.year,
-    defaultSeasonEvent.eventId,
-  ]);
+  }, [userPlayers, defaultSeasonEvent]);
 
-  // ✅ Get unpaid players (those not already paid for this specific tryout)
-  const getUnpaidPlayers = useCallback((): Player[] => {
-    if (!userPlayers) return [];
+  // Calculate player count for payment
+  const getEffectivePlayerCount = useCallback((): number => {
+    if (playersForTryout.length > 0) {
+      return playersForTryout.length;
+    }
 
     const paidPlayers = getPaidPlayersForTryout();
     const paidPlayerIds = new Set(paidPlayers.map((p) => p._id));
 
-    // Return players who are NOT in the paid list
-    const unpaidPlayers = userPlayers.filter(
-      (player) => !paidPlayerIds.has(player._id),
-    );
-
-    console.log('🔍 Tryout Players Status:', {
-      tryoutSeason: defaultSeasonEvent.season,
-      tryoutYear: defaultSeasonEvent.year,
-      totalUserPlayers: userPlayers.length,
-      paidPlayersCount: paidPlayers.length,
-      unpaidPlayersCount: unpaidPlayers.length,
-      paidPlayers: paidPlayers.map((p) => ({
-        id: p._id,
-        name: p.fullName,
-        seasons:
-          p.seasons?.filter((s) => s.season === defaultSeasonEvent.season) ||
-          [],
-      })),
-      unpaidPlayers: unpaidPlayers.map((p) => ({
-        id: p._id,
-        name: p.fullName,
-      })),
-    });
-
-    return unpaidPlayers;
-  }, [
-    userPlayers,
-    getPaidPlayersForTryout,
-    defaultSeasonEvent.season,
-    defaultSeasonEvent.year,
-  ]);
-
-  // ✅ Calculate player count for payment
-  const getEffectivePlayerCount = useCallback((): number => {
-    console.log('🔍 Tryout: Calculating effective player count:', {
-      tryoutSeason: defaultSeasonEvent.season,
-      tryoutYear: defaultSeasonEvent.year,
-      selectedPlayerIdsCount: selectedPlayerIds.length,
-      playersCount: players.length,
-      playersForTryoutCount: playersForTryout.length,
-    });
-
-    // If playersForTryout is set, use it
-    if (playersForTryout.length > 0) {
-      console.log('✅ Using playersForTryout count:', playersForTryout.length);
-      return playersForTryout.length;
-    }
-
-    // Count selected existing UNPAID players + new players
-    const selectedUnpaidPlayers = selectedPlayerIds.filter((playerId) => {
-      const player = userPlayers?.find((p) => p._id === playerId);
-      if (!player) return false;
-
-      // Check if player is already paid for THIS SPECIFIC tryout
-      const isPaid = player.seasons?.some((season: SeasonRegistration) => {
-        const exactSeasonMatch = season.season === defaultSeasonEvent.season;
-        const exactYearMatch = season.year === defaultSeasonEvent.year;
-        const isPaidStatus =
-          season.paymentStatus === 'paid' || season.paymentComplete === true;
-
-        return exactSeasonMatch && exactYearMatch && isPaidStatus;
-      });
-
-      return !isPaid;
-    });
-
+    const selectedUnpaidCount = selectedPlayerIds.filter(
+      (id) => !paidPlayerIds.has(id),
+    ).length;
     const newPlayersCount = players.filter(
       (p) => !p._id && p.fullName?.trim(),
     ).length;
-    const total = selectedUnpaidPlayers.length + newPlayersCount;
 
-    console.log('🔍 Fallback calculation:', {
-      selectedUnpaidPlayers: selectedUnpaidPlayers.length,
-      newPlayersCount,
-      total,
-    });
-
-    return total;
-  }, [
-    selectedPlayerIds,
-    players,
-    userPlayers,
-    defaultSeasonEvent.season,
-    defaultSeasonEvent.year,
-    playersForTryout,
-  ]);
+    return selectedUnpaidCount + newPlayersCount;
+  }, [selectedPlayerIds, players, getPaidPlayersForTryout, playersForTryout]);
 
   const calculatePaymentAmount = (): number => {
     const playerCount = getEffectivePlayerCount();
     return (effectiveTryoutConfig.tryoutFee || 50) * 100 * playerCount;
   };
 
-  // Event handlers
-  const handleAccountCreated = async ({
-    email,
-    password,
-  }: {
-    email: string;
-    password: string;
-  }) => {
-    setIsProcessing(true);
-    setFormError(null);
-
-    try {
-      console.log('Creating account for tryout:', email);
-
-      if (!createTempAccount) {
-        throw new Error('createTempAccount function not available');
-      }
-
-      await createTempAccount(email, password);
-      localStorage.setItem('pendingEmail', email);
-      updateFormData({ tempAccount: { email, password } });
-      setIsVerificationSent(true);
-      setCurrentStep('verifyEmail');
-    } catch (error: any) {
-      console.error('Error creating account:', error);
-      setFormError(error.message || 'Failed to create account');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleVerified = () => {
-    setCurrentStep('user');
-  };
-
-  const handleUserComplete = async (userData: any) => {
-    try {
-      const userDataToSave = userData.user || userData;
-      const savedUser = await saveUserData(userDataToSave);
-
-      if (!savedUser) {
-        throw new Error('Failed to save user data');
-      }
-
-      setSavedUserDataState(savedUser);
-      updateFormData({ user: savedUser });
-      setHasCompletedUserRegistration(true);
-      setCurrentStep('player');
-    } catch (error: any) {
-      console.error('Error saving user data:', error);
-      setFormError(error.message || 'Failed to save user information');
-    }
-  };
-
-  // Save user data function
+  // ─── Save User Data ────────────────────────────────────────────────────────
   const saveUserData = async (userData: any): Promise<any> => {
     try {
-      const token = localStorage.getItem('token');
-      const parentId = savedUserDataState?._id || currentUser?._id;
-
-      // If authenticated, just return the current user data
-      if (isAuthenticated && token && parentId) {
-        return savedUserDataState || currentUser;
-      }
-
       const password = userData.password || formData.tempAccount?.password;
       if (!password && !isAuthenticated) {
         throw new Error('Password is required for new user registration');
       }
 
-      const normalizedAddress = {
+      const normalizedAddress: Address = {
         street: userData.address?.street?.trim() || '',
         street2: userData.address?.street2?.trim() || '',
         city: userData.address?.city?.trim() || '',
@@ -568,183 +400,56 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
           })) || [],
       };
 
-      const response = await axios.post(
-        `${API_BASE_URL}/register`,
-        registrationData,
-        {
-          headers: { 'Content-Type': 'application/json' },
-        },
-      );
+      let response;
+      if (isAuthenticated) {
+        const token = localStorage.getItem('token');
+        response = await axios.patch(
+          `${API_BASE_URL}/users/profile`,
+          registrationData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+      } else {
+        response = await axios.post(
+          `${API_BASE_URL}/register`,
+          registrationData,
+        );
+      }
 
-      if (response.data.token) {
+      if (!isAuthenticated && response.data.token) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('parentId', response.data.parent._id);
         localStorage.setItem('parent', JSON.stringify(response.data.parent));
-
-        if (checkAuth) {
-          await checkAuth();
-        }
+        await checkAuth();
       }
 
       const savedData =
         response.data.user || response.data.parent || response.data;
-      if (response.data.parent?._id && !savedData._id) {
-        savedData._id = response.data.parent._id;
+
+      if (response.data.additionalGuardians) {
+        savedData.additionalGuardians = response.data.additionalGuardians;
       }
+
+      setSavedUserDataState(savedData);
+      setHasCompletedUserRegistration(true);
       return savedData;
     } catch (error: any) {
-      console.error('Error saving user data:', error);
-      if (error.response?.data?.error) {
-        throw new Error(error.response.data.error);
-      }
-      throw error;
+      let errorMessage = 'Failed to save user information';
+      if (error.response?.data?.error) errorMessage = error.response.data.error;
+      else if (error.response?.data?.message)
+        errorMessage = error.response.data.message;
+      else if (error.message) errorMessage = error.message;
+      setFormError(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
-  const handlePlayerSelection = (playerId: string) => {
-    setSelectedPlayerIds((prev) => {
-      if (prev.includes(playerId)) {
-        return prev.filter((id) => id !== playerId);
-      } else {
-        return [...prev, playerId];
-      }
-    });
-  };
-
-  const handlePlayersChange = (updatedPlayers: Player[]) => {
-    console.log('Players changed:', updatedPlayers.length);
-    setPlayers(updatedPlayers);
-    updateFormData({ players: updatedPlayers });
-  };
-
-  const handlePlayerValidationChange = (isValid: boolean) => {
-    setPlayerValidation(isValid);
-  };
-
-  const handlePlayerComplete = async () => {
-    console.log('🎯 TRYOUT: handlePlayerComplete called');
-
-    // Build final players array
-    const finalPlayers: Player[] = [];
-
-    // 1. Add selected existing players
-    if (selectedPlayerIds.length > 0 && userPlayers) {
-      console.log(
-        '🔄 Adding selected existing players:',
-        selectedPlayerIds.length,
-      );
-      selectedPlayerIds.forEach((playerId) => {
-        const player = userPlayers.find((p) => p._id === playerId);
-        if (player) {
-          console.log('✅ Adding selected player:', player.fullName);
-          finalPlayers.push({
-            ...player,
-            registrationYear: defaultSeasonEvent.year,
-            season: defaultSeasonEvent.season, // ✅ Use correct tryout name
-          });
-        }
-      });
-    }
-
-    // 2. Add new players (without IDs)
-    const newPlayers = players.filter((p) => !p._id && p.fullName?.trim());
-    console.log('🔄 Adding new players:', newPlayers.length);
-    finalPlayers.push(...newPlayers);
-
-    // 3. Add existing players in state that aren't selected
-    const existingPlayersInState = players.filter(
-      (p) => p._id && !selectedPlayerIds.includes(p._id!),
-    );
-    console.log(
-      '🔄 Adding existing players in state:',
-      existingPlayersInState.length,
-    );
-    finalPlayers.push(...existingPlayersInState);
-
-    // Filter valid players
-    const validPlayers = finalPlayers.filter((p) => p.fullName?.trim());
-
-    console.log('🔍 Players before saving:', {
-      tryoutSeason: defaultSeasonEvent.season,
-      tryoutYear: defaultSeasonEvent.year,
-      total: validPlayers.length,
-      players: validPlayers.map((p) => ({
-        id: p._id || 'NEW',
-        name: p.fullName,
-        season: p.season,
-      })),
-    });
-
-    if (validPlayers.length === 0) {
-      alert('Please select or add at least one player to continue.');
-      return;
-    }
-
-    try {
-      // Save new players to get their IDs before payment
-      console.log('💾 Saving players before payment...');
-      const savedPlayers = await savePlayerData(validPlayers, true);
-
-      // Filter out any players that still don't have IDs
-      const playersWithIds = savedPlayers.filter((p) => p._id);
-
-      if (playersWithIds.length === 0) {
-        throw new Error('No valid players with IDs found for registration.');
-      }
-
-      // SET PLAYERS FOR TRYOUT WITH PROPER IDs
-      setPlayersForTryout(playersWithIds);
-
-      // Also update other states for consistency
-      setPlayers(playersWithIds);
-      updateFormData({ players: playersWithIds });
-
-      // Log what we're about to pass to PaymentModule
-      console.log('🚀 Moving to payment step with:', {
-        tryoutSeason: defaultSeasonEvent.season,
-        tryoutYear: defaultSeasonEvent.year,
-        playersForTryoutCount: playersWithIds.length,
-        players: playersWithIds.map((p) => ({
-          id: p._id,
-          name: p.fullName,
-          season: p.season,
-        })),
-      });
-
-      if (effectiveTryoutConfig.requiresPayment) {
-        setCurrentStep('payment');
-      } else {
-        handleComplete();
-      }
-    } catch (error: any) {
-      console.error('❌ Error saving players:', error);
-      setFormError(
-        error.message || 'Failed to save player information. Please try again.',
-      );
-    }
-  };
-
-  const handleBack = () => {
-    switch (currentStep) {
-      case 'verifyEmail':
-        setCurrentStep('account');
-        break;
-      case 'user':
-        setCurrentStep('verifyEmail');
-        break;
-      case 'player':
-        setCurrentStep('user');
-        break;
-      case 'payment':
-        setCurrentStep('player');
-        break;
-    }
-  };
-
-  const savePlayerData = async (
-    playersToSave: Player[],
-    immediatePaymentFlow = false,
-  ): Promise<Player[]> => {
+  // ─── Save Player Data ──────────────────────────────────────────────────────
+  const savePlayerData = async (playersToSave: Player[]): Promise<Player[]> => {
     try {
       const token = localStorage.getItem('token');
       const parentId = savedUserDataState?._id || currentUser?._id;
@@ -755,11 +460,10 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
 
       const playersWithoutId = playersToSave.filter((p) => !p._id);
       if (playersWithoutId.length === 0) {
-        console.log('All players already have IDs, returning existing players');
         return playersToSave;
       }
 
-      const savedPlayers: Player[] = [];
+      const savedPlayersList: Player[] = [];
 
       for (const player of playersWithoutId) {
         const playerData = {
@@ -770,11 +474,10 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
           healthConcerns: player.healthConcerns || '',
           aauNumber: player.aauNumber || '',
           registrationYear: defaultSeasonEvent.year,
-          season: defaultSeasonEvent.season, // ✅ Use correct tryout name
+          season: defaultSeasonEvent.season,
           parentId: parentId,
           grade: player.grade || '',
           isGradeOverridden: player.isGradeOverridden || false,
-          immediatePaymentFlow: immediatePaymentFlow,
           skipSeasonRegistration: true,
           registrationType: 'tryout',
         };
@@ -791,117 +494,217 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
             },
           );
 
-          // Check for duplicate player response
           if (response.data.error?.includes('already exists')) {
-            console.log(
-              'Duplicate player detected in response:',
-              response.data,
-            );
-
-            if (response.data.existingPlayer) {
-              const existingPlayer: Player = {
-                ...player,
-                _id:
-                  response.data.existingPlayer.id ||
-                  response.data.duplicatePlayerId,
-                fullName: response.data.existingPlayer.fullName,
-                seasons: response.data.existingPlayer.seasons || [],
-              };
-              savedPlayers.push(existingPlayer);
-              console.log(
-                'Added existing player from response:',
-                existingPlayer,
-              );
-            } else if (response.data.duplicatePlayerId) {
-              const existingPlayer: Player = {
+            if (response.data.duplicatePlayerId) {
+              savedPlayersList.push({
                 ...player,
                 _id: response.data.duplicatePlayerId,
-                seasons: [],
-              };
-              savedPlayers.push(existingPlayer);
-              console.log('Added player with duplicate ID:', existingPlayer);
+              });
             }
-          } else if (response.data.player) {
-            savedPlayers.push(response.data.player);
-            console.log('New player created:', response.data.player);
-          } else if (response.data) {
-            savedPlayers.push(response.data);
-            console.log('Added player from fallback response:', response.data);
+          } else {
+            savedPlayersList.push(response.data.player || response.data);
           }
         } catch (error: any) {
-          console.log('Axios error occurred:', error);
-
           if (error.response?.data?.error?.includes('already exists')) {
-            console.log(
-              'Duplicate player in error response:',
-              error.response.data,
-            );
-
-            const responseData = error.response.data;
-            const existingPlayer: Player = {
-              ...player,
-              _id:
-                responseData.duplicatePlayerId ||
-                responseData.existingPlayer?.id,
-              fullName:
-                responseData.existingPlayer?.fullName || player.fullName,
-              seasons: responseData.existingPlayer?.seasons || [],
-            };
-
-            if (existingPlayer._id) {
-              savedPlayers.push(existingPlayer);
-              console.log('Added existing player from error:', existingPlayer);
-            } else {
-              console.warn(
-                'Duplicate error but no player ID found:',
-                responseData,
-              );
-              savedPlayers.push(player);
+            const duplicateId = error.response.data.duplicatePlayerId;
+            if (duplicateId) {
+              savedPlayersList.push({ ...player, _id: duplicateId });
+              continue;
             }
-            continue;
           }
-
           throw error;
         }
       }
 
-      // Combine saved players with existing players (those with IDs)
-      const existingPlayers = playersToSave.filter((p) => p._id);
-      const allPlayers = [...existingPlayers, ...savedPlayers];
+      const existingPlayersList = playersToSave.filter((p) => p._id);
+      const allPlayers = [...existingPlayersList, ...savedPlayersList];
 
-      console.log('Final saved players for tryout:', {
-        total: allPlayers.length,
-        players: allPlayers.map((p) => ({
-          id: p._id,
-          name: p.fullName,
-          season: p.season,
-        })),
-      });
+      setPlayers(allPlayers);
+      updateFormData({ players: allPlayers });
 
       return allPlayers;
     } catch (error: any) {
       console.error('Error in savePlayerData:', error);
-      throw error;
+      let errorMessage = 'Failed to save player information';
+      if (error.response?.data?.error) errorMessage = error.response.data.error;
+      else if (error.response?.data?.message)
+        errorMessage = error.response.data.message;
+      else if (error.message) errorMessage = error.message;
+      setFormError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
+  // ─── Event Handlers ────────────────────────────────────────────────────────
+  const handleAccountCreated = async ({
+    email,
+    password,
+  }: {
+    email: string;
+    password: string;
+  }) => {
+    setIsProcessing(true);
+    setFormError(null);
+
+    try {
+      localStorage.setItem('pendingEmail', email);
+      await createTempAccount(email, password);
+      updateFormData({ tempAccount: { email, password } });
+      setIsVerificationSent(true);
+      setCurrentStep('verifyEmail');
+    } catch (error: any) {
+      let errorMessage = 'Failed to create account';
+      if (error.message?.includes('network') || error.code === 'ERR_NETWORK') {
+        errorMessage = 'Network error: Please check your connection.';
+      } else if (error.message?.includes('already exists')) {
+        errorMessage = 'Email already registered. Please sign in.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      setFormError(errorMessage);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleVerified = () => {
+    setCurrentStep('user');
+  };
+
+  const handleUserComplete = async (userData: any) => {
+    try {
+      const userDataToSave = userData.user || userData;
+      const savedUser = await saveUserData(userDataToSave);
+
+      if (!savedUser) {
+        throw new Error('Failed to save user data');
+      }
+
+      setSavedUserDataState(savedUser);
+      setHasCompletedUserRegistration(true);
+
+      setCurrentStep('player');
+    } catch (error: any) {
+      setFormError(error.message || 'Failed to save user information');
+    }
+  };
+
+  const handlePlayersChange = (updatedPlayers: Player[]) => {
+    setPlayers(updatedPlayers);
+    updateFormData({ players: updatedPlayers });
+  };
+
+  const handlePlayerSelection = (playerId: string) => {
+    setSelectedPlayerIds((prev) =>
+      prev.includes(playerId)
+        ? prev.filter((id) => id !== playerId)
+        : [...prev, playerId],
+    );
+  };
+
+  const handlePlayerValidationChange = (isValid: boolean) => {
+    setPlayerValidation(isValid);
+  };
+
+  // ── Player Completion - Saves players AND moves to payment ───────────
+  const handlePlayerComplete = async (playersData: Player[]) => {
+    setIsSubmitting(true);
+    setFormError(null);
+
+    try {
+      // Add selected existing players that aren't already in the list
+      const selectedExistingPlayers = (userPlayers || []).filter(
+        (p) =>
+          selectedPlayerIds.includes(p._id!) &&
+          !playersData.some((existing) => existing._id === p._id),
+      );
+
+      const allPlayersToSave = [...playersData, ...selectedExistingPlayers];
+
+      // Save players to database (parent responsibility)
+      const savedPlayersResult = await savePlayerData(allPlayersToSave);
+
+      // Refresh auth context to get updated players
+      await checkAuth();
+
+      // Filter out any players that still don't have IDs
+      const playersWithIds = savedPlayersResult.filter((p) => p._id);
+
+      if (playersWithIds.length === 0) {
+        throw new Error('No valid players with IDs found for registration.');
+      }
+
+      setPlayersForTryout(playersWithIds);
+
+      if (effectiveTryoutConfig.requiresPayment) {
+        setCurrentStep('payment');
+      } else {
+        handleComplete();
+      }
+    } catch (error: any) {
+      console.error('Error in handlePlayerComplete:', error);
+      setFormError(error.message || 'Failed to save player information');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleBack = () => {
+    const stepOrder = ['account', 'verifyEmail', 'user', 'player', 'payment'];
+    const currentIndex = stepOrder.indexOf(currentStep);
+    if (currentIndex > 0) {
+      setCurrentStep(stepOrder[currentIndex - 1] as any);
     }
   };
 
   const handlePaymentComplete = (successData: any) => {
-    console.log('Tryout payment successful:', successData);
     setPaymentSuccessData(successData);
     setRegistrationTimestamp(new Date().toLocaleString());
     setCurrentStep('success');
   };
 
   const handleComplete = () => {
-    onSuccess?.(formData);
+    if (onSuccess) {
+      onSuccess(formData);
+    }
+    navigate(routes.profile);
   };
 
-  // ✅ Render success message
+  // ─── Render Success Message ────────────────────────────────────────────────
   const renderSuccessMessage = () => {
-    const paidPlayers = getPaidPlayersForTryout();
-    const newlyRegisteredPlayers = playersForTryout.filter(
-      (p) => !paidPlayers.some((paid) => paid._id === p._id),
-    );
+    // Get registered players - ensure we have a definite array
+    let registeredPlayers: Player[] = [];
+
+    if (playersForTryout.length > 0) {
+      registeredPlayers = playersForTryout;
+    } else if (userPlayers && userPlayers.length > 0) {
+      registeredPlayers = userPlayers.filter((player: Player) =>
+        player.seasons?.some(
+          (season: SeasonRegistration) =>
+            season.season === defaultSeasonEvent.season &&
+            season.year === defaultSeasonEvent.year,
+        ),
+      );
+    }
+
+    // Remove duplicates based on _id
+    const uniquePlayers: Player[] = [];
+    const seenIds = new Set<string>();
+
+    for (const player of registeredPlayers) {
+      if (player._id && !seenIds.has(player._id)) {
+        seenIds.add(player._id);
+        uniquePlayers.push(player);
+      } else if (
+        !player._id &&
+        !uniquePlayers.some(
+          (p) => p.fullName === player.fullName && p.dob === player.dob,
+        )
+      ) {
+        // For players without _id, use name + dob as unique identifier
+        uniquePlayers.push(player);
+      }
+    }
 
     return (
       <div className='card border-0 shadow-sm'>
@@ -976,11 +779,11 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
                     <strong>Players Registered for Tryout:</strong>
                   </p>
 
-                  {newlyRegisteredPlayers.length > 0 && (
+                  {uniquePlayers.length > 0 ? (
                     <ul className='list-group'>
-                      {newlyRegisteredPlayers.map((player, index) => (
+                      {uniquePlayers.map((player: Player, index: number) => (
                         <li
-                          key={`new-${index}`}
+                          key={player._id || index}
                           className='list-group-item d-flex justify-content-between'
                         >
                           <div>
@@ -994,6 +797,8 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
                         </li>
                       ))}
                     </ul>
+                  ) : (
+                    <p className='text-muted'>No players registered yet.</p>
                   )}
                 </div>
 
@@ -1007,8 +812,10 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
                         <i className='ti ti-calendar text-primary me-2'></i>
                         <strong>Tryout schedule:</strong>{' '}
                         {effectiveTryoutConfig.tryoutDates
-                          .map((date) => new Date(date).toLocaleDateString())
-                          .join(', ')}
+                          .map((date: string) =>
+                            new Date(date).toLocaleDateString(),
+                          )
+                          .join(', ') || 'To be announced'}
                       </li>
                       <li className='mt-2'>
                         <i className='ti ti-map-pin text-primary me-2'></i>
@@ -1042,7 +849,7 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
     );
   };
 
-  // Render functions
+  // Render tryout info card
   const renderTryoutInfo = () => {
     if (isLoadingConfig) {
       return (
@@ -1071,7 +878,7 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
             <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
               <i className='ti ti-target-arrow fs-16' />
             </span>
-            <h4 className='text-dark'>{effectiveTryoutConfig.tryoutName} </h4>
+            <h4 className='text-dark'>{effectiveTryoutConfig.tryoutName}</h4>
           </div>
         </div>
         <div className='card-body'>
@@ -1095,7 +902,7 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
                 <p className='mb-2'>
                   <strong>Tryout Dates:</strong>{' '}
                   {effectiveTryoutConfig.tryoutDates
-                    .map((d) => new Date(d).toLocaleDateString())
+                    .map((d: string) => new Date(d).toLocaleDateString())
                     .join(', ')}
                 </p>
               )}
@@ -1153,7 +960,7 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
     return renderSuccessMessage();
   }
 
-  if (authLoading) {
+  if (authLoading || isLoadingConfig) {
     return (
       <div className='card'>
         <div className='card-body text-center p-5'>
@@ -1164,15 +971,17 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
     );
   }
 
+  // Props for DynamicPlayerRegistrationModule
+  const isUserExisting =
+    isExistingUser || isAuthenticated || hasCompletedUserRegistration;
+  const allExistingPlayers = userPlayers || [];
+  const paidPlayersForTryout = getPaidPlayersForTryout();
+
   return (
     <div className='tryout-registration-form'>
       <div className='form-header'>
         <h2 className='mt-3'>Tryout Registration</h2>
-        <p>
-          {(currentStep as string) === 'success'
-            ? 'Your players have been successfully registered for tryouts!'
-            : `Register players for the ${effectiveTryoutConfig.tryoutName}.`}
-        </p>
+        <p>{`Register players for the ${effectiveTryoutConfig.tryoutName}.`}</p>
       </div>
 
       {renderTryoutInfo()}
@@ -1184,10 +993,17 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
         </div>
       )}
 
-      {(currentStep as string) !== 'success' && steps.length > 0 && (
+      {steps.length > 0 && (
         <StepIndicator
           steps={steps}
-          currentStep={currentStep}
+          currentStep={
+            currentStep as
+              | 'account'
+              | 'verifyEmail'
+              | 'user'
+              | 'player'
+              | 'payment'
+          }
           className='mb-5'
         />
       )}
@@ -1216,86 +1032,66 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
             onBack={handleBack}
             formData={formData}
             updateFormData={updateFormData}
-            isExistingUser={
-              isExistingUser || isAuthenticated || hasCompletedUserRegistration
-            }
+            isExistingUser={isUserExisting}
             initialData={formData.user || savedUserDataState}
             onValidationChange={() => {}}
           />
         )}
 
         {currentStep === 'player' && (
-          <PlayerRegistrationModule
+          <DynamicPlayerRegistrationModule
             players={players}
             onPlayersChange={handlePlayersChange}
             registrationYear={defaultSeasonEvent.year}
             season={defaultSeasonEvent.season}
-            isExistingUser={
-              isExistingUser || isAuthenticated || hasCompletedUserRegistration
-            }
-            existingPlayers={getUnpaidPlayers()}
-            paidPlayers={getPaidPlayersForTryout()}
+            isExistingUser={isUserExisting}
+            existingPlayers={allExistingPlayers}
+            paidPlayers={paidPlayersForTryout}
             onValidationChange={handlePlayerValidationChange}
-            showCheckboxes={
-              isAuthenticated && userPlayers && userPlayers.length > 0
-            }
+            showCheckboxes={isAuthenticated && allExistingPlayers.length > 0}
             selectedPlayerIds={selectedPlayerIds}
             onPlayerSelection={handlePlayerSelection}
-            onComplete={handlePlayerComplete}
-            onBack={handleBack}
-            maxPlayers={5}
-            allowMultiple={true}
-            requiresPayment={effectiveTryoutConfig.requiresPayment}
             parentId={savedUserDataState?._id || currentUser?._id}
             authToken={localStorage.getItem('token') || undefined}
-            onPaymentCalculation={() => {}}
+            allowMultiple={true}
+            requiresPayment={effectiveTryoutConfig.requiresPayment}
+            onComplete={handlePlayerComplete}
+            onBack={handleBack}
+            maxPlayers={10}
           />
         )}
 
         {currentStep === 'payment' && (
-          <div>
-            <PaymentModule
-              amount={calculatePaymentAmount()}
-              customerEmail={
-                formData.user?.email ||
-                savedUserDataState?.email ||
-                formData.tempAccount?.email ||
-                currentUser?.email ||
-                ''
-              }
-              onPaymentSuccess={handlePaymentComplete}
-              onPaymentError={(error) => setFormError(error)}
-              description={`${effectiveTryoutConfig.tryoutName} ${effectiveTryoutConfig.tryoutYear} Tryout Registration - $${effectiveTryoutConfig.tryoutFee} per player`}
-              isProcessing={isProcessing}
-              onComplete={handlePaymentComplete}
-              onBack={handleBack}
-              formConfig={defaultFormConfig}
-              playerCount={getEffectivePlayerCount()}
-              players={playersForTryout}
-              eventData={{
-                season: defaultSeasonEvent.season,
-                year: defaultSeasonEvent.year,
-                eventId: defaultSeasonEvent.eventId,
-              }}
-              savedUserData={savedUserDataState}
-              savedPlayers={playersForTryout}
-              parentId={savedUserDataState?._id || currentUser?._id}
-              user={savedUserDataState || currentUser}
-              formData={{
-                ...formData,
-                players: playersForTryout,
-                eventData: {
-                  season: defaultSeasonEvent.season,
-                  year: defaultSeasonEvent.year,
-                  eventId: defaultSeasonEvent.eventId,
-                },
-              }}
-              appId={'sq0idp-jUCxKnO_i8i7vccQjVj_0g'}
-              locationId={'L26Q50FWRCQW5'}
-              disabled={!playerValidation}
-              registrationType='tryout'
-            />
-          </div>
+          <PaymentModule
+            amount={calculatePaymentAmount()}
+            customerEmail={
+              formData.user?.email ||
+              savedUserDataState?.email ||
+              formData.tempAccount?.email ||
+              currentUser?.email ||
+              ''
+            }
+            onPaymentSuccess={handlePaymentComplete}
+            onPaymentError={(error) => setFormError(error)}
+            description={`${effectiveTryoutConfig.tryoutName} ${effectiveTryoutConfig.tryoutYear} Tryout Registration`}
+            isProcessing={isProcessing}
+            onComplete={handlePaymentComplete}
+            onBack={handleBack}
+            formConfig={defaultFormConfig}
+            playerCount={getEffectivePlayerCount()}
+            players={playersForTryout}
+            eventData={{
+              season: defaultSeasonEvent.season,
+              year: defaultSeasonEvent.year,
+              eventId: defaultSeasonEvent.eventId,
+            }}
+            savedUserData={savedUserDataState}
+            savedPlayers={playersForTryout}
+            appId={'sq0idp-jUCxKnO_i8i7vccQjVj_0g'}
+            locationId={'L26Q50FWRCQW5'}
+            disabled={!playerValidation && playersForTryout.length === 0}
+            registrationType='tryout'
+          />
         )}
       </div>
     </div>

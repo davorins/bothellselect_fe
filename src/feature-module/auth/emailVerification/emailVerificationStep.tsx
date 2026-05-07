@@ -266,7 +266,7 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
             )}
 
             {status === 'sent' && (
-              <div className='alert alert-success text-center'>
+              <div className='alert alert-warning text-center'>
                 <i className='ti ti-check me-2'></i>
                 {message}
               </div>

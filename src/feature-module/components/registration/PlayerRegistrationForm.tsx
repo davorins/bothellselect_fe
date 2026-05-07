@@ -573,11 +573,11 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
 
   // ── Player registration completion ────────────────────────────────────────────
 
-  const handlePlayerComplete = async () => {
+  const handlePlayerComplete = async (playersData: Player[]) => {
     setIsSubmitting(true);
     setFormError(null);
 
-    const hasPlayers = players.length > 0 || selectedPlayerIds.length > 0;
+    const hasPlayers = playersData.length > 0 || selectedPlayerIds.length > 0;
     if (!hasPlayers) {
       setFormError('Please add at least one player');
       setIsSubmitting(false);
@@ -586,6 +586,25 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     }
 
     try {
+      // Add selected existing players that aren't already in the list
+      const selectedExistingPlayers = (userPlayers || []).filter(
+        (p) =>
+          selectedPlayerIds.includes(p._id!) &&
+          !playersData.some((existing) => existing._id === p._id),
+      );
+
+      const allPlayersToSave = [...playersData, ...selectedExistingPlayers];
+
+      // SAVE PLAYERS TO DATABASE - savePlayerData returns boolean
+      const success = await savePlayerData(allPlayersToSave);
+
+      if (!success) {
+        throw new Error('Failed to save players');
+      }
+
+      await checkAuth();
+
+      // Use the updated players from state after save
       const allPlayers = [
         ...(userPlayers?.filter((p) => selectedPlayerIds.includes(p._id!)) ||
           []),
@@ -697,11 +716,16 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
 
   // ── Render success ────────────────────────────────────────────────────────────
 
+  // ── Render success ────────────────────────────────────────────────────────────
+
   const renderSuccessMessage = () => {
-    const registeredPlayers = [...(userPlayers || []), ...players];
-    const playerNames = registeredPlayers
-      .filter((p) => p.fullName?.trim())
-      .map((p) => p.fullName);
+    const registeredPlayers = userPlayers || localSavedPlayers || [];
+
+    // Remove duplicates based on _id if needed (safety measure)
+    const uniquePlayers = registeredPlayers.filter(
+      (player, index, self) =>
+        index === self.findIndex((p) => p._id === player._id),
+    );
 
     return (
       <div className='card border-0 shadow-sm'>
@@ -755,14 +779,14 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
                     <strong>Total Players in Account:</strong>
                   </p>
                   <ul className='list-group'>
-                    {registeredPlayers.map((player, index) => (
+                    {uniquePlayers.map((player, index) => (
                       <li
-                        key={index}
+                        key={player._id || index}
                         className='list-group-item d-flex justify-content-between'
                       >
                         <div>
-                          <strong>{player.fullName} • </strong>
-                          <span className='text-muted small'>
+                          <strong>{player.fullName}</strong>
+                          <span className='text-muted small ms-2'>
                             {player.grade} Grade • {player.gender}
                           </span>
                         </div>

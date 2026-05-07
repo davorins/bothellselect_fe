@@ -192,6 +192,11 @@ const UserRegistrationModule: React.FC<Props> = ({
         err.address = 'Please enter a complete address';
       }
 
+      // AAU number validation for additional guardians (if they are coaches)
+      if (guardian.isCoach && !guardian.aauNumber?.trim()) {
+        err.aauNumber = 'AAU number is required for coaches';
+      }
+
       setAdditionalGuardianErrors(err);
       const isValid = Object.keys(err).length === 0;
       setIsAdditionalGuardianValid(isValid);
@@ -271,7 +276,12 @@ const UserRegistrationModule: React.FC<Props> = ({
       err.address = 'Please enter a complete address';
     }
 
-    // 4. Terms and conditions - ALWAYS required
+    //4. AAU number validation (coach specific)
+    if (localData.isCoach && !localData.aauNumber?.trim()) {
+      err.aauNumber = 'AAU number is required for coaches';
+    }
+
+    // 5. Terms and conditions - ALWAYS required
     const registerType = (localData as any).registerType;
     const isSelfRegistration = !registerType || registerType === 'self';
 
@@ -279,7 +289,7 @@ const UserRegistrationModule: React.FC<Props> = ({
       err.agreeToTerms = 'You must agree to the terms and conditions';
     }
 
-    // 5. Additional guardians validation
+    // 6. Additional guardians validation
     localData.additionalGuardians.forEach((g, i) => {
       const hasSignificantData =
         (g.fullName?.trim() && g.fullName.trim().length > 1) ||
@@ -363,6 +373,8 @@ const UserRegistrationModule: React.FC<Props> = ({
     localData.address,
     localData.agreeToTerms,
     localData.additionalGuardians,
+    localData.isCoach,
+    localData.aauNumber,
     visibleFields,
     validateForm,
   ]);
