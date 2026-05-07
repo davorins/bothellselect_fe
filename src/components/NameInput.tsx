@@ -1,5 +1,5 @@
 // src/components/NameInput.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 interface NameInputProps {
   value: string;
@@ -32,75 +32,25 @@ export interface ParsedName {
   suffix: string;
 }
 
-// Capitalizes first letter, lowercases the rest.
-// Handles hyphenated names like "Mary-Jane" → "Mary-Jane"
+// Capitalizes first letter of each part in a name, handling hyphens
 const capitalizeName = (name: string): string => {
   if (!name || !name.trim()) return name;
+
   return name
     .trim()
     .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .map((part) => {
+      if (!part) return '';
+      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+    })
     .join('-');
 };
 
-/**
- * Normalizes a middle name value according to these rules:
- *
- *  Single letter    "j"        → "J."
- *  Two letters      "jo"       → "Jo"   (treated as a short full name, not initial)
- *  Multi-char with dots "a.b." → "A.B." (compact initials, no spaces)
- *  Multi-char no dots "ab"     → "A.B." (each char becomes an initial)
- *  3+ letters       "andrew"   → "Andrew" (full name, normal capitalize)
- *
- *  Multiple words   "anne charlotte" → each word processed independently
- *  Hyphenated       "anne-charlotte" → "Anne-Charlotte"
- */
-const normalizeMiddleName = (middle: string): string => {
-  if (!middle || !middle.trim()) return middle;
-
-  // If it contains spaces, process each word independently and rejoin
-  if (middle.trim().includes(' ')) {
-    return middle
-      .trim()
-      .split(/\s+/)
-      .map((word) => normalizeMiddleName(word))
-      .join(' ');
-  }
-
-  // Strip all dots to inspect raw letters
-  const stripped = middle.trim().replace(/\./g, '');
-
-  // All dots / empty after stripping — just return as-is
-  if (!stripped) return middle.trim();
-
-  // Check if original input looks like initials (contains dots, e.g. "a.b" / "A.B.")
-  const looksLikeInitials = middle.includes('.');
-
-  if (looksLikeInitials) {
-    // Treat each letter segment as an initial: "a.b." → "A.B."
-    return stripped
-      .split('')
-      .map((ch) => ch.toUpperCase() + '.')
-      .join('');
-  }
-
-  const len = stripped.length;
-
-  if (len === 1) {
-    // Single letter → initial with dot: "j" → "J."
-    return stripped.toUpperCase() + '.';
-  }
-
-  if (len === 2) {
-    // Two letters → treat as a short full name: "jo" → "Jo"
-    return capitalizeName(stripped);
-  }
-
-  // 3+ letters with no dots → full name: "andrew" → "Andrew"
-  // But if every character is a letter and there are only 2–3 chars that look
-  // like packed initials (all consonants or no vowels), still treat as full name —
-  // we can't reliably detect intent, so we default to full name for 3+ chars.
-  return capitalizeName(stripped);
+// Remove any special characters, keep only letters, hyphens, and spaces (spaces will be handled separately)
+const sanitizeName = (name: string): string => {
+  // Allow only letters (including accented characters), hyphens, and spaces
+  // Unicode range for accented characters: \u00C0-\u00FF
+  return name.replace(/[^a-zA-Z\u00C0-\u00FF\s-]/g, '');
 };
 
 // Export these functions so they can be used in other files
@@ -128,7 +78,12 @@ export const parseName = (fullName: string): ParsedName => {
   if (words.length === 1) {
     return { firstName: words[0], middleName: '', lastName: '', suffix };
   } else if (words.length === 2) {
-    return { firstName: words[0], middleName: '', lastName: words[1], suffix };
+    return {
+      firstName: words[0],
+      middleName: '',
+      lastName: words[1],
+      suffix,
+    };
   } else {
     return {
       firstName: words[0],
@@ -165,6 +120,27 @@ export const validateFullName = (
     return 'Last name must be at least 2 characters';
   }
 
+  // Check for multiple words in first name
+  if (parsed.firstName.trim().split(/\s+/).length > 1) {
+    return 'First name should be a single word (use middle name field for additional names)';
+  }
+
+  // Check for multiple words in last name
+  if (parsed.lastName.trim().split(/\s+/).length > 1) {
+    return 'Last name should be a single word (use hyphenated names or single word only)';
+  }
+
+  // Check for invalid characters in first name
+  const specialCharRegex = /[!@#$%^&*()<>.,?\/"\[\]{}\\|`~]/;
+  if (specialCharRegex.test(parsed.firstName)) {
+    return 'First name contains invalid characters (letters, hyphens, and spaces only)';
+  }
+
+  // Check for invalid characters in last name
+  if (specialCharRegex.test(parsed.lastName)) {
+    return 'Last name contains invalid characters (letters, hyphens, and spaces only)';
+  }
+
   return null;
 };
 
@@ -175,11 +151,17 @@ const buildFullName = (
   suffix: string,
 ) => {
   const parts = [];
-  if (firstName?.trim()) parts.push(capitalizeName(firstName));
-  if (middleName?.trim()) parts.push(normalizeMiddleName(middleName));
-  if (lastName?.trim()) parts.push(capitalizeName(lastName));
-  if (suffix?.trim()) parts.push(suffix.trim()); // suffixes keep their own casing (Jr., PhD, etc.)
+  if (firstName?.trim()) parts.push(capitalizeName(firstName.trim()));
+  if (middleName?.trim()) parts.push(middleName.trim()); // No formatting for middle name
+  if (lastName?.trim()) parts.push(capitalizeName(lastName.trim()));
+  if (suffix?.trim()) parts.push(suffix.trim());
   return parts.join(' ');
+};
+
+// Helper function to prevent multiple words in an input
+const preventMultipleWords = (value: string): string => {
+  const words = value.trim().split(/\s+/);
+  return words[0] || '';
 };
 
 const NameInput: React.FC<NameInputProps> = ({
@@ -191,7 +173,6 @@ const NameInput: React.FC<NameInputProps> = ({
   onClearError,
   onBlur,
 }) => {
-  // Initialize state
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -199,14 +180,17 @@ const NameInput: React.FC<NameInputProps> = ({
   const [showMiddle, setShowMiddle] = useState(false);
   const [showSuffix, setShowSuffix] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [localError, setLocalError] = useState<string>('');
+
+  const firstNameRef = useRef<HTMLInputElement>(null);
+  const middleNameRef = useRef<HTMLInputElement>(null);
+  const lastNameRef = useRef<HTMLInputElement>(null);
+  const suffixRef = useRef<HTMLSelectElement>(null);
 
   // Initialize from value prop
   useEffect(() => {
     if (value !== undefined && value !== null) {
-      console.log('Initializing NameInput with value:', value);
       const parsed = parseName(value);
-      console.log('Parsed name:', parsed);
-
       setFirstName(parsed.firstName);
       setMiddleName(parsed.middleName);
       setLastName(parsed.lastName);
@@ -215,7 +199,7 @@ const NameInput: React.FC<NameInputProps> = ({
       setShowSuffix(!!parsed.suffix);
       setIsInitialized(true);
     }
-  }, []); // Only run once on mount
+  }, []);
 
   // Sync with parent when value changes externally
   useEffect(() => {
@@ -228,11 +212,7 @@ const NameInput: React.FC<NameInputProps> = ({
       suffix,
     );
 
-    // Only update if the value from parent is different from what we have
     if (value !== currentFullName) {
-      console.log('External value changed:', value);
-      console.log('Current built name:', currentFullName);
-
       const parsed = parseName(value || '');
       setFirstName(parsed.firstName);
       setMiddleName(parsed.middleName);
@@ -246,41 +226,170 @@ const NameInput: React.FC<NameInputProps> = ({
   const emit = useCallback(
     (fn: string, mn: string, ln: string, sx: string) => {
       const fullName = buildFullName(fn, mn, ln, sx);
-      console.log('Emitting name change:', fullName);
       onChange(fullName);
     },
     [onChange],
   );
 
-  const handleFirstName = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
+  const validateNameFields = (fn: string, ln: string): boolean => {
+    const specialCharRegex = /[!@#$%^&*()<>.,?\/"\[\]{}\\|`~]/;
+
+    if (fn.trim().split(/\s+/).length > 1) {
+      setLocalError('First name should be a single word');
+      return false;
+    }
+    if (ln.trim().split(/\s+/).length > 1) {
+      setLocalError('Last name should be a single word');
+      return false;
+    }
+    if (specialCharRegex.test(fn)) {
+      setLocalError(
+        'First name contains invalid characters (letters and hyphens only)',
+      );
+      return false;
+    }
+    if (specialCharRegex.test(ln)) {
+      setLocalError(
+        'Last name contains invalid characters (letters and hyphens only)',
+      );
+      return false;
+    }
+    setLocalError('');
+    return true;
+  };
+
+  const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let newValue = e.target.value;
+
+    // Remove invalid characters
+    newValue = sanitizeName(newValue);
+
+    // Prevent multiple words
+    if (newValue.trim().split(/\s+/).length > 1) {
+      newValue = preventMultipleWords(newValue);
+      setLocalError('First name should be a single word');
+    } else {
+      // Check for special characters after sanitization
+      const specialCharRegex = /[!@#$%^&*()<>.,?\/"\[\]{}\\|`~]/;
+      if (specialCharRegex.test(newValue)) {
+        setLocalError(
+          'First name contains invalid characters (letters and hyphens only)',
+        );
+      } else {
+        setLocalError('');
+      }
+    }
+
+    // Auto-capitalize
+    newValue = capitalizeName(newValue);
+
     setFirstName(newValue);
     emit(newValue, middleName, lastName, suffix);
     if (onClearError) onClearError();
   };
 
-  const handleMiddleName = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
+  const handleFirstNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === ' ') {
+      e.preventDefault();
+      if (showMiddle && middleNameRef.current) {
+        middleNameRef.current.focus();
+      } else if (lastNameRef.current) {
+        lastNameRef.current.focus();
+      }
+    }
+  };
+
+  const handleMiddleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let newValue = e.target.value;
+    // No sanitization or formatting for middle name - user can enter anything, including spaces
     setMiddleName(newValue);
     emit(firstName, newValue, lastName, suffix);
     if (onClearError) onClearError();
   };
 
-  const handleLastName = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
+  // Middle name does NOT treat space as tab - spaces are allowed
+  // No onKeyDown handler for middle name
+
+  const handleLastNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let newValue = e.target.value;
+
+    // Remove invalid characters
+    newValue = sanitizeName(newValue);
+
+    // Prevent multiple words
+    if (newValue.trim().split(/\s+/).length > 1) {
+      newValue = preventMultipleWords(newValue);
+      setLocalError('Last name should be a single word');
+    } else {
+      // Check for special characters after sanitization
+      const specialCharRegex = /[!@#$%^&*()<>.,?\/"\[\]{}\\|`~]/;
+      if (specialCharRegex.test(newValue)) {
+        setLocalError(
+          'Last name contains invalid characters (letters and hyphens only)',
+        );
+      } else {
+        setLocalError('');
+      }
+    }
+
+    // Auto-capitalize
+    newValue = capitalizeName(newValue);
+
     setLastName(newValue);
     emit(firstName, middleName, newValue, suffix);
     if (onClearError) onClearError();
   };
 
-  const handleSuffix = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleLastNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === ' ') {
+      e.preventDefault();
+      if (showSuffix && suffixRef.current) {
+        suffixRef.current.focus();
+      } else {
+        e.currentTarget.blur();
+      }
+    }
+  };
+
+  const handleSuffixChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newValue = e.target.value;
     setSuffix(newValue);
     emit(firstName, middleName, lastName, newValue);
     if (onClearError) onClearError();
   };
 
+  const handleSuffixKeyDown = (e: React.KeyboardEvent<HTMLSelectElement>) => {
+    if (e.key === ' ') {
+      e.preventDefault();
+      e.currentTarget.blur();
+    }
+  };
+
   const handleBlur = () => {
+    // Validate on blur
+    if (firstName || lastName) {
+      validateNameFields(firstName, lastName);
+    }
+
+    // Apply final formatting on blur
+    if (firstName) {
+      const formatted = capitalizeName(firstName);
+      if (formatted !== firstName) {
+        setFirstName(formatted);
+        emit(formatted, middleName, lastName, suffix);
+      }
+    }
+
+    if (lastName) {
+      const formatted = capitalizeName(lastName);
+      if (formatted !== lastName) {
+        setLastName(formatted);
+        emit(firstName, middleName, formatted, suffix);
+      }
+    }
+
+    // No formatting for middle name on blur
+
     if (onBlur) onBlur();
   };
 
@@ -299,6 +408,8 @@ const NameInput: React.FC<NameInputProps> = ({
     }
     setShowSuffix(!showSuffix);
   };
+
+  const displayError = error || localError;
 
   return (
     <div className='mb-3'>
@@ -334,47 +445,57 @@ const NameInput: React.FC<NameInputProps> = ({
       <div className='d-flex gap-2 flex-wrap'>
         <div className='flex-fill' style={{ minWidth: '120px' }}>
           <input
+            ref={firstNameRef}
             type='text'
-            className={`form-control ${error ? 'is-invalid' : ''}`}
+            className={`form-control ${displayError ? 'is-invalid' : ''}`}
             placeholder='First name *'
             value={firstName}
-            onChange={handleFirstName}
+            onChange={handleFirstNameChange}
+            onKeyDown={handleFirstNameKeyDown}
             onBlur={handleBlur}
             required={required}
+            title='Press space to go to next field. Letters and hyphens only.'
           />
         </div>
 
         {showMiddle && (
           <div className='flex-fill' style={{ minWidth: '100px' }}>
             <input
+              ref={middleNameRef}
               type='text'
               className='form-control'
-              placeholder='Middle name'
+              placeholder='Middle name (any format)'
               value={middleName}
-              onChange={handleMiddleName}
+              onChange={handleMiddleNameChange}
               onBlur={handleBlur}
+              title='Free text field - spaces allowed, any characters.'
             />
           </div>
         )}
 
         <div className='flex-fill' style={{ minWidth: '120px' }}>
           <input
+            ref={lastNameRef}
             type='text'
-            className={`form-control ${error ? 'is-invalid' : ''}`}
+            className={`form-control ${displayError ? 'is-invalid' : ''}`}
             placeholder='Last name *'
             value={lastName}
-            onChange={handleLastName}
+            onChange={handleLastNameChange}
+            onKeyDown={handleLastNameKeyDown}
             onBlur={handleBlur}
             required={required}
+            title='Press space to go to suffix. Letters and hyphens only.'
           />
         </div>
 
         {showSuffix && (
           <div style={{ minWidth: '90px', maxWidth: '110px' }}>
             <select
+              ref={suffixRef}
               className='form-control'
               value={suffix}
-              onChange={handleSuffix}
+              onChange={handleSuffixChange}
+              onKeyDown={handleSuffixKeyDown}
               onBlur={handleBlur}
             >
               {SUFFIXES.map((s) => (
@@ -387,7 +508,9 @@ const NameInput: React.FC<NameInputProps> = ({
         )}
       </div>
 
-      {error && <div className='invalid-feedback d-block mt-1'>{error}</div>}
+      {displayError && (
+        <div className='invalid-feedback d-block mt-1'>{displayError}</div>
+      )}
     </div>
   );
 };
