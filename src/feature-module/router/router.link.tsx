@@ -78,6 +78,7 @@ import PageList from '../../components/page-builder/PageList';
 import PageRenderer from '../../components/page-builder/PageRenderer';
 import PaymentConfiguration from '../../components/admin/paymentSettings/PaymentConfiguration';
 import FormFieldConfigPage from '../settings/systemSettings/formFieldConfig/FormFieldConfig';
+import CloverReceiptPage from '../peoples/parent/receipts/CloverReceiptPage';
 
 const routes = all_routes;
 
@@ -186,6 +187,15 @@ export const publicRoutes = [
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
         <Navigate to={routes.pageBuilderNew} replace />
+      </ProtectedRoute>
+    ),
+    route: Route,
+  },
+  {
+    path: '/receipts/clover/:orderId',
+    element: (
+      <ProtectedRoute allowedRoles={['admin', 'coach', 'parent']}>
+        <CloverReceiptPage />
       </ProtectedRoute>
     ),
     route: Route,

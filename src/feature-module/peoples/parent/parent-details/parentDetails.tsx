@@ -10,6 +10,7 @@ import { formatPhoneNumber } from '../../../../utils/phone';
 import { getCurrentYear } from '../../../../utils/season';
 import { getAvatarUrl, getDefaultAvatar } from '../../../../utils/r2Utils';
 import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
+import CloverReceiptModal from '../receipts/CloverReceiptModal';
 
 // ✅ R2 defaults
 const DEFAULT_PARENT_AVATAR = getDefaultAvatar('parent');
@@ -332,6 +333,8 @@ interface PaymentData {
   totalRefunded?: number;
   refundStatus?: 'none' | 'partial' | 'full' | 'requested' | 'processing';
   paymentId?: string;
+  paymentSystem?: 'square' | 'clover' | 'stripe' | 'paypal';
+  orderId?: string;
 }
 
 interface ParentWithStatus {
@@ -394,6 +397,8 @@ const ParentDetails = () => {
     payment: null,
     maxRefundAmount: 0,
   });
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
   const prevParentIdRef = useRef<string | undefined>(undefined);
   const [guardianAvatarStates, setGuardianAvatarStates] = useState<
     Record<string, string>
@@ -860,6 +865,69 @@ const ParentDetails = () => {
           {payments.map((payment) => {
             const refundableAmount = getRefundableAmount(payment);
             const canRefund = canRefundPayment(payment);
+
+            // ✅ Determine receipt handling based on payment system
+            const renderReceiptButton = () => {
+              // Square payments - use external receipt URL
+              if (payment.paymentSystem === 'square' && payment.receiptUrl) {
+                return (
+                  <a
+                    href={payment.receiptUrl}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='btn btn-sm btn-outline-primary'
+                  >
+                    View Receipt
+                  </a>
+                );
+              }
+
+              // Clover payments - use internal receipt page with orderId
+              // if (payment.paymentSystem === 'clover' && payment.orderId) {
+              //   return (
+              //     <a
+              //       href={`/receipts/clover/${payment.orderId}`}
+              //       className='btn btn-sm btn-outline-primary'
+              //     >
+              //       View Receipt
+              //     </a>
+              //   );
+              // }
+
+              // ✅ Clover payments - open in modal
+              if (payment.paymentSystem === 'clover' && payment.orderId) {
+                return (
+                  <button
+                    onClick={() => {
+                      // Handle undefined by providing a fallback
+                      setSelectedOrderId(payment.orderId || null);
+                      setShowReceiptModal(true);
+                    }}
+                    className='btn btn-sm btn-outline-primary'
+                  >
+                    View Receipt
+                  </button>
+                );
+              }
+
+              // Fallback for any payment with receiptUrl (other processors)
+              if (payment.receiptUrl) {
+                return (
+                  <a
+                    href={payment.receiptUrl}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='btn btn-sm btn-outline-primary'
+                  >
+                    View Receipt
+                  </a>
+                );
+              }
+
+              // No receipt available
+              return <span className='text-muted'>No receipt</span>;
+            };
+
             return (
               <tr key={payment._id}>
                 <td>
@@ -906,20 +974,7 @@ const ParentDetails = () => {
                     </span>
                   )}
                 </td>
-                <td>
-                  {payment.receiptUrl ? (
-                    <a
-                      href={payment.receiptUrl}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='btn btn-sm btn-outline-primary'
-                    >
-                      View Receipt
-                    </a>
-                  ) : (
-                    <span className='text-muted'>No receipt</span>
-                  )}
-                </td>
+                <td>{renderReceiptButton()}</td>
               </tr>
             );
           })}
@@ -1339,6 +1394,16 @@ const ParentDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* Clover Receipt Modal */}
+      <CloverReceiptModal
+        show={showReceiptModal}
+        onClose={() => {
+          setShowReceiptModal(false);
+          setSelectedOrderId(null);
+        }}
+        orderId={selectedOrderId || ''}
+      />
 
       {refundModal.isOpen && refundModal.payment && (
         <RefundModal
