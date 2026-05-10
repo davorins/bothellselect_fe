@@ -425,7 +425,7 @@ const TeamForm: React.FC = () => {
                       type='text'
                       name='name'
                       className={`form-control ${errors.name ? 'is-invalid' : ''}`}
-                      placeholder='Enter team name (e.g., Partizan)'
+                      placeholder='Enter team name (e.g., Bothell Select)'
                       value={f.name}
                       onChange={handleChange}
                     />

@@ -77,8 +77,10 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
 
     if (isVerificationSent) {
       setStatus('sent');
-      setMessage('Verification email sent! Please check your inbox.');
-      setCountdown(120); // 2 minutes countdown
+      setMessage(
+        `Verification email sent! Check your spam folder if you don't see it.`,
+      );
+      setCountdown(120);
     }
   }, [isVerificationSent, actualEmail]);
 
@@ -324,7 +326,7 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
                   }}
                 />
                 {showHandAnimation && manualToken.length === 0 && (
-                  <div className='position-absolute start-0 top-50 translate-middle-y ms-3'>
+                  <div className='position-absolute start-0 top-50 translate-middle-y ms-0'>
                     <span className='flashing-hand fs-16'>👉</span>
                   </div>
                 )}
@@ -344,11 +346,11 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
                   )}
                 </button>
               </div>
-              <small className='text-muted mt-2 d-block'>
+              {/* <small className='text-muted mt-2 d-block'>
                 The verification token was sent to{' '}
                 <strong>{displayEmail}</strong>. Check your spam folder if you
                 don't see it.
-              </small>
+              </small> */}
             </div>
 
             {/* Action Buttons */}

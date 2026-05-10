@@ -174,7 +174,7 @@ export const transformPlayerData = async (
       // Enhanced seasons data handling with proper season names
       const seasons = Array.isArray(player.seasons)
         ? player.seasons.map((season: any) => ({
-            season: season.season || player.season || 'Partizan',
+            season: season.season || player.season || 'Bothell Select',
             year:
               season.year ||
               player.registrationYear ||

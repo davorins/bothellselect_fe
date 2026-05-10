@@ -5,7 +5,7 @@ import {
   PaymentForm as SquarePaymentForm,
   PaymentFormProps,
 } from 'react-square-web-payments-sdk';
-import { Badge, Alert, Spinner, Row, Col, Button, Form } from 'react-bootstrap';
+import { Badge, Row, Col } from 'react-bootstrap';
 import {
   Award,
   Calendar as CalendarIcon,
@@ -14,7 +14,6 @@ import {
   Map,
   RefreshCw,
   CheckCircle,
-  DollarSign,
 } from 'react-feather';
 
 const SquarePaymentFormWithRef = React.forwardRef<any, PaymentFormProps>(
@@ -65,12 +64,16 @@ interface TournamentSettings {
 interface PricingPackage {
   name: string;
   description?: string;
-  price: number; // in cents
+  price: number;
   currency: string;
   quantity: number;
   maxQuantity?: number;
   defaultSelected: boolean;
   isEnabled: boolean;
+}
+
+interface SelectedPackage extends PricingPackage {
+  selectedQuantity: number;
 }
 
 interface PaymentConfig {
@@ -138,8 +141,9 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [step, setStep] = useState<'form' | 'payment'>('form');
   const [submissionId, setSubmissionId] = useState<string | null>(null);
-  const [selectedPackage, setSelectedPackage] = useState<any>(null);
-  const [quantity, setQuantity] = useState<number>(1);
+  const [selectedPackages, setSelectedPackages] = useState<SelectedPackage[]>(
+    [],
+  );
   const [userEmail, setUserEmail] = useState<string>('');
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentFormKey, setPaymentFormKey] = useState(0);
@@ -150,11 +154,9 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
     process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001/api';
   const squareFormRef = useRef<any>(null);
 
-  // Load form data
   useEffect(() => {
     const loadForm = async () => {
       if (!isActive) {
-        console.log('Form is inactive, skipping load');
         setLoading(false);
         return;
       }
@@ -172,7 +174,6 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
           const data = response.data.data;
           setFormData(data);
 
-          // Initialize form values
           const initialValues: Record<string, any> = {};
           data.fields?.forEach((field: FormField) => {
             if (field.type !== 'payment') {
@@ -183,12 +184,27 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
             }
           });
           setFormValues(initialValues);
+
+          const paymentField = data.fields.find(
+            (field: FormField) => field.type === 'payment',
+          );
+          if (paymentField?.paymentConfig?.pricingPackages) {
+            const defaultPackages: SelectedPackage[] =
+              paymentField.paymentConfig.pricingPackages
+                .filter(
+                  (pkg: PricingPackage) => pkg.defaultSelected && pkg.isEnabled,
+                )
+                .map((pkg: PricingPackage) => ({
+                  ...pkg,
+                  selectedQuantity: pkg.quantity || 1,
+                }));
+            setSelectedPackages(defaultPackages);
+          }
         } else {
           setError(response.data.error || 'Failed to load form');
         }
       } catch (err: any) {
         console.error('Error loading form:', err);
-        // Only show error if the form should be active
         if (isActive) {
           setError('Failed to load form. Please try again.');
         }
@@ -205,7 +221,6 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
     }
   }, [formId, isActive]);
 
-  // ========== TOURNAMENT INFO RENDERER ==========
   const renderTournamentInfo = () => {
     if (!formData?.isTournamentForm || !formData?.tournamentSettings) {
       return null;
@@ -215,47 +230,35 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
     const primaryVenue =
       tournament.venues.find((v) => v.isPrimary) || tournament.venues[0];
 
-    // Format dates with timezone handling
     const formatDate = (dateString: string) => {
       if (!dateString) return '';
-
       try {
-        // Check if it's already in the format we want
-        if (typeof dateString === 'string') {
-          // If it's in YYYY-MM-DD format, parse it without timezone issues
-          if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-            const [year, month, day] = dateString.split('-').map(Number);
-            const date = new Date(year, month - 1, day);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+          const [year, month, day] = dateString.split('-').map(Number);
+          const date = new Date(year, month - 1, day);
+          return date.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+        }
+        if (dateString.includes('T')) {
+          const date = new Date(dateString);
+          if (!isNaN(date.getTime())) {
             return date.toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
               month: 'long',
               day: 'numeric',
+              timeZone: 'UTC',
             });
           }
-
-          // Try to parse as ISO string
-          if (dateString.includes('T')) {
-            const date = new Date(dateString);
-            if (!isNaN(date.getTime())) {
-              return date.toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                timeZone: 'UTC', // Force UTC to avoid timezone shift
-              });
-            }
-          }
         }
-
-        // Last resort: try to parse as Date
         const date = new Date(dateString);
         if (!isNaN(date.getTime())) {
-          // Add timezone offset to get correct date
           const timezoneOffset = date.getTimezoneOffset() * 60000;
           const correctedDate = new Date(date.getTime() + timezoneOffset);
-
           return correctedDate.toLocaleDateString('en-US', {
             weekday: 'long',
             year: 'numeric',
@@ -263,15 +266,12 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
             day: 'numeric',
           });
         }
-
         return dateString;
       } catch (e) {
-        console.error('Error formatting date:', e, 'Input:', dateString);
         return dateString;
       }
     };
 
-    // Format time
     const formatTime = (timeString: string) => {
       if (!timeString) return '';
       try {
@@ -285,7 +285,6 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
       }
     };
 
-    // Sort venues by date
     const sortedVenues = [...tournament.venues]
       .filter((venue) => venue.date)
       .sort((a, b) => {
@@ -304,7 +303,6 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
           <Award size={20} className='me-2' />
           Tournament Information
         </h4>
-
         <Row>
           <Col md={7}>
             <div className='mb-2'>
@@ -317,7 +315,6 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
                 {formatDate(tournament.endDate)}
               </div>
             </div>
-
             {tournament.startTime && tournament.endTime && (
               <div className='mb-2'>
                 <strong>
@@ -330,29 +327,23 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
                 </div>
               </div>
             )}
-
-            {/* Primary Venue Information */}
             {primaryVenue && primaryVenue.venueName && (
               <div className='mb-2'>
+                <strong>
+                  <MapPin size={16} className='me-2' /> {primaryVenue.venueName}
+                </strong>
                 <div>
-                  <div>
-                    <MapPin size={16} className='me-2' />{' '}
-                    <strong>{primaryVenue.venueName}</strong>
-                  </div>
-                  <div>
-                    {primaryVenue.fullAddress ||
-                      `${primaryVenue.address}, ${primaryVenue.city}, ${primaryVenue.state} ${primaryVenue.zipCode}`}
-                  </div>
-                  {primaryVenue.additionalInfo && (
-                    <div className='text-muted mt-1'>
-                      {primaryVenue.additionalInfo}
-                    </div>
-                  )}
+                  {primaryVenue.fullAddress ||
+                    `${primaryVenue.address}, ${primaryVenue.city}, ${primaryVenue.state} ${primaryVenue.zipCode}`}
                 </div>
+                {primaryVenue.additionalInfo && (
+                  <div className='text-muted mt-1'>
+                    {primaryVenue.additionalInfo}
+                  </div>
+                )}
               </div>
             )}
           </Col>
-
           <Col md={5}>
             <div className='mb-2'>
               <strong>
@@ -366,8 +357,6 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
                     tournament.ticketCheckMethod.slice(1).replace('-', ' ')}
               </div>
             </div>
-
-            {/* Show refund policy ONLY if tickets are refundable AND a policy exists */}
             {tournament.isRefundable &&
               tournament.refundPolicy &&
               tournament.refundPolicy.trim() !== '' && (
@@ -379,11 +368,8 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
                   <div className='mt-1'>{tournament.refundPolicy}</div>
                 </div>
               )}
-            {/* When tickets are not refundable, don't show anything */}
           </Col>
         </Row>
-
-        {/* Venues Schedule Table - only show if showScheduleTable is true and there are venues */}
         {tournament.showScheduleTable !== false && sortedVenues.length > 0 && (
           <div className='mt-3'>
             <h6>
@@ -430,13 +416,11 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
   };
 
   const handleFieldChange = (fieldId: string, value: any) => {
-    // Update both field.id and field.name in formValues
     setFormValues((prev) => ({
       ...prev,
       [fieldId]: value,
     }));
 
-    // Also update by field.name if it exists and is different
     const field = formData?.fields?.find((f: FormField) => f.id === fieldId);
     if (field && field.name && field.name !== fieldId) {
       setFormValues((prev) => ({
@@ -445,7 +429,6 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
       }));
     }
 
-    // Clear field errors
     if (fieldErrors[fieldId]) {
       setFieldErrors((prev) => {
         const newErrors = { ...prev };
@@ -473,10 +456,9 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
     formData.fields.forEach((field: FormField) => {
       if (field.type === 'payment') return;
 
-      if (field.required) {
-        // Check both field.id and field.name for the value
-        const fieldValue = formValues[field.id] || formValues[field.name] || '';
+      const fieldValue = formValues[field.id] || formValues[field.name] || '';
 
+      if (field.required) {
         if (!fieldValue || fieldValue.toString().trim() === '') {
           errors[field.id] = `${field.label} is required`;
           isValid = false;
@@ -494,22 +476,51 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
     return isValid;
   };
 
-  const extractEmail = () => {
-    if (!formData) return '';
-
-    const emailField = formData.fields.find(
-      (field: FormField) => field.type === 'email',
-    );
-
-    if (!emailField) return '';
-
-    const emailValue =
-      formValues[emailField.id] || formValues[emailField.name] || '';
-
-    return emailValue.toString().trim();
+  const calculateTotalAmount = (): number => {
+    return selectedPackages.reduce((total, pkg) => {
+      return total + pkg.price * pkg.selectedQuantity;
+    }, 0);
   };
 
-  // Step 1: Submit form data
+  const handlePackageToggle = (pkg: PricingPackage) => {
+    const existingIndex = selectedPackages.findIndex(
+      (p) => p.name === pkg.name,
+    );
+
+    if (existingIndex >= 0) {
+      setSelectedPackages((prev) =>
+        prev.filter((_, index) => index !== existingIndex),
+      );
+    } else {
+      setSelectedPackages((prev) => [
+        ...prev,
+        {
+          ...pkg,
+          selectedQuantity: pkg.quantity || 1,
+        },
+      ]);
+    }
+    setPaymentError(null);
+  };
+
+  const handleQuantityChange = (packageName: string, newQuantity: number) => {
+    if (newQuantity < 1) newQuantity = 1;
+
+    const pkg = selectedPackages.find((p) => p.name === packageName);
+    if (pkg && pkg.maxQuantity && newQuantity > pkg.maxQuantity) {
+      newQuantity = pkg.maxQuantity;
+    }
+
+    setSelectedPackages((prev) =>
+      prev.map((pkg) =>
+        pkg.name === packageName
+          ? { ...pkg, selectedQuantity: newQuantity }
+          : pkg,
+      ),
+    );
+    setPaymentError(null);
+  };
+
   const submitFormData = async (): Promise<void> => {
     if (!formData) return;
 
@@ -519,13 +530,23 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
     const isValid = validateAllFields();
     if (!isValid) {
       setError('Please fill in all required fields correctly.');
+      setTimeout(() => {
+        const firstError = document.querySelector('.is-invalid');
+        if (firstError) {
+          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      return;
+    }
+
+    if (selectedPackages.length === 0) {
+      setError('Please select at least one ticket package.');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Build submission data - include ALL form values at root level
       const payload: Record<string, any> = {
         formId: formData._id,
         metadata: {
@@ -538,25 +559,17 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
         status: 'pending_payment' as const,
       };
 
-      // Add ALL form values to the payload (not nested under 'data')
       formData.fields.forEach((field: FormField) => {
         if (field.type === 'payment') return;
-
-        // Get the value
         const fieldValue = formValues[field.id] || formValues[field.name] || '';
-
-        // Add to payload using both field.id and field.name
         if (field.id) payload[field.id] = fieldValue;
         if (field.name && field.name !== field.id) {
           payload[field.name] = fieldValue;
         }
-
-        // Also add with label-based keys for compatibility
         const labelKey = field.label.toLowerCase().replace(/\s+/g, '_');
         payload[labelKey] = fieldValue;
       });
 
-      // Ensure email is at root level for all possible field names
       const emailField = formData.fields.find(
         (f: FormField) => f.type === 'email',
       );
@@ -568,7 +581,6 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
         setUserEmail(emailValue);
       }
 
-      // Ensure name is at root level for all possible field names
       const nameField = formData.fields.find(
         (f: FormField) =>
           f.type === 'text' && f.label.toLowerCase().includes('name'),
@@ -580,7 +592,13 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
         payload['userName'] = nameValue;
       }
 
-      console.log('Full payload being sent:', payload);
+      payload['selectedPackages'] = selectedPackages.map((pkg) => ({
+        name: pkg.name,
+        price: pkg.price,
+        quantity: pkg.selectedQuantity,
+        subtotal: pkg.price * pkg.selectedQuantity,
+      }));
+      payload['totalAmount'] = calculateTotalAmount();
 
       const response = await axios.post(
         `${API_BASE_URL}/forms/${formData._id}/submit`,
@@ -592,8 +610,6 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
         },
       );
 
-      console.log('Form submission response:', response.data);
-
       if (response.data.success) {
         const submissionId =
           response.data.data?.submissionId || response.data.data?._id;
@@ -603,7 +619,6 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
         }
 
         setSubmissionId(submissionId);
-        console.log('Submission ID set:', submissionId);
 
         const paymentFields = formData.fields.filter(
           (field: FormField) => field.type === 'payment',
@@ -611,22 +626,6 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
 
         if (paymentFields.length > 0) {
           setStep('payment');
-
-          const paymentField = paymentFields[0];
-          const pricingPackages = paymentField.paymentConfig?.pricingPackages;
-
-          if (pricingPackages && pricingPackages.length > 0) {
-            const defaultPackage =
-              pricingPackages.find(
-                (pkg: PricingPackage) => pkg.defaultSelected && pkg.isEnabled,
-              ) || pricingPackages[0];
-
-            if (defaultPackage) {
-              setSelectedPackage(defaultPackage);
-              setQuantity(defaultPackage.quantity || 1);
-            }
-          }
-
           setPaymentFormKey((prev) => prev + 1);
         } else {
           setSubmitSuccess(true);
@@ -647,23 +646,18 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
         if (response.data.errors) {
           setServerErrors(response.data.errors);
         }
-        throw new Error(errorMsg);
       }
     } catch (err: any) {
       console.error('Form submission error:', err);
 
       if (err.response) {
-        const response = err.response;
-        console.error('Server error response:', response.data);
-
         const errorMsg =
-          response.data.error ||
-          (response.data.errors && response.data.errors.join(', ')) ||
+          err.response.data.error ||
+          (err.response.data.errors && err.response.data.errors.join(', ')) ||
           'Form submission failed';
         setError(errorMsg);
-
-        if (response.data.errors) {
-          setServerErrors(response.data.errors);
+        if (err.response.data.errors) {
+          setServerErrors(err.response.data.errors);
         }
       } else if (err.request) {
         setError('Network error. Please check your connection and try again.');
@@ -681,59 +675,21 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
   };
 
   const validatePaymentStep = (): boolean => {
-    const paymentField = getPaymentField();
-
-    if (!paymentField) {
-      setPaymentError('No payment field found');
+    if (selectedPackages.length === 0) {
+      setPaymentError('Please select at least one ticket package');
       return false;
     }
-
-    const pricingPackages = paymentField.paymentConfig?.pricingPackages;
-    if (!pricingPackages || pricingPackages.length === 0) {
-      return true;
-    }
-
-    if (!selectedPackage) {
-      setPaymentError('Please select a pricing package');
-      return false;
-    }
-
-    if (quantity < 1) {
-      setPaymentError('Quantity must be at least 1');
-      return false;
-    }
-
-    if (selectedPackage.maxQuantity && quantity > selectedPackage.maxQuantity) {
-      setPaymentError(
-        `Maximum quantity for this package is ${selectedPackage.maxQuantity}`,
-      );
-      return false;
-    }
-
     return true;
   };
 
-  // Handler for Square payment tokenization
   const handleCardTokenized = async (tokenResult: any, verifiedBuyer?: any) => {
-    console.log('Square payment token received, but not auto-processing');
-    console.log('Token status:', tokenResult.status);
-
     if (tokenResult.status === 'OK') {
-      console.log('Token available for manual processing');
-      // Store token in state for later use
       setPaymentToken(tokenResult.token);
       setIsPaymentTokenized(true);
       setPaymentError(null);
 
-      // Extract card details for payment processing
       const cardDetails = tokenResult.details?.card || {};
-      console.log('Card tokenized:', {
-        token: tokenResult.token,
-        last4: cardDetails.last4,
-        brand: cardDetails.brand,
-      });
 
-      // Auto-process payment when token is received
       setTimeout(() => {
         processPayment(tokenResult.token, cardDetails);
       }, 100);
@@ -743,17 +699,12 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
       const errorMsg =
         tokenResult.errors?.[0]?.message || 'Payment tokenization failed';
       setPaymentError(errorMsg);
-      console.error('Tokenization failed:', tokenResult.errors);
     }
 
     return false;
   };
 
-  // Process payment with Square
   const processPayment = async (token: string, cardDetailsParam?: any) => {
-    console.log('=== Processing payment ===');
-    console.log('submissionId:', submissionId);
-
     if (!token) {
       setPaymentError('Payment token is missing');
       return;
@@ -778,40 +729,18 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
         throw new Error('Payment field not found');
       }
 
-      let amount = 0;
-      let packageName = '';
+      const totalAmount = calculateTotalAmount();
 
-      if (selectedPackage) {
-        amount = selectedPackage.price * quantity;
-        packageName = selectedPackage.name;
-      } else if (paymentField.paymentConfig?.fixedPrice) {
-        amount = paymentField.paymentConfig.amount || 0;
-      } else {
-        throw new Error('No valid payment option selected');
-      }
-
-      if (amount <= 0) {
+      if (totalAmount <= 0) {
         throw new Error('Invalid payment amount');
       }
 
-      console.log('Payment details:', {
-        amount,
-        amountInDollars: amount / 100,
-        packageName,
-        quantity,
-        submissionId,
-        email: userEmail,
-      });
-
-      // Prepare card details
       const finalCardDetails = cardDetailsParam || {
         last_4: '',
         card_brand: '',
         exp_month: '',
         exp_year: '',
       };
-
-      console.log('Sending payment request to server...');
 
       const paymentResponse = await axios.post(
         `${API_BASE_URL}/forms/${formData!._id}/process-payment`,
@@ -828,19 +757,20 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
               finalCardDetails.exp_year || finalCardDetails.expYear || '',
           },
           submissionId: submissionId,
-          selectedPackage: packageName,
-          quantity: quantity,
-          amount: amount, // Send the calculated amount
+          selectedPackages: selectedPackages.map((pkg) => ({
+            name: pkg.name,
+            price: pkg.price,
+            quantity: pkg.selectedQuantity,
+          })),
+          amount: totalAmount,
         },
       );
-
-      console.log('Payment response:', paymentResponse.data);
 
       if (paymentResponse.data.success) {
         const paymentData = {
           paymentId: paymentResponse.data.paymentId,
           squarePaymentId: paymentResponse.data.squarePaymentId,
-          amount: amount / 100,
+          amount: totalAmount / 100,
           currency: paymentField.paymentConfig?.currency || 'USD',
           status: 'completed',
           receiptUrl: paymentResponse.data.receiptUrl,
@@ -848,8 +778,7 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
           cardBrand:
             finalCardDetails.card_brand || finalCardDetails.brand || '',
           timestamp: new Date().toISOString(),
-          package: packageName,
-          quantity: quantity,
+          packages: selectedPackages,
         };
 
         setSubmitSuccess(true);
@@ -881,7 +810,6 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
     }
   };
 
-  // Render quantity selector for packages
   const renderPricingPackages = () => {
     const paymentField = getPaymentField();
 
@@ -893,123 +821,136 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
       (pkg: PricingPackage) => pkg.isEnabled !== false,
     );
 
-    const handleQuantityChange = (newQuantity: number) => {
-      if (newQuantity < 1) newQuantity = 1;
-      if (
-        selectedPackage?.maxQuantity &&
-        newQuantity > selectedPackage.maxQuantity
-      ) {
-        newQuantity = selectedPackage.maxQuantity;
-      }
-      setQuantity(newQuantity);
-      setPaymentError(null);
-    };
-
-    const handlePackageSelect = (pkg: any) => {
-      setSelectedPackage(pkg);
-      // Reset quantity to package default or 1
-      setQuantity(pkg.quantity || 1);
-      setPaymentError(null);
-    };
-
     return (
-      <div>
-        <h5 className='mb-2'>Select Payment Option</h5>
+      <>
+        <h5 className='mb-3'>
+          Select Ticket Packages (you can choose multiple)
+        </h5>
         <div className='row'>
-          {packages.map((pkg: PricingPackage, index: number) => (
-            <div key={index} className='col-md-4 mb-3'>
-              <div
-                className={`card ${
-                  selectedPackage?.name === pkg.name ? 'border-primary' : ''
-                }`}
-                style={{ cursor: 'pointer' }}
-                onClick={() => handlePackageSelect(pkg)}
-              >
-                <div className='card-body text-center'>
-                  <h5 className='card-title'>{pkg.name}</h5>
-                  {pkg.description && (
-                    <span className='card-text text-muted'>
-                      {pkg.description}
-                    </span>
-                  )}
-                  <h3>${(pkg.price / 100).toFixed(2)}</h3>
+          {packages.map((pkg: PricingPackage, index: number) => {
+            const isSelected = selectedPackages.some(
+              (p) => p.name === pkg.name,
+            );
+            const selectedPackage = selectedPackages.find(
+              (p) => p.name === pkg.name,
+            );
+            const currentQuantity =
+              selectedPackage?.selectedQuantity || pkg.quantity || 1;
 
-                  {/* Quantity selector - always show, but highlight when selected */}
-                  <div
-                    className={`mt-3 ${
-                      selectedPackage?.name === pkg.name ? '' : 'text-muted'
-                    }`}
-                  >
-                    <label className='form-label'>Quantity</label>
-                    <div className='d-flex align-items-center justify-content-center'>
-                      <button
-                        className='btn btn-outline-secondary btn-sm'
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleQuantityChange(quantity - 1);
-                        }}
-                        disabled={
-                          quantity <= 1 || selectedPackage?.name !== pkg.name
-                        }
-                        style={{ width: '30px', padding: '2px' }}
-                      >
-                        -
-                      </button>
-
-                      <div
-                        className='mx-2 text-center'
-                        style={{
-                          width: '50px',
-                          padding: '5px',
-                          border: '1px solid #dee2e6',
-                          borderRadius: '4px',
-                          backgroundColor:
-                            selectedPackage?.name === pkg.name
-                              ? '#fff'
-                              : '#e9ecef',
-                        }}
-                      >
-                        {selectedPackage?.name === pkg.name
-                          ? quantity
-                          : pkg.quantity || 1}
+            return (
+              <div key={index} className='col-md-6 mb-3'>
+                <div
+                  className={`card h-100 ${isSelected ? 'border-primary' : ''}`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className='card-body'>
+                    <div className='d-flex justify-content-between align-items-start'>
+                      <div>
+                        <h5 className='card-title'>{pkg.name}</h5>
+                        {pkg.description && (
+                          <p className='card-text text-muted small'>
+                            {pkg.description}
+                          </p>
+                        )}
                       </div>
-
-                      <button
-                        className='btn btn-outline-secondary btn-sm'
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleQuantityChange(quantity + 1);
+                      <input
+                        type='checkbox'
+                        className='form-check-input fs-5'
+                        checked={isSelected}
+                        onChange={() => handlePackageToggle(pkg)}
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          cursor: 'pointer',
                         }}
-                        disabled={
-                          (pkg.maxQuantity && quantity >= pkg.maxQuantity) ||
-                          selectedPackage?.name !== pkg.name
-                        }
-                        style={{ width: '30px', padding: '2px' }}
-                      >
-                        +
-                      </button>
+                      />
                     </div>
-                    {pkg.maxQuantity && (
-                      <small className='text-muted'>
-                        Max: {pkg.maxQuantity}
-                      </small>
-                    )}
 
-                    {/* Show total for selected package */}
-                    {selectedPackage?.name === pkg.name && (
-                      <div className='mt-2'>
-                        <strong className='text-primary'>
-                          Total: ${((pkg.price * quantity) / 100).toFixed(2)}
-                        </strong>
+                    <h3 className='mt-2 mb-3'>
+                      ${(pkg.price / 100).toFixed(2)}
+                    </h3>
+
+                    {isSelected && (
+                      <div className='mt-3 pt-2 border-top'>
+                        <label className='form-label small fw-bold'>
+                          Quantity
+                        </label>
+                        <div className='d-flex align-items-center'>
+                          <button
+                            type='button'
+                            className='btn btn-outline-secondary btn-sm'
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleQuantityChange(
+                                pkg.name,
+                                currentQuantity - 1,
+                              );
+                            }}
+                            disabled={currentQuantity <= 1}
+                            style={{ width: '36px' }}
+                          >
+                            -
+                          </button>
+                          <span
+                            className='mx-3 text-center fw-bold'
+                            style={{ minWidth: '40px' }}
+                          >
+                            {currentQuantity}
+                          </span>
+                          <button
+                            type='button'
+                            className='btn btn-outline-secondary btn-sm'
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleQuantityChange(
+                                pkg.name,
+                                currentQuantity + 1,
+                              );
+                            }}
+                            disabled={
+                              pkg.maxQuantity
+                                ? currentQuantity >= pkg.maxQuantity
+                                : false
+                            }
+                            style={{ width: '36px' }}
+                          >
+                            +
+                          </button>
+                          {pkg.maxQuantity && (
+                            <span className='ms-2 small text-muted'>
+                              Max: {pkg.maxQuantity}
+                            </span>
+                          )}
+                        </div>
+                        <div className='mt-2 text-primary fw-bold'>
+                          Subtotal: $
+                          {((pkg.price * currentQuantity) / 100).toFixed(2)}
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
-      </div>
+        {/* {selectedPackages.length > 0 && (
+          <div className='alert alert-info mt-3'>
+            <strong>Order Summary:</strong>
+            <ul className='mb-0 mt-2'>
+              {selectedPackages.map((pkg) => (
+                <li key={pkg.name}>
+                  {pkg.name}: {pkg.selectedQuantity} × $
+                  {(pkg.price / 100).toFixed(2)} = $
+                  {((pkg.price * pkg.selectedQuantity) / 100).toFixed(2)}
+                </li>
+              ))}
+            </ul>
+            <hr className='my-2' />
+            <strong>Total: ${(calculateTotalAmount() / 100).toFixed(2)}</strong>
+          </div>
+        )} */}
+      </>
     );
   };
 
@@ -1020,7 +961,6 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
     const isInvalid = !!error;
 
     const commonProps = {
-      className: `form-control ${isInvalid ? 'is-invalid' : ''}`,
       placeholder: field.placeholder || '',
       required: field.required,
       disabled: isSubmitting,
@@ -1037,7 +977,11 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
       case 'password':
         return (
           <>
-            <input type={field.type} {...commonProps} />
+            <input
+              type={field.type}
+              className={`form-control ${isInvalid ? 'is-invalid' : ''}`}
+              {...commonProps}
+            />
             {error && <div className='invalid-feedback'>{error}</div>}
           </>
         );
@@ -1045,9 +989,9 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
         return (
           <>
             <textarea
-              {...commonProps}
+              className={`form-control ${isInvalid ? 'is-invalid' : ''}`}
               rows={4}
-              onChange={(e) => handleFieldChange(fieldId, e.target.value)}
+              {...commonProps}
             />
             {error && <div className='invalid-feedback'>{error}</div>}
           </>
@@ -1057,77 +1001,17 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
           <>
             <select
               className={`form-select ${isInvalid ? 'is-invalid' : ''}`}
-              required={field.required}
-              disabled={isSubmitting}
-              value={value}
-              onChange={(e) => handleFieldChange(fieldId, e.target.value)}
+              {...commonProps}
             >
               <option value=''>
                 {field.placeholder || 'Select an option'}
               </option>
-              {(field.options || []).map((option, index) => (
-                <option key={index} value={option.value}>
+              {(field.options || []).map((option, idx) => (
+                <option key={idx} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
-            {error && <div className='invalid-feedback'>{error}</div>}
-          </>
-        );
-      case 'radio':
-        return (
-          <>
-            <div>
-              {(field.options || []).map((option, index) => (
-                <div className='form-check' key={index}>
-                  <input
-                    type='radio'
-                    className={`form-check-input ${
-                      isInvalid ? 'is-invalid' : ''
-                    }`}
-                    name={field.name}
-                    value={option.value}
-                    required={field.required}
-                    disabled={isSubmitting}
-                    checked={value === option.value}
-                    onChange={() => handleFieldChange(fieldId, option.value)}
-                  />
-                  <label className='form-check-label'>{option.label}</label>
-                </div>
-              ))}
-            </div>
-            {error && <div className='invalid-feedback'>{error}</div>}
-          </>
-        );
-      case 'checkbox':
-        return (
-          <>
-            <div className='form-check'>
-              <input
-                type='checkbox'
-                className={`form-check-input ${isInvalid ? 'is-invalid' : ''}`}
-                required={field.required}
-                disabled={isSubmitting}
-                checked={!!value}
-                onChange={(e) => handleFieldChange(fieldId, e.target.checked)}
-              />
-              <label className='form-check-label'>{field.label}</label>
-            </div>
-            {error && <div className='invalid-feedback'>{error}</div>}
-          </>
-        );
-      case 'date':
-        return (
-          <>
-            <input
-              type='date'
-              className={`form-control ${isInvalid ? 'is-invalid' : ''}`}
-              placeholder={field.placeholder}
-              required={field.required}
-              disabled={isSubmitting}
-              value={value}
-              onChange={(e) => handleFieldChange(fieldId, e.target.value)}
-            />
             {error && <div className='invalid-feedback'>{error}</div>}
           </>
         );
@@ -1153,12 +1037,10 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
 
   const renderPaymentStep = () => {
     const paymentField = getPaymentField();
-
     if (!paymentField) return null;
 
-    const amountInDollars = selectedPackage
-      ? ((selectedPackage.price * quantity) / 100).toFixed(2)
-      : ((paymentField.paymentConfig?.amount || 0) / 100).toFixed(2);
+    const totalAmount = calculateTotalAmount();
+    const amountInDollars = (totalAmount / 100).toFixed(2);
 
     const appId =
       paymentField.paymentConfig?.squareAppId ||
@@ -1180,26 +1062,23 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
 
         {renderPricingPackages()}
 
-        <div className='card mb-4'>
+        <div className='card mb-4 payment-summary-card'>
           <div className='card-body'>
             <h6>Payment Summary</h6>
-            <div className='d-flex justify-content-between mb-2'>
-              <span>Item:</span>
-              <span>{selectedPackage?.name || paymentField.label}</span>
-            </div>
-            {selectedPackage && (
-              <>
-                <div className='d-flex justify-content-between mb-2'>
-                  <span>Unit Price:</span>
-                  <span>${(selectedPackage.price / 100).toFixed(2)}</span>
-                </div>
-                <div className='d-flex justify-content-between mb-2'>
-                  <span>Quantity:</span>
-                  <span>{quantity}</span>
-                </div>
-              </>
-            )}
-            <div className='d-flex justify-content-between border-top pt-2'>
+            {selectedPackages.map((pkg) => (
+              <div
+                key={pkg.name}
+                className='d-flex justify-content-between mb-2'
+              >
+                <span>
+                  {pkg.name} x{pkg.selectedQuantity}:
+                </span>
+                <span>
+                  ${((pkg.price * pkg.selectedQuantity) / 100).toFixed(2)}
+                </span>
+              </div>
+            ))}
+            <div className='d-flex justify-content-between border-top pt-2 mt-2'>
               <strong>Total Amount:</strong>
               <strong>
                 ${amountInDollars}{' '}
@@ -1212,8 +1091,6 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
         <div className='card mb-4'>
           <div className='card-body'>
             <h6 className='card-title'>Payment Details</h6>
-
-            {/* Square Form */}
             <SquarePaymentFormWithRef
               key={paymentFormKey}
               ref={squareFormRef}
@@ -1239,168 +1116,108 @@ const FormEmbed: React.FC<FormEmbedProps> = ({
 
   if (loading) {
     return (
-      <div className='text-center py-4'>
-        <div className='spinner-border text-primary' role='status'>
-          <span className='visually-hidden'>Loading form...</span>
+      <div className='reg-hub-embedded'>
+        <div className='reg-form-card glass-card'>
+          <div className='text-center py-4'>
+            <div className='spinner-border text-primary' role='status'>
+              <span className='visually-hidden'>Loading form...</span>
+            </div>
+            <p className='mt-2'>Loading form...</p>
+          </div>
         </div>
-        <p className='mt-2'>Loading form...</p>
       </div>
     );
   }
 
-  // If form is archived or doesn't exist, return null (hide completely)
-  if (!formData && !error) {
-    return null;
-  }
-
-  // Only show error if we have an error AND form data exists
-  if (error && formData) {
-    return (
-      <div className='alert alert-danger'>
-        <p className='mb-0'>{error}</p>
-      </div>
-    );
-  }
-
-  if (!formData) {
-    // Form is archived/disabled - hide completely
-    return null;
-  }
+  if (!formData && !loading) return null;
 
   if (submitSuccess && step === 'form') {
     return (
-      <div className='alert alert-success'>
-        <i className='ti ti-check-circle me-2'></i>
-        <strong>Form Submitted Successfully!</strong>
-        <p className='mt-2 mb-0'>
-          {formData.settings?.successMessage ||
-            'Thank you for your submission.'}
-        </p>
-        {formData.settings?.redirectUrl && (
-          <p className='mt-2 mb-0'>
-            Redirecting in 3 seconds...{' '}
-            <a href={formData.settings.redirectUrl}>Click here</a> if you are
-            not redirected.
-          </p>
-        )}
+      <div className='reg-hub-embedded'>
+        <div className='reg-form-card glass-card'>
+          <div className='alert alert-success'>
+            <i className='ti ti-check-circle me-2'></i>
+            <strong>Form Submitted Successfully!</strong>
+            <p className='mt-2 mb-0'>
+              {formData?.settings?.successMessage ||
+                'Thank you for your submission.'}
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (submitSuccess && step === 'payment') {
-    // Get dynamic data from form
     const eventTitle = formData?.title || 'the event';
-    const formDescription = formData?.description || '';
-    const redirectUrl = formData?.settings?.redirectUrl;
-
-    // Get success message from form settings or use dynamic default
-    const successMessage =
-      formData?.settings?.successMessage ||
-      `Thank you for your purchase! Your ticket(s) for ${eventTitle} have been successfully processed.`;
-
     return (
-      <div className='alert alert-success'>
-        <i className='ti ti-info-circle me-2'></i>
-        <strong>Thank you for your purchase!</strong>
-
-        <p className='mt-2 mb-0'>
-          Your ticket(s) for <strong>{eventTitle}</strong> have been
-          successfully processed. We're excited to have you join us and
-          appreciate your support.
-        </p>
-
-        <p className='mt-2 mb-0'>
-          A confirmation email with your purchase details has been sent to{' '}
-          <strong>{userEmail}</strong>. Please keep it for your records.
-        </p>
-
-        {(formDescription && formDescription.includes('tournament')) ||
-        formDescription.includes('event') ||
-        formDescription.includes('game') ? (
-          <p className='mt-2 mb-0'>
-            We look forward to seeing you at{' '}
-            {eventTitle.includes('Tournament') ? 'the tournament' : 'the event'}
-            !
-          </p>
-        ) : (
-          <p className='mt-2 mb-0'>
-            We look forward to seeing you at {eventTitle}!
-          </p>
-        )}
-
-        {redirectUrl && (
-          <p className='mt-2 mb-0'>
-            Redirecting in 3 seconds...{' '}
-            <a href={redirectUrl} className='text-decoration-none'>
-              Click here
-            </a>{' '}
-            if you are not redirected.
-          </p>
-        )}
+      <div className='reg-hub-embedded'>
+        <div className='reg-form-card glass-card'>
+          <div className='alert alert-success'>
+            <i className='ti ti-info-circle me-2'></i>
+            <strong>Thank you for your purchase!</strong>
+            <p className='mt-2 mb-0'>
+              Your ticket(s) for <strong>{eventTitle}</strong> have been
+              successfully processed.
+            </p>
+            <p className='mt-2 mb-0'>
+              A confirmation email has been sent to <strong>{userEmail}</strong>
+              .
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`form-embed-wrapper ${wrapperClassName}`}>
-      <div className='form-container'>
-        <h3>{formData.title}</h3>
-        {formData.description && (
-          <p className='text-muted'>{formData.description}</p>
-        )}
-
-        {/* Add tournament info here */}
-        {renderTournamentInfo()}
-
-        {step === 'form' ? (
-          <div>
-            <h5 className='mb-2'>Provide Your Information</h5>
-
-            {error && (
-              <div className='alert alert-danger mb-3'>
-                <i className='ti ti-alert-triangle me-2'></i>
-                {error}
-              </div>
+    <div className='reg-hub-embedded'>
+      <div className='reg-form-card glass-card'>
+        <div className={`form-embed-wrapper ${wrapperClassName}`}>
+          <div className='form-container'>
+            <h3>{formData?.title || 'Form'}</h3>
+            {formData?.description && (
+              <p className='text-muted'>{formData.description}</p>
             )}
 
-            {serverErrors.length > 0 && (
-              <div className='alert alert-warning mb-3'>
-                <i className='ti ti-alert-triangle me-2'></i>
-                <strong>Please fix the following errors:</strong>
-                <ul className='mb-0 mt-2'>
-                  {serverErrors.map((err, index) => (
-                    <li key={index}>{err}</li>
-                  ))}
-                </ul>
+            {renderTournamentInfo()}
+
+            {step === 'form' ? (
+              <div>
+                <h5 className='mb-2'>Provide Your Information</h5>
+
+                {error && (
+                  <div className='alert alert-danger mb-3'>
+                    <i className='ti ti-alert-triangle me-2'></i>
+                    {error}
+                  </div>
+                )}
+
+                {formData?.fields
+                  ?.filter((field: FormField) => field.type !== 'payment')
+                  .map((field: FormField) => renderRegularField(field))}
+
+                <button
+                  type='button'
+                  className='btn btn-primary'
+                  onClick={submitFormData}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className='spinner-border spinner-border-sm me-2'></span>
+                      Processing...
+                    </>
+                  ) : (
+                    'Continue to Payment'
+                  )}
+                </button>
               </div>
+            ) : (
+              renderPaymentStep()
             )}
-
-            {formData.fields
-              ?.filter((field: FormField) => field.type !== 'payment')
-              .map((field: FormField) => renderRegularField(field))}
-
-            <button
-              type='button'
-              className='btn btn-primary'
-              onClick={submitFormData}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <span
-                    className='spinner-border spinner-border-sm me-2'
-                    role='status'
-                  ></span>
-                  Processing...
-                </>
-              ) : (
-                'Continue to Payment'
-              )}
-            </button>
           </div>
-        ) : (
-          renderPaymentStep()
-        )}
+        </div>
       </div>
     </div>
   );

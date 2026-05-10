@@ -14,7 +14,7 @@ const ContactPage = () => {
   const navigate = useNavigate();
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData({
@@ -181,14 +181,14 @@ const ContactPage = () => {
                       <p className='mb-5 text-center'>
                         We value your feedback and suggestions! If you have any
                         comments, suggestions, or feedback about your experience
-                        with Partizan, please don't hesitate to reach out to us.
-                        Your input helps us improve and enhance our camp
+                        with Bothell Select, please don't hesitate to reach out
+                        to us. Your input helps us improve and enhance our camp
                         programs for future participants.
                       </p>
                       <h2 className='mb-2 text-center'>Connect With Us!</h2>
                       <p className='mb-2 text-center'>
-                        Stay connected with Partizan on social media for the
-                        latest news, updates, photos, and more:
+                        Stay connected with Bothell Select on social media for
+                        the latest news, updates, photos, and more:
                       </p>
                     </>
                   )}

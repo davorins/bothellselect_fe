@@ -799,8 +799,8 @@ const TeamDetail: React.FC = () => {
         imgSrc:
           player.avatar ||
           (player.gender === 'Female'
-            ? 'https://partizan-be.onrender.com/uploads/avatars/girl.png'
-            : 'https://partizan-be.onrender.com/uploads/avatars/boy.png'),
+            ? 'https://bothell-select.onrender.com/uploads/avatars/girl.png'
+            : 'https://bothell-select.onrender.com/uploads/avatars/boy.png'),
         parents: player.parents || [],
         seasons: player.seasons || [],
         registrationComplete: player.registrationComplete || false,
@@ -963,7 +963,9 @@ const TeamDetail: React.FC = () => {
         <div className='d-flex align-items-center'>
           <div className='avatar avatar-sm flex-shrink-0 me-2'>
             <img
-              src={'https://partizan-be.onrender.com/uploads/avatars/coach.png'}
+              src={
+                'https://bothell-select.onrender.com/uploads/avatars/coach.png'
+              }
               className='img-fluid rounded-circle'
               alt={`${text} avatar`}
               style={{

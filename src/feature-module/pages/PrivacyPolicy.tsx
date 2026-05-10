@@ -21,12 +21,12 @@ const PrivacyPolicy = () => {
               <div className='ourteam-page'>
                 <div className='p-4'>
                   <h1 className='mb-4 text-center'>
-                    Privacy Policy for Partizan Camp
+                    Privacy Policy for Bothell Select Camp
                   </h1>
                   <h5 className='mb-2 text-center'>
-                    This Privacy Policy describes how Partizan camp collects,
-                    uses, and shares personal information when you use our
-                    basketball camp services.
+                    This Privacy Policy describes how Bothell Select camp
+                    collects, uses, and shares personal information when you use
+                    our basketball camp services.
                   </h5>
                 </div>
                 <div className='p-2'>
@@ -141,7 +141,7 @@ const PrivacyPolicy = () => {
                     If you have any questions or concerns about this Privacy
                     Policy or our practices regarding your personal information,
                     please send us an{' '}
-                    <a href='mailto:partizanhoops@proton.me'>email</a>.
+                    <a href='mailto:bothellselect@proton.me'>email</a>.
                   </p>
                 </div>
               </div>

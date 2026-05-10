@@ -20,13 +20,13 @@ export const cleanR2Url = (url: string | null | undefined): string => {
     cleanUrl = cleanUrl.replace('http//', 'http://');
   }
 
-  // Fix double domain issue (partizan-be.onrender.comhttps://)
-  if (cleanUrl.includes('partizan-be.onrender.comhttps://')) {
-    cleanUrl = cleanUrl.split('partizan-be.onrender.com')[1];
+  // Fix double domain issue (bothell-select.onrender.comhttps://)
+  if (cleanUrl.includes('bothell-select.onrender.comhttps://')) {
+    cleanUrl = cleanUrl.split('bothell-select.onrender.com')[1];
   }
 
-  if (cleanUrl.includes('partizan-be.onrender.comhttp://')) {
-    cleanUrl = cleanUrl.split('partizan-be.onrender.com')[1];
+  if (cleanUrl.includes('bothell-select.onrender.comhttp://')) {
+    cleanUrl = cleanUrl.split('bothell-select.onrender.com')[1];
   }
 
   // Remove any trailing slashes
@@ -123,7 +123,7 @@ export const getDefaultAvatar = (
   role: 'parent' | 'coach' | 'player' | 'guardian' = 'parent',
   gender?: 'Male' | 'Female',
 ): string => {
-  const baseUrl = 'https://partizan-be.onrender.com/uploads/avatars';
+  const baseUrl = 'https://bothell-select.onrender.com/uploads/avatars';
 
   switch (role) {
     case 'coach':
@@ -172,7 +172,7 @@ export const getGenderFromItem = (item: any): 'Male' | 'Female' | undefined => {
 export const getR2PublicUrl = (): string => {
   return (
     process.env.REACT_APP_R2_PUBLIC_URL ||
-    'https://pub-3eb0901007e24e51b6ed1bde149cb0bb.r2.dev'
+    'https://pub-eab2790b2e94418f896b048a8e6658d0.r2.dev'
   );
 };
 

@@ -13,7 +13,7 @@ import NotificationDropdown from '../../core/common/header/NotificationDropdown'
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 const DEFAULT_AVATAR =
-  'https://partizan-be.onrender.com/uploads/avatars/parents.png';
+  'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
 interface HeaderProps {
   showSponsorLogo: boolean;
@@ -114,7 +114,7 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
         if (avatar && avatar.startsWith('http')) {
           setAvatarSrc(avatar);
         } else if (avatar) {
-          setAvatarSrc(`https://partizan-be.onrender.com${avatar}`);
+          setAvatarSrc(`https://bothell-select.onrender.com${avatar}`);
         } else {
           setAvatarSrc(DEFAULT_AVATAR);
         }

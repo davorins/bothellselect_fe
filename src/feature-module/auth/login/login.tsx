@@ -53,7 +53,7 @@ const Login = () => {
       setError(
         error.response?.data?.error ||
           error.message ||
-          'Login failed. Please try again.'
+          'Login failed. Please try again.',
       );
     }
   };
@@ -211,7 +211,7 @@ const Login = () => {
                           </Link>
                         </div>
                         <p className='mb-0 '>
-                          © {currentYear} Partizan by{' '}
+                          © {currentYear} Bothell Select by{' '}
                           <a href='https://rainbootsmarketing.com/'>
                             Rainboots
                           </a>

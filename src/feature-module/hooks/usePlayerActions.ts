@@ -104,7 +104,7 @@ export const usePlayerActions = () => {
     const fallbackSeasons = [];
     if (player.season || player.registrationYear) {
       fallbackSeasons.push({
-        season: player.season || 'Partizan',
+        season: player.season || 'Bothell Select',
         year: player.registrationYear || new Date().getFullYear(),
         tryoutId: player.tryoutId,
         registrationDate: player.registrationDate || player.createdAt,

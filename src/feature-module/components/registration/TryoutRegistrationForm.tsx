@@ -853,10 +853,12 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
   const renderTryoutInfo = () => {
     if (isLoadingConfig) {
       return (
-        <div className='card mb-4'>
-          <div className='card-body text-center'>
-            <LoadingSpinner />
-            <p className='mt-2'>Loading tryout information...</p>
+        <div className='form-content'>
+          <div className='card mb-4'>
+            <div className='card-body text-center'>
+              <LoadingSpinner />
+              <p className='mt-2'>Loading tryout information...</p>
+            </div>
           </div>
         </div>
       );
@@ -864,72 +866,76 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
 
     if (configError) {
       return (
-        <div className='alert alert-warning mb-4'>
-          <i className='ti ti-alert-triangle me-2'></i>
-          {configError}
+        <div className='form-content'>
+          <div className='alert alert-warning mb-4'>
+            <i className='ti ti-alert-triangle me-2'></i>
+            {configError}
+          </div>
         </div>
       );
     }
 
     return (
-      <div className='card mb-4'>
-        <div className='card-header bg-light'>
-          <div className='d-flex align-items-center'>
-            <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
-              <i className='ti ti-target-arrow fs-16' />
-            </span>
-            <h4 className='text-dark'>{effectiveTryoutConfig.tryoutName}</h4>
-          </div>
-        </div>
-        <div className='card-body'>
-          <div className='row'>
-            <div className='col-md-6'>
-              <p className='mb-2'>
-                <strong>Tryout Fee:</strong> ${effectiveTryoutConfig.tryoutFee}{' '}
-                per player
-              </p>
-              {effectiveTryoutConfig.registrationDeadline && (
-                <p className='mb-2'>
-                  <strong>Registration Deadline:</strong>{' '}
-                  {new Date(
-                    effectiveTryoutConfig.registrationDeadline,
-                  ).toLocaleDateString()}
-                </p>
-              )}
-            </div>
-            <div className='col-md-6'>
-              {effectiveTryoutConfig.tryoutDates.length > 0 && (
-                <p className='mb-2'>
-                  <strong>Tryout Dates:</strong>{' '}
-                  {effectiveTryoutConfig.tryoutDates
-                    .map((d: string) => new Date(d).toLocaleDateString())
-                    .join(', ')}
-                </p>
-              )}
-              {effectiveTryoutConfig.locations.length > 0 && (
-                <p className='mb-2'>
-                  <strong>Locations:</strong>{' '}
-                  {effectiveTryoutConfig.locations.join(', ')}
-                </p>
-              )}
+      <div className='form-content'>
+        <div className='card mb-4'>
+          <div className='card-header bg-light'>
+            <div className='d-flex align-items-center'>
+              <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
+                <i className='ti ti-target-arrow fs-16' />
+              </span>
+              <h4 className='text-dark'>{effectiveTryoutConfig.tryoutName}</h4>
             </div>
           </div>
-
-          {effectiveTryoutConfig.requiresInsurance && (
-            <div className='alert alert-info mt-3'>
-              <i className='ti ti-shield me-2'></i>
-              <strong>Insurance Required:</strong> Players must provide proof of
-              insurance.
+          <div className='card-body'>
+            <div className='row'>
+              <div className='col-md-6'>
+                <p className='mb-2'>
+                  <strong>Tryout Fee:</strong> $
+                  {effectiveTryoutConfig.tryoutFee} per player
+                </p>
+                {effectiveTryoutConfig.registrationDeadline && (
+                  <p className='mb-2'>
+                    <strong>Registration Deadline:</strong>{' '}
+                    {new Date(
+                      effectiveTryoutConfig.registrationDeadline,
+                    ).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+              <div className='col-md-6'>
+                {effectiveTryoutConfig.tryoutDates.length > 0 && (
+                  <p className='mb-2'>
+                    <strong>Tryout Dates:</strong>{' '}
+                    {effectiveTryoutConfig.tryoutDates
+                      .map((d: string) => new Date(d).toLocaleDateString())
+                      .join(', ')}
+                  </p>
+                )}
+                {effectiveTryoutConfig.locations.length > 0 && (
+                  <p className='mb-2'>
+                    <strong>Locations:</strong>{' '}
+                    {effectiveTryoutConfig.locations.join(', ')}
+                  </p>
+                )}
+              </div>
             </div>
-          )}
 
-          {effectiveTryoutConfig.refundPolicy && (
-            <div className='alert alert-light mt-3'>
-              <i className='ti ti-info-circle me-2'></i>
-              <strong>Refund Policy:</strong>{' '}
-              {effectiveTryoutConfig.refundPolicy}
-            </div>
-          )}
+            {effectiveTryoutConfig.requiresInsurance && (
+              <div className='alert alert-info mt-3'>
+                <i className='ti ti-shield me-2'></i>
+                <strong>Insurance Required:</strong> Players must provide proof
+                of insurance.
+              </div>
+            )}
+
+            {effectiveTryoutConfig.refundPolicy && (
+              <div className='alert alert-light mt-3'>
+                <i className='ti ti-info-circle me-2'></i>
+                <strong>Refund Policy:</strong>{' '}
+                {effectiveTryoutConfig.refundPolicy}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1007,92 +1013,93 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
           className='mb-5'
         />
       )}
+      <div className='form-content'>
+        <div className='step-content mt-4'>
+          {currentStep === 'account' && (
+            <AccountCreationModule onComplete={handleAccountCreated} />
+          )}
 
-      <div className='step-content mt-4'>
-        {currentStep === 'account' && (
-          <AccountCreationModule onComplete={handleAccountCreated} />
-        )}
+          {currentStep === 'verifyEmail' && (
+            <EmailVerificationStep
+              email={
+                formData.tempAccount?.email ||
+                localStorage.getItem('pendingEmail') ||
+                ''
+              }
+              onVerified={handleVerified}
+              onBack={() => setCurrentStep('account')}
+              isVerificationSent={isVerificationSent}
+            />
+          )}
 
-        {currentStep === 'verifyEmail' && (
-          <EmailVerificationStep
-            email={
-              formData.tempAccount?.email ||
-              localStorage.getItem('pendingEmail') ||
-              ''
-            }
-            onVerified={handleVerified}
-            onBack={() => setCurrentStep('account')}
-            isVerificationSent={isVerificationSent}
-          />
-        )}
+          {currentStep === 'user' && (
+            <UserRegistrationModule
+              onComplete={handleUserComplete}
+              onBack={handleBack}
+              formData={formData}
+              updateFormData={updateFormData}
+              isExistingUser={isUserExisting}
+              initialData={formData.user || savedUserDataState}
+              onValidationChange={() => {}}
+            />
+          )}
 
-        {currentStep === 'user' && (
-          <UserRegistrationModule
-            onComplete={handleUserComplete}
-            onBack={handleBack}
-            formData={formData}
-            updateFormData={updateFormData}
-            isExistingUser={isUserExisting}
-            initialData={formData.user || savedUserDataState}
-            onValidationChange={() => {}}
-          />
-        )}
+          {currentStep === 'player' && (
+            <DynamicPlayerRegistrationModule
+              players={players}
+              onPlayersChange={handlePlayersChange}
+              registrationYear={defaultSeasonEvent.year}
+              season={defaultSeasonEvent.season}
+              isExistingUser={isUserExisting}
+              existingPlayers={allExistingPlayers}
+              paidPlayers={paidPlayersForTryout}
+              onValidationChange={handlePlayerValidationChange}
+              showCheckboxes={isAuthenticated && allExistingPlayers.length > 0}
+              selectedPlayerIds={selectedPlayerIds}
+              onPlayerSelection={handlePlayerSelection}
+              parentId={savedUserDataState?._id || currentUser?._id}
+              authToken={localStorage.getItem('token') || undefined}
+              allowMultiple={true}
+              requiresPayment={effectiveTryoutConfig.requiresPayment}
+              onComplete={handlePlayerComplete}
+              onBack={handleBack}
+              maxPlayers={10}
+            />
+          )}
 
-        {currentStep === 'player' && (
-          <DynamicPlayerRegistrationModule
-            players={players}
-            onPlayersChange={handlePlayersChange}
-            registrationYear={defaultSeasonEvent.year}
-            season={defaultSeasonEvent.season}
-            isExistingUser={isUserExisting}
-            existingPlayers={allExistingPlayers}
-            paidPlayers={paidPlayersForTryout}
-            onValidationChange={handlePlayerValidationChange}
-            showCheckboxes={isAuthenticated && allExistingPlayers.length > 0}
-            selectedPlayerIds={selectedPlayerIds}
-            onPlayerSelection={handlePlayerSelection}
-            parentId={savedUserDataState?._id || currentUser?._id}
-            authToken={localStorage.getItem('token') || undefined}
-            allowMultiple={true}
-            requiresPayment={effectiveTryoutConfig.requiresPayment}
-            onComplete={handlePlayerComplete}
-            onBack={handleBack}
-            maxPlayers={10}
-          />
-        )}
-
-        {currentStep === 'payment' && (
-          <PaymentModule
-            amount={calculatePaymentAmount()}
-            customerEmail={
-              formData.user?.email ||
-              savedUserDataState?.email ||
-              formData.tempAccount?.email ||
-              currentUser?.email ||
-              ''
-            }
-            onPaymentSuccess={handlePaymentComplete}
-            onPaymentError={(error) => setFormError(error)}
-            description={`${effectiveTryoutConfig.tryoutName} ${effectiveTryoutConfig.tryoutYear} Tryout Registration`}
-            isProcessing={isProcessing}
-            onComplete={handlePaymentComplete}
-            onBack={handleBack}
-            formConfig={defaultFormConfig}
-            playerCount={getEffectivePlayerCount()}
-            players={playersForTryout}
-            eventData={{
-              season: defaultSeasonEvent.season,
-              year: defaultSeasonEvent.year,
-              eventId: defaultSeasonEvent.eventId,
-            }}
-            savedUserData={savedUserDataState}
-            savedPlayers={playersForTryout}
-            appId={'sq0idp-jUCxKnO_i8i7vccQjVj_0g'}
-            locationId={'L26Q50FWRCQW5'}
-            disabled={!playerValidation && playersForTryout.length === 0}
-            registrationType='tryout'
-          />
-        )}
+          {currentStep === 'payment' && (
+            <PaymentModule
+              amount={calculatePaymentAmount()}
+              customerEmail={
+                formData.user?.email ||
+                savedUserDataState?.email ||
+                formData.tempAccount?.email ||
+                currentUser?.email ||
+                ''
+              }
+              onPaymentSuccess={handlePaymentComplete}
+              onPaymentError={(error) => setFormError(error)}
+              description={`${effectiveTryoutConfig.tryoutName} ${effectiveTryoutConfig.tryoutYear} Tryout Registration`}
+              isProcessing={isProcessing}
+              onComplete={handlePaymentComplete}
+              onBack={handleBack}
+              formConfig={defaultFormConfig}
+              playerCount={getEffectivePlayerCount()}
+              players={playersForTryout}
+              eventData={{
+                season: defaultSeasonEvent.season,
+                year: defaultSeasonEvent.year,
+                eventId: defaultSeasonEvent.eventId,
+              }}
+              savedUserData={savedUserDataState}
+              savedPlayers={playersForTryout}
+              appId={'sq0idp-jUCxKnO_i8i7vccQjVj_0g'}
+              locationId={'L26Q50FWRCQW5'}
+              disabled={!playerValidation && playersForTryout.length === 0}
+              registrationType='tryout'
+            />
+          )}
+        </div>
       </div>
     </div>
   );

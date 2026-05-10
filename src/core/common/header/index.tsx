@@ -22,7 +22,7 @@ const Header = () => {
   const routes = all_routes;
   const dataLayout = useSelector((state: any) => state.themeSetting.dataLayout);
   const mobileSidebar = useSelector(
-    (state: any) => state.sidebarSlice.mobileSidebar
+    (state: any) => state.sidebarSlice.mobileSidebar,
   );
   const [searchParams] = useSearchParams();
   const seasonParam = searchParams.get('season');
@@ -32,7 +32,7 @@ const Header = () => {
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   const DEFAULT_AVATAR =
-    'https://partizan-be.onrender.com/uploads/avatars/parents.png';
+    'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
   // ✅ NEW: Determine dashboard route based on role
   const getDashboardRoute = () => {
@@ -170,7 +170,7 @@ const Header = () => {
 
     const avatarUrl =
       parent.avatar && parent.avatar.trim() !== ''
-        ? `https://partizan-be.onrender.com${parent.avatar}`
+        ? `https://bothell-select.onrender.com${parent.avatar}`
         : avatarSrc || DEFAULT_AVATAR;
 
     return (

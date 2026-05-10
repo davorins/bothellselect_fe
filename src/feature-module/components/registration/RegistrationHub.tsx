@@ -1,4 +1,3 @@
-// components/registration/RegistrationHub.tsx
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PlayerRegistrationForm from './PlayerRegistrationForm';
 import TournamentRegistrationForm from './TournamentRegistrationForm';
@@ -10,6 +9,8 @@ import {
   TournamentSpecificConfig,
   TryoutSpecificConfig,
 } from '../../../types/registration-types';
+import AutoGridFromDescription from '../AutoGridFromDescription';
+import './RegistrationHub.css';
 
 interface RegistrationHubProps {
   playerConfig?: RegistrationFormConfig | null;
@@ -18,6 +19,7 @@ interface RegistrationHubProps {
   tryoutConfig?: RegistrationFormConfig | TryoutSpecificConfig | null;
   seasonEvent?: SeasonEvent;
   onRegistrationComplete?: () => void;
+  hasEmbeddedForms?: boolean; // This indicates if there are embedded forms available elsewhere
 }
 
 // Helper type guard functions
@@ -73,10 +75,15 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
   tryoutConfig,
   seasonEvent,
   onRegistrationComplete,
+  hasEmbeddedForms = true,
 }) => {
   const [activeForm, setActiveForm] = useState<
-    'player' | 'tournament' | 'training' | 'tryout'
-  >('player');
+    'player' | 'tournament' | 'training' | 'tryout' | null
+  >(null);
+
+  // For multi-form mode and non-player single forms, track if showing description or form
+  const [showDescription, setShowDescription] = useState(true);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   // Type-safe helper to get isActive
   const getIsActive = useCallback(
@@ -160,6 +167,42 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
     [seasonEvent],
   );
 
+  // Get icon for each registration type
+  const getIcon = useCallback(
+    (type: 'player' | 'tournament' | 'training' | 'tryout'): string => {
+      switch (type) {
+        case 'player':
+          return 'ti-user-plus';
+        case 'tournament':
+          return 'ti-trophy';
+        case 'training':
+          return 'ti-ball-basketball';
+        case 'tryout':
+          return 'ti-target-arrow';
+        default:
+          return 'ti-file';
+      }
+    },
+    [],
+  );
+
+  // Get background image for training camp tiles
+  const getBackgroundImage = useCallback(
+    (
+      type: 'player' | 'tournament' | 'training' | 'tryout',
+      config: any,
+    ): string | undefined => {
+      const title = getDisplayName(config).toLowerCase();
+      if (title.includes('tryout') || type === 'tryout') {
+        return '/assets/img/theme/tile_05.png';
+      } else if (title.includes('camp') || type === 'training') {
+        return '/assets/img/theme/tile_06.png';
+      }
+      return undefined;
+    },
+    [getDisplayName],
+  );
+
   // Get the proper season event for a config
   const getSeasonEventForConfig = useCallback(
     (
@@ -221,7 +264,6 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
         return null;
       case 'tryout':
         if (tryoutConfig) {
-          // Try to get description from various possible locations
           const desc = (tryoutConfig as any).description;
           if (desc) return desc;
           if (isTryoutConfig(tryoutConfig)) return tryoutConfig.description;
@@ -243,28 +285,46 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
     playerConfig,
   ]);
 
-  // Set initial active tab based on what's available
-  useEffect(() => {
-    // Priority: tournament > tryout > training > player
-    if (tournamentActive && tournamentConfig) {
-      setActiveForm('tournament');
-    } else if (tryoutActive && tryoutConfig) {
-      setActiveForm('tryout');
-    } else if (trainingActive && trainingConfig) {
-      setActiveForm('training');
-    } else if (playerActive && playerConfig) {
-      setActiveForm('player');
-    }
+  // Get all available registration types (these are the REAL registration forms)
+  const availableForms = useMemo(() => {
+    const forms = [];
+    if (tournamentActive && tournamentConfig)
+      forms.push({ type: 'tournament' as const, config: tournamentConfig });
+    if (tryoutActive && tryoutConfig)
+      forms.push({ type: 'tryout' as const, config: tryoutConfig });
+    if (trainingActive && trainingConfig)
+      forms.push({ type: 'training' as const, config: trainingConfig });
+    if (playerActive && playerConfig)
+      forms.push({ type: 'player' as const, config: playerConfig });
+    return forms;
   }, [
-    playerActive,
     tournamentActive,
-    trainingActive,
-    tryoutActive,
-    playerConfig,
     tournamentConfig,
-    trainingConfig,
+    tryoutActive,
     tryoutConfig,
+    trainingActive,
+    trainingConfig,
+    playerActive,
+    playerConfig,
   ]);
+
+  // Set initial active form based on available count
+  useEffect(() => {
+    if (availableForms.length === 1 && !activeForm) {
+      const formType = availableForms[0].type;
+      setActiveForm(formType);
+      // For single form: show description only for non-player forms
+      // Player form shows immediately (no description)
+      if (formType === 'player') {
+        setShowDescription(false);
+      } else {
+        setShowDescription(true);
+      }
+    } else if (availableForms.length > 1 && !activeForm) {
+      setActiveForm(null);
+      setShowDescription(true);
+    }
+  }, [availableForms]);
 
   // Memoize season events
   const tournamentSeasonEvent = useMemo(
@@ -293,13 +353,21 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
     return tryoutConfig as RegistrationFormConfig;
   }, [tryoutConfig]);
 
-  // Handle tab changes
-  const handleTabChange = useCallback(
+  // Handle tile clicks
+  const handleTileClick = useCallback(
     (form: 'player' | 'tournament' | 'training' | 'tryout') => {
       setActiveForm(form);
+      // For multi-form: always show description first
+      setShowDescription(true);
     },
     [],
   );
+
+  // Handle back to tiles
+  const handleBackToTiles = useCallback(() => {
+    setActiveForm(null);
+    setShowDescription(true);
+  }, []);
 
   // Handle registration complete
   const handleRegistrationComplete = useCallback(() => {
@@ -308,227 +376,280 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
     }
   }, [onRegistrationComplete]);
 
-  // If nothing is active, show a message
-  if (!playerActive && !tournamentActive && !trainingActive && !tryoutActive) {
+  // Toggle between description and form (used for multi-form and single non-player forms)
+  const handleToggleView = useCallback(() => {
+    if (isAnimating) return;
+
+    setIsAnimating(true);
+
+    if (showDescription) {
+      const descElement = document.querySelector('.reg-description');
+      if (descElement) {
+        descElement.classList.add('exit');
+      }
+    } else {
+      const formElement = document.querySelector('.reg-form-wrapper');
+      if (formElement) {
+        formElement.classList.add('exit');
+      }
+    }
+
+    setTimeout(() => {
+      setShowDescription((prev) => !prev);
+
+      setTimeout(() => {
+        const descElement = document.querySelector('.reg-description');
+        const formElement = document.querySelector('.reg-form-wrapper');
+        if (descElement) descElement.classList.remove('exit');
+        if (formElement) formElement.classList.remove('exit');
+        setIsAnimating(false);
+      }, 50);
+    }, 200);
+  }, [showDescription, isAnimating]);
+
+  // If no registration forms are active, show nothing (don't render)
+  if (availableForms.length === 0) {
+    return null;
+  }
+
+  // SINGLE FORM MODE
+  if (availableForms.length === 1 && activeForm) {
+    const form = availableForms[0];
+    const backgroundImage = getBackgroundImage(form.type, form.config);
+    const isPlayerForm = form.type === 'player';
+
+    // For Player form: show form immediately (no description toggle)
+    if (isPlayerForm) {
+      return (
+        <div className='reg-hub-single'>
+          <div className='reg-form-card glass-card'>
+            {backgroundImage && <div className='reg-card-overlay'></div>}
+            <div className='reg-form-content'>
+              <div className='reg-form-container'>
+                <div className='reg-form-wrapper'>
+                  {form.type === 'player' && playerConfig && (
+                    <PlayerRegistrationForm
+                      onSuccess={handleRegistrationComplete}
+                      formConfig={playerConfig}
+                      seasonEvent={seasonEvent}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // For non-player single forms (Tournament, Tryout, Training): show description with toggle
     return (
-      <div className='card'>
-        <div className='card-body text-center p-5'>
-          <i className='ti ti-calendar-off fs-1 text-warning mb-3'></i>
-          <h3>Registration Closed</h3>
-          <p className='text-muted mb-4'>
-            No registrations are currently available. Please check back later.
-          </p>
+      <div className='reg-hub-single'>
+        <div className='reg-form-card glass-card'>
+          {backgroundImage && <div className='reg-card-overlay'></div>}
+          <div className='reg-form-content'>
+            {/* Description View */}
+            {showDescription && (
+              <div className='reg-description-container'>
+                {currentDescription && (
+                  <div className='reg-description'>
+                    <AutoGridFromDescription
+                      descriptionHtml={currentDescription}
+                      onRegister={handleToggleView}
+                    />
+                  </div>
+                )}
+                <button
+                  className='reg-toggle-btn'
+                  onClick={handleToggleView}
+                  disabled={isAnimating}
+                >
+                  <i className='ti ti-eye'></i>
+                  <span>Continue to Registration Form</span>
+                  <i className='ti ti-arrow-right'></i>
+                </button>
+              </div>
+            )}
+
+            {/* Form View */}
+            {!showDescription && (
+              <div className='reg-form-container'>
+                <button
+                  className='reg-toggle-btn reg-toggle-back-btn'
+                  onClick={handleToggleView}
+                  disabled={isAnimating}
+                >
+                  <i className='ti ti-arrow-left'></i>
+                  <span>Back to Description</span>
+                </button>
+                <div className='reg-form-wrapper'>
+                  {form.type === 'tournament' && tournamentConfig && (
+                    <TournamentRegistrationForm
+                      onSuccess={handleRegistrationComplete}
+                      formConfig={tournamentConfig as RegistrationFormConfig}
+                      tournamentConfig={
+                        tournamentConfig as TournamentSpecificConfig
+                      }
+                      seasonEvent={tournamentSeasonEvent}
+                    />
+                  )}
+
+                  {form.type === 'tryout' && tryoutConfig && (
+                    <TryoutRegistrationForm
+                      onSuccess={handleRegistrationComplete}
+                      formConfig={tryoutFormConfig!}
+                      tryoutConfig={tryoutConfig as TryoutSpecificConfig}
+                      seasonEvent={tryoutSeasonEvent}
+                    />
+                  )}
+
+                  {form.type === 'training' && trainingConfig && (
+                    <TrainingRegistrationForm
+                      onSuccess={handleRegistrationComplete}
+                      formConfig={trainingConfig}
+                      seasonEvent={trainingSeasonEvent}
+                      description={trainingConfig.description || ''}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
   }
 
+  // MULTIPLE FORMS MODE - Show tiles grid (horizontal scroll on desktop)
+  if (!activeForm) {
+    return (
+      <div className='reg-hub-grid'>
+        <div className='reg-tiles-grid'>
+          {availableForms.map(({ type, config }) => {
+            const backgroundImage = getBackgroundImage(type, config);
+            const displayName = getDisplayName(config);
+
+            return (
+              <button
+                key={type}
+                className='reg-tile'
+                style={
+                  backgroundImage
+                    ? {
+                        backgroundImage: `url(${backgroundImage})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      }
+                    : {}
+                }
+                onClick={() => handleTileClick(type)}
+              >
+                {backgroundImage && <div className='reg-tile-overlay'></div>}
+                <div className='reg-tile-icon'>
+                  <i className={`ti ${getIcon(type)}`} />
+                </div>
+                <div className='reg-tile-content'>
+                  <span className='reg-tile-title'>{displayName}</span>
+                  <span className='reg-tile-subtitle'>Click to register</span>
+                </div>
+                <div className='reg-tile-arrow'>
+                  <i className='ti ti-chevron-right' />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // MULTIPLE FORMS MODE - Show selected form with back button and description toggle
+  const selectedForm = availableForms.find((f) => f.type === activeForm);
+  if (!selectedForm) return null;
+
+  const backgroundImage = getBackgroundImage(
+    selectedForm.type,
+    selectedForm.config,
+  );
+
   return (
-    <div className='card'>
-      {/* Tab Navigation */}
-      <div className='card-header bg-light p-0'>
-        <div className='form-selector-tabs nav nav-tabs card-header-tabs m-0'>
-          {/* Tournament Registration Tab */}
-          {tournamentActive && tournamentConfig && (
-            <li className='nav-item'>
-              <button
-                className={`nav-link ${activeForm === 'tournament' ? 'active' : ''}`}
-                onClick={() => handleTabChange('tournament')}
-                type='button'
-              >
-                <i className='ti ti-trophy me-2'></i>
-                {getDisplayName(tournamentConfig)}
-              </button>
-            </li>
-          )}
+    <div className='reg-hub-multi'>
+      <button className='reg-back-btn' onClick={handleBackToTiles}>
+        <i className='ti ti-arrow-left'></i>
+      </button>
 
-          {/* Tryout Registration Tab */}
-          {tryoutActive && tryoutConfig && (
-            <li className='nav-item'>
-              <button
-                className={`nav-link ${activeForm === 'tryout' ? 'active' : ''}`}
-                onClick={() => handleTabChange('tryout')}
-                type='button'
-              >
-                <i className='ti ti-target-arrow me-2'></i>
-                {getDisplayName(tryoutConfig)}
-              </button>
-            </li>
-          )}
-
-          {/* Training Registration Tab */}
-          {trainingActive && trainingConfig && (
-            <li className='nav-item'>
-              <button
-                className={`nav-link ${activeForm === 'training' ? 'active' : ''}`}
-                onClick={() => handleTabChange('training')}
-                type='button'
-              >
-                <i className='ti ti-info-circle me-2'></i>
-                {getDisplayName(trainingConfig)}
-              </button>
-            </li>
-          )}
-
-          {/* Player Registration Tab */}
-          {playerActive && playerConfig && (
-            <li className='nav-item'>
-              <button
-                className={`nav-link ${activeForm === 'player' ? 'active' : ''}`}
-                onClick={() => handleTabChange('player')}
-                type='button'
-              >
-                <i className='ti ti-user-plus me-2'></i>
-                Add Players to Account
-              </button>
-            </li>
-          )}
-        </div>
-      </div>
-
-      {/* Description Section */}
-      {currentDescription && (
-        <div className='card-body border-bottom'>
-          <div className='registration-description-container'>
-            <div
-              className='description-content'
-              style={{
-                fontSize: '16px',
-                lineHeight: '1.6',
-                color: '#333',
-              }}
-              dangerouslySetInnerHTML={{
-                __html: currentDescription,
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Form Container */}
-      <div className='card-body p-4'>
-        {activeForm === 'tournament' &&
-          tournamentActive &&
-          tournamentConfig && (
-            <div className='tab-content'>
-              <div className='tab-pane fade show active'>
-                <TournamentRegistrationForm
-                  onSuccess={handleRegistrationComplete}
-                  formConfig={tournamentConfig as RegistrationFormConfig}
-                  tournamentConfig={
-                    tournamentConfig as TournamentSpecificConfig
-                  }
-                  seasonEvent={tournamentSeasonEvent}
+      <div className='reg-form-card glass-card'>
+        {backgroundImage && <div className='reg-card-overlay'></div>}
+        <div className='reg-form-content'>
+          {/* Description View - shown first for multi-form */}
+          {showDescription && (
+            <>
+              {currentDescription && (
+                <AutoGridFromDescription
+                  descriptionHtml={currentDescription}
+                  onRegister={handleToggleView}
                 />
-              </div>
-            </div>
+              )}
+              <button className='reg-toggle-btn' onClick={handleToggleView}>
+                <i className='ti ti-chevron-down'></i>
+                <span>Continue to Registration Form</span>
+                <i className='ti ti-arrow-right'></i>
+              </button>
+            </>
           )}
 
-        {activeForm === 'tryout' && tryoutActive && tryoutConfig && (
-          <div className='tab-content'>
-            <div className='tab-pane fade show active'>
-              <TryoutRegistrationForm
-                onSuccess={handleRegistrationComplete}
-                formConfig={tryoutFormConfig!}
-                tryoutConfig={tryoutConfig as TryoutSpecificConfig}
-                seasonEvent={tryoutSeasonEvent}
-              />
-            </div>
-          </div>
-        )}
+          {/* Form View - shown after clicking continue */}
+          {!showDescription && (
+            <>
+              <button
+                className='reg-toggle-btn reg-toggle-back-btn'
+                onClick={handleToggleView}
+              >
+                <i className='ti ti-chevron-up'></i>
+                <span>Back to Description</span>
+              </button>
+              <div className='reg-form-wrapper'>
+                {selectedForm.type === 'tournament' && tournamentConfig && (
+                  <TournamentRegistrationForm
+                    onSuccess={handleRegistrationComplete}
+                    formConfig={tournamentConfig as RegistrationFormConfig}
+                    tournamentConfig={
+                      tournamentConfig as TournamentSpecificConfig
+                    }
+                    seasonEvent={tournamentSeasonEvent}
+                  />
+                )}
 
-        {activeForm === 'training' && trainingActive && trainingConfig && (
-          <div className='tab-content'>
-            <div className='tab-pane fade show active'>
-              <TrainingRegistrationForm
-                onSuccess={handleRegistrationComplete}
-                formConfig={trainingConfig}
-                seasonEvent={trainingSeasonEvent}
-                description={trainingConfig.description || ''}
-              />
-            </div>
-          </div>
-        )}
+                {selectedForm.type === 'tryout' && tryoutConfig && (
+                  <TryoutRegistrationForm
+                    onSuccess={handleRegistrationComplete}
+                    formConfig={tryoutFormConfig!}
+                    tryoutConfig={tryoutConfig as TryoutSpecificConfig}
+                    seasonEvent={tryoutSeasonEvent}
+                  />
+                )}
 
-        {activeForm === 'player' && playerActive && playerConfig && (
-          <div className='tab-content'>
-            <div className='tab-pane fade show active'>
-              <PlayerRegistrationForm
-                onSuccess={handleRegistrationComplete}
-                formConfig={playerConfig}
-                seasonEvent={seasonEvent}
-              />
-            </div>
-          </div>
-        )}
+                {selectedForm.type === 'training' && trainingConfig && (
+                  <TrainingRegistrationForm
+                    onSuccess={handleRegistrationComplete}
+                    formConfig={trainingConfig}
+                    seasonEvent={trainingSeasonEvent}
+                    description={trainingConfig.description || ''}
+                  />
+                )}
+
+                {selectedForm.type === 'player' && playerConfig && (
+                  <PlayerRegistrationForm
+                    onSuccess={handleRegistrationComplete}
+                    formConfig={playerConfig}
+                    seasonEvent={seasonEvent}
+                  />
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
-
-      <style>{`
-        .registration-description-container {
-          padding: 1.5rem;
-        }
-        
-        .description-content ul,
-        .description-content ol {
-          margin-bottom: 1rem;
-          padding-left: 2rem;
-        }
-        
-        .description-content li {
-          margin-bottom: 0.5rem;
-        }
-        
-        .description-content strong {
-          font-weight: 600;
-        }
-        
-        .description-content a {
-          color: #3498db;
-          text-decoration: none;
-        }
-        
-        .description-content a:hover {
-          text-decoration: underline;
-        }
-        
-        .description-content table {
-          width: 100%;
-          margin-bottom: 1rem;
-          border-collapse: collapse;
-        }
-        
-        .description-content table th,
-        .description-content table td {
-          padding: 0.75rem;
-          border: 1px solid #dee2e6;
-        }
-        
-        .description-content table th {
-          background-color: #f8f9fa;
-          font-weight: 600;
-        }
-        
-        .nav-tabs .nav-link {
-          padding: 1rem 1.5rem;
-          font-weight: 500;
-          border: none;
-          transition: all 0.2s ease;
-        }
-        
-        .nav-tabs .nav-link:hover {
-          color: #594230;
-          background-color: rgba(89, 66, 48, .1) !important;
-        }
-        
-        .nav-tabs .nav-link.active {
-          color: #594230;
-          background-color: white;
-        }
-        
-        .form-selector-tabs {
-          border-bottom: 0px solid #dee2e6;
-        }
-      `}</style>
     </div>
   );
 };

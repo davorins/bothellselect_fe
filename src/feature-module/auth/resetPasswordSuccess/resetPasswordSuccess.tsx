@@ -45,7 +45,7 @@ const ResetPasswordSuccess = () => {
                   </div>
                   <div className='mt-5 text-center'>
                     <p className='mb-0 '>
-                      © {currentYear} Partizan by{' '}
+                      © {currentYear} Bothell Select by{' '}
                       <a href='https://rainbootsmarketing.com/'>Rainboots</a>
                     </p>
                   </div>

@@ -1562,12 +1562,36 @@ body.app-chat {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background-color: #f8f9fa;
-  border-top: 1px solid #ddd;
+  background-color: rgba(0, 0, 0, 1);
+  border-top: 1px solid rgba(0, 0, 0, 0.5);
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  z-index: 1000;
+
+  .copyright {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.75rem;
+
+    a {
+      color: rgba(255, 255, 255, 0.7);
+    }
+    a:hover {
+      color: rgba(255, 255, 255, 1);
+    }
+  }
 
   .footer-links {
     display: flex;
     gap: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+
+    a {
+      color: rgba(255, 255, 255, 0.7);
+    }
+    a:hover {
+      color: rgba(255, 255, 255, 1);
+    }
   }
 }
 

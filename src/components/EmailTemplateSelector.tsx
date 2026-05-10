@@ -218,7 +218,7 @@ export const EmailTemplateSelector: React.FC = () => {
             <tr>
               <td style="padding: 30px 30px 0;">
                 <div style="text-align: left; border-bottom: 1px solid #eaeaea; padding-bottom: 20px;">
-                  <img src="https://pub-3eb0901007e24e51b6ed1bde149cb0bb.r2.dev/logo/logo.png" alt="Partizan Logo" height="30" style="display: block; margin: 0; height: 30px;" />
+                  <img src="https://pub-eab2790b2e94418f896b048a8e6658d0.r2.dev/logo/logo.png" alt="Bothell Select Logo" height="30" style="display: block; margin: 0; height: 30px;" />
                 </div>
               </td>
             </tr>
@@ -236,15 +236,15 @@ export const EmailTemplateSelector: React.FC = () => {
             <tr>
               <td style="padding: 0 30px;">
                 <div style="text-align: center; font-size: 13px; color: #666; padding: 30px 0 20px; margin-top: 40px; border-top: 1px solid #eaeaea;">
-                  <p style="margin: 0 0 8px;">You're receiving this email because you're part of <strong style="color: #333;">Partizan</strong>.</p>
+                  <p style="margin: 0 0 8px;">You're receiving this email because you're part of <strong style="color: #333;">Bothell Select</strong>.</p>
                   <p style="margin: 0;">
-                    <a href="https://partizanhoops.com/general-settings/notifications-settings" style="color: #594230; text-decoration: none; border-bottom: 1px solid #594230; padding-bottom: 1px;">
+                    <a href="https://bothellselect.com/general-settings/notifications-settings" style="color: #594230; text-decoration: none; border-bottom: 1px solid #594230; padding-bottom: 1px;">
                       Unsubscribe
                     </a> • 
-                    <a href="https://partizanhoops.com/contact-us" style="color: #594230; text-decoration: none; border-bottom: 1px solid #594230; padding-bottom: 1px;">
+                    <a href="https://bothellselect.com/contact-us" style="color: #594230; text-decoration: none; border-bottom: 1px solid #594230; padding-bottom: 1px;">
                       Contact Us
                     </a> • 
-                    <a href="https://partizanhoops.com" style="color: #594230; text-decoration: none; border-bottom: 1px solid #594230; padding-bottom: 1px;">
+                    <a href="https://bothellselect.com" style="color: #594230; text-decoration: none; border-bottom: 1px solid #594230; padding-bottom: 1px;">
                       Website
                     </a>
                   </p>
@@ -258,7 +258,7 @@ export const EmailTemplateSelector: React.FC = () => {
             <tr>
               <td align="center" style="padding: 20px 0;">
                 <p style="margin: 0; font-size: 12px; color: #999;">
-                  &copy; ${new Date().getFullYear()} Partizan. All rights reserved.
+                  &copy; ${new Date().getFullYear()} Bothell Select. All rights reserved.
                 </p>
               </td>
             </tr>

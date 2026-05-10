@@ -20,7 +20,7 @@ const ForgotPassword = () => {
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_API_BASE_URL}/request-password-reset`,
-        { email: email.trim() }
+        { email: email.trim() },
       );
 
       if (response.data.message) {
@@ -32,7 +32,7 @@ const ForgotPassword = () => {
       console.error('Forgot password error:', error);
       setError(
         error.response?.data?.error ||
-          'Failed to send reset email. Please try again.'
+          'Failed to send reset email. Please try again.',
       );
     } finally {
       setIsSubmitting(false);
@@ -122,7 +122,7 @@ const ForgotPassword = () => {
                       </div>
                       <div className='mt-5 text-center'>
                         <p className='mb-0 '>
-                          © {currentYear} Partizan by{' '}
+                          © {currentYear} Bothell Select by{' '}
                           <a href='https://rainbootsmarketing.com/'>
                             Rainboots
                           </a>

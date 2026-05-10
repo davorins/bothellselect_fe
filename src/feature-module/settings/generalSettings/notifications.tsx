@@ -129,7 +129,7 @@ const Notificationssettings = () => {
       emailNotifications:
         'Receive email notifications for new direct messages, account activity, and important alerts.',
       newsUpdates:
-        'Stay informed with the latest announcements, program updates, and news from Partizan.',
+        'Stay informed with the latest announcements, program updates, and news from Bothell Select.',
       offersPromotions:
         'Get notified about special deals, package pricing, discounts, and promotional offers.',
       marketingEmails:
@@ -329,8 +329,8 @@ const Notificationssettings = () => {
                   <div className='mb-3'>
                     <h5>Email Communication Preferences</h5>
                     <p>
-                      Control what types of emails you receive from Partizan.
-                      You can update these preferences at any time.
+                      Control what types of emails you receive from Bothell
+                      Select. You can update these preferences at any time.
                     </p>
                   </div>
                 </div>

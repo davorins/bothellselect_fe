@@ -254,7 +254,7 @@ const Register = () => {
         healthConcerns: '',
         aauNumber: '',
         registrationYear: currentYear,
-        season: 'Partizan Team',
+        season: 'Bothell Select Team',
         grade: '',
       },
     ]);
@@ -274,7 +274,7 @@ const Register = () => {
         healthConcerns: player.healthConcerns || '',
         aauNumber: player.aauNumber || '',
         registrationYear: currentYear,
-        season: 'Partizan Team',
+        season: 'Bothell Select Team',
         parentId,
         grade: player.grade,
         isGradeOverridden: player.isGradeOverridden || false,
@@ -313,7 +313,7 @@ const Register = () => {
     players,
     onPlayersChange: handlePlayersChange,
     registrationYear: currentYear,
-    season: 'Partizan Team',
+    season: 'Bothell Select Team',
     isExistingUser: false,
     existingPlayers: [],
     paidPlayers: [],
@@ -375,7 +375,7 @@ const Register = () => {
         healthConcerns: '',
         aauNumber: '',
         registrationYear: currentYear,
-        season: 'Partizan Team',
+        season: 'Bothell Select Team',
         grade: '',
       },
     ]);
@@ -710,7 +710,7 @@ const Register = () => {
             </div>
             <div className='card-body text-center py-4'>
               <h2 className='text-success mb-3'>
-                Welcome to Partizan Basketball!
+                Welcome to Bothell Select Basketball!
               </h2>
 
               {successMessage && (
@@ -824,8 +824,8 @@ const Register = () => {
                 <div className='form-header text-center mb-4'>
                   <h2>Create Your Account</h2>
                   <p>
-                    Register to join Partizan Basketball. Players can be added
-                    now or later.
+                    Register to join Bothell Select Basketball. Players can be
+                    added now or later.
                   </p>
                 </div>
 

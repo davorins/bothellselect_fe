@@ -664,6 +664,92 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
     const playerCount = getEffectivePlayerCount();
     const packages = defaultFormConfig.pricing.packages;
 
+    // Determine column classes based on number of packages
+    const getColumnClasses = (packageCount: number) => {
+      switch (packageCount) {
+        case 1:
+          return 'col-md-12';
+        case 2:
+          return 'col-md-6';
+        case 3:
+          return 'col-md-4';
+        default:
+          return 'col-md-6'; // For 4+ packages, use 2 columns per row
+      }
+    };
+
+    // Split packages into rows for 4+ packages
+    const renderPackageRows = () => {
+      const columnClass = getColumnClasses(packages.length);
+
+      // For 1-3 packages, render in a single row
+      if (packages.length <= 3) {
+        return (
+          <div className='row'>
+            {packages.map((pkg) => (
+              <div key={pkg.id} className={`${columnClass} mb-3`}>
+                {renderPackageCard(pkg)}
+              </div>
+            ))}
+          </div>
+        );
+      }
+
+      // For 4+ packages, split into rows of 2 columns each
+      const rows = [];
+      for (let i = 0; i < packages.length; i += 2) {
+        const rowPackages = packages.slice(i, i + 2);
+        rows.push(
+          <div key={i} className='row mb-3'>
+            {rowPackages.map((pkg) => (
+              <div key={pkg.id} className='col-md-6'>
+                {renderPackageCard(pkg)}
+              </div>
+            ))}
+          </div>,
+        );
+      }
+      return rows;
+    };
+
+    const renderPackageCard = (pkg: PricingPackage) => {
+      const totalPrice = pkg.price * playerCount;
+      return (
+        <div
+          className={`card border h-100 ${selectedPackage?.id === pkg.id ? 'border-primary' : ''}`}
+          style={{ cursor: 'pointer' }}
+          onClick={() => setSelectedPackage(pkg)}
+        >
+          <div className='card-body text-center d-flex flex-column'>
+            <div className='form-check mb-2'>
+              <input
+                className='form-check-input'
+                type='radio'
+                name='trainingPackage'
+                checked={selectedPackage?.id === pkg.id}
+                onChange={() => setSelectedPackage(pkg)}
+              />
+            </div>
+            <h5 className='text-primary'>{pkg.name}</h5>
+            <h4 className='my-2'>${pkg.price}</h4>
+            {pkg.description && (
+              <p className='text-muted small mb-0 mt-2'>{pkg.description}</p>
+            )}
+            {playerCount > 0 && (
+              <div className='mt-auto pt-3'>
+                <div className='text-muted small'>
+                  <i className='ti ti-users me-1'></i>
+                  For {playerCount} player
+                  {playerCount !== 1 ? 's' : ''}:
+                </div>
+                <div className='fw-bold'>${totalPrice} total</div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
     return (
       <div className='card mb-4'>
         <div className='card-header bg-light'>
@@ -675,58 +761,7 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
           </div>
         </div>
         <div className='card-body'>
-          <div className='alert alert-info mb-4'>
-            <i className='ti ti-info-circle me-2'></i>
-            <strong>Choose a Training Package</strong>
-            <p className='mb-0 mt-2'>
-              Please select a package. The price will be multiplied by the
-              number of players.
-            </p>
-          </div>
-
-          <div className='row'>
-            {packages.map((pkg) => {
-              const totalPrice = pkg.price * playerCount;
-              return (
-                <div key={pkg.id} className='col-md-4 mb-3'>
-                  <div
-                    className={`card border h-100 ${selectedPackage?.id === pkg.id ? 'border-primary' : ''}`}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setSelectedPackage(pkg)}
-                  >
-                    <div className='card-body text-center d-flex flex-column'>
-                      <div className='form-check mb-2'>
-                        <input
-                          className='form-check-input'
-                          type='radio'
-                          name='trainingPackage'
-                          checked={selectedPackage?.id === pkg.id}
-                          onChange={() => setSelectedPackage(pkg)}
-                        />
-                      </div>
-                      <h5 className='text-primary'>{pkg.name}</h5>
-                      <h4 className='my-2'>${pkg.price}</h4>
-                      {pkg.description && (
-                        <p className='text-muted small mb-0 mt-2'>
-                          {pkg.description}
-                        </p>
-                      )}
-                      {playerCount > 0 && (
-                        <div className='mt-auto pt-3'>
-                          <div className='text-muted small'>
-                            <i className='ti ti-users me-1'></i>
-                            For {playerCount} player
-                            {playerCount !== 1 ? 's' : ''}:
-                          </div>
-                          <div className='fw-bold'>${totalPrice} total</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {renderPackageRows()}
 
           {!selectedPackage && (
             <div className='alert alert-warning mt-3'>

@@ -53,7 +53,7 @@ const SponsorSplashScreen: React.FC<SponsorSplashScreenProps> = ({
       'touchSupport:',
       'ontouchstart' in window,
       'viewport:',
-      `${window.innerWidth}x${window.innerHeight}`
+      `${window.innerWidth}x${window.innerHeight}`,
     );
 
     if (isMobile) {
@@ -81,7 +81,7 @@ const SponsorSplashScreen: React.FC<SponsorSplashScreenProps> = ({
     setIsVisible(true);
     console.log(
       'Showing splash screen with sponsors:',
-      sponsors.map((s) => s.name)
+      sponsors.map((s) => s.name),
     );
 
     const timer = setTimeout(() => {
@@ -170,14 +170,14 @@ const SponsorSplashScreen: React.FC<SponsorSplashScreenProps> = ({
                               'Splash screen image failed to load:',
                               sponsor.logo,
                               'trying fallback:',
-                              sponsor.fallbackLogo
+                              sponsor.fallbackLogo,
                             );
                             e.currentTarget.src = sponsor.fallbackLogo;
                           }}
                           onLoad={() =>
                             console.log(
                               'Splash screen image loaded successfully:',
-                              sponsor.logo
+                              sponsor.logo,
                             )
                           }
                         />
@@ -187,7 +187,7 @@ const SponsorSplashScreen: React.FC<SponsorSplashScreenProps> = ({
                 ))}
               </div>
               <p className='splash-text'>
-                Proudly supporting Partizan Basketball!
+                Proudly supporting Bothell Select Basketball!
               </p>
             </div>
           </div>

@@ -11,7 +11,7 @@ export interface SeasonEvent {
 /**
  * Determine if a season name matches a SeasonEvent's season.
  * "Spring Tryout 2026" matches SeasonEvent { season: "Spring", year: 2026 }
- * "Partizan Winter Break Camp" matches SeasonEvent { season: "Partizan Winter Break Camp", year: 2026 }
+ * "Bothell Select Winter Break Camp" matches SeasonEvent { season: "Bothell Select Winter Break Camp", year: 2026 }
  */
 export function seasonMatchesEvent(
   playerSeason: string,

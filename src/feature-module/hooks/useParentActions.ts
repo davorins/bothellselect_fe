@@ -99,7 +99,7 @@ export const useParentActions = () => {
         formattedParent.avatar &&
         !formattedParent.avatar.startsWith('http')
       ) {
-        formattedParent.avatar = `https://partizan-be.onrender.com${formattedParent.avatar}`;
+        formattedParent.avatar = `https://bothell-select.onrender.com${formattedParent.avatar}`;
       }
 
       navigate(`${routes.parentDetail}/${targetId}`, {
@@ -109,7 +109,7 @@ export const useParentActions = () => {
             ...player,
             avatar:
               player.avatar && !player.avatar.startsWith('http')
-                ? `https://partizan-be.onrender.com${player.avatar}`
+                ? `https://bothell-select.onrender.com${player.avatar}`
                 : player.avatar,
           })),
           guardians: guardiansArray.map((guardian: any) => ({

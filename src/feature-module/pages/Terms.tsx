@@ -21,11 +21,11 @@ const Terms = () => {
               <div className='ourteam-page'>
                 <div className='p-4'>
                   <h1 className='mb-4 text-center'>
-                    Terms and Conditions for Partizan camp
+                    Terms and Conditions for Bothell Select camp
                   </h1>
                   <h5 className='mb-2 text-center'>
                     These Terms and Conditions (“Terms”) govern your child’s
-                    participation in the Partizan camp (the “Camp”). By
+                    participation in the Bothell Select camp (the “Camp”). By
                     registering for and participating in the Camp, you agree to
                     be bound by these Terms.
                   </h5>
@@ -94,8 +94,8 @@ const Terms = () => {
                     </li>
                     <li className='mb-2'>
                       <strong>Release of Liability:</strong> To the fullest
-                      extent permitted by law, you release and discharge
-                      Partizan Basketball camp, its officers, directors,
+                      extent permitted by law, you release and discharge Bothell
+                      Select Basketball camp, its officers, directors,
                       employees, and agents from any and all claims,
                       liabilities, damages, or expenses arising out of or in
                       connection with your participation in the Camp.
@@ -108,14 +108,14 @@ const Terms = () => {
                     <li className='mb-2'>
                       <strong>Ownership:</strong> All intellectual property
                       rights related to the Camp, including but not limited to
-                      logos, designs, and materials, are owned by Partizan
+                      logos, designs, and materials, are owned by Bothell Select
                       Basketball camp or its licensors.
                     </li>
                     <li className='mb-2'>
                       <strong>Use of Likeness:</strong> By participating in the
-                      Camp, you grant Partizan camp the right to use your name,
-                      likeness, and image in promotional materials related to
-                      the Camp without compensation.
+                      Camp, you grant Bothell Select camp the right to use your
+                      name, likeness, and image in promotional materials related
+                      to the Camp without compensation.
                     </li>
                   </ul>
                 </div>
@@ -146,7 +146,7 @@ const Terms = () => {
                   <p className='mb-0'>
                     If you have any questions or concerns about these Terms and
                     Conditions,please send us an{' '}
-                    <a href='mailto:partizanhoops@proton.me'>email</a>.
+                    <a href='mailto:bothellselect@proton.me'>email</a>.
                   </p>
                 </div>
               </div>

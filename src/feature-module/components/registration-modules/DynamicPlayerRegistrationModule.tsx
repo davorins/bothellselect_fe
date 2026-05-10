@@ -764,13 +764,13 @@ const DynamicPlayerRegistrationModule: React.FC<
                   return (
                     <div
                       key={player._id}
-                      className={`d-flex justify-content-between align-items-center p-3 border rounded mb-2 ${
+                      className={`d-flex justify-content-between align-items-center p-3 border rounded mb-2 mobile ${
                         isSelected ? 'border-primary bg-light' : ''
                       }`}
                       style={{ cursor: 'pointer' }}
                       onClick={() => handlePlayerSelection(player._id!)}
                     >
-                      <div className='d-flex align-items-center'>
+                      <div className='d-flex align-items-center mobile'>
                         <input
                           type='checkbox'
                           className='form-check-input me-3'
@@ -964,7 +964,7 @@ const DynamicPlayerRegistrationModule: React.FC<
       <div className='card mt-4'>
         <div className='card-body'>
           <div className='d-flex justify-content-between align-items-center'>
-            <div>
+            <div className='make-a-payment-mobile'>
               <h5 className='mb-1'>
                 {requiresPayment
                   ? 'Ready to Make Payment'
@@ -1078,7 +1078,7 @@ const DynamicPlayerRegistrationModule: React.FC<
         <div className='card mt-4'>
           <div className='card-body'>
             <div className='d-flex justify-content-between align-items-center'>
-              <div>
+              <div className='make-a-payment-mobile'>
                 <h5 className='mb-1'>
                   {requiresPayment
                     ? 'Ready to Make Payment'

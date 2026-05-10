@@ -41,7 +41,6 @@ const PageRenderer: React.FC<PageRendererProps> = ({
 
   const { isAuthenticated, checkAuth } = useAuth();
   const navigate = useNavigate();
-  const [activeFormIds, setActiveFormIds] = useState<Set<string>>(new Set());
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -55,40 +54,6 @@ const PageRenderer: React.FC<PageRendererProps> = ({
     // Fetch form configs for any page that might have registration sections
     fetchAllFormConfigs();
   }, []);
-
-  useEffect(() => {
-    const fetchActiveForms = async () => {
-      try {
-        // Fetch all published forms to know which are active
-        const response = await fetch(`${API_BASE_URL}/forms/published`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data && Array.isArray(data.data)) {
-            const activeIds = new Set<string>(
-              data.data
-                .filter((form: any) => form.status === 'published')
-                .map((form: any) => {
-                  // Ensure _id is a string
-                  const id = form._id?.toString();
-                  if (!id) {
-                    console.warn('Form missing _id:', form);
-                    return null;
-                  }
-                  return id;
-                })
-                .filter((id: string | null): id is string => id !== null), // Type guard to filter out nulls
-            );
-            setActiveFormIds(activeIds);
-            console.log('✅ Active form IDs loaded:', Array.from(activeIds));
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching active forms:', err);
-      }
-    };
-
-    fetchActiveForms();
-  }, [API_BASE_URL]);
 
   const fetchPage = async () => {
     try {
@@ -807,14 +772,46 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   const renderSectionContent = (section: PageSection) => {
     switch (section.type) {
       case 'welcome':
-      case 'text':
+      case 'text': {
+        const containerClass = section.styles?.className || '';
+        const titleClass = section.styles?.titleClass || '';
+        const contentClass = section.styles?.contentClass || '';
+        const contentAlignment = section.config?.contentAlignment || 'center';
+        const showTitle = section.config?.showTitle !== false;
+
         return (
           <div
-            dangerouslySetInnerHTML={{
-              __html: section.content || '',
-            }}
-          />
+            className={containerClass}
+            style={{ textAlign: contentAlignment as any }}
+          >
+            {showTitle && section.title && section.title.trim() !== '' && (
+              <h2
+                className={titleClass}
+                style={{
+                  fontSize: section.styles?.titleSize || '2.5rem',
+                  fontWeight: section.styles?.titleWeight || '700',
+                  color:
+                    section.styles?.titleColor ||
+                    section.styles?.textColor ||
+                    '#333333',
+                  marginBottom: '1rem',
+                }}
+              >
+                {section.title}
+              </h2>
+            )}
+
+            {section.subtitle && (
+              <p style={{ marginBottom: '1.5rem' }}>{section.subtitle}</p>
+            )}
+
+            <div
+              className={contentClass}
+              dangerouslySetInnerHTML={{ __html: section.content || '' }}
+            />
+          </div>
         );
+      }
 
       case 'cta':
         return renderCTASection(section);
@@ -1005,10 +1002,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           );
         }
 
-        const formId = section.config.formId;
-        // Check if this form ID is active (exists in our set of published forms)
-        const isFormActive = activeFormIds.has(formId);
-
+        // Render a wrapper that will conditionally show/hide based on form status
         return (
           <div className={`form-section ${section.styles?.className || ''}`}>
             {/* Show section title if configured */}
@@ -1029,16 +1023,11 @@ const PageRenderer: React.FC<PageRendererProps> = ({
                 <h3 className='form-title mb-3'>{section.config.formTitle}</h3>
               )}
 
-            {/* ONLY render FormEmbed if the form is ACTIVE */}
-            {isFormActive ? (
-              <FormEmbed
-                formId={formId}
-                isActive={true}
-                wrapperClassName='card p-5'
-              />
-            ) : // Show nothing when form is inactive - don't fetch
-            // Or optionally show a message
-            null}
+            {/* FormEmbedWrapper handles the conditional rendering */}
+            <FormEmbed
+              formId={section.config.formId}
+              wrapperClassName='card p-5'
+            />
           </div>
         );
 

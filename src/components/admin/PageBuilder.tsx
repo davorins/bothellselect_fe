@@ -41,7 +41,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage, pageSlug }) => {
   const [page, setPage] = useState<PageLayout | null>(initialPage || null);
   const [sections, setSections] = useState<PageSection[]>([]);
   const [selectedSection, setSelectedSection] = useState<PageSection | null>(
-    null
+    null,
   );
   const [isEditing, setIsEditing] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
@@ -124,7 +124,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage, pageSlug }) => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL}/page-builder/admin/pages/${pageSlug}`
+        `${process.env.REACT_APP_API_BASE_URL}/page-builder/admin/pages/${pageSlug}`,
       );
       const data = await response.json();
       if (data.success) {
@@ -155,7 +155,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage, pageSlug }) => {
 
       setSections(updatedItems);
     },
-    [sections]
+    [sections],
   );
 
   // Add new section
@@ -180,7 +180,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage, pageSlug }) => {
   // Update section
   const updateSection = (updatedSection: PageSection) => {
     const updatedSections = sections.map((section) =>
-      section.id === updatedSection.id ? updatedSection : section
+      section.id === updatedSection.id ? updatedSection : section,
     );
     setSections(updatedSections);
     setSelectedSection(updatedSection);
@@ -189,7 +189,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage, pageSlug }) => {
   // Delete section
   const deleteSection = (sectionId: string) => {
     const updatedSections = sections.filter(
-      (section) => section.id !== sectionId
+      (section) => section.id !== sectionId,
     );
     setSections(updatedSections);
     if (selectedSection?.id === sectionId) {
@@ -228,7 +228,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage, pageSlug }) => {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updatedPage),
-        }
+        },
       );
 
       if (response.ok) {
@@ -249,7 +249,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage, pageSlug }) => {
         `${process.env.REACT_APP_API_BASE_URL}/page-builder/admin/pages/${page?._id}/publish`,
         {
           method: 'POST',
-        }
+        },
       );
 
       if (response.ok) {
@@ -368,7 +368,9 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage, pageSlug }) => {
                         value={page?.pageTitle || ''}
                         onChange={(e) =>
                           setPage((prev) =>
-                            prev ? { ...prev, pageTitle: e.target.value } : null
+                            prev
+                              ? { ...prev, pageTitle: e.target.value }
+                              : null,
                           )
                         }
                       />
@@ -383,7 +385,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage, pageSlug }) => {
                           setPage((prev) =>
                             prev
                               ? { ...prev, metaDescription: e.target.value }
-                              : null
+                              : null,
                           )
                         }
                       />
@@ -434,7 +436,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage, pageSlug }) => {
                                       <div className='me-3'>
                                         {
                                           sectionTypes.find(
-                                            (t) => t.id === section.type
+                                            (t) => t.id === section.type,
                                           )?.icon
                                         }
                                       </div>

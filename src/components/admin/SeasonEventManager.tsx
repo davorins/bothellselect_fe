@@ -46,12 +46,12 @@ const SeasonEventManager: React.FC<SeasonEventManagerProps> = ({
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
-        }
+        },
       );
 
       if (response.ok) {
         onSeasonUpdate(
-          seasonEvents.filter((s) => s.eventId !== season.eventId)
+          seasonEvents.filter((s) => s.eventId !== season.eventId),
         );
       }
     } catch (error) {
@@ -94,7 +94,7 @@ const SeasonEventManager: React.FC<SeasonEventManagerProps> = ({
                           season: e.target.value,
                         }))
                       }
-                      placeholder='e.g., Partizan Team, Winter Classic'
+                      placeholder='e.g., Bothell Select Team, Winter Classic'
                       required
                     />
                   </div>
@@ -131,7 +131,7 @@ const SeasonEventManager: React.FC<SeasonEventManagerProps> = ({
                           eventId: e.target.value,
                         }))
                       }
-                      placeholder='e.g., partizan-2026'
+                      placeholder='e.g., bothellselect-2026'
                       required
                     />
                     <small className='text-muted'>

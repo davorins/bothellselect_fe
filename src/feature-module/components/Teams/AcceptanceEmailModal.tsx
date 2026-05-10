@@ -90,11 +90,11 @@ const AcceptanceEmailModal: React.FC<AcceptanceEmailModalProps> = ({
 <body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
   <div style="max-width:600px;margin:30px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
     <div style="background:#f3f4f6;padding:30px 20px;text-align:center;">
-      <img src="https://partizanhoops.com/assets/img/logo.png" alt="Partizan Basketball"
+      <img src="https://bothellselect.com/assets/img/logo.png" alt="Bothell Select Basketball"
            style="max-width:160px;height:auto;margin-bottom:16px;" />
       <h1 style="margin:0;color:#000;font-size:24px;">Congratulations!</h1>
             <p style="margin:8px 0 0;color:rgba(0,0,0,0.85);font-size:15px;">
-              Your child has been accepted to join the Partizan Family!
+              Your child has been accepted to join the Bothell Select Family!
             </p>
     </div>
     <div style="padding:30px 24px;">
@@ -125,17 +125,17 @@ const AcceptanceEmailModal: React.FC<AcceptanceEmailModalProps> = ({
       }
       <p style="font-size:14px;color:#555;margin-top:24px;">
         If you have any questions please reach out at
-        <a href="mailto:partizanhoops@proton.me" style="color:#594230;">partizanhoops@proton.me</a>.
+        <a href="mailto:bothellselect@proton.me" style="color:#594230;">bothellselect@proton.me</a>.
       </p>
       <p style="font-size:15px;font-weight:bold;color:#333;">We look forward to a great season ahead!</p>
       <p style="font-size:14px;color:#555;margin-bottom:0;">
         Best regards,<br/>
         <strong>${teamDisplayName} Coaching Staff</strong><br/>
-        Partizan Basketball
+        Bothell Select Basketball
       </p>
     </div>
     <div style="background:#f3f4f6;padding:16px 24px;text-align:center;font-size:12px;color:#6b7280;">
-      <p style="margin:0;">Partizan Basketball &nbsp;|&nbsp; partizanhoops@proton.me</p>
+      <p style="margin:0;">Bothell Select Basketball &nbsp;|&nbsp; bothellselect@proton.me</p>
     </div>
   </div>
 </body>

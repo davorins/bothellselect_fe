@@ -79,13 +79,13 @@ const getAvatarUrl = (
 ): string => {
   if (!avatar) {
     return gender === 'Female'
-      ? 'https://partizan-be.onrender.com/uploads/avatars/girl.png'
-      : 'https://partizan-be.onrender.com/uploads/avatars/boy.png';
+      ? 'https://bothell-select.onrender.com/uploads/avatars/girl.png'
+      : 'https://bothell-select.onrender.com/uploads/avatars/boy.png';
   }
   if (avatar.includes('res.cloudinary.com'))
     return `${avatar}${avatar.includes('?') ? '&' : '?'}${Date.now()}`;
   if (avatar.startsWith('/uploads/'))
-    return `https://partizan-be.onrender.com${avatar}`;
+    return `https://bothell-select.onrender.com${avatar}`;
   return avatar;
 };
 

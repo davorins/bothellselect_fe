@@ -321,8 +321,8 @@ const PlayerFormFields: React.FC<PlayerFormFieldsProps> = ({
       {/* ── Medical History ── */}
       <div className='row mt-3'>
         <div className='col-12'>
-          <div className='card bg-light'>
-            <div className='card-header bg-transparent py-2'>
+          <div className='card mobile'>
+            <div className='card-header bg-transparent py-2 mobile'>
               <div className='d-flex align-items-center'>
                 <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
                   <i className='ti ti-heartbeat fs-16' />
@@ -330,7 +330,7 @@ const PlayerFormFields: React.FC<PlayerFormFieldsProps> = ({
                 <h6 className='mb-0'>Medical History</h6>
               </div>
             </div>
-            <div className='card-body pb-2'>
+            <div className='card-body pb-2 mobile'>
               <div className='mb-3'>
                 <label className='form-label'>Health Conditions</label>
                 <Select

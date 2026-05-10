@@ -69,10 +69,10 @@ const SplashScreen: React.FC = () => {
         </svg>
       </motion.div>
 
-      {/* Partizan Text */}
+      {/* Bothell Select Text */}
       <div className='absolute bottom-12 text-center'>
         <h1 className='text-xl tracking-wider' style={{ color: '#594230' }}>
-          Partizan
+          Bothell Select
         </h1>
         <div className='mt-2 text-sm text-gray-600'>Loading...</div>
       </div>

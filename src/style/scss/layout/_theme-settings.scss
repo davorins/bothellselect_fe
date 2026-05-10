@@ -28,6 +28,7 @@
       -webkit-animation: fa-spin 2s infinite linear;
       animation: fa-spin 2s infinite linear;
     }
+    display: none;
   }
 }
 
@@ -91,21 +92,21 @@
     border: 1px solid $light-900;
     margin-bottom: 15px;
 
-    input[type="radio"] {
+    input[type='radio'] {
       display: none;
 
       &:checked {
-        ~label {
+        ~ label {
           .checkboxs-theme {
             &:after {
               background-color: $purple;
               border-color: $purple;
-              content: "";
+              content: '';
             }
 
             &::before {
-              content: "\f00c";
-              font-family: "Font Awesome 5 Free";
+              content: '\f00c';
+              font-family: 'Font Awesome 5 Free';
               color: #fff;
               font-weight: 700;
               font-size: 10px;
@@ -130,7 +131,7 @@
 
       &:after {
         position: absolute;
-        content: "";
+        content: '';
         border: 1px solid #e8e8e8;
         width: 16px;
         height: 16px;
@@ -171,7 +172,7 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      content: "";
+      content: '';
       transform: translate(-50%, -50%);
       border-radius: 50%;
     }
@@ -289,11 +290,11 @@
   width: 400px !important;
 }
 .theme-colorselect label.bg-darkblack {
-  background: #39435F;
+  background: #39435f;
 }
 .theme-colorselect label.bg-darkblue {
-  background: #07396D;
+  background: #07396d;
 }
 .theme-colorselect label.grey-topbar {
-  background: #E6E8EB;
+  background: #e6e8eb;
 }

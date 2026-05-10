@@ -62,7 +62,7 @@ const EmailVerification = () => {
       if (success) {
         setStatus('success');
         setMessage(
-          'Email verified successfully! You can now continue with registration.'
+          'Email verified successfully! You can now continue with registration.',
         );
 
         // Automatically redirect to registration after 2 seconds
@@ -77,7 +77,7 @@ const EmailVerification = () => {
       } else {
         setStatus('error');
         setMessage(
-          'Invalid or expired verification token. Please request a new verification email.'
+          'Invalid or expired verification token. Please request a new verification email.',
         );
       }
     } catch (error: any) {
@@ -99,12 +99,12 @@ const EmailVerification = () => {
       await resendVerificationEmail();
       setResendSuccess(true);
       setMessage(
-        'Verification email sent successfully! Please check your inbox.'
+        'Verification email sent successfully! Please check your inbox.',
       );
     } catch (error: any) {
       setMessage(
         error.message ||
-          'Failed to resend verification email. Please try again.'
+          'Failed to resend verification email. Please try again.',
       );
     } finally {
       setIsResending(false);
@@ -264,7 +264,7 @@ const EmailVerification = () => {
                       </div>
                       <div className='mt-5 text-center'>
                         <p className='mb-0'>
-                          © {new Date().getFullYear()} Partizan by{' '}
+                          © {new Date().getFullYear()} Bothell Select by{' '}
                           <a href='https://rainbootsmarketing.com/'>
                             Rainboots
                           </a>
@@ -561,7 +561,7 @@ const EmailVerification = () => {
                     </div>
                     <div className='mt-5 text-center'>
                       <p className='mb-0'>
-                        © {new Date().getFullYear()} Partizan by{' '}
+                        © {new Date().getFullYear()} Bothell Select by{' '}
                         <a href='https://rainbootsmarketing.com/'>Rainboots</a>
                       </p>
                     </div>

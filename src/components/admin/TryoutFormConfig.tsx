@@ -9,7 +9,7 @@ import RichTextEditor from '../common/RichTextEditor';
 interface TryoutFormConfigProps {
   onTryoutConfigUpdate: (
     config: TryoutSpecificConfig,
-    originalName?: string
+    originalName?: string,
   ) => void;
   initialConfig?: TryoutSpecificConfig;
   isEditing?: boolean;
@@ -61,7 +61,7 @@ const TryoutFormConfig: React.FC<TryoutFormConfigProps> = ({
         season: '',
         description: '',
       };
-    }
+    },
   );
 
   const [newDate, setNewDate] = useState('');
@@ -92,7 +92,7 @@ const TryoutFormConfig: React.FC<TryoutFormConfigProps> = ({
       setTryoutConfig(configWithDescription);
       setOriginalTryoutName(initialConfig.tryoutName || '');
       initialConfigRef.current = JSON.parse(
-        JSON.stringify(configWithDescription)
+        JSON.stringify(configWithDescription),
       );
     }
   }, [initialConfig]);
@@ -605,7 +605,7 @@ const TryoutFormConfig: React.FC<TryoutFormConfigProps> = ({
                       displayName: e.target.value,
                     }))
                   }
-                  placeholder='e.g., Partizan Spring Tryouts'
+                  placeholder='e.g., Bothell Select Spring Tryouts'
                   disabled={!tryoutConfig.eventId && !isEditing}
                 />
                 <small className='form-text text-muted'>

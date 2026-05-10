@@ -1,0 +1,1926 @@
+/* ── Google Fonts import ──────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+/* Single Form Mode */
+.reg-hub-single,
+.reg-hub-embedded {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.reg-hub-single .reg-form-card,
+.reg-hub-embedded .reg-form-card {
+  width: 840px;
+}
+
+/* Multiple Forms Grid Mode */
+.reg-hub-grid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: auto;
+  height: 600px;
+}
+
+.reg-tiles-grid {
+  display: grid;
+  grid-template-columns: 360px 360px;
+  gap: 24px;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Individual Tile - 360x581px */
+.reg-tile {
+  width: 360px;
+  min-width: 360px;
+  max-width: 360px;
+  height: 581px;
+  min-height: 581px;
+  max-height: 581px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 44px;
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  padding: 32px 24px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    transparent 55%
+  );
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.reg-tile[style*='background-image'] {
+  background-blend-mode: overlay;
+}
+
+.reg-tile-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.3) 0%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+  z-index: 0;
+}
+
+.reg-tile-icon,
+.reg-tile-content,
+.reg-tile-arrow {
+  position: relative;
+  z-index: 1;
+}
+
+.reg-tile:hover {
+  transform: translateY(-4px) scale(1.02);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.reg-tile-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 28px;
+  transition: all 0.2s ease;
+}
+
+.reg-tile:hover .reg-tile-icon {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.reg-tile-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reg-tile-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.3;
+}
+
+.reg-tile-subtitle {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+.reg-tile-arrow {
+  margin-top: 24px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 1.3rem;
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease;
+}
+
+.reg-tile:hover .reg-tile-arrow {
+  transform: translateX(6px);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Form Card */
+.reg-form-card {
+  border-radius: 25px;
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 70vh;
+  max-height: 70vh;
+}
+
+.reg-card-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* MAIN CONTAINER - SCROLLABLE */
+.reg-form-content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  background: linear-gradient(
+    180deg,
+    rgba(30, 50, 120, 0.85) 0%,
+    rgba(30, 50, 120, 0.6) 10%,
+    rgba(30, 50, 120, 0.3) 50%,
+    rgba(30, 50, 120, 0) 70%
+  );
+  backdrop-filter: blur(2px);
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.reg-form-content .form-control {
+  width: 100%;
+}
+
+/* Animation Containers */
+.reg-description-container,
+.reg-form-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  animation-duration: 0.4s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: both;
+}
+
+.reg-description-container {
+  animation-name: slideInUp;
+}
+
+.reg-form-container {
+  animation-name: fadeInScale;
+}
+
+/* Description Section - Scrollable */
+.reg-description {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.reg-description::-webkit-scrollbar {
+  width: 4px;
+}
+
+.reg-description::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.reg-description::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.reg-description-content {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.reg-description-content ul,
+.reg-description-content ol {
+  margin-bottom: 0.5rem;
+  padding-left: 1.2rem;
+}
+
+.reg-description-content li {
+  margin-bottom: 0.25rem;
+}
+
+.reg-description-content strong {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.reg-description-content a {
+  color: #8098ff;
+  text-decoration: none;
+}
+
+/* Form Wrapper */
+.reg-form-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  width: 100%;
+  position: relative;
+}
+
+/* Target ANY direct child that contains the form - make it scrollable */
+.reg-form-wrapper > * {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* Also target form elements at any depth within the wrapper */
+.reg-form-wrapper form,
+.reg-form-wrapper .training-registration-form,
+.reg-form-wrapper .tournament-registration-form,
+.reg-form-wrapper .tryout-registration-form,
+.reg-form-wrapper .player-registration-form {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* Scrollbar styling for all scrollable elements */
+.reg-form-wrapper > *::-webkit-scrollbar,
+.reg-form-wrapper form::-webkit-scrollbar {
+  width: 4px;
+}
+
+.reg-form-wrapper > *::-webkit-scrollbar-track,
+.reg-form-wrapper form::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.reg-form-wrapper > *::-webkit-scrollbar-thumb,
+.reg-form-wrapper form::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+/* Back Button - Desktop */
+.reg-back-btn {
+  position: absolute;
+  top: 40px;
+  left: 280px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.reg-back-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(-4px);
+  color: white;
+}
+
+/* Empty State */
+.reg-empty-state {
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.reg-empty-state i {
+  font-size: 3rem;
+  color: rgba(255, 255, 255, 0.3);
+  margin-bottom: 16px;
+  display: block;
+}
+
+.reg-empty-state h3 {
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8px;
+  font-size: 1.2rem;
+}
+
+.reg-empty-state p {
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Form Overrides for Glass Theme */
+.reg-form-wrapper .form-label,
+.reg-form-content .form-label {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.reg-form-wrapper .form-label {
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.reg-form-wrapper .btn-primary {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  color: white;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.reg-form-wrapper .btn-primary:hover {
+  background: rgba(80, 100, 220, 1);
+  transform: translateY(-2px);
+}
+
+.reg-form-wrapper .form-check-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.8rem;
+}
+
+.reg-form-wrapper .form-content .form-check-input {
+  background-color: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.reg-form-wrapper .form-content .form-check-input:checked {
+  background-color: rgba(80, 100, 220, 1);
+  border-color: rgba(80, 100, 220, 1);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+}
+
+.reg-form-wrapper .form-content,
+.reg-form-wrapper .card {
+  max-width: 640px;
+  margin: 0 auto;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.tryout-registration-form .step-indicator {
+  margin-top: 4rem;
+}
+
+/* Multi-form mode container */
+.reg-hub-multi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 70%;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Toggle Button Styles */
+.reg-toggle-btn {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+  padding: 12px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  width: 100%;
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+  flex-shrink: 0;
+  margin-top: 3rem;
+}
+
+.reg-toggle-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.2);
+  transform: translate(-50%, -50%);
+  transition:
+    width 0.6s ease,
+    height 0.6s ease;
+}
+
+.reg-toggle-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.reg-toggle-btn:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.95) 0%,
+    rgba(0, 0, 0, 0.95) 100%
+  );
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.reg-toggle-back-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  margin-bottom: 16px;
+  margin-top: 0;
+  flex-shrink: 0;
+  width: 85%;
+  margin: auto;
+  margin-bottom: 3rem;
+}
+
+.reg-toggle-back-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Animations */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideOutDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+@keyframes fadeOutScale {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+.reg-description-container.exit {
+  animation-name: slideOutDown;
+}
+
+.reg-form-container.exit {
+  animation-name: fadeOutScale;
+}
+
+/* Pulse animation */
+@keyframes subtlePulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(80, 100, 220, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(80, 100, 220, 0);
+  }
+}
+
+.reg-toggle-btn:not(.reg-toggle-back-btn) {
+  animation: subtlePulse 2s infinite;
+}
+
+.reg-toggle-btn:not(.reg-toggle-back-btn):hover {
+  animation: none;
+}
+
+/* Floating arrow */
+@keyframes floatArrow {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+.reg-toggle-btn .ti-arrow-right {
+  animation: floatArrow 1.5s ease-in-out infinite;
+}
+
+.reg-toggle-btn:hover .ti-arrow-right {
+  animation: none;
+}
+
+/* Form spacing */
+.reg-form-wrapper .form-group,
+.reg-form-wrapper .mb-3,
+.reg-form-wrapper .mb-4,
+.reg-form-wrapper .card {
+  margin-bottom: 1rem;
+}
+
+.reg-form-wrapper .card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.reg-form-wrapper .card-header {
+  background: rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.reg-form-card .form-header h2 {
+  color: rgba(255, 255, 255, 1);
+  font-size: 2.5rem;
+  text-transform: uppercase;
+}
+
+.reg-form-card .form-header p {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 1.25rem;
+  margin-bottom: 4rem;
+  font-weight: 500;
+}
+
+.reg-form-card .step-indicator {
+  margin-bottom: 4rem;
+}
+
+.reg-form-card .step-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
+  font-size: 20px;
+  margin: 0 auto 12px;
+  border: 2px solid;
+  transition: all 0.3s ease;
+  position: relative;
+  background-color: rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+.reg-form-card .step.completed .step-icon-wrapper {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 3px solid;
+  border-color: rgba(255, 255, 255, 1);
+  color: rgba(0, 0, 0, 1);
+}
+
+.reg-form-card .step.active .step-icon-wrapper {
+  background-color: rgba(0, 0, 0, 0.5);
+  border: 2px solid;
+  border-color: rgba(255, 255, 255, 1);
+  color: rgba(255, 255, 255, 1);
+  transform: scale(1.05);
+}
+
+.reg-form-card .step-icon-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.reg-form-card .step-icon-wrapper i {
+  font-size: 26px;
+}
+
+.reg-form-card .step-indicator .step-label {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.reg-form-card .step-indicator .step.active .step-label {
+  color: rgba(255, 255, 255, 1);
+}
+
+.reg-form-card .step-indicator .step.completed .step-label {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.reg-form-card .step-indicator .step-connector {
+  flex: 1 1;
+  height: 3px;
+  background-color: rgba(255, 255, 255, 0.2);
+  margin: 0 0.5rem;
+  margin-top: 18px;
+  min-width: 20px;
+}
+
+.step.completed + .step-connector::before {
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.reg-form-wrapper .form-content .btn.btn-primary:hover,
+.reg-form-wrapper .form-content .btn.btn-primary:focus {
+  background: rgba(0, 0, 0, 1);
+}
+
+.reg-form-wrapper .form-content .btn.btn-secondary {
+  width: 40%;
+  background-color: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(0, 0, 0, 0.75);
+}
+
+.reg-form-wrapper .form-content .btn-outline-secondary {
+  border: 1px solid rgba(0, 0, 0, 0.75) !important;
+  color: rgba(0, 0, 0, 0.75) !important;
+}
+
+.reg-form-wrapper .form-content .btn-outline-secondary:hover {
+  background-color: rgba(0, 0, 0, 1) !important;
+  color: rgba(255, 255, 255, 1) !important;
+}
+
+/* ============================================
+   FORM EMBED GLASSMORPHISM STYLES
+   ============================================ */
+
+/* Main wrapper with glass effect */
+.reg-form-card .form-embed-wrapper {
+  background: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 20px !important;
+  padding: 24px !important;
+  margin: 0 auto !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  width: 100%;
+  max-width: 640px;
+}
+
+/* Glass reflection effect */
+.reg-form-card .form-embed-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.03),
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.03),
+    transparent
+  );
+  transition: left 0.6s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.reg-form-card .form-embed-wrapper:hover::before {
+  left: 100%;
+}
+
+.reg-form-card .form-embed-wrapper:hover {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Form container */
+.reg-form-card .form-container {
+  position: relative;
+  z-index: 2;
+}
+
+/* Headings */
+.reg-form-card .form-container h3 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: -0.01em;
+}
+
+.reg-form-card .form-container .text-muted {
+  color: rgba(255, 255, 255, 0.55) !important;
+  font-size: 0.85rem;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+/* Tournament info box */
+.reg-form-card .form-container .tournament-info {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px !important;
+  padding: 20px !important;
+  margin-bottom: 24px !important;
+  backdrop-filter: blur(4px);
+}
+
+.reg-form-card .form-container .tournament-info h4 {
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reg-form-card .form-container .tournament-info h4 svg {
+  stroke: rgba(80, 100, 220, 0.8);
+}
+
+/* Info rows */
+.reg-form-card .form-container .tournament-info .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.reg-form-card .form-container .tournament-info .col-md-7,
+.reg-form-card .form-container .tournament-info .col-md-5 {
+  flex: 1;
+  min-width: 200px;
+}
+
+.reg-form-card .form-container .tournament-info strong {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reg-form-card .form-container .tournament-info strong svg {
+  stroke: rgba(80, 100, 220, 0.7);
+  width: 14px;
+  height: 14px;
+}
+
+.reg-form-card .form-container .tournament-info .mb-2 {
+  margin-bottom: 12px;
+}
+
+.reg-form-card .form-container .tournament-info .mb-2 > div,
+.reg-form-card .form-container .tournament-info .mb-2 > div > div {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+/* Form section */
+.reg-form-card .form-container > div:last-child {
+  margin-top: 8px;
+}
+
+.reg-form-card .form-container h5 {
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 16px;
+}
+
+/* Form labels */
+.reg-form-card .form-container .form-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.reg-form-card .form-container .form-label .text-danger {
+  color: #e82646 !important;
+}
+
+/* Form inputs with glass effect */
+.reg-form-card .form-container .form-control {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  padding: 10px 14px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 0.85rem !important;
+  transition: all 0.2s ease !important;
+  width: 100%;
+}
+
+.reg-form-card .form-container .form-control:focus {
+  outline: none !important;
+  border-color: rgba(80, 100, 220, 0.5) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 0 0 3px rgba(80, 100, 220, 0.1) !important;
+}
+
+.reg-form-card .form-container .form-control::placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Form groups spacing */
+.reg-form-card .form-container .mb-3 {
+  margin-bottom: 16px !important;
+}
+
+/* Button styling - matches agd-cta */
+.reg-form-card .form-container .btn-primary {
+  background: linear-gradient(
+    135deg,
+    rgba(80, 100, 220, 0.9) 0%,
+    rgba(80, 100, 220, 0.9) 100%
+  ) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 12px 20px !important;
+  color: #fff !important;
+  font-size: 0.85rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  cursor: pointer !important;
+  transition: all 0.22s ease !important;
+  width: auto;
+  min-width: 200px;
+}
+
+.reg-form-card .form-container .btn-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 4px 12px rgba(80, 100, 220, 0.3);
+}
+
+.reg-form-card .form-container .btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Glassmorphism enhancements for existing elements */
+.reg-form-card .form-container .border {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.reg-form-card .form-container .bg-light {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.reg-form-card .form-container .rounded {
+  border-radius: 12px !important;
+}
+
+/* Icon styling within form */
+.reg-form-card .form-container svg {
+  vertical-align: middle;
+}
+
+/* Tournament info icons */
+.reg-form-card .form-container .tournament-info svg {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Embedded form mode specific */
+.reg-hub-embedded .reg-form-card {
+  width: 100% !important;
+  max-width: 840px;
+  margin: 0 auto;
+}
+
+.reg-hub-embedded .reg-form-card .form-embed-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 70%;
+  margin: auto !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  max-height: 65vh !important;
+  padding: 3rem 2rem !important;
+}
+
+.reg-hub-embedded .reg-form-card .form-embed-wrapper .card {
+  background-color: unset;
+}
+
+/* Ensure proper scrolling for embedded forms */
+.reg-hub-embedded .reg-form-content {
+  overflow-y: auto;
+  max-height: 80vh;
+}
+
+/* Fix for single form mode with embedded content */
+.reg-hub-single .reg-form-card .form-embed-wrapper {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.reg-hub-embedded .reg-form-card .form-container .payment-step .card,
+.reg-form-card .form-container .tournament-info {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(4px);
+  color: rgba(0, 0, 0, 1) !important;
+}
+
+.reg-hub-embedded .reg-form-card .form-container .card .btn-outline-secondary {
+  background-color: transparent !important;
+  border: 1px solid #ffffff !important;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+  color: #000000 !important;
+}
+
+.reg-hub-embedded
+  .reg-form-card
+  .form-container
+  .card
+  .btn-outline-secondary.active {
+  background-color: #000000 !important;
+  border: 1px solid #000000 !important;
+  color: #ffffff !important;
+}
+
+.reg-hub-embedded
+  .reg-form-card
+  .form-container
+  .card
+  .mt-2.text-primary.fw-bold {
+  color: #000000 !important;
+  margin-top: 25px !important;
+}
+
+.reg-hub-embedded .reg-form-card .form-container .payment-summary-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 3px 10px rgba(255, 255, 255, 0.5);
+  border-radius: 16px;
+  color: #000000;
+  margin-bottom: 2rem;
+  font-size: 1.15rem;
+  padding: 20px;
+}
+
+.reg-form-card .form-container .card h3,
+.reg-form-card .form-container .card .card-title,
+.reg-form-card .form-container .card .text-muted,
+.reg-form-card .form-container .card .form-label,
+.reg-form-card .form-container .tournament-info h4,
+.reg-form-card .form-container .tournament-info strong,
+.reg-form-card .form-container .tournament-info .mb-2 > div {
+  color: #000000 !important;
+}
+
+.reg-form-card .form-container .card .form-check-input {
+  border-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+.reg-form-card .form-container .card .form-check-input:active {
+  background-color: rgba(0, 0, 0, 1) !important;
+}
+
+/* ============================================
+   EMAIL VERIFICATION FORM FIXES
+   ============================================ */
+
+/* Verification container - centers the form */
+.reg-form-wrapper .verification-container,
+.reg-form-wrapper .email-verification-step {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 0;
+  width: 100%;
+}
+
+/* Fix for input group with pointing hand */
+.reg-form-wrapper .input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.reg-form-wrapper .input-group input.form-control {
+  flex: 1;
+  min-width: 200px;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px 12px 48px !important;
+  color: #1a1a1a !important;
+  font-size: 0.95rem !important;
+}
+
+.reg-form-wrapper .input-group input.form-control:focus {
+  border-color: rgba(80, 100, 220, 1) !important;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(80, 100, 220, 0.2);
+}
+
+/* Position the flashing hand correctly */
+.reg-form-wrapper .input-group .position-absolute {
+  position: absolute !important;
+  left: 12px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.reg-form-wrapper .input-group .flashing-hand {
+  font-size: 1.3rem;
+  animation: handWave 1s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes handWave {
+  0%,
+  100% {
+    transform: rotate(0deg) translateX(0);
+  }
+  25% {
+    transform: rotate(-15deg) translateX(-2px);
+  }
+  75% {
+    transform: rotate(10deg) translateX(2px);
+  }
+}
+
+/* Fix Verify Token button */
+.reg-form-wrapper .input-group .btn-primary {
+  background: linear-gradient(
+    135deg,
+    rgba(80, 100, 220, 0.9) 0%,
+    rgba(80, 100, 220, 0.9) 100%
+  ) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 12px 24px !important;
+  color: white !important;
+  font-weight: 600 !important;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+/* Enable the button when not disabled */
+.reg-form-wrapper .input-group .btn-primary:not(:disabled) {
+  opacity: 1;
+  cursor: pointer;
+  transform: scale(1);
+}
+
+.reg-form-wrapper .input-group .btn-primary:not(:disabled):hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow: 0 2px 8px rgba(80, 100, 220, 0.3);
+}
+
+/* Disabled button style */
+.reg-form-wrapper .input-group .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: rgba(100, 100, 100, 0.7) !important;
+  transform: none;
+}
+
+/* Resend link styling */
+.reg-form-wrapper .text-muted a,
+.reg-form-wrapper a[href='#'] {
+  color: rgba(80, 100, 220, 1) !important;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.reg-form-wrapper .text-muted a:hover {
+  text-decoration: underline;
+}
+
+/* Success/error message styling */
+.reg-form-wrapper .alert-success {
+  background: rgba(40, 167, 69, 0.15) !important;
+  border: 1px solid rgba(40, 167, 69, 0.4) !important;
+  border-radius: 12px !important;
+  color: #d4ffd4 !important;
+  padding: 12px 16px !important;
+  margin-bottom: 20px !important;
+}
+
+.reg-form-wrapper .alert-warning {
+  background: rgba(255, 193, 7, 0.15) !important;
+  border: 1px solid rgba(255, 193, 7, 0.4) !important;
+  color: #ffe4a3 !important;
+}
+
+.reg-form-wrapper .alert-danger {
+  background: rgba(220, 53, 69, 0.15) !important;
+  border: 1px solid rgba(220, 53, 69, 0.4) !important;
+  color: #ffc4c4 !important;
+}
+
+/* Email display styling */
+.reg-form-wrapper strong {
+  color: rgba(80, 100, 220, 1) !important;
+  font-weight: 600;
+}
+
+/* Mobile responsive fixes for verification form */
+@media (max-width: 768px) {
+  .reg-form-wrapper .input-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .reg-form-wrapper .input-group input.form-control {
+    padding-left: 48px !important;
+  }
+
+  .reg-form-wrapper .input-group .btn-primary {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px;
+  }
+
+  .reg-form-wrapper .input-group .position-absolute {
+    left: 16px !important;
+  }
+
+  .reg-form-wrapper .verification-container,
+  .reg-form-wrapper .email-verification-step {
+    padding: 16px;
+  }
+}
+
+/* ============================================
+   COMPLETE MOBILE OPTIMIZATION (max-width: 768px)
+   ============================================ */
+
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* OVERRIDE: Desktop back button - hide it */
+  .reg-back-btn:not(.reg-hub-multi .reg-back-btn) {
+    display: none !important;
+  }
+
+  /* MAIN CONTAINERS - Add bottom padding for htr-dock (60px) + footer (40px) */
+  .reg-hub-grid,
+  .reg-hub-multi,
+  .reg-hub-single,
+  .reg-hub-embedded {
+    margin-bottom: 0 !important;
+    padding-bottom: 100px !important;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* TILES & GRID */
+  .reg-tiles-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+    padding: 0 16px 20px 16px !important;
+  }
+
+  .reg-tile {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: auto !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    padding: 28px 20px !important;
+  }
+
+  /* FORM CARD - General */
+  .reg-form-card {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 60vh !important;
+    max-height: 70vh !important;
+    margin: 0 auto !important;
+  }
+
+  .reg-form-content {
+    padding: 16px !important;
+    -webkit-overflow-scrolling: touch !important;
+    overflow-y: auto !important;
+  }
+
+  /* FORM WRAPPER */
+  .reg-form-wrapper {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .reg-form-wrapper > *,
+  .reg-form-wrapper form {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* PREVENT ZOOM ON INPUTS (iOS) */
+  .reg-form-wrapper .form-control,
+  .reg-form-wrapper .form-select,
+  .reg-form-wrapper input,
+  .reg-form-wrapper select,
+  .reg-form-wrapper textarea {
+    font-size: 16px !important;
+  }
+
+  /* CHECKBOXES & RADIO BUTTONS */
+  .reg-form-wrapper .form-check-input {
+    width: 20px !important;
+    height: 20px !important;
+    cursor: pointer !important;
+    margin-top: 2px !important;
+  }
+
+  .reg-form-wrapper .form-check-label {
+    font-size: 0.85rem !important;
+    padding-left: 8px !important;
+    cursor: pointer !important;
+  }
+
+  /* FORM EMBED RESPONSIVE */
+  .reg-form-card .form-embed-wrapper {
+    padding: 20px !important;
+    max-width: 100%;
+  }
+
+  .reg-form-card .form-container h3 {
+    font-size: 1.1rem;
+  }
+
+  .reg-form-card .form-container .tournament-info {
+    padding: 16px !important;
+  }
+
+  .reg-form-card .form-container .btn-primary {
+    width: 100%;
+    min-width: auto;
+  }
+
+  /* MULTI-FORM CONTAINER - Fixed */
+  .reg-hub-multi {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    position: relative !important;
+    min-height: auto !important;
+  }
+
+  /* BACK BUTTON INSIDE MULTI-FORM - VISIBLE AND FLOATING */
+  .reg-hub-multi .reg-back-btn {
+    position: fixed !important;
+    top: 16px !important;
+    left: 16px !important;
+    right: auto !important;
+    width: 48px !important;
+    height: 48px !important;
+    background: rgba(0, 0, 0, 0.75) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 50% !important;
+    z-index: 10000 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    margin: 0 !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .reg-hub-multi .reg-back-btn:active {
+    transform: scale(0.92) !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    transition: transform 0.1s ease !important;
+  }
+
+  .reg-hub-multi .reg-back-btn i {
+    font-size: 1.4rem !important;
+    color: white !important;
+  }
+
+  /* FORM CARD INSIDE MULTI-FORM - WITH TOP MARGIN FOR BACK BUTTON */
+  .reg-hub-multi .reg-form-card {
+    width: calc(100% - 32px) !important;
+    max-width: 500px !important;
+    margin: 70px auto 20px auto !important;
+    height: auto !important;
+    min-height: 60vh !important;
+    max-height: 70vh !important;
+  }
+
+  /* FORM CONTENT INSIDE MULTI-FORM */
+  .reg-hub-multi .reg-form-content {
+    padding: 20px 16px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    max-height: calc(70vh - 40px) !important;
+  }
+
+  /* TOGGLE BUTTONS IN MULTI-FORM */
+  .reg-hub-multi .reg-toggle-btn,
+  .reg-hub-multi .reg-toggle-back-btn {
+    width: 100% !important;
+    margin: 16px 0 !important;
+    position: relative !important;
+  }
+
+  /* DESCRIPTION CONTAINER IN MULTI-FORM */
+  .reg-hub-multi .reg-description {
+    max-height: 50vh !important;
+    overflow-y: auto !important;
+    margin-bottom: 20px !important;
+  }
+
+  /* ANIMATIONS */
+  .reg-toggle-btn:not(.reg-toggle-back-btn) {
+    animation: mobileSubtlePulse 2s infinite !important;
+  }
+
+  @keyframes mobileSubtlePulse {
+    0%,
+    100% {
+      box-shadow: 0 4px 12px rgba(80, 100, 220, 0.3);
+    }
+    50% {
+      box-shadow: 0 4px 20px rgba(80, 100, 220, 0.5);
+    }
+  }
+
+  @keyframes mobileFloatArrow {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    50% {
+      transform: translateX(4px);
+    }
+  }
+
+  .reg-toggle-btn .ti-arrow-right {
+    animation: mobileFloatArrow 1.5s ease-in-out infinite !important;
+  }
+
+  /* STEP INDICATOR RESPONSIVE */
+  .reg-form-card .step-indicator {
+    margin-bottom: 2rem;
+  }
+
+  .reg-form-card .step-icon-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 20px;
+    margin: 0 auto 12px;
+  }
+
+  .reg-form-card .step-icon-wrapper::before {
+    top: -6px;
+    left: -6px;
+    right: -6px;
+    bottom: -6px;
+  }
+
+  .reg-form-card .step-icon-wrapper i {
+    font-size: 26px;
+  }
+
+  .reg-form-card .step-indicator .step-connector {
+    margin-top: 18px;
+    max-width: 10px;
+  }
+
+  .step-indicator .step:nth-child(odd) {
+    width: calc(25% - 25px);
+    margin-right: 5px;
+  }
+
+  .step-indicator .step-label {
+    font-size: 0.5rem !important;
+  }
+
+  /* FORM CONTENT OVERRIDES */
+  .reg-form-wrapper .form-content .mobile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .reg-form-wrapper .form-content .mobile .mobile {
+    width: 100%;
+  }
+
+  .reg-form-wrapper .form-content .card {
+    padding: 0 8px;
+  }
+
+  .reg-form-wrapper .form-content .card .card-body {
+    border: 1px solid rgba(89, 66, 48, 0.09);
+  }
+
+  .reg-form-wrapper .form-content .card .card-body .card.mobile {
+    border: 1px solid rgba(89, 66, 48, 0.09);
+  }
+
+  .reg-form-wrapper .form-content .make-a-payment-mobile {
+    display: none !important;
+  }
+
+  .reg-form-wrapper .form-content .btn.btn-secondary {
+    width: 100% !important;
+  }
+
+  .reg-form-wrapper .form-content .flex-wrap {
+    flex-wrap: wrap !important;
+  }
+
+  /* EMBEDDED FORM RESPONSIVE */
+  .reg-hub-embedded .reg-form-card .form-embed-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 30px 20px !important;
+    margin: 0 !important;
+    max-height: calc(85vh - 40px) !important;
+  }
+
+  /* TOGGLE BUTTONS GENERAL */
+  .reg-toggle-btn,
+  .reg-toggle-back-btn {
+    width: calc(100% - 32px) !important;
+    max-width: 400px !important;
+    margin: 20px auto !important;
+    padding: 14px 24px !important;
+    min-height: 56px !important;
+    border-radius: 16px !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    cursor: pointer !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    position: relative !important;
+    overflow: hidden !important;
+  }
+
+  .reg-toggle-btn {
+    background: linear-gradient(
+      135deg,
+      rgba(80, 100, 220, 0.95) 0%,
+      rgba(60, 80, 200, 0.95) 100%
+    ) !important;
+    border: 1px solid rgba(120, 140, 255, 0.5) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(80, 100, 220, 0.3) !important;
+  }
+
+  .reg-toggle-back-btn {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+  }
+
+  .reg-toggle-btn:active,
+  .reg-toggle-back-btn:active {
+    transform: scale(0.97) !important;
+    transition: transform 0.1s ease !important;
+  }
+
+  .reg-toggle-btn:active {
+    background: linear-gradient(
+      135deg,
+      rgba(100, 120, 240, 1) 0%,
+      rgba(80, 100, 220, 1) 100%
+    ) !important;
+  }
+
+  .reg-toggle-back-btn:active {
+    background: rgba(255, 255, 255, 0.2) !important;
+  }
+
+  .reg-toggle-btn i,
+  .reg-toggle-back-btn i {
+    font-size: 1.2rem !important;
+  }
+
+  /* HTR-DOCK STYLES - Ensure it sits above footer with icons only */
+  .htr-dock {
+    position: fixed !important;
+    bottom: 55px !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+    backdrop-filter: blur(10px) !important;
+    display: flex !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    padding: 8px 16px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    transform: translateY(0) !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .htr-dock .dock-item,
+  .htr-dock a,
+  .htr-dock button {
+    flex: 1;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    padding: 8px 4px !important;
+    background: transparent !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .htr-dock .dock-item i,
+  .htr-dock a i,
+  .htr-dock button i {
+    font-size: 1.5rem !important;
+  }
+
+  .htr-dock .dock-item span,
+  .htr-dock a span,
+  .htr-dock button span {
+    font-size: 0.7rem !important;
+  }
+
+  .htr-dock .dock-item.active,
+  .htr-dock a.active,
+  .htr-dock button.active {
+    color: rgba(80, 100, 220, 1) !important;
+  }
+
+  .htr-dock .dock-item:hover,
+  .htr-dock a:hover,
+  .htr-dock button:hover {
+    color: rgba(255, 255, 255, 1) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  .glow-effect {
+    display: none !important;
+  }
+
+  /* Ensure footer sits below the dock */
+  footer,
+  .footer {
+    margin-bottom: 0px !important;
+    padding-bottom: 0px !important;
+  }
+}
+
+/* ============================================
+   EXTRA SMALL PHONES (max-width: 480px)
+   ============================================ */
+
+@media (max-width: 480px) {
+  .reg-hub-grid,
+  .reg-hub-multi,
+  .reg-hub-single,
+  .reg-hub-embedded {
+    padding-bottom: 90px !important;
+  }
+
+  .reg-hub-embedded .reg-form-card .form-embed-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 30px 20px !important;
+    margin: 0 !important;
+    max-height: calc(85vh - 40px) !important;
+  }
+
+  /* Multi-form back button - smaller on extra small */
+  .reg-hub-multi .reg-back-btn {
+    width: 44px !important;
+    height: 44px !important;
+    top: 12px !important;
+    left: 12px !important;
+  }
+
+  .reg-hub-multi .reg-form-card {
+    margin: 65px auto 16px auto !important;
+  }
+
+  .reg-toggle-btn,
+  .reg-toggle-back-btn {
+    padding: 12px 20px !important;
+    min-height: 50px !important;
+    font-size: 0.9rem !important;
+    width: calc(100% - 24px) !important;
+  }
+
+  .reg-tile {
+    padding: 20px 16px !important;
+    border-radius: 32px !important;
+  }
+
+  .reg-tile-icon {
+    width: 60px !important;
+    height: 60px !important;
+    font-size: 2rem !important;
+    margin-bottom: 20px !important;
+  }
+
+  .reg-tile-title {
+    font-size: 1.1rem !important;
+  }
+
+  .reg-tile-subtitle {
+    font-size: 0.8rem !important;
+  }
+
+  .reg-form-content {
+    padding: 12px !important;
+  }
+
+  /* Form embed extra small */
+  .reg-form-card .form-embed-wrapper {
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+
+  .reg-form-card .form-container .tournament-info .row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .reg-form-card .form-container .tournament-info {
+    padding: 14px !important;
+  }
+
+  .reg-form-card .form-container .form-control {
+    padding: 8px 12px !important;
+    font-size: 0.8rem !important;
+  }
+
+  .reg-form-card .form-container .btn-primary {
+    padding: 10px 16px !important;
+    font-size: 0.8rem !important;
+  }
+
+  /* HTR-DOCK extra small */
+  .htr-dock {
+    padding: 4px 12px !important;
+  }
+
+  .htr-dock .dock-item i,
+  .htr-dock a i,
+  .htr-dock button i {
+    font-size: 1.3rem !important;
+  }
+
+  .htr-dock .dock-item span,
+  .htr-dock a span,
+  .htr-dock button span {
+    font-size: 0.6rem !important;
+  }
+}
+
+/* ============================================
+   SAFE AREA INSETS FOR NOTCH/DYNAMIC ISLAND
+   ============================================ */
+
+@supports (padding: max(0px)) {
+  @media (max-width: 768px) {
+    .reg-hub-multi .reg-back-btn {
+      top: max(16px, env(safe-area-inset-top)) !important;
+      left: max(16px, env(safe-area-inset-left)) !important;
+    }
+
+    .reg-form-content {
+      padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+    }
+
+    .reg-toggle-btn,
+    .reg-toggle-back-btn {
+      margin-bottom: max(20px, env(safe-area-inset-bottom)) !important;
+    }
+
+    .reg-hub-grid,
+    .reg-hub-multi,
+    .reg-hub-single,
+    .reg-hub-embedded {
+      padding-bottom: max(
+        100px,
+        calc(100px + env(safe-area-inset-bottom))
+      ) !important;
+    }
+
+    .htr-dock {
+      padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .reg-hub-multi .reg-back-btn {
+      top: max(12px, env(safe-area-inset-top)) !important;
+      left: max(12px, env(safe-area-inset-left)) !important;
+    }
+
+    .reg-hub-grid,
+    .reg-hub-multi,
+    .reg-hub-single,
+    .reg-hub-embedded {
+      padding-bottom: max(
+        90px,
+        calc(90px + env(safe-area-inset-bottom))
+      ) !important;
+    }
+  }
+}
+
+/* ============================================
+   REDUCED MOTION PREFERENCE
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  @media (max-width: 768px) {
+    .reg-back-btn:active,
+    .reg-toggle-btn:active,
+    .reg-toggle-back-btn:active {
+      transform: none !important;
+    }
+
+    .reg-toggle-btn:not(.reg-toggle-back-btn) {
+      animation: none !important;
+    }
+
+    .reg-toggle-btn .ti-arrow-right {
+      animation: none !important;
+    }
+  }
+}
+
+/* ============================================
+   LANDSCAPE MODE ON PHONES
+   ============================================ */
+
+@media (max-width: 768px) and (orientation: landscape) {
+  .reg-tile {
+    max-height: 85vh !important;
+  }
+
+  .reg-form-card {
+    max-height: 85vh !important;
+  }
+
+  .reg-hub-multi .reg-back-btn {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .reg-hub-multi .reg-form-card {
+    max-height: 85vh !important;
+    margin: 60px auto 16px auto !important;
+  }
+
+  .reg-hub-multi .reg-form-content {
+    max-height: calc(85vh - 40px) !important;
+  }
+
+  .reg-toggle-btn,
+  .reg-toggle-back-btn {
+    padding: 10px 20px !important;
+    min-height: 48px !important;
+  }
+
+  .htr-dock {
+    padding: 4px 12px !important;
+  }
+
+  .htr-dock .dock-item i,
+  .htr-dock a i,
+  .htr-dock button i {
+    font-size: 1.2rem !important;
+  }
+}

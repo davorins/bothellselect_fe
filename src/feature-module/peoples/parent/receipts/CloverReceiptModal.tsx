@@ -141,7 +141,7 @@ const CloverReceiptModal: React.FC<CloverReceiptModalProps> = ({
               <div id='receipt-print-content'>
                 {/* Receipt Header */}
                 <div className='text-center mb-4'>
-                  <h3 className='mb-1'>Partizan Basketball</h3>
+                  <h3 className='mb-1'>Bothell Select Basketball</h3>
                   <p className='text-muted mb-0'>Official Payment Receipt</p>
                   <hr className='my-3' />
                 </div>

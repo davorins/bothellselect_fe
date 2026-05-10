@@ -172,8 +172,8 @@ export const getTeamTableColumns = ({
 }: TeamTableColumnsProps): TableProps<InternalTeamTableData>['columns'] => {
   const resolveAvatar = (gender: string | undefined): string => {
     return gender === 'Female'
-      ? 'https://partizan-be.onrender.com/uploads/avatars/girl.png'
-      : 'https://partizan-be.onrender.com/uploads/avatars/boy.png';
+      ? 'https://bothell-select.onrender.com/uploads/avatars/girl.png'
+      : 'https://bothell-select.onrender.com/uploads/avatars/boy.png';
   };
 
   if (loading) {

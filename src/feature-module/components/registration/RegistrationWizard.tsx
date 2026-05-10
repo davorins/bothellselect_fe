@@ -28,7 +28,7 @@ interface RegistrationWizardProps {
 
 // Helper function to check if config is a tournament config
 const isTournamentConfig = (
-  config: any
+  config: any,
 ): config is TournamentSpecificConfig => {
   return config && typeof config === 'object' && 'tournamentName' in config;
 };
@@ -40,7 +40,7 @@ const isTryoutConfig = (config: any): config is TryoutSpecificConfig => {
 
 // Helper to convert TournamentSpecificConfig to RegistrationFormConfig
 const tournamentToRegistrationConfig = (
-  tournamentConfig: TournamentSpecificConfig
+  tournamentConfig: TournamentSpecificConfig,
 ): RegistrationFormConfig => {
   return {
     _id: tournamentConfig._id,
@@ -77,7 +77,7 @@ const tournamentToRegistrationConfig = (
 
 // Helper function to convert TryoutSpecificConfig to RegistrationFormConfig
 const tryoutToRegistrationConfig = (
-  tryoutConfig: TryoutSpecificConfig
+  tryoutConfig: TryoutSpecificConfig,
 ): RegistrationFormConfig => {
   return {
     _id: tryoutConfig._id,
@@ -148,7 +148,7 @@ const RegistrationWizard: React.FC<RegistrationWizardProps> = ({
         const trainingEvent = seasonEvents.find(
           (event) =>
             event.season.toLowerCase().includes('training') ||
-            event.season.toLowerCase().includes('camp')
+            event.season.toLowerCase().includes('camp'),
         );
         if (trainingEvent) return trainingEvent;
       }
@@ -156,7 +156,7 @@ const RegistrationWizard: React.FC<RegistrationWizardProps> = ({
       // For tournaments
       if (registrationType === 'tournament') {
         const tournamentEvent = seasonEvents.find((event) =>
-          event.season.toLowerCase().includes('tournament')
+          event.season.toLowerCase().includes('tournament'),
         );
         if (tournamentEvent) return tournamentEvent;
       }
@@ -164,7 +164,7 @@ const RegistrationWizard: React.FC<RegistrationWizardProps> = ({
       // For tryouts
       if (registrationType === 'tryout') {
         const tryoutEvent = seasonEvents.find((event) =>
-          event.season.toLowerCase().includes('tryout')
+          event.season.toLowerCase().includes('tryout'),
         );
         if (tryoutEvent) return tryoutEvent;
       }
@@ -176,9 +176,9 @@ const RegistrationWizard: React.FC<RegistrationWizardProps> = ({
 
     // Fallback to old hardcoded values
     return {
-      season: 'Partizan Team',
+      season: 'Bothell Select Team',
       year: new Date().getFullYear(),
-      eventId: 'partizan-2026',
+      eventId: 'bothellselect-2026',
     };
   }, [seasonEvent, seasonEvents, registrationType]);
 
@@ -229,12 +229,12 @@ const RegistrationWizard: React.FC<RegistrationWizardProps> = ({
           registrationType === 'training'
             ? 75
             : registrationType === 'tournament'
-            ? 425
-            : registrationType === 'tryout'
-            ? 50
-            : registrationType === 'team'
-            ? 150
-            : 0,
+              ? 425
+              : registrationType === 'tryout'
+                ? 50
+                : registrationType === 'team'
+                  ? 150
+                  : 0,
         packages:
           registrationType === 'training'
             ? [
@@ -333,7 +333,7 @@ const RegistrationWizard: React.FC<RegistrationWizardProps> = ({
   useEffect(() => {
     if (effectiveIsExistingUser && !hasSavedInitialData) {
       console.log(
-        '👤 User is authenticated/existing, marking registration complete'
+        '👤 User is authenticated/existing, marking registration complete',
       );
       setUserRegistrationComplete(true);
 

@@ -10,7 +10,7 @@ interface TournamentFormConfigProps {
   onConfigUpdate?: (config: RegistrationFormConfig) => void;
   onTournamentConfigUpdate: (
     config: TournamentSpecificConfig,
-    originalName?: string
+    originalName?: string,
   ) => Promise<void>;
   initialConfig?: RegistrationFormConfig;
   initialTournamentConfig?: TournamentSpecificConfig;
@@ -31,7 +31,7 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
         basePrice: 0,
         packages: [],
       },
-    }
+    },
   );
 
   const [tournamentConfig, setTournamentConfig] =
@@ -54,7 +54,7 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
           scheduleDocumentUrl: '',
           tournamentFee: 425,
           isActive: false,
-        }
+        },
     );
 
   const [newDate, setNewDate] = useState('');
@@ -85,7 +85,7 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
 
     if (initialTournamentConfig) {
       initialConfigRef.current = JSON.parse(
-        JSON.stringify(initialTournamentConfig)
+        JSON.stringify(initialTournamentConfig),
       );
     }
   }, [initialTournamentConfig]);
@@ -128,7 +128,7 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
   };
 
   const updateTournamentConfig = (
-    updates: Partial<TournamentSpecificConfig>
+    updates: Partial<TournamentSpecificConfig>,
   ) => {
     setTournamentConfig((prev) => ({ ...prev, ...updates }));
 
@@ -153,7 +153,7 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
   };
 
   const handleTournamentNameChange = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const newName = e.target.value;
     validateTournamentName(newName);
@@ -477,7 +477,7 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
                       displayName: e.target.value,
                     })
                   }
-                  placeholder='e.g., Partizan Spring Tournament'
+                  placeholder='e.g., Bothell Select Spring Tournament'
                 />
                 <small className='form-text text-muted'>
                   User-friendly name shown to registrants

@@ -94,7 +94,7 @@ const AdminRefundsPanel: React.FC = () => {
         console.log(
           'Payments with refunds set:',
           response.data.length,
-          'items'
+          'items',
         );
 
         // Log the refunds for debugging
@@ -103,7 +103,7 @@ const AdminRefundsPanel: React.FC = () => {
             `Payment ${payment._id} has ${
               payment.refunds?.length || 0
             } refunds:`,
-            payment.refunds
+            payment.refunds,
           );
         });
       } else {
@@ -127,7 +127,7 @@ const AdminRefundsPanel: React.FC = () => {
     paymentId: string,
     refundId: string,
     action: 'approve' | 'reject',
-    notes: string = ''
+    notes: string = '',
   ): Promise<void> => {
     try {
       const token = localStorage.getItem('token');
@@ -154,7 +154,7 @@ const AdminRefundsPanel: React.FC = () => {
             'Content-Type': 'application/json',
           },
           timeout: 30000,
-        }
+        },
       );
 
       console.log('✅ Refund response:', response.data);
@@ -216,7 +216,7 @@ const AdminRefundsPanel: React.FC = () => {
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       const result: SyncResult = response.data;
@@ -249,7 +249,7 @@ const AdminRefundsPanel: React.FC = () => {
         { startDate, endDate },
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       const result: SyncResult = response.data;
@@ -319,7 +319,7 @@ const AdminRefundsPanel: React.FC = () => {
         key: `${payment._id}-${refund._id || refund.refundId}`,
         payment,
         refund,
-      }))
+      })),
     );
   }, [payments]);
 
@@ -410,8 +410,8 @@ const AdminRefundsPanel: React.FC = () => {
                   refund.status === 'pending'
                     ? 'warning'
                     : refund.status === 'completed'
-                    ? 'success'
-                    : 'danger'
+                      ? 'success'
+                      : 'danger'
                 }`}
               >
                 {refund.status.charAt(0).toUpperCase() + refund.status.slice(1)}
@@ -434,7 +434,7 @@ const AdminRefundsPanel: React.FC = () => {
               {formatDate(
                 refund.processedAt ||
                   refund.requestedAt ||
-                  record.payment.createdAt
+                  record.payment.createdAt,
               )}
             </div>
             {refund.notes && (
@@ -448,7 +448,7 @@ const AdminRefundsPanel: React.FC = () => {
         ),
       },
     ],
-    []
+    [],
   );
 
   const handleTableChange = useCallback((newPagination: any) => {
@@ -462,13 +462,13 @@ const AdminRefundsPanel: React.FC = () => {
   }, []);
 
   const pendingCount = allRefunds.filter(
-    (ref) => ref.refund.status === 'pending'
+    (ref) => ref.refund.status === 'pending',
   ).length;
   const completedCount = allRefunds.filter(
-    (ref) => ref.refund.status === 'completed'
+    (ref) => ref.refund.status === 'completed',
   ).length;
   const failedCount = allRefunds.filter(
-    (ref) => ref.refund.status === 'failed'
+    (ref) => ref.refund.status === 'failed',
   ).length;
 
   // Count unique card numbers for search results
@@ -477,8 +477,8 @@ const AdminRefundsPanel: React.FC = () => {
       payments
         .filter((p) => p.cardLastFour)
         .map((p) => p.cardLastFour)
-        .filter((card): card is string => card !== undefined)
-    )
+        .filter((card): card is string => card !== undefined),
+    ),
   );
 
   const renderAllRefunds = () => {
@@ -599,8 +599,8 @@ const AdminRefundsPanel: React.FC = () => {
               {allRefunds.length === 0
                 ? 'No refunds found in the system'
                 : cardSearch
-                ? `No refunds found for card •••• ${cardSearch}`
-                : 'No refunds match the selected filter'}
+                  ? `No refunds found for card •••• ${cardSearch}`
+                  : 'No refunds match the selected filter'}
             </p>
             {allRefunds.length === 0 && (
               <div className='mt-3'>
@@ -761,8 +761,8 @@ const AdminRefundsPanel: React.FC = () => {
               </li>
               <li className='mb-2'>
                 <i className='ti ti-arrow-right text-primary me-2'></i>
-                Makes refunds processed in Square Dashboard visible on Partizan
-                website
+                Makes refunds processed in Square Dashboard visible on Bothell
+                Select website
               </li>
               <li>
                 <i className='ti ti-arrow-right text-primary me-2'></i>

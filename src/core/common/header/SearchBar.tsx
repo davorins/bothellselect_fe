@@ -6,13 +6,13 @@ import { SearchResult } from '../../../types/types';
 import { formatPhoneNumber } from '../../../utils/phone';
 
 const DEFAULT_PARENT_AVATAR =
-  'https://partizan-be.onrender.com/uploads/avatars/parents.png';
+  'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 const DEFAULT_COACH_AVATAR =
-  'https://partizan-be.onrender.com/uploads/avatars/coach.png';
+  'https://bothell-select.onrender.com/uploads/avatars/coach.png';
 const DEFAULT_GIRL_AVATAR =
-  'https://partizan-be.onrender.com/uploads/avatars/girl.png';
+  'https://bothell-select.onrender.com/uploads/avatars/girl.png';
 const DEFAULT_BOY_AVATAR =
-  'https://partizan-be.onrender.com/uploads/avatars/boy.png';
+  'https://bothell-select.onrender.com/uploads/avatars/boy.png';
 
 interface SearchBarProps {
   role?: string;
@@ -77,7 +77,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
         return result.image;
       }
       if (result.image.startsWith('/')) {
-        return `https://partizan-be.onrender.com${result.image}`;
+        return `https://bothell-select.onrender.com${result.image}`;
       }
     }
 
@@ -196,7 +196,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
               // Enhanced seasons data structure with detailed information - use type assertion
               seasons: (result.seasons || [
                 {
-                  season: result.season || 'Partizan',
+                  season: result.season || 'Bothell Select',
                   year: result.registrationYear || new Date().getFullYear(),
                   tryoutId: result.season?.toLowerCase().includes('tryout')
                     ? `${result.season?.toLowerCase().replace(/\s+/g, '')}-${
@@ -257,7 +257,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
               avatar: result.image,
               seasons: [
                 {
-                  season: result.season || 'Partizan',
+                  season: result.season || 'Bothell Select',
                   year: result.registrationYear || new Date().getFullYear(),
                   tryoutId: result.season?.toLowerCase().includes('tryout')
                     ? `${result.season?.toLowerCase().replace(/\s+/g, '')}-${

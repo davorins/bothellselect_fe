@@ -58,7 +58,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
   const [page, setPage] = useState<PageLayout | null>(initialPage || null);
   const [sections, setSections] = useState<PageSection[]>([]);
   const [selectedSection, setSelectedSection] = useState<PageSection | null>(
-    null
+    null,
   );
   const [isEditing, setIsEditing] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
@@ -203,7 +203,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -249,7 +249,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
       });
       setHistoryIndex((prev) => prev + 1);
     },
-    [historyIndex]
+    [historyIndex],
   );
 
   // Undo action
@@ -311,7 +311,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
         }, 1000);
       }
     },
-    [sections, page]
+    [sections, page],
   );
 
   // Add new section
@@ -356,7 +356,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
       console.log('📥 Updated section title:', updatedSection.title);
       console.log(
         '📥 Updated section content:',
-        updatedSection.content?.substring(0, 50) + '...'
+        updatedSection.content?.substring(0, 50) + '...',
       );
 
       setSections((prevSections) => {
@@ -366,7 +366,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
                 ...updatedSection,
                 updatedAt: new Date(),
               }
-            : section
+            : section,
         );
 
         console.log('✅ Sections after update (in setSections callback):');
@@ -383,7 +383,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
               ...updatedSection,
               updatedAt: new Date(),
             }
-          : section
+          : section,
       );
 
       setSelectedSection(updatedSection);
@@ -402,13 +402,13 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
         }, 1000);
       }
     },
-    [page]
+    [page],
   );
 
   // Delete section
   const deleteSection = async (sectionId: string) => {
     const sectionToDelete = sections.find(
-      (section) => section.id === sectionId
+      (section) => section.id === sectionId,
     );
     if (!sectionToDelete) return;
 
@@ -428,7 +428,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
 
     if (result.isConfirmed) {
       const updatedSections = sections.filter(
-        (section) => section.id !== sectionId
+        (section) => section.id !== sectionId,
       );
       setSections(updatedSections);
       sectionsRef.current = updatedSections;
@@ -608,7 +608,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
 
         console.log(
           '📦 Processed sections titles:',
-          processedSections.map((s) => s.title)
+          processedSections.map((s) => s.title),
         );
 
         const saveData = {
@@ -647,7 +647,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
 
         console.log(
           '🌐 Sending PUT request to:',
-          `${process.env.REACT_APP_API_BASE_URL}/page-builder/admin/pages/${page._id}`
+          `${process.env.REACT_APP_API_BASE_URL}/page-builder/admin/pages/${page._id}`,
         );
 
         const response = await fetch(
@@ -659,7 +659,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify(saveData),
-          }
+          },
         );
 
         console.log('📥 Response status:', response.status);
@@ -671,7 +671,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
           console.error('❌ HTTP error:', response.status);
           console.error('❌ Error message:', data.message);
           throw new Error(
-            data.message || `HTTP error! status: ${response.status}`
+            data.message || `HTTP error! status: ${response.status}`,
           );
         }
 
@@ -679,7 +679,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
           console.log('✅ Save successful!');
           console.log(
             '📊 Updated page sections:',
-            data.data.sections?.map((s: PageSection) => s.title)
+            data.data.sections?.map((s: PageSection) => s.title),
           );
 
           setSaveStatus('saved');
@@ -723,7 +723,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
         console.log('🏁 ===== SAVE PAGE END =====');
       }
     },
-    [page, addToHistory]
+    [page, addToHistory],
   );
 
   // Auto-save on changes
@@ -765,14 +765,14 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.message || `HTTP error! status: ${response.status}`
+          data.message || `HTTP error! status: ${response.status}`,
         );
       }
 
@@ -821,14 +821,14 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.message || `HTTP error! status: ${response.status}`
+          data.message || `HTTP error! status: ${response.status}`,
         );
       }
 
@@ -935,7 +935,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
               position: index,
               createdAt: new Date(),
               updatedAt: new Date(),
-            })
+            }),
           );
 
           setSections(importedSections);
@@ -1004,7 +1004,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
   const resetPage = () => {
     if (
       window.confirm(
-        'Are you sure you want to reset this page? All current sections will be removed.'
+        'Are you sure you want to reset this page? All current sections will be removed.',
       )
     ) {
       setSections([]);
@@ -1331,7 +1331,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
                         {Object.entries(sectionCategories).map(
                           ([categoryKey, categoryName]) => {
                             const categorySections = sectionTypes.filter(
-                              (type) => type.category === categoryKey
+                              (type) => type.category === categoryKey,
                             );
 
                             if (categorySections.length === 0) return null;
@@ -1362,7 +1362,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
                                 </div>
                               </div>
                             );
-                          }
+                          },
                         )}
 
                         {/* Quick Actions */}
@@ -1505,7 +1505,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
                               onChange={(e) =>
                                 updatePageSetting(
                                   'containerMaxWidth',
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             >
@@ -1528,7 +1528,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
                               onChange={(e) =>
                                 updatePageSetting(
                                   'backgroundColor',
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             />
@@ -1555,7 +1555,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
                                 onChange={(e) =>
                                   updatePageSetting(
                                     'showHeader',
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                               />
@@ -1571,7 +1571,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
                                 onChange={(e) =>
                                   updatePageSetting(
                                     'showFooter',
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                               />
@@ -1694,7 +1694,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
                                                     {
                                                       sectionTypes.find(
                                                         (t) =>
-                                                          t.id === section.type
+                                                          t.id === section.type,
                                                       )?.icon
                                                     }
                                                   </div>
@@ -1713,7 +1713,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
                                                         .charAt(0)
                                                         .toUpperCase() +
                                                         section.type.slice(
-                                                          1
+                                                          1,
                                                         )}{' '}
                                                       • Position:{' '}
                                                       {section.position}

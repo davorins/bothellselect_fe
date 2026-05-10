@@ -7,12 +7,12 @@ const NotificationActivities = () => {
   const { parent } = useAuth();
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
   const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>(
-    {}
+    {},
   );
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
   const DEFAULT_AVATAR =
-    'https://partizan-be.onrender.com/uploads/avatars/parents.png';
+    'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
   const {
     setNotifications,

@@ -77,9 +77,9 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   const defaultSeasonEvent = useMemo(
     () =>
       seasonEvent || {
-        season: formConfig?.season || 'Partizan Team',
+        season: formConfig?.season || 'Bothell Select Team',
         year: formConfig?.year || new Date().getFullYear(),
-        eventId: formConfig?.eventId || 'partizan-2026',
+        eventId: formConfig?.eventId || 'bothellselect-2026',
       },
     [seasonEvent, formConfig],
   );
@@ -125,7 +125,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
           healthConcerns: '',
           aauNumber: '',
           registrationYear: formConfig?.year || new Date().getFullYear(),
-          season: formConfig?.season || 'Partizan Team',
+          season: formConfig?.season || 'Bothell Select Team',
           grade: '',
         },
       ];

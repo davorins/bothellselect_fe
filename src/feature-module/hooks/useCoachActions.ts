@@ -47,7 +47,7 @@ export const useCoachActions = () => {
             ...player,
             avatar:
               player.avatar && !player.avatar.startsWith('http')
-                ? `https://partizan-be.onrender.com${player.avatar}`
+                ? `https://bothell-select.onrender.com${player.avatar}`
                 : player.avatar,
           })),
           isCoachView: true,

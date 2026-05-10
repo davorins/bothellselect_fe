@@ -96,7 +96,7 @@ const chartOptions = {
 const CoachDashboard = () => {
   const routes = all_routes;
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
@@ -142,7 +142,7 @@ const CoachDashboard = () => {
       setError(
         error.response?.data?.error ||
           error.message ||
-          'Failed to load dashboard data'
+          'Failed to load dashboard data',
       );
     } finally {
       setLoading(false);
@@ -259,7 +259,7 @@ const CoachDashboard = () => {
                 <div className='d-flex align-items-center'>
                   <div className='avatar avatar-xl bg-danger-transparent me-2 p-1'>
                     <img
-                      src='https://partizan-be.onrender.com/uploads/avatars/boy.png'
+                      src='https://bothell-select.onrender.com/uploads/avatars/boy.png'
                       alt='Players'
                     />
                   </div>
@@ -278,7 +278,7 @@ const CoachDashboard = () => {
                         {Math.round(
                           (dashboardData.playerStats.active /
                             dashboardData.playerStats.total) *
-                            100
+                            100,
                         )}
                         % Active
                       </span>
@@ -312,7 +312,7 @@ const CoachDashboard = () => {
                 <div className='d-flex align-items-center'>
                   <div className='avatar avatar-xl bg-warning-transparent me-2 p-1'>
                     <img
-                      src='https://partizan-be.onrender.com/uploads/avatars/pendingPayment.png'
+                      src='https://bothell-select.onrender.com/uploads/avatars/pendingPayment.png'
                       alt='Registrations'
                     />
                   </div>
@@ -352,7 +352,7 @@ const CoachDashboard = () => {
                 <div className='d-flex align-items-center'>
                   <div className='avatar avatar-xl bg-success-transparent me-2 p-1'>
                     <img
-                      src='https://partizan-be.onrender.com/uploads/avatars/parents.png'
+                      src='https://bothell-select.onrender.com/uploads/avatars/parents.png'
                       alt='Parents'
                     />
                   </div>
@@ -392,7 +392,7 @@ const CoachDashboard = () => {
                 <div className='d-flex align-items-center'>
                   <div className='avatar avatar-xl bg-info-transparent me-2 p-1'>
                     <img
-                      src='https://partizan-be.onrender.com/uploads/avatars/coach.png'
+                      src='https://bothell-select.onrender.com/uploads/avatars/coach.png'
                       alt='Coaches'
                     />
                   </div>
@@ -502,8 +502,8 @@ const CoachDashboard = () => {
                                     team.gender === 'Male'
                                       ? 'bg-primary'
                                       : team.gender === 'Female'
-                                      ? 'bg-pink'
-                                      : 'bg-secondary'
+                                        ? 'bg-pink'
+                                        : 'bg-secondary'
                                   }`}
                                 >
                                   {team.gender}
@@ -520,7 +520,7 @@ const CoachDashboard = () => {
                                 </span>
                               </td>
                             </tr>
-                          )
+                          ),
                         )}
                       </tbody>
                     </table>

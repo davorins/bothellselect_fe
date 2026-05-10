@@ -8,7 +8,7 @@ import axios from 'axios';
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const DEFAULT_AVATAR =
-  'https://partizan-be.onrender.com/uploads/avatars/parents.png';
+  'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
 interface User {
   _id: string;
@@ -48,7 +48,7 @@ const UserMultiSelect = ({
         }/users/search?q=${encodeURIComponent(searchTerm)}&_=${Date.now()}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       if (res.ok) {
@@ -71,7 +71,7 @@ const UserMultiSelect = ({
     onChange(
       selectedUsers.includes(userId)
         ? selectedUsers.filter((id) => id !== userId)
-        : [...selectedUsers, userId]
+        : [...selectedUsers, userId],
     );
   };
 
@@ -121,12 +121,12 @@ const NotificationDropdown = ({ avatarSrc }: { avatarSrc: string }) => {
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [targetType, setTargetType] = useState<'all' | 'season' | 'individual'>(
-    'all'
+    'all',
   );
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [processingDismissal, setProcessingDismissal] = useState<string | null>(
-    null
+    null,
   );
   const { notifications, setNotifications, addNotification } =
     useNotifications();
@@ -148,7 +148,7 @@ const NotificationDropdown = ({ avatarSrc }: { avatarSrc: string }) => {
       });
 
       const uniqueSeasons = Array.from(
-        new Set(response.data.map((s) => `${s.season}-${s.registrationYear}`))
+        new Set(response.data.map((s) => `${s.season}-${s.registrationYear}`)),
       )
         .map((seasonStr) => {
           const [season, year] = seasonStr.split('-');
@@ -191,13 +191,13 @@ const NotificationDropdown = ({ avatarSrc }: { avatarSrc: string }) => {
           `${process.env.REACT_APP_API_BASE_URL}/notifications/${notifId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
       } else {
         await axios.patch(
           `${process.env.REACT_APP_API_BASE_URL}/notifications/dismiss/${notifId}`,
           { userId: parent._id },
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
       }
 
@@ -243,7 +243,7 @@ const NotificationDropdown = ({ avatarSrc }: { avatarSrc: string }) => {
         payload,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       // Optimistically update the UI with the new notification
@@ -270,7 +270,7 @@ const NotificationDropdown = ({ avatarSrc }: { avatarSrc: string }) => {
         `${process.env.REACT_APP_API_BASE_URL}/notifications`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       // Optimistically clear all notifications from UI
@@ -298,7 +298,7 @@ const NotificationDropdown = ({ avatarSrc }: { avatarSrc: string }) => {
   };
 
   const hasUnreadNotifications = visibleNotifications.some(
-    (notif) => !notif.read
+    (notif) => !notif.read,
   );
 
   return (

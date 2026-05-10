@@ -1277,7 +1277,7 @@ const PlayerRegistrationModule: React.FC<PlayerRegistrationModuleProps> = ({
       <div className='card mt-4'>
         <div className='card-body'>
           <div className='d-flex justify-content-between align-items-center'>
-            <div>
+            <div className='make-a-payment-mobile'>
               <h5 className='mb-1'>Ready to Make Payment</h5>
               <p className='text-muted mb-0'>
                 {isFormValid ? (
@@ -1383,7 +1383,7 @@ const PlayerRegistrationModule: React.FC<PlayerRegistrationModuleProps> = ({
           <div className='card mt-4'>
             <div className='card-body'>
               <div className='d-flex justify-content-between align-items-center'>
-                <div>
+                <div className='make-a-payment-mobile'>
                   <h5 className='mb-1'>
                     {requiresPayment
                       ? 'Ready to Make Payment'

@@ -5,7 +5,7 @@ import { useAuth } from './context/AuthContext';
 import { TournamentEventProvider } from './context/TournamentEventContext';
 import { RegistrationProvider } from './context/RegistrationContext';
 import { PageProvider } from './context/PageContext';
-import { SeasonEventsProvider } from './context/SeasonEventsContext'; // ← ADD
+import { SeasonEventsProvider } from './context/SeasonEventsContext';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
 const App = () => {
