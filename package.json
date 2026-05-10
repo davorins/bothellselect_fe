@@ -94,7 +94,6 @@
     "yet-another-react-lightbox": "^3.21.7"
   },
   "scripts": {
-    "preinstall": "npx npm-force-resolutions",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -138,12 +137,12 @@
     "@types/react-select": "^5.0.1",
     "@types/react-slick": "^0.23.13",
     "eslint": "^8.57.1",
-    "eslint-plugin-jest": "^28.11.0",
     "eslint-config-react-app": "^7.0.1",
-    "npm-force-resolutions": "^0.0.10",
+    "eslint-plugin-jest": "^28.11.0",
     "typescript": "^4.9.5"
   },
-  "resolutions": {
+  "overrides": {
+    "csso": "^4.2.0",
     "@typescript-eslint/eslint-plugin": "^8.59.2",
     "@typescript-eslint/parser": "^8.59.2",
     "eslint-plugin-jest": "^28.11.0"
