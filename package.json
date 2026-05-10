@@ -37,7 +37,6 @@
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "dragula": "^3.7.3",
-    "eslint-plugin-jest": "^28.11.0",
     "feather-icons-react": "^0.8.1",
     "framer-motion": "^12.10.5",
     "http-proxy-middleware": "^3.0.3",
@@ -139,6 +138,7 @@
     "@types/react-select": "^5.0.1",
     "@types/react-slick": "^0.23.13",
     "eslint": "^8.57.1",
+    "eslint-plugin-jest": "^28.11.0",
     "eslint-config-react-app": "^7.0.1",
     "npm-force-resolutions": "^0.0.10",
     "typescript": "^4.9.5"
