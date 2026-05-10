@@ -124,7 +124,7 @@
 
 .htr-tile[style*='background-image'] {
   background-blend-mode: overlay;
-  background-color: rgba(0, 0, 0, 0.4);
+  /* background-color: rgba(0, 0, 0, 0.4); */
 }
 
 .htr-tile-overlay {
