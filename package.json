@@ -142,5 +142,10 @@
     "eslint-config-react-app": "^7.0.1",
     "npm-force-resolutions": "^0.0.10",
     "typescript": "^4.9.5"
+  },
+  "resolutions": {
+    "@typescript-eslint/eslint-plugin": "^8.59.2",
+    "@typescript-eslint/parser": "^8.59.2",
+    "eslint-plugin-jest": "^28.11.0"
   }
 }
