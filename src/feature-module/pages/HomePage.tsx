@@ -49,6 +49,10 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [showVideoPopup, setShowVideoPopup] = useState(false);
 
+  // Track if background video should be paused
+  const [isBackgroundVideoPaused, setIsBackgroundVideoPaused] = useState(false);
+  const backgroundVideoCurrentTime = useRef<number>(0);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const popupVideoRef = useRef<HTMLVideoElement>(null);
   const animationFrameId = useRef<number | null>(null);
@@ -84,6 +88,94 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     window.addEventListener('resize', checkIfMobile);
     return () => window.removeEventListener('resize', checkIfMobile);
   }, [checkIfMobile]);
+
+  // Handle fullscreen change events
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+
+      setVideoControls((prev) => ({ ...prev, isFullscreen: isFullscreen }));
+
+      if (isFullscreen) {
+        // Pause background video when entering fullscreen
+        if (videoRef.current && !videoRef.current.paused) {
+          backgroundVideoCurrentTime.current = videoRef.current.currentTime;
+          videoRef.current.pause();
+          setIsBackgroundVideoPaused(true);
+          setVideoControls((prev) => ({ ...prev, isPlaying: false }));
+        }
+      } else {
+        // Resume background video when exiting fullscreen if it was playing before
+        if (isBackgroundVideoPaused && videoRef.current) {
+          videoRef.current.currentTime = backgroundVideoCurrentTime.current;
+          videoRef.current
+            .play()
+            .then(() => {
+              setVideoControls((prev) => ({ ...prev, isPlaying: true }));
+              setIsBackgroundVideoPaused(false);
+            })
+            .catch(() => {
+              // Autoplay might be blocked, set playing state to false
+              setVideoControls((prev) => ({ ...prev, isPlaying: false }));
+            });
+        }
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener(
+        'webkitfullscreenchange',
+        handleFullscreenChange,
+      );
+      document.removeEventListener(
+        'mozfullscreenchange',
+        handleFullscreenChange,
+      );
+      document.removeEventListener(
+        'MSFullscreenChange',
+        handleFullscreenChange,
+      );
+    };
+  }, [isBackgroundVideoPaused]);
+
+  // Handle popup video open/close
+  useEffect(() => {
+    if (showVideoPopup) {
+      // Pause background video when popup opens
+      if (videoRef.current && !videoRef.current.paused) {
+        backgroundVideoCurrentTime.current = videoRef.current.currentTime;
+        videoRef.current.pause();
+        setIsBackgroundVideoPaused(true);
+        setVideoControls((prev) => ({ ...prev, isPlaying: false }));
+      }
+    } else {
+      // Resume background video when popup closes if it was playing before
+      if (isBackgroundVideoPaused && videoRef.current) {
+        videoRef.current.currentTime = backgroundVideoCurrentTime.current;
+        videoRef.current
+          .play()
+          .then(() => {
+            setVideoControls((prev) => ({ ...prev, isPlaying: true }));
+            setIsBackgroundVideoPaused(false);
+          })
+          .catch(() => {
+            // Autoplay might be blocked
+            setVideoControls((prev) => ({ ...prev, isPlaying: false }));
+          });
+      }
+    }
+  }, [showVideoPopup, isBackgroundVideoPaused]);
 
   // Video handlers
   const togglePlayPause = useCallback(() => {
@@ -144,8 +236,33 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
 
   const openControlsPanel = () => setShowControlsPanel(true);
   const closeControlsPanel = () => setShowControlsPanel(false);
-  const openVideoPopup = () => setShowVideoPopup(true);
-  const closeVideoPopup = () => setShowVideoPopup(false);
+
+  const openVideoPopup = useCallback(() => {
+    setShowVideoPopup(true);
+  }, []);
+
+  const closeVideoPopup = useCallback(() => {
+    setShowVideoPopup(false);
+    // Also exit fullscreen if it was active
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    }
+  }, []);
+
+  const enterFullscreen = useCallback(() => {
+    const container = document.querySelector('.hp-stage');
+    if (container) {
+      if (container.requestFullscreen) {
+        container.requestFullscreen();
+      } else if ((container as any).webkitRequestFullscreen) {
+        (container as any).webkitRequestFullscreen();
+      } else if ((container as any).mozRequestFullScreen) {
+        (container as any).mozRequestFullScreen();
+      } else if ((container as any).msRequestFullscreen) {
+        (container as any).msRequestFullscreen();
+      }
+    }
+  }, []);
 
   const formatTime = (seconds: number) => {
     if (isNaN(seconds)) return '0:00';
@@ -250,12 +367,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                     <button className='hp-ctrl-btn' onClick={openVideoPopup}>
                       ⤢
                     </button>
-                    <button
-                      className='hp-ctrl-btn'
-                      onClick={() => {
-                        /* fullscreen */
-                      }}
-                    >
+                    <button className='hp-ctrl-btn' onClick={enterFullscreen}>
                       ⛶
                     </button>
                     <button
@@ -286,7 +398,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
               ref={popupVideoRef}
               src={promoVideoUrl}
               autoPlay
-              loop
               controls
               playsInline
               className='hp-popup__video'
