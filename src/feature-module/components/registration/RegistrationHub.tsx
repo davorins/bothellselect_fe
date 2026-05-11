@@ -19,7 +19,7 @@ interface RegistrationHubProps {
   tryoutConfig?: RegistrationFormConfig | TryoutSpecificConfig | null;
   seasonEvent?: SeasonEvent;
   onRegistrationComplete?: () => void;
-  hasEmbeddedForms?: boolean; // This indicates if there are embedded forms available elsewhere
+  hasEmbeddedForms?: boolean;
 }
 
 // Helper type guard functions
@@ -68,6 +68,52 @@ const tryoutToRegistrationConfig = (
   };
 };
 
+// Helper function to convert TournamentSpecificConfig to RegistrationFormConfig
+const tournamentToRegistrationConfig = (
+  tournamentConfig: TournamentSpecificConfig,
+): RegistrationFormConfig => {
+  return {
+    _id: tournamentConfig._id,
+    season: tournamentConfig.tournamentName,
+    year: tournamentConfig.tournamentYear,
+    isActive: tournamentConfig.isActive,
+    requiresPayment: true,
+    requiresQualification: false,
+    pricing: {
+      basePrice: tournamentConfig.tournamentFee,
+      packages: [],
+    },
+    tournamentName: tournamentConfig.tournamentName,
+    tournamentYear: tournamentConfig.tournamentYear,
+    displayName: tournamentConfig.displayName,
+    registrationDeadline: tournamentConfig.registrationDeadline,
+    tournamentDates: tournamentConfig.tournamentDates,
+    locations: tournamentConfig.locations,
+    divisions: tournamentConfig.divisions,
+    ageGroups: tournamentConfig.ageGroups,
+    requiresRoster: tournamentConfig.requiresRoster,
+    requiresInsurance: tournamentConfig.requiresInsurance,
+    paymentDeadline: tournamentConfig.paymentDeadline,
+    refundPolicy: tournamentConfig.refundPolicy,
+    tournamentFee: tournamentConfig.tournamentFee,
+    createdAt: tournamentConfig.createdAt,
+    updatedAt: tournamentConfig.updatedAt,
+    __v: tournamentConfig.__v,
+    description: tournamentConfig.description || '',
+  };
+};
+
+// Helper to convert any config to RegistrationFormConfig
+const toRegistrationConfig = (config: any): RegistrationFormConfig => {
+  if (isTournamentConfig(config)) {
+    return tournamentToRegistrationConfig(config);
+  }
+  if (isTryoutConfig(config)) {
+    return tryoutToRegistrationConfig(config);
+  }
+  return config as RegistrationFormConfig;
+};
+
 const RegistrationHub: React.FC<RegistrationHubProps> = ({
   playerConfig,
   trainingConfig,
@@ -81,27 +127,14 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
     'player' | 'tournament' | 'training' | 'tryout' | null
   >(null);
 
-  // For multi-form mode and non-player single forms, track if showing description or form
   const [showDescription, setShowDescription] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  // Type-safe helper to get isActive
-  const getIsActive = useCallback(
-    (
-      config:
-        | RegistrationFormConfig
-        | TournamentSpecificConfig
-        | TryoutSpecificConfig
-        | null
-        | undefined,
-    ): boolean => {
-      if (!config) return false;
-      return (config as any).isActive || false;
-    },
-    [],
-  );
+  const getIsActive = useCallback((config: any): boolean => {
+    if (!config) return false;
+    return config.isActive || false;
+  }, []);
 
-  // Memoize active status checks
   const playerActive = useMemo(
     () => getIsActive(playerConfig),
     [playerConfig, getIsActive],
@@ -119,29 +152,15 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
     [tryoutConfig, getIsActive],
   );
 
-  // Get display name
   const getDisplayName = useCallback(
-    (
-      config:
-        | RegistrationFormConfig
-        | TournamentSpecificConfig
-        | TryoutSpecificConfig
-        | null
-        | undefined,
-    ): string => {
+    (config: any): string => {
       if (!config) return 'Registration';
 
       if (seasonEvent) {
-        const displayName = (config as any).displayName;
-        const season = (config as any).season;
-        const tournamentName = (config as any).tournamentName;
-        const tryoutName = (config as any).tryoutName;
-
-        if (displayName) return displayName;
-        if (tournamentName) return tournamentName;
-        if (tryoutName) return tryoutName;
-        if (season) return season;
-
+        if (config.displayName) return config.displayName;
+        if (config.tournamentName) return config.tournamentName;
+        if (config.tryoutName) return config.tryoutName;
+        if (config.season) return config.season;
         return seasonEvent.season;
       }
 
@@ -157,17 +176,11 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
         return config.displayName || config.tryoutName || 'Tryout Registration';
       }
 
-      const registrationConfig = config as RegistrationFormConfig;
-      return (
-        registrationConfig.displayName ||
-        registrationConfig.season ||
-        'Registration'
-      );
+      return config.displayName || config.season || 'Registration';
     },
     [seasonEvent],
   );
 
-  // Get icon for each registration type
   const getIcon = useCallback(
     (type: 'player' | 'tournament' | 'training' | 'tryout'): string => {
       switch (type) {
@@ -186,7 +199,6 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
     [],
   );
 
-  // Get background image for training camp tiles
   const getBackgroundImage = useCallback(
     (
       type: 'player' | 'tournament' | 'training' | 'tryout',
@@ -203,20 +215,9 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
     [getDisplayName],
   );
 
-  // Get the proper season event for a config
   const getSeasonEventForConfig = useCallback(
-    (
-      config:
-        | RegistrationFormConfig
-        | TournamentSpecificConfig
-        | TryoutSpecificConfig
-        | null
-        | undefined,
-    ): SeasonEvent | undefined => {
-      if (seasonEvent) {
-        return seasonEvent;
-      }
-
+    (config: any): SeasonEvent | undefined => {
+      if (seasonEvent) return seasonEvent;
       if (!config) return undefined;
 
       if (isTournamentConfig(config)) {
@@ -238,38 +239,22 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
         };
       }
 
-      const registrationConfig = config as RegistrationFormConfig;
       return {
-        season: registrationConfig.season || 'Training',
-        year: registrationConfig.year || new Date().getFullYear(),
-        eventId:
-          registrationConfig.eventId ||
-          registrationConfig._id?.toString() ||
-          'training-default',
-        registrationOpens: registrationConfig.isActive ? new Date() : undefined,
+        season: config.season || 'Training',
+        year: config.year || new Date().getFullYear(),
+        eventId: config.eventId || config._id?.toString() || 'training-default',
+        registrationOpens: config.isActive ? new Date() : undefined,
       };
     },
     [seasonEvent],
   );
 
-  // Memoize current form description
   const currentDescription = useMemo(() => {
     switch (activeForm) {
       case 'tournament':
-        if (tournamentConfig) {
-          return isTournamentConfig(tournamentConfig)
-            ? tournamentConfig.description
-            : (tournamentConfig as RegistrationFormConfig).description;
-        }
-        return null;
+        return tournamentConfig?.description || null;
       case 'tryout':
-        if (tryoutConfig) {
-          const desc = (tryoutConfig as any).description;
-          if (desc) return desc;
-          if (isTryoutConfig(tryoutConfig)) return tryoutConfig.description;
-          return (tryoutConfig as RegistrationFormConfig).description;
-        }
-        return null;
+        return tryoutConfig?.description || null;
       case 'training':
         return trainingConfig?.description || null;
       case 'player':
@@ -285,7 +270,6 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
     playerConfig,
   ]);
 
-  // Get all available registration types (these are the REAL registration forms)
   const availableForms = useMemo(() => {
     const forms = [];
     if (tournamentActive && tournamentConfig)
@@ -308,109 +292,66 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
     playerConfig,
   ]);
 
-  // Set initial active form based on available count
   useEffect(() => {
     if (availableForms.length === 1 && !activeForm) {
       const formType = availableForms[0].type;
       setActiveForm(formType);
-      // For single form: show description only for non-player forms
-      // Player form shows immediately (no description)
-      if (formType === 'player') {
-        setShowDescription(false);
-      } else {
-        setShowDescription(true);
-      }
+      setShowDescription(formType !== 'player');
     } else if (availableForms.length > 1 && !activeForm) {
       setActiveForm(null);
       setShowDescription(true);
     }
   }, [availableForms]);
 
-  // Memoize season events
   const tournamentSeasonEvent = useMemo(
     () =>
       tournamentConfig ? getSeasonEventForConfig(tournamentConfig) : undefined,
     [tournamentConfig, getSeasonEventForConfig],
   );
-
   const tryoutSeasonEvent = useMemo(
     () => (tryoutConfig ? getSeasonEventForConfig(tryoutConfig) : undefined),
     [tryoutConfig, getSeasonEventForConfig],
   );
-
   const trainingSeasonEvent = useMemo(
     () =>
       trainingConfig ? getSeasonEventForConfig(trainingConfig) : undefined,
     [trainingConfig, getSeasonEventForConfig],
   );
 
-  // Memoize tryout form config
   const tryoutFormConfig = useMemo(() => {
     if (!tryoutConfig) return null;
-    if (isTryoutConfig(tryoutConfig)) {
+    if (isTryoutConfig(tryoutConfig))
       return tryoutToRegistrationConfig(tryoutConfig);
-    }
     return tryoutConfig as RegistrationFormConfig;
   }, [tryoutConfig]);
 
-  // Handle tile clicks
   const handleTileClick = useCallback(
     (form: 'player' | 'tournament' | 'training' | 'tryout') => {
       setActiveForm(form);
-      // For multi-form: always show description first
       setShowDescription(true);
     },
     [],
   );
 
-  // Handle back to tiles
   const handleBackToTiles = useCallback(() => {
     setActiveForm(null);
     setShowDescription(true);
   }, []);
 
-  // Handle registration complete
   const handleRegistrationComplete = useCallback(() => {
-    if (onRegistrationComplete) {
-      onRegistrationComplete();
-    }
+    onRegistrationComplete?.();
   }, [onRegistrationComplete]);
 
-  // Toggle between description and form (used for multi-form and single non-player forms)
   const handleToggleView = useCallback(() => {
     if (isAnimating) return;
-
     setIsAnimating(true);
-
-    if (showDescription) {
-      const descElement = document.querySelector('.reg-description');
-      if (descElement) {
-        descElement.classList.add('exit');
-      }
-    } else {
-      const formElement = document.querySelector('.reg-form-wrapper');
-      if (formElement) {
-        formElement.classList.add('exit');
-      }
-    }
-
     setTimeout(() => {
       setShowDescription((prev) => !prev);
-
-      setTimeout(() => {
-        const descElement = document.querySelector('.reg-description');
-        const formElement = document.querySelector('.reg-form-wrapper');
-        if (descElement) descElement.classList.remove('exit');
-        if (formElement) formElement.classList.remove('exit');
-        setIsAnimating(false);
-      }, 50);
+      setTimeout(() => setIsAnimating(false), 50);
     }, 200);
-  }, [showDescription, isAnimating]);
+  }, [isAnimating]);
 
-  // If no registration forms are active, show nothing (don't render)
-  if (availableForms.length === 0) {
-    return null;
-  }
+  if (availableForms.length === 0) return null;
 
   // SINGLE FORM MODE
   if (availableForms.length === 1 && activeForm) {
@@ -418,7 +359,6 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
     const backgroundImage = getBackgroundImage(form.type, form.config);
     const isPlayerForm = form.type === 'player';
 
-    // For Player form: show form immediately (no description toggle)
     if (isPlayerForm) {
       return (
         <div className='reg-hub-single'>
@@ -427,13 +367,11 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
             <div className='reg-form-content'>
               <div className='reg-form-container'>
                 <div className='reg-form-wrapper'>
-                  {form.type === 'player' && playerConfig && (
-                    <PlayerRegistrationForm
-                      onSuccess={handleRegistrationComplete}
-                      formConfig={playerConfig}
-                      seasonEvent={seasonEvent}
-                    />
-                  )}
+                  <PlayerRegistrationForm
+                    onSuccess={handleRegistrationComplete}
+                    formConfig={playerConfig!}
+                    seasonEvent={seasonEvent}
+                  />
                 </div>
               </div>
             </div>
@@ -442,23 +380,19 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
       );
     }
 
-    // For non-player single forms (Tournament, Tryout, Training): show description with toggle
     return (
       <div className='reg-hub-single'>
         <div className='reg-form-card glass-card'>
           {backgroundImage && <div className='reg-card-overlay'></div>}
           <div className='reg-form-content'>
-            {/* Description View */}
             {showDescription && (
               <div className='reg-description-container'>
-                {currentDescription && (
-                  <div className='reg-description'>
-                    <AutoGridFromDescription
-                      descriptionHtml={currentDescription}
-                      onRegister={handleToggleView}
-                    />
-                  </div>
-                )}
+                <div className='reg-description'>
+                  <AutoGridFromDescription
+                    config={toRegistrationConfig(form.config)}
+                    onRegister={handleToggleView}
+                  />
+                </div>
                 <button
                   className='reg-toggle-btn'
                   onClick={handleToggleView}
@@ -471,7 +405,6 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
               </div>
             )}
 
-            {/* Form View */}
             {!showDescription && (
               <div className='reg-form-container'>
                 <button
@@ -493,7 +426,6 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
                       seasonEvent={tournamentSeasonEvent}
                     />
                   )}
-
                   {form.type === 'tryout' && tryoutConfig && (
                     <TryoutRegistrationForm
                       onSuccess={handleRegistrationComplete}
@@ -502,7 +434,6 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
                       seasonEvent={tryoutSeasonEvent}
                     />
                   )}
-
                   {form.type === 'training' && trainingConfig && (
                     <TrainingRegistrationForm
                       onSuccess={handleRegistrationComplete}
@@ -520,50 +451,47 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
     );
   }
 
-  // MULTIPLE FORMS MODE - Show tiles grid (horizontal scroll on desktop)
+  // TILES MODE
   if (!activeForm) {
     return (
       <div className='reg-hub-grid'>
         <div className='reg-tiles-grid'>
-          {availableForms.map(({ type, config }) => {
-            const backgroundImage = getBackgroundImage(type, config);
-            const displayName = getDisplayName(config);
-
-            return (
-              <button
-                key={type}
-                className='reg-tile'
-                style={
-                  backgroundImage
-                    ? {
-                        backgroundImage: `url(${backgroundImage})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                      }
-                    : {}
-                }
-                onClick={() => handleTileClick(type)}
-              >
-                {backgroundImage && <div className='reg-tile-overlay'></div>}
-                <div className='reg-tile-icon'>
-                  <i className={`ti ${getIcon(type)}`} />
-                </div>
-                <div className='reg-tile-content'>
-                  <span className='reg-tile-title'>{displayName}</span>
-                  <span className='reg-tile-subtitle'>Click to register</span>
-                </div>
-                <div className='reg-tile-arrow'>
-                  <i className='ti ti-chevron-right' />
-                </div>
-              </button>
-            );
-          })}
+          {availableForms.map(({ type, config }) => (
+            <button
+              key={type}
+              className='reg-tile'
+              style={
+                getBackgroundImage(type, config)
+                  ? {
+                      backgroundImage: `url(${getBackgroundImage(type, config)})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }
+                  : {}
+              }
+              onClick={() => handleTileClick(type)}
+            >
+              {getBackgroundImage(type, config) && (
+                <div className='reg-tile-overlay'></div>
+              )}
+              <div className='reg-tile-icon'>
+                <i className={`ti ${getIcon(type)}`} />
+              </div>
+              <div className='reg-tile-content'>
+                <span className='reg-tile-title'>{getDisplayName(config)}</span>
+                <span className='reg-tile-subtitle'>Click to register</span>
+              </div>
+              <div className='reg-tile-arrow'>
+                <i className='ti ti-chevron-right' />
+              </div>
+            </button>
+          ))}
         </div>
       </div>
     );
   }
 
-  // MULTIPLE FORMS MODE - Show selected form with back button and description toggle
+  // MULTIPLE FORMS MODE - Selected form
   const selectedForm = availableForms.find((f) => f.type === activeForm);
   if (!selectedForm) return null;
 
@@ -577,19 +505,15 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
       <button className='reg-back-btn' onClick={handleBackToTiles}>
         <i className='ti ti-arrow-left'></i>
       </button>
-
       <div className='reg-form-card glass-card'>
         {backgroundImage && <div className='reg-card-overlay'></div>}
         <div className='reg-form-content'>
-          {/* Description View - shown first for multi-form */}
           {showDescription && (
             <>
-              {currentDescription && (
-                <AutoGridFromDescription
-                  descriptionHtml={currentDescription}
-                  onRegister={handleToggleView}
-                />
-              )}
+              <AutoGridFromDescription
+                config={toRegistrationConfig(selectedForm.config)}
+                onRegister={handleToggleView}
+              />
               <button className='reg-toggle-btn' onClick={handleToggleView}>
                 <i className='ti ti-chevron-down'></i>
                 <span>Continue to Registration Form</span>
@@ -598,7 +522,6 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
             </>
           )}
 
-          {/* Form View - shown after clicking continue */}
           {!showDescription && (
             <>
               <button
@@ -619,7 +542,6 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
                     seasonEvent={tournamentSeasonEvent}
                   />
                 )}
-
                 {selectedForm.type === 'tryout' && tryoutConfig && (
                   <TryoutRegistrationForm
                     onSuccess={handleRegistrationComplete}
@@ -628,7 +550,6 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
                     seasonEvent={tryoutSeasonEvent}
                   />
                 )}
-
                 {selectedForm.type === 'training' && trainingConfig && (
                   <TrainingRegistrationForm
                     onSuccess={handleRegistrationComplete}
@@ -637,7 +558,6 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
                     description={trainingConfig.description || ''}
                   />
                 )}
-
                 {selectedForm.type === 'player' && playerConfig && (
                   <PlayerRegistrationForm
                     onSuccess={handleRegistrationComplete}

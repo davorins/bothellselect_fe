@@ -298,6 +298,7 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
             createdAt: c.createdAt,
             updatedAt: c.updatedAt,
             __v: c.__v,
+            trainingDetails: c.trainingDetails,
           };
           return;
         }

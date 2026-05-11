@@ -261,6 +261,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
               createdAt: configData.createdAt,
               updatedAt: configData.updatedAt,
               __v: configData.__v,
+              trainingDetails: configData.trainingDetails,
             };
             return;
           }

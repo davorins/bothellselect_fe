@@ -331,6 +331,7 @@ export interface RegistrationFormConfig {
     packages: any[];
   };
   description?: string;
+  trainingDetails?: TrainingDetails;
   tournamentName?: string;
   tournamentYear?: number;
   displayName?: string;
@@ -471,4 +472,37 @@ export interface TryoutSpecificConfig {
   createdAt?: string;
   updatedAt?: string;
   __v?: number;
+}
+
+export interface TrainingSession {
+  id?: string;
+  number: number;
+  startTime: string;
+  endTime: string;
+  grades: string;
+}
+
+export interface TrainingLocation {
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+export interface TrainingDetails {
+  startDate: string;
+  endDate: string;
+  duration: string;
+  gender: string;
+  days: string[];
+  location: TrainingLocation;
+  trainingSessions: TrainingSession[];
+  notes: string[];
+  dropOffTime: string;
+  pickUpTime: string;
+  hasLimitedSpots: boolean;
+  contactEmail: string;
+  ageGroups: string[];
+  maxParticipants: number | null;
 }
