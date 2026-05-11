@@ -12,6 +12,42 @@
   bottom: 50px;
 }
 
+/* Background image overlay - positioned bottom-right with contain */
+.hp-root::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('../../../public/assets/img/bg/main.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: bottom right;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 1;
+  mix-blend-mode: overlay;
+}
+
+/* Optional: Add a gradient overlay to blend the background image with the video */
+.hp-root::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.3) 0%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* ─── Loading ──────────────────────────────────────────────────── */
 .hp-loading {
   display: flex;
@@ -55,7 +91,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  z-index: 0;
+  z-index: 1;
   cursor: pointer;
   filter: brightness(0.55);
 }
@@ -64,7 +100,7 @@
 .hp-stage__placeholder {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: 1;
   background: linear-gradient(135deg, #0a0a0f 0%, #0d1117 50%, #0a0f1e 100%);
   transition: background 0.3s ease;
 }
@@ -90,7 +126,7 @@
 .hp-stage__scrim {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 2;
   background:
     radial-gradient(
       ellipse at 50% 0%,
@@ -745,47 +781,6 @@
   box-shadow: 0 32px 64px rgba(0, 0, 0, 0.6);
   animation: fadeUp 0.3s ease;
 }
-.hp-popup__header {
-  padding: 14px 20px;
-  background: rgba(0, 0, 0, 0.4);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.hp-popup__title {
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.hp-popup__close {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.hp-popup__close:hover {
-  background: rgba(255, 255, 255, 0.18);
-  transform: rotate(90deg);
-}
-.hp-popup__body {
-  flex: 1;
-  padding: 0;
-  background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 .hp-popup__video {
   width: 100%;
   height: auto;
@@ -793,13 +788,6 @@
   border-radius: 0;
   background: #000;
   display: block;
-}
-.hp-popup__footer {
-  padding: 14px 20px;
-  background: rgba(0, 0, 0, 0.4);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  justify-content: center;
 }
 .hp-popup__close-btn {
   background: rgba(255, 255, 255, 0.08);
@@ -818,16 +806,6 @@
   background: rgba(255, 255, 255, 0.15);
   transform: translateY(-2px);
 }
-
-/* REMOVED ALL LIGHTING ANIMATIONS - The following sections are completely removed for performance:
-   - Dynamic Lighting Effects
-   - Animated gradients
-   - Light beams
-   - Pulsing orbs
-   - Tile glow effects
-   - Border animations
-   - All keyframes for lighting effects
-*/
 
 /* Top and Bottom Stripes - Static only, no animations */
 .hp-stage__top-stripe-enhanced {
@@ -872,15 +850,20 @@
   );
 }
 
+/* Responsive adjustments for background image */
 @media (max-width: 768px) {
-  .hp-stage__top-stripe,
+  .hp-root::before {
+    opacity: 0.4;
+    background-size: cover;
+    background-position: bottom right;
+  }
+
   .hp-stage__top-stripe-enhanced,
   .hp-stage__top-stripe-glowing {
     height: 150px;
     max-height: 150px;
   }
 
-  .hp-stage__bottom-stripe,
   .hp-stage__bottom-stripe-enhanced,
   .hp-stage__bottom-stripe-glowing {
     height: 220px;
@@ -889,14 +872,17 @@
 }
 
 @media (max-width: 480px) {
-  .hp-stage__top-stripe,
+  .hp-root::before {
+    opacity: 0.3;
+    background-size: cover;
+  }
+
   .hp-stage__top-stripe-enhanced,
   .hp-stage__top-stripe-glowing {
     height: 120px;
     max-height: 120px;
   }
 
-  .hp-stage__bottom-stripe,
   .hp-stage__bottom-stripe-enhanced,
   .hp-stage__bottom-stripe-glowing {
     height: 180px;

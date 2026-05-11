@@ -46,6 +46,8 @@
   font-weight: 600;
   transition: all 0.2s ease;
   text-decoration: none;
+  right: 30px;
+  position: absolute;
 }
 
 .spotlight-glass-link:hover {
@@ -99,8 +101,8 @@
 /* Grid Layout */
 .spotlight-glass-grid {
   display: grid;
-  grid-template-columns: 1fr 1.5fr;
-  gap: 2rem;
+  grid-template-columns: 1fr 2.5fr;
+  gap: 3rem;
   align-items: start;
 }
 

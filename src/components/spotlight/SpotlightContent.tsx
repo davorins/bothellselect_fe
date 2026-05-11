@@ -368,7 +368,7 @@ const SpotlightContent: React.FC<SpotlightContentProps> = ({
           <div className='spotlight-glass-overlay'></div>
           <div className='spotlight-glass-content'>
             {(showTitle || showViewAll) && (
-              <div className='spotlight-glass-header'>
+              <div>
                 {showTitle && (
                   <h2 className='spotlight-glass-title'>{title}</h2>
                 )}
