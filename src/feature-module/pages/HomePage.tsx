@@ -826,58 +826,21 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         )}
       </div>
 
-      {showVideoPopup && promoVideoUrl && !videoError && (
+      {/* Video Popup */}
+      {showVideoPopup && promoVideoUrl && (
         <div className='hp-popup' onClick={closeVideoPopup}>
           <div className='hp-popup__box' onClick={(e) => e.stopPropagation()}>
-            <div className='hp-popup__header'>
-              <span className='hp-popup__title'>
-                <svg
-                  width='18'
-                  height='18'
-                  viewBox='0 0 24 24'
-                  fill='currentColor'
-                >
-                  <path d='M8 5v14l11-7z' />
-                </svg>
-                Video Player
-              </span>
-              <button className='hp-popup__close' onClick={closeVideoPopup}>
-                <svg
-                  width='14'
-                  height='14'
-                  viewBox='0 0 24 24'
-                  fill='currentColor'
-                >
-                  <path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z' />
-                </svg>
-              </button>
-            </div>
-            <div className='hp-popup__body'>
-              <video
-                ref={popupVideoRef}
-                className='hp-popup__video'
-                src={promoVideoUrl}
-                autoPlay
-                controls
-                muted={videoControls.isMuted}
-                playsInline
-              >
-                Your browser does not support the video tag.
-              </video>
-            </div>
-            <div className='hp-popup__footer'>
-              <button className='hp-popup__close-btn' onClick={closeVideoPopup}>
-                <svg
-                  width='14'
-                  height='14'
-                  viewBox='0 0 24 24'
-                  fill='currentColor'
-                >
-                  <path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z' />
-                </svg>
-                Close Window
-              </button>
-            </div>
+            <video
+              ref={popupVideoRef}
+              src={promoVideoUrl}
+              autoPlay
+              controls
+              playsInline
+              className='hp-popup__video'
+            />
+            <button onClick={closeVideoPopup} className='hp-popup__close-btn'>
+              Close
+            </button>
           </div>
         </div>
       )}
