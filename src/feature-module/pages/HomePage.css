@@ -853,9 +853,11 @@
 /* Responsive adjustments for background image */
 @media (max-width: 768px) {
   .hp-root::before {
-    opacity: 0.4;
+    opacity: 1;
     background-size: cover;
-    background-position: bottom right;
+    background-position: right center;
+    mix-blend-mode: normal;
+    z-index: 1;
   }
 
   .hp-stage__top-stripe-enhanced,
