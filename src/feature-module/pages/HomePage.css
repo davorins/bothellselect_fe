@@ -975,7 +975,7 @@
 
 @media (max-width: 480px) {
   .hp-overlay {
-    padding: 0 10px 80px;
+    padding: 0 10px 115px;
   }
 
   .hp-tile-grid[data-count='3'],
