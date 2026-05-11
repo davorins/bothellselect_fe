@@ -1,41 +1,60 @@
 // components/SpotlightCard.tsx
-import React, { useState } from 'react';
+import React from 'react';
+import { Calendar, Star, Users } from 'lucide-react';
 import { Spotlight } from '../../types/types';
 
 interface SpotlightCardProps {
   item: Spotlight;
+  onClick?: () => void;
 }
 
-const SpotlightCard = ({ item }: SpotlightCardProps) => {
-  const [main, setMain] = useState(item.images && item.images[0]);
-
+const SpotlightCard: React.FC<SpotlightCardProps> = ({ item, onClick }) => {
   return (
-    <div className='spotlight-card glass-frame position-relative mb-4'>
-      <div className='img-wrap'>
-        {main ? (
-          <img src={main} alt={item.title} className='img-fluid rounded' />
-        ) : (
-          <div className='placeholder p-5 text-center'>No image</div>
-        )}
-        {/* badges */}
-        {item.badges?.map((b, i) => (
-          <div key={i} className={`badge-overlay badge-${i % 3}`}>
-            {b}
+    <div className='spotlight-card-glass' onClick={onClick}>
+      <div className='spotlight-card-image'>
+        <img
+          src={item.images?.[0] || '/assets/img/placeholder.jpg'}
+          alt={item.title}
+          loading='lazy'
+        />
+        {item.featured && (
+          <div className='spotlight-card-featured'>
+            <Star size={12} fill='currentColor' />
+            Featured
           </div>
-        ))}
+        )}
       </div>
 
-      <div className='card-body p-3'>
-        <h5 className='mb-1'>{item.title}</h5>
-        <small className='text-muted'>
+      <div className='spotlight-card-content'>
+        <span className='spotlight-card-category'>
+          <Users size={12} />
+          {item.category}
+        </span>
+
+        <h3 className='spotlight-card-title'>{item.title}</h3>
+
+        <div className='spotlight-card-date'>
+          <Calendar size={14} />
           {new Date(item.date).toLocaleDateString()}
-        </small>
-        <p className='mt-2 mb-0'>{item.description}</p>
-        {item.playerNames?.length ? (
-          <p className='mt-2 mb-0'>
+        </div>
+
+        <p className='spotlight-card-description'>{item.description}</p>
+
+        {item.playerNames && item.playerNames.length > 0 && (
+          <div className='spotlight-card-players'>
             <strong>Players:</strong> {item.playerNames.join(', ')}
-          </p>
-        ) : null}
+          </div>
+        )}
+
+        {item.badges && item.badges.length > 0 && (
+          <div className='spotlight-card-badges'>
+            {item.badges.map((badge, index) => (
+              <span key={index} className='spotlight-card-badge'>
+                {badge}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

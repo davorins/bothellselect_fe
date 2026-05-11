@@ -1038,3 +1038,24 @@
     height: 18px;
   }
 }
+
+/* Hide video and controls completely on mobile */
+@media (max-width: 768px) {
+  .hp-stage__video {
+    display: none;
+  }
+  .hp-controls-open,
+  .hp-controls {
+    display: none !important;
+  }
+}
+
+/* Desktop only improvements */
+@media (min-width: 769px) {
+  .hp-controls-open {
+    z-index: 30;
+  }
+  .hp-controls {
+    z-index: 31;
+  }
+}

@@ -41,11 +41,18 @@ function sectionToTileMeta(section: PageSection): TileMeta {
     stats: 'ti-chart-bar',
     custom: 'ti-code',
   };
+  let label =
+    section.title ||
+    section.type.charAt(0).toUpperCase() + section.type.slice(1);
+
+  // Override for form type to a generic title
+  if (section.type === 'form') {
+    label = 'Events';
+  }
+
   return {
     id: section.id,
-    label:
-      section.title ||
-      section.type.charAt(0).toUpperCase() + section.type.slice(1),
+    label: label,
     sublabel: section.subtitle,
     icon: iconMap[section.type] || 'ti-layout',
   };
@@ -745,7 +752,14 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
                   <div className='htr-tile-icon'>
                     <i className={`ti ${meta.icon}`} />
                   </div>
-                  <div className='htr-tile-content'>
+                  <div
+                    className='htr-tile-content'
+                    style={{
+                      position: 'absolute',
+                      bottom: '50px',
+                      width: '100%',
+                    }}
+                  >
                     <span className='htr-tile-title'>{meta.label}</span>
                     <span className='htr-tile-subtitle'>
                       {meta.sublabel || 'Click to open'}
