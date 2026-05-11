@@ -2393,13 +2393,21 @@ input[type='text'] {
     }
   }
 
-  .header .bar-icon span {
-    background-color: #ffffff;
-    width: 26px;
-    height: 2px;
-  }
-  .header .bar-icon span:nth-child(2) {
-    width: 26px;
+  .mobile_btn {
+    background-color: transparent;
+    border: 0;
+    width: 50px !important;
+    height: 50px !important;
+    line-height: 50px !important;
+
+    .bar-icon span {
+      background-color: #ffffff;
+      width: 26px;
+      height: 2px;
+    }
+    .bar-icon span:nth-child(2) {
+      width: 26px;
+    }
   }
 
   .mobile-nav-glass {

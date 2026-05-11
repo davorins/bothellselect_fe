@@ -62,13 +62,19 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
   };
 
   const toggleMobileSidebar = useCallback(() => {
-    dispatch(setMobileSidebar(!mobileSidebar));
+    const newState = !mobileSidebar;
+    dispatch(setMobileSidebar(newState));
+    if (!newState) {
+      setOpenMobileDropdown(null);
+    }
   }, [dispatch, mobileSidebar]);
 
   const closeMobileMenu = useCallback(() => {
-    dispatch(setMobileSidebar(false));
-    setOpenMobileDropdown(null);
-  }, [dispatch]);
+    if (mobileSidebar) {
+      dispatch(setMobileSidebar(false));
+      setOpenMobileDropdown(null);
+    }
+  }, [dispatch, mobileSidebar]);
 
   const handleMobileLinkClick = useCallback(() => {
     closeMobileMenu();
@@ -83,10 +89,16 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
   // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Don't close if clicking on the mobile menu button
+      if (target.closest('#mobile_btn')) {
+        return;
+      }
+
       if (
         mobileSidebar &&
         mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(event.target as Node)
+        !mobileMenuRef.current.contains(target)
       ) {
         closeMobileMenu();
       }
@@ -190,20 +202,19 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
   };
 
   const renderMobileMenuButton = () => (
-    <Link
+    <button
       id='mobile_btn'
       className={`mobile_btn d-md-none ${mobileSidebar ? 'active' : ''}`}
-      to='#'
       onClick={toggleMobileSidebar}
+      aria-label='Toggle menu'
     >
       <span className='bar-icon'>
         <span />
         <span />
         <span />
       </span>
-    </Link>
+    </button>
   );
-
   // Navigation items configuration
   const publicNavItems = [
     { path: '/', icon: 'ti ti-home-2', label: 'Home' },
@@ -412,9 +423,9 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
             <div className='mobile-nav-title'>
               <span>Menu</span>
             </div>
-            <button className='mobile-nav-close' onClick={closeMobileMenu}>
+            {/* <button className='mobile-nav-close' onClick={closeMobileMenu}>
               <i className='ti ti-x'></i>
-            </button>
+            </button> */}
           </div>
 
           {/* Public Section */}
