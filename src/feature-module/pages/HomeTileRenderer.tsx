@@ -481,7 +481,32 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
       case 'welcome':
       case 'text':
         return (
-          <div dangerouslySetInnerHTML={{ __html: section.content || '' }} />
+          <div className='welcome-container'>
+            {/* <div className='welcome-icon'>
+              <i className='ti ti-home-heart'></i>
+            </div> */}
+            <div className='welcome-title'>{section.title || 'Welcome'}</div>
+            <div
+              className='welcome-content'
+              dangerouslySetInnerHTML={{ __html: section.content || '' }}
+            />
+            {/* <div className='welcome-cta'>
+              <button
+                className='welcome-btn'
+                onClick={() => {
+                  // Optional: scroll to registration or next section
+                  const nextSection = document.querySelector('.htr-tile');
+                  nextSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Explore More
+                <i
+                  className='ti ti-arrow-right'
+                  style={{ marginLeft: '8px' }}
+                ></i>
+              </button>
+            </div> */}
+          </div>
         );
 
       case 'image':
@@ -644,9 +669,10 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
       {/* macOS Dock style overlay when a tile is expanded */}
       {activeTileId && expandedSection && (
         <div className='htr-dock-overlay'>
-          {/* Expanded content area */}
           <div className='htr-expanded-container'>
-            <div className='htr-expanded-card'>
+            <div
+              className={`htr-expanded-card ${expandedSection.type === 'welcome' ? 'htr-expanded-card--welcome' : ''}`}
+            >
               <div className='htr-expanded-content'>
                 {renderTileContent(expandedSection)}
               </div>

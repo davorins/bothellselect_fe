@@ -19,7 +19,7 @@
   }
 }
 
-/* ── Tiles Wrapper - Horizontal Scrollable Container ────────────────────────────────── */
+/* ── Tiles Wrapper ─────────────────────────────────────────────── */
 .htr-tiles-wrapper {
   width: 100%;
   padding: 40px 20px;
@@ -30,6 +30,7 @@
   cursor: grab;
   white-space: nowrap;
   -webkit-overflow-scrolling: touch;
+  position: relative;
 }
 
 .htr-tiles-wrapper:active {
@@ -49,7 +50,7 @@
   border-radius: 3px;
 }
 
-/* Grid layout - single row horizontal */
+/* Grid layout */
 .htr-tiles-grid {
   display: inline-flex;
   flex-direction: row;
@@ -58,7 +59,7 @@
   white-space: nowrap;
 }
 
-/* Individual Tile - 360x581px - Matching RegistrationHub exactly */
+/* ── Individual Tile ───────────────────────────────────────────── */
 .htr-tile {
   width: 360px;
   min-width: 360px;
@@ -92,7 +93,7 @@
   white-space: normal;
 }
 
-/* Glowing bottom effect - matching RegistrationHub */
+/* Glowing bottom bar on hover */
 .htr-tile::after {
   content: '';
   position: absolute;
@@ -124,7 +125,6 @@
 
 .htr-tile[style*='background-image'] {
   background-blend-mode: overlay;
-  /* background-color: rgba(0, 0, 0, 0.4); */
 }
 
 .htr-tile-overlay {
@@ -213,7 +213,7 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
-/* Glass reflection effect */
+/* Glass reflection sweep */
 .htr-tile::before {
   content: '';
   position: absolute;
@@ -237,7 +237,7 @@
   left: 100%;
 }
 
-/* ── macOS DOCK STYLES (with glassmorphism) ───────────────────── */
+/* ── macOS DOCK ────────────────────────────────────────────────── */
 .htr-dock-overlay {
   position: fixed;
   top: 0;
@@ -271,15 +271,13 @@
   }
 }
 
-/* Glassmorphic expanded card */
 .htr-expanded-card {
   overflow: hidden;
   position: relative;
 }
 
-/* Glowing bottom effect for expanded card */
+/* ── Standalone glow element (rendered as <div className="glow-effect" />) ── */
 .glow-effect {
-  content: '';
   position: absolute;
   bottom: -400px;
   left: 50%;
@@ -300,7 +298,8 @@
 }
 
 .htr-expanded-content {
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   color: white;
   position: relative;
   z-index: 1;
@@ -310,21 +309,19 @@
 .htr-expanded-content::-webkit-scrollbar {
   width: 6px;
 }
-
 .htr-expanded-content::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 3px;
 }
-
 .htr-expanded-content::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
 }
 
-/* Dock bar */
+/* ── Dock bar ──────────────────────────────────────────────────── */
 .htr-dock {
   position: fixed;
-  bottom: 20px;
+  bottom: 80px;
   left: 0;
   right: 0;
   display: flex;
@@ -332,7 +329,6 @@
   z-index: 1001;
   pointer-events: auto;
   animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  bottom: 80px;
 }
 
 @keyframes fadeUp {
@@ -355,6 +351,7 @@
   border-radius: 60px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  position: relative; /* so .glow-effect inside positions relative to this */
 }
 
 .htr-dock-item {
@@ -415,7 +412,212 @@
   transform: rotate(90deg);
 }
 
-/* ── responsive: Mobile (stacked vertically, 120px height) ───────────────── */
+/* ============================================
+   WELCOME SECTION
+   Self-contained styles — no ancestor
+   dependency needed.
+   ============================================ */
+
+.welcome-container {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+}
+
+.welcome-icon {
+  font-size: 3.5rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.5rem;
+  animation: iconBounce 2s ease-in-out infinite;
+}
+
+@keyframes iconBounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.welcome-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+  animation: titleFadeIn 0.8s ease both;
+}
+
+@keyframes titleFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.welcome-content {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 800px;
+  animation: contentFadeIn 0.8s ease 0.2s both;
+}
+
+/* Styles for any html content rendered inside welcome-content */
+.welcome-content h1,
+.welcome-content h2,
+.welcome-content h3 {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.welcome-content p {
+  margin-bottom: 0.75rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+@keyframes contentFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.welcome-cta {
+  margin-top: 2rem;
+  animation: ctaFadeIn 0.8s ease 0.4s both;
+}
+
+@keyframes ctaFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.welcome-btn {
+  background: linear-gradient(
+    135deg,
+    rgba(80, 100, 220, 0.9),
+    rgba(60, 80, 200, 0.9)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 12px 32px;
+  border-radius: 50px;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+  display: inline-flex;
+  align-items: center;
+}
+
+.welcome-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(80, 100, 220, 0.4);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* ── Welcome card modifier — only for card-level overrides ── */
+.htr-expanded-card--welcome {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(80, 100, 220, 0.1) 100%
+  );
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 32px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: welcomeGlow 3s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes welcomeGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      0 0 0 0 rgba(80, 100, 220, 0);
+  }
+  50% {
+    box-shadow:
+      0 8px 48px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      0 0 40px rgba(80, 100, 220, 0.3);
+  }
+}
+
+/* Shine sweep */
+.htr-expanded-card--welcome::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 70%
+  );
+  animation: welcomeShine 8s infinite;
+  pointer-events: none;
+}
+
+@keyframes welcomeShine {
+  0% {
+    transform: translateX(-100%) rotate(45deg);
+  }
+  50% {
+    transform: translateX(0%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) rotate(45deg);
+  }
+}
+
+/* Center content vertically inside welcome card */
+.htr-expanded-card--welcome .htr-expanded-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+/* ── Mobile ────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .htr-tiles-wrapper {
     padding: 20px 16px;
@@ -466,7 +668,6 @@
     font-size: 1rem !important;
     margin-bottom: 2px;
   }
-
   .htr-tile-subtitle {
     font-size: 0.75rem !important;
   }
@@ -475,7 +676,6 @@
     margin-top: 0 !important;
     flex-shrink: 0;
   }
-
   .htr-tile-arrow i {
     font-size: 1.1rem !important;
   }
@@ -484,18 +684,19 @@
     transform: translateY(-2px) scale(1.01) !important;
   }
 
-  /* Adjust glowing effect for mobile */
   .htr-tile::after {
     height: 3px;
     bottom: -1px;
   }
 
-  /* Expanded content mobile */
+  .htr-tile-overlay {
+    border-radius: 0;
+  }
+
   .htr-expanded-container {
     bottom: 80px;
     width: 95%;
   }
-
   .htr-expanded-content {
     padding: 24px;
   }
@@ -503,17 +704,14 @@
   .htr-dock {
     bottom: 10px;
   }
-
   .htr-dock-inner {
     gap: 8px;
     padding: 8px 16px;
   }
-
   .htr-dock-item {
     padding: 6px 12px;
     font-size: 0.75rem;
   }
-
   .htr-dock-item i {
     font-size: 1rem;
   }
@@ -526,8 +724,16 @@
     bottom: unset !important;
   }
 
-  .htr-tile-overlay {
-    border-radius: 0;
+  /* Welcome mobile */
+  .welcome-title {
+    font-size: 1.8rem;
+  }
+  .welcome-content {
+    font-size: 0.95rem;
+    padding: 0 1rem;
+  }
+  .welcome-icon {
+    font-size: 2.5rem;
   }
 }
 
@@ -535,7 +741,6 @@
   .htr-tiles-wrapper {
     padding: 16px 12px;
   }
-
   .htr-tiles-grid {
     gap: 12px;
   }
@@ -554,15 +759,12 @@
     height: 48px !important;
     font-size: 1.5rem !important;
   }
-
   .htr-tile-title {
     font-size: 0.9rem !important;
   }
-
   .htr-tile-subtitle {
     font-size: 0.7rem !important;
   }
-
   .htr-tile-arrow i {
     font-size: 1rem !important;
   }
@@ -571,7 +773,6 @@
     bottom: 70px;
     width: 98%;
   }
-
   .htr-expanded-content {
     padding: 20px;
   }
@@ -580,16 +781,13 @@
     gap: 6px;
     padding: 6px 12px;
   }
-
   .htr-dock-item {
     padding: 5px 10px;
     font-size: 0.7rem;
   }
-
   .htr-dock-item i {
     font-size: 0.9rem;
   }
-
   .htr-dock-item-label {
     display: none;
   }
@@ -605,15 +803,26 @@
   .htr-expanded-content > div > p {
     font-size: 1.15rem;
   }
+
+  /* Welcome extra small */
+  .welcome-title {
+    font-size: 1.4rem;
+  }
+  .welcome-content {
+    font-size: 0.85rem;
+  }
+  .welcome-btn {
+    padding: 10px 24px;
+    font-size: 0.9rem;
+  }
 }
 
-/* Landscape mode on phones */
+/* Landscape */
 @media (max-width: 768px) and (orientation: landscape) {
   .htr-tiles-grid {
     flex-direction: row;
     overflow-x: auto;
   }
-
   .htr-tile {
     width: 280px !important;
     min-width: 280px !important;
@@ -622,28 +831,32 @@
   }
 }
 
-/* Safe area insets for notched devices */
+/* Safe area insets */
 @supports (padding: max(0px)) {
   @media (max-width: 768px) {
     .htr-tiles-wrapper {
       padding-top: max(20px, env(safe-area-inset-top));
       padding-bottom: max(20px, env(safe-area-inset-bottom));
     }
-
     .htr-dock {
       bottom: max(10px, env(safe-area-inset-bottom));
     }
   }
 }
 
-/* Reduced motion preference */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .htr-tile,
   .htr-tile::before,
   .htr-tile::after,
   .htr-tile:hover,
   .htr-dock-item,
-  .htr-close-btn {
+  .htr-close-btn,
+  .welcome-icon,
+  .welcome-title,
+  .welcome-content,
+  .welcome-cta,
+  .htr-expanded-card--welcome {
     transition: none !important;
     animation: none !important;
   }
@@ -651,7 +864,6 @@
   .htr-tile:hover {
     transform: none !important;
   }
-
   .htr-dock-item:hover {
     transform: none !important;
   }
