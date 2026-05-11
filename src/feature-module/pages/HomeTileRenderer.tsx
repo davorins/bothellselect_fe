@@ -752,21 +752,11 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
                   <div className='htr-tile-icon'>
                     <i className={`ti ${meta.icon}`} />
                   </div>
-                  <div
-                    className='htr-tile-content'
-                    style={{
-                      position: 'absolute',
-                      bottom: '50px',
-                      width: '100%',
-                    }}
-                  >
+                  <div className='htr-tile-content'>
                     <span className='htr-tile-title'>{meta.label}</span>
                     <span className='htr-tile-subtitle'>
                       {meta.sublabel || 'Click to open'}
                     </span>
-                  </div>
-                  <div className='htr-tile-arrow'>
-                    <i className='ti ti-chevron-right' />
                   </div>
                 </button>
               );

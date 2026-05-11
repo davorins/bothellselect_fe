@@ -181,6 +181,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: absolute;
+  bottom: 50px;
 }
 
 .htr-tile-title {
@@ -457,6 +459,7 @@
     flex: 1;
     gap: 4px;
     text-align: left;
+    position: unset;
   }
 
   .htr-tile-title {
