@@ -28,9 +28,10 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
   cursor: grab;
-  white-space: nowrap;
   -webkit-overflow-scrolling: touch;
   position: relative;
+  display: flex;
+  justify-content: center;
 }
 
 .htr-tiles-wrapper:active {
