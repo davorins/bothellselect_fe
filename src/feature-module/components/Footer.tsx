@@ -10,8 +10,14 @@ const Footer = () => {
         <a href='https://rainbootsmarketing.com/'>Rainboots</a>
       </div>
       <div className='footer-links'>
-        <Link to='/privacy-policy'>Privacy Policy</Link>
-        <Link to='/terms-conditions'>Terms and Conditions</Link>
+        <Link to='/privacy-policy'>
+          <i className='ti ti-lock'></i>
+          <span className='link-text'>Privacy Policy</span>
+        </Link>
+        <Link to='/terms-conditions'>
+          <i className='ti ti-file-text'></i>
+          <span className='link-text'>Terms and Conditions</span>
+        </Link>
       </div>
     </footer>
   );
