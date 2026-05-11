@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import ImageWithBasePath from '../../core/common/imageWithBasePath';
@@ -27,10 +27,15 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
   const [avatarSrc, setAvatarSrc] = useState(DEFAULT_AVATAR);
   const [aboutDropdownOpen, setAboutDropdownOpen] = useState(false);
   const [teamDropdownOpen, setTeamDropdownOpen] = useState(false);
+  const [openMobileDropdown, setOpenMobileDropdown] = useState<string | null>(
+    null,
+  );
 
   const mobileSidebar = useSelector(
     (state: any) => state.sidebarSlice.mobileSidebar,
   );
+
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const sponsors = [
     {
@@ -47,16 +52,49 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
 
   const handleLogout = () => {
     logout();
+    closeMobileMenu();
     navigate('/');
   };
 
   const handleLoginRedirect = () => {
+    closeMobileMenu();
     navigate(routes.login);
   };
 
   const toggleMobileSidebar = useCallback(() => {
     dispatch(setMobileSidebar(!mobileSidebar));
   }, [dispatch, mobileSidebar]);
+
+  const closeMobileMenu = useCallback(() => {
+    dispatch(setMobileSidebar(false));
+    setOpenMobileDropdown(null);
+  }, [dispatch]);
+
+  const handleMobileLinkClick = useCallback(() => {
+    closeMobileMenu();
+  }, [closeMobileMenu]);
+
+  const toggleMobileDropdown = useCallback((dropdownName: string) => {
+    setOpenMobileDropdown((prev) =>
+      prev === dropdownName ? null : dropdownName,
+    );
+  }, []);
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        mobileSidebar &&
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target as Node)
+      ) {
+        closeMobileMenu();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [mobileSidebar, closeMobileMenu]);
 
   const onMouseEnter = useCallback(() => {
     dispatch(setExpandMenu(true));
@@ -78,11 +116,6 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
 
   const closeAboutDropdown = () => {
     setAboutDropdownOpen(false);
-  };
-
-  const closeAllDropdowns = () => {
-    setAboutDropdownOpen(false);
-    setTeamDropdownOpen(false);
   };
 
   const closeTeamDropdown = () => {
@@ -159,8 +192,8 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
   const renderMobileMenuButton = () => (
     <Link
       id='mobile_btn'
-      className='mobile_btn d-md-none'
-      to='#sidebar'
+      className={`mobile_btn d-md-none ${mobileSidebar ? 'active' : ''}`}
+      to='#'
       onClick={toggleMobileSidebar}
     >
       <span className='bar-icon'>
@@ -170,6 +203,42 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
       </span>
     </Link>
   );
+
+  // Navigation items configuration
+  const publicNavItems = [
+    { path: '/', icon: 'ti ti-home-2', label: 'Home' },
+    { path: '/tournaments', icon: 'ti ti-trophy', label: 'Tournaments' },
+    { path: '/events', icon: 'ti ti-calendar-event', label: 'Schedule/Events' },
+    { path: '/contact-us', icon: 'ti ti-mail', label: 'Contact Us' },
+    { path: '/faq', icon: 'ti ti-question-mark', label: 'FAQ' },
+  ];
+
+  const dropdownItems = [
+    {
+      name: 'about',
+      icon: 'ti ti-chess-knight',
+      label: 'About Us',
+      items: [
+        { path: '/about-us', label: 'Our Mission' },
+        { path: '/program-leadership', label: 'Program Leadership' },
+      ],
+    },
+    {
+      name: 'team',
+      icon: 'ti ti-ball-basketball',
+      label: 'Our Team',
+      items: [
+        { path: '/our-team', label: 'Team Overview' },
+        { path: '/in-the-spotlight', label: 'In The Spotlight' },
+      ],
+    },
+  ];
+
+  const privateNavItems = [
+    { path: routes.profile, icon: 'ti ti-user-circle', label: 'My Profile' },
+    { path: routes.myTickets, icon: 'ti ti-ticket', label: 'My Tickets' },
+    { path: routes.profilesettings, icon: 'ti ti-settings', label: 'Settings' },
+  ];
 
   return (
     <>
@@ -274,32 +343,7 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
             </li>
           </ul>
         </div>
-        {/* <div className='d-none d-md-flex align-items-center'>
-          <span>Our Partners:</span>
-          <div
-            className={`sponsor-logo-container ${
-              showSponsorLogo ? 'slide-in' : ''
-            }`}
-          >
-            <div className='sponsor-container'>
-              {sponsors.map((sponsor) => (
-                <a
-                  key={sponsor.name}
-                  href={sponsor.link}
-                  target='_blank'
-                  rel='noreferrer'
-                  className='sponsor-item'
-                >
-                  <ImageWithBasePath
-                    src={sponsor.logo}
-                    alt={sponsor.name}
-                    className='sponsor-header-logo'
-                  />
-                </a>
-              ))}
-            </div>
-          </div>
-        </div> */}
+
         <div className='d-none d-md-flex align-items-center'>
           <NotificationDropdown avatarSrc={avatarSrc || DEFAULT_AVATAR} />
           {isAuthenticated && parent ? (
@@ -335,7 +379,6 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
                 <Link className='dropdown-item' to={routes.profile}>
                   <i className='ti ti-user-circle me-2' /> My Profile
                 </Link>
-                {/* ADDED: My Tickets link */}
                 <Link className='dropdown-item' to={routes.myTickets}>
                   <i className='ti ti-ticket me-2' /> My Tickets
                 </Link>
@@ -362,180 +405,101 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
         </div>
       </div>
 
+      {/* Mobile Navigation - Glassmorphism Style */}
       {mobileSidebar && (
-        <div className='mobile-nav d-md-none px-3 pb-3 bg-white shadow-sm'>
-          <ul className='nav flex-column'>
-            <li className='nav-item'>
-              <Link className='nav-link' to='/' onClick={toggleMobileSidebar}>
-                <i className='ti ti-home-2' /> Home
-              </Link>
-            </li>
-            <li className='nav-item'>
-              <Link
-                className='nav-link'
-                to='/tournaments'
-                onClick={toggleMobileSidebar}
-              >
-                <i className='ti ti-tournament' /> Tournaments
-              </Link>
-            </li>
-            <li className='nav-item dropdown'>
-              <Link
-                className='nav-link dropdown-toggle'
-                to='#'
-                onClick={(e) => {
-                  e.preventDefault();
-                  const nextSibling = e.currentTarget
-                    .nextElementSibling as HTMLElement;
-                  if (nextSibling) {
-                    nextSibling.style.display =
-                      nextSibling.style.display === 'block' ? 'none' : 'block';
-                  }
-                }}
-              >
-                <i className='ti ti-chess-knight' /> About Us
-              </Link>
-              <ul className='dropdown-mobile' style={{ display: 'none' }}>
-                <li>
-                  <Link
-                    className='dropdown-item'
-                    to='/about-us'
-                    onClick={toggleMobileSidebar}
-                  >
-                    Our Mission
+        <div className='mobile-nav-glass' ref={mobileMenuRef}>
+          <div className='mobile-nav-header'>
+            <div className='mobile-nav-title'>
+              <span>Menu</span>
+            </div>
+            <button className='mobile-nav-close' onClick={closeMobileMenu}>
+              <i className='ti ti-x'></i>
+            </button>
+          </div>
+
+          {/* Public Section */}
+          <div className='mobile-nav-section'>
+            <div className='mobile-nav-section-title'>
+              <i className='ti ti-compass'></i>
+              <span>Navigation</span>
+            </div>
+            <ul className='mobile-nav-list'>
+              {publicNavItems.map((item) => (
+                <li key={item.path}>
+                  <Link to={item.path} onClick={handleMobileLinkClick}>
+                    <i className={item.icon}></i>
+                    <span>{item.label}</span>
                   </Link>
                 </li>
-                <li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Dropdown Items */}
+          {dropdownItems.map((dropdown) => (
+            <div key={dropdown.name} className='mobile-nav-section'>
+              <button
+                className='mobile-nav-dropdown-toggle'
+                onClick={() => toggleMobileDropdown(dropdown.name)}
+              >
+                <i className={dropdown.icon}></i>
+                <span>{dropdown.label}</span>
+                <i
+                  className={`ti ti-chevron-right ${openMobileDropdown === dropdown.name ? 'open' : ''}`}
+                ></i>
+              </button>
+              <div
+                className={`mobile-nav-submenu ${openMobileDropdown === dropdown.name ? 'open' : ''}`}
+              >
+                {dropdown.items.map((item) => (
                   <Link
-                    className='dropdown-item'
-                    to='/program-leadership'
-                    onClick={toggleMobileSidebar}
+                    key={item.path}
+                    to={item.path}
+                    onClick={handleMobileLinkClick}
                   >
-                    Program Leadership
+                    {item.label}
                   </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {/* Private Section - Only when authenticated */}
+          {isAuthenticated && (
+            <div className='mobile-nav-section private-section'>
+              <div className='mobile-nav-section-title'>
+                <i className='ti ti-lock'></i>
+                <span>Account</span>
+              </div>
+              <ul className='mobile-nav-list'>
+                {privateNavItems.map((item) => (
+                  <li key={item.path}>
+                    <Link to={item.path} onClick={handleMobileLinkClick}>
+                      <i className={item.icon}></i>
+                      <span>{item.label}</span>
+                    </Link>
+                  </li>
+                ))}
+                <li className='logout-item'>
+                  <button onClick={handleLogout}>
+                    <i className='ti ti-logout'></i>
+                    <span>Logout</span>
+                  </button>
                 </li>
               </ul>
-            </li>
-            <li className='nav-item dropdown'>
-              <Link
-                className='nav-link dropdown-toggle'
-                to='#'
-                onClick={(e) => {
-                  e.preventDefault();
-                  const nextSibling = e.currentTarget
-                    .nextElementSibling as HTMLElement;
-                  if (nextSibling) {
-                    nextSibling.style.display =
-                      nextSibling.style.display === 'block' ? 'none' : 'block';
-                  }
-                }}
-              >
-                <i className='ti ti-ball-basketball' /> Our Team
-              </Link>
-              <ul className='dropdown-mobile' style={{ display: 'none' }}>
-                <li>
-                  <Link
-                    className='dropdown-item'
-                    to='/our-team'
-                    onClick={toggleMobileSidebar}
-                  >
-                    Team Overview
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    className='dropdown-item'
-                    to='/in-the-spotlight'
-                    onClick={toggleMobileSidebar}
-                  >
-                    In The Spotlight
-                  </Link>
-                </li>
-              </ul>
-            </li>
-            <li className='nav-item'>
-              <Link
-                className='nav-link'
-                to='/events'
-                onClick={toggleMobileSidebar}
-              >
-                <i className='ti ti-calendar-event' /> Schedule/Events
-              </Link>
-            </li>
-            <li className='nav-item'>
-              <Link
-                className='nav-link'
-                to='/contact-us'
-                onClick={toggleMobileSidebar}
-              >
-                <i className='ti ti-mail' /> Contact Us
-              </Link>
-            </li>
-            <li className='nav-item'>
-              <Link
-                className='nav-link'
-                to='/faq'
-                onClick={toggleMobileSidebar}
-              >
-                <i className='ti ti-question-mark' /> FAQ
-              </Link>
-            </li>
-            {/* ADDED: My Tickets in mobile menu */}
-            {isAuthenticated && (
-              <>
-                <li className='nav-item'>
-                  <Link
-                    className='nav-link'
-                    to={routes.profile}
-                    onClick={toggleMobileSidebar}
-                  >
-                    <i className='ti ti-user-circle' /> My Profile
-                  </Link>
-                </li>
-                <li className='nav-item'>
-                  <Link
-                    className='nav-link'
-                    to={routes.myTickets}
-                    onClick={toggleMobileSidebar}
-                  >
-                    <i className='ti ti-ticket' /> My Tickets
-                  </Link>
-                </li>
-                <li className='nav-item'>
-                  <Link
-                    className='nav-link'
-                    to={routes.profilesettings}
-                    onClick={toggleMobileSidebar}
-                  >
-                    <i className='ti ti-settings' /> Settings
-                  </Link>
-                </li>
-              </>
-            )}
-            <li className='nav-item mt-2'>
-              {!isAuthenticated ? (
-                <button
-                  className='btn btn-outline-primary w-100'
-                  onClick={() => {
-                    toggleMobileSidebar();
-                    handleLoginRedirect();
-                  }}
-                >
-                  Log In / Register
-                </button>
-              ) : (
-                <button
-                  className='btn btn-outline-danger w-100'
-                  onClick={() => {
-                    toggleMobileSidebar();
-                    handleLogout();
-                  }}
-                >
-                  Logout
-                </button>
-              )}
-            </li>
-          </ul>
+            </div>
+          )}
+
+          {/* Auth Button Section - Public */}
+          {!isAuthenticated && (
+            <div className='mobile-nav-section auth-section'>
+              <button className='mobile-auth-btn' onClick={handleLoginRedirect}>
+                <i className='ti ti-login'></i>
+                <span>Login / Register</span>
+                <i className='ti ti-arrow-right'></i>
+              </button>
+            </div>
+          )}
         </div>
       )}
     </>
