@@ -1586,22 +1586,7 @@
   /* TOGGLE BUTTONS GENERAL */
   .reg-toggle-btn,
   .reg-toggle-back-btn {
-    width: calc(100% - 32px) !important;
-    max-width: 400px !important;
-    margin: 20px auto !important;
-    padding: 14px 24px !important;
-    min-height: 56px !important;
-    border-radius: 16px !important;
-    font-size: 1rem !important;
-    font-weight: 600 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 12px !important;
-    cursor: pointer !important;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    position: relative !important;
-    overflow: hidden !important;
+    display: none;
   }
 
   .reg-toggle-btn {
@@ -1649,7 +1634,7 @@
   /* HTR-DOCK STYLES - Ensure it sits above footer with icons only */
   .htr-dock {
     position: fixed !important;
-    bottom: 55px !important;
+    bottom: 32px !important;
     left: 0 !important;
     right: 0 !important;
     z-index: 9999 !important;

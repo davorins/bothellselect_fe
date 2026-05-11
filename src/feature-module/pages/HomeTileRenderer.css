@@ -771,11 +771,11 @@
   }
 
   .htr-expanded-container {
-    bottom: 70px;
+    bottom: 0px;
     width: 98%;
   }
   .htr-expanded-content {
-    padding: 20px;
+    padding: 10px;
   }
 
   .htr-dock-inner {
