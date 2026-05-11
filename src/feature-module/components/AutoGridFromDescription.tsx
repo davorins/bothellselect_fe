@@ -12,6 +12,11 @@ interface TryoutSlot {
   grade: string;
   time: string;
 }
+interface TrainingSession {
+  number: string;
+  time: string;
+  grades: string;
+}
 
 interface ParsedEvent {
   type: 'camp' | 'tryout' | 'generic';
@@ -20,10 +25,18 @@ interface ParsedEvent {
   location: string;
   address: string;
   dates: string;
+  startDate: string;
+  endDate: string;
+  duration: string;
+  days: string;
   timeRange: string;
+  trainingSessions: TrainingSession[];
   schedule: ScheduleSlot[];
   tryoutSchedule: TryoutSlot[];
   coaches: string[];
+  notes: string[];
+  registerUrl: string;
+  contactEmail: string;
   details: {
     ages: string;
     gender: string;
@@ -53,7 +66,7 @@ function normTime(s: string): string {
 
 function splitEvents(text: string): string[] {
   const parts = text
-    .split(/\+\s*(?=We invite|Tryout|📍|🗓)/)
+    .split(/\+\s*(?=We invite|Tryout|📍|🗓|Dear Parents|Start Date)/)
     .map((s) => s.trim())
     .filter(Boolean);
   return parts.length >= 2 ? parts : [text];
@@ -87,135 +100,212 @@ function parseEvent(text: string): ParsedEvent {
     location: '',
     address: '',
     dates: '',
+    startDate: '',
+    endDate: '',
+    duration: '',
+    days: '',
     timeRange: '',
+    trainingSessions: [],
     schedule: [],
     tryoutSchedule: [],
     coaches: [],
+    notes: [],
+    registerUrl: '',
+    contactEmail: '',
     details: { ages: '', gender: '', price: '', dropOff: '', pickUp: '' },
     description: '',
     hasLimitedSpots: false,
   };
 
   if (/tryout|try-out/i.test(text)) ev.type = 'tryout';
-  else if (/camp|clinic|session/i.test(text)) ev.type = 'camp';
+  else if (/camp|clinic|session|training program|training session/i.test(text))
+    ev.type = 'camp';
 
-  // Extract Title
-  for (const l of lines) {
-    if (
-      l.length > 8 &&
-      l.length < 110 &&
-      !/^📍|^🗓|^•|^\d{4}/.test(l) &&
-      !/^\d+\s/.test(l)
-    ) {
-      ev.title = l
-        .replace(/\s*@.*$/, '')
-        .replace(/\s+\d{4}$/, '')
-        .trim();
-      break;
-    }
-  }
+  // ── Extract Register URL ──
+  const regMatch = text.match(
+    /[Rr]egister(?:\s*:)?\s*(https?:\/\/[^\s\n]+|[\w.-]+\.(?:com|org|net|io)[^\s\n]*)/,
+  );
+  if (regMatch)
+    ev.registerUrl = regMatch[1].startsWith('http')
+      ? regMatch[1]
+      : `https://${regMatch[1]}`;
 
-  // Extract School Name and Location
-  const schoolPatterns = [
-    /(?:@|at)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+(?:Middle|High|Elementary)\s+School))/i,
-    /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+(?:Middle|High|Elementary)\s+School))/i,
-    /📍\s*(?:[Ll]ocation:?\s*)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+(?:Middle|High|Elementary)\s+School))/i,
+  // ── Extract Contact Email ──
+  const emailMatch =
+    text.match(/email\s+(?:us\s*(?:at\s*)?)?:?\s*([\w.+-]+@[\w.-]+\.\w+)/i) ||
+    text.match(/([\w.+-]+@[\w.-]+\.\w+)/);
+  if (emailMatch) ev.contactEmail = emailMatch[1];
+
+  // ── Extract Title ──
+  // Check for explicit titled events
+  const titlePatterns = [
+    /(?:our\s+)?(\d{4}\s+[\w\s]+(?:Program|Camp|Clinic|Training|Tryout)s?)/i,
+    /(?:announcing|introducing|join us for|welcome to)\s+(?:the\s+)?([^.\n!,]{8,80})/i,
   ];
-
-  for (const pattern of schoolPatterns) {
-    const match = text.match(pattern);
-    if (match && match[1]) {
-      ev.schoolName = match[1].trim();
-      ev.location = ev.schoolName;
+  for (const p of titlePatterns) {
+    const m = text.match(p);
+    if (m) {
+      ev.title = m[1].trim();
       break;
     }
   }
-
-  // Extract full location (school + address if available)
-  const eLoc = text.match(/📍\s*(?:[Ll]ocation:?\s*)?([^\n]+)\n?([^\n]*)/);
-  if (eLoc) {
-    const firstLine = eLoc[1].trim();
-    const secondLine = eLoc[2].trim();
-
-    // Check if first line contains a school name
-    if (/Middle|High|Elementary|School/i.test(firstLine)) {
-      if (!ev.schoolName) ev.schoolName = firstLine;
-      ev.location = firstLine;
-      if (secondLine && /\d/.test(secondLine)) {
-        ev.address = secondLine;
-      }
-    } else if (firstLine && !ev.schoolName) {
-      // If first line doesn't look like a school, it might be just address
-      if (/\d/.test(firstLine)) {
-        ev.address = firstLine;
-      } else {
-        ev.location = firstLine;
-      }
-      if (secondLine && /\d/.test(secondLine)) {
-        ev.address = secondLine;
-      }
-    }
-  }
-
-  // Fallback location extraction
-  if (!ev.location) {
-    const m = text.match(/[Ll]ocation:?\s*([^\n.!]+)/);
-    if (m) ev.location = m[1].trim();
-  }
-  if (!ev.location) {
-    const m = text.match(/@\s*([^\n.!?,]+)/);
-    if (m) ev.location = m[1].trim();
-  }
-
-  // Extract full address
-  if (!ev.address) {
-    const addressPatterns = [
-      /\d{2,5}\s+[\w\s]+(?:Ave|St|Rd|Blvd|SE|NE|NW|SW)[,\s]+[\w\s]+,?\s*WA\s*\d{5}/i,
-      /\d{2,5}\s+[\w\s]+(?:Avenue|Street|Road|Boulevard)[,\s]+[\w\s]+,?\s*[A-Z]{2}\s*\d{5}/i,
-      /(?:address|located at):\s*([^\n.]+)/i,
-    ];
-    for (const pattern of addressPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        ev.address = match[0].trim();
+  // Fallback: first short non-metadata line
+  if (!ev.title) {
+    for (const l of lines) {
+      if (
+        l.length > 8 &&
+        l.length < 110 &&
+        !/^📍|^🗓|^•|^\d{4}|^Register|^Start Date|^End Date|^Duration|^Gender|^Days|^Location|^Times|^Note/.test(
+          l,
+        ) &&
+        !/^\d+\s/.test(l)
+      ) {
+        ev.title = l
+          .replace(/\s*@.*$/, '')
+          .replace(/\s+\d{4}$/, '')
+          .trim();
         break;
       }
     }
   }
 
-  // Extract Dates
-  const eDate = text.match(/🗓\s*([^\n]+)/);
-  if (eDate) {
-    ev.dates = eDate[1].trim();
-  } else {
-    const m = text.match(
-      /(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)[^,]*,?\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d+(?:st|nd|rd|th)?(?:\s*(?:through|to|-|–)\s*(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)[^,]*,?\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d+(?:st|nd|rd|th)?)?/i,
-    );
-    if (m) ev.dates = m[0].trim();
+  // ── Start / End Date ──
+  const startMatch = text.match(/[Ss]tart\s+[Dd]ate\s*:?\s*([^\n]+)/);
+  if (startMatch) ev.startDate = startMatch[1].trim();
+
+  const endMatch = text.match(/[Ee]nd\s+[Dd]ate\s*:?\s*([^\n]+)/);
+  if (endMatch) ev.endDate = endMatch[1].trim();
+
+  if (ev.startDate && ev.endDate) {
+    ev.dates = `${ev.startDate} – ${ev.endDate}`;
   }
 
-  // Extract Time Range
-  if (ev.type !== 'tryout') {
-    const m = text.match(
-      /\bfrom\s+(\d{1,2}(?::\d{2})?\s*[AP]M)\s+to\s+(\d{1,2}(?::\d{2})?\s*[AP]M)/i,
-    );
-    if (m) {
-      ev.timeRange = `${normTime(m[1])} – ${normTime(m[2])}`;
-    } else {
-      TIME_RX.lastIndex = 0;
-      const m2 = TIME_RX.exec(text);
-      if (m2) ev.timeRange = `${normTime(m2[1])} – ${normTime(m2[2])}`;
+  // ── Duration ──
+  const durMatch = text.match(/[Dd]uration\s*:?\s*([^\n]+)/);
+  if (durMatch) ev.duration = durMatch[1].trim();
+
+  // ── Days of Week ──
+  const daysMatch = text.match(/[Dd]ays?\s*:?\s*([^\n]+)/);
+  if (daysMatch) {
+    ev.days = daysMatch[1]
+      .split(/,\s*/)
+      .map((d) => d.trim().slice(0, 3)) // abbreviate: Mon, Tue, etc.
+      .join(' · ');
+  }
+
+  // ── Location: parse "Name (address)" pattern ──
+  const locLineMatch = text.match(
+    /[Ll]ocation\s*:?\s*([^\n(]+)(?:\(([^)]+)\))?/,
+  );
+  if (locLineMatch) {
+    const locName = locLineMatch[1].trim();
+    const locAddr = locLineMatch[2]?.trim();
+
+    if (/Middle|High|Elementary|School/i.test(locName)) {
+      ev.schoolName = locName;
+    }
+    ev.location = locName;
+    if (locAddr) ev.address = locAddr;
+  }
+
+  // Fallback: emoji-based location
+  if (!ev.location) {
+    const eLoc = text.match(/📍\s*(?:[Ll]ocation:?\s*)?([^\n]+)\n?([^\n]*)/);
+    if (eLoc) {
+      const firstLine = eLoc[1].trim();
+      const secondLine = eLoc[2].trim();
+      if (/Middle|High|Elementary|School/i.test(firstLine)) {
+        ev.schoolName = firstLine;
+        ev.location = firstLine;
+        if (secondLine && /\d/.test(secondLine)) ev.address = secondLine;
+      } else {
+        ev.location = firstLine;
+        if (/\d/.test(firstLine)) ev.address = firstLine;
+        if (secondLine && /\d/.test(secondLine)) ev.address = secondLine;
+      }
     }
   }
 
-  // Drop-off and Pick-up
+  // Fallback school pattern from anywhere in text
+  if (!ev.schoolName) {
+    const schoolPatterns = [
+      /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Middle|High|Elementary)\s+School)/i,
+      /(?:@|at)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+(?:Middle|High|Elementary)\s+School))/i,
+    ];
+    for (const p of schoolPatterns) {
+      const m = text.match(p);
+      if (m) {
+        ev.schoolName = m[1].trim();
+        if (!ev.location) ev.location = ev.schoolName;
+        break;
+      }
+    }
+  }
+
+  // Fallback address extraction if still missing
+  if (!ev.address) {
+    const addrPatterns = [
+      /\d{2,5}\s+[\w\s]+(?:Ave|St|Rd|Blvd|SE|NE|NW|SW)[,\s]+[\w\s]+,?\s*WA\s*\d{5}/i,
+      /\d{2,5}\s+[\w\s]+(?:Avenue|Street|Road|Boulevard)[,\s]+[\w\s]+,?\s*[A-Z]{2}\s*\d{5}/i,
+    ];
+    for (const p of addrPatterns) {
+      const m = text.match(p);
+      if (m) {
+        ev.address = m[0].trim();
+        break;
+      }
+    }
+  }
+
+  // ── Dates fallback (emoji-based) ──
+  if (!ev.dates) {
+    const eDate = text.match(/🗓\s*([^\n]+)/);
+    if (eDate) {
+      ev.dates = eDate[1].trim();
+    } else {
+      const m = text.match(
+        /(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)[^,]*,?\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d+(?:st|nd|rd|th)?(?:\s*(?:through|to|-|–)\s*(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)[^,]*,?\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d+(?:st|nd|rd|th)?)?/i,
+      );
+      if (m) ev.dates = m[0].trim();
+    }
+  }
+
+  // ── Numbered Training Sessions: 1) 9am-11am (grades) ──
+  // Match patterns like: 1) 9am - 11am (3rd, 4th, and 5th grade)
+  const sessionRx =
+    /(\d+)\)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm))\s*[-–]\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm))\s*\(([^)]+)\)/gi;
+  let sm: RegExpExecArray | null;
+  while ((sm = sessionRx.exec(text)) !== null) {
+    ev.trainingSessions.push({
+      number: sm[1],
+      time: `${normTime(sm[2])} – ${normTime(sm[3])}`,
+      grades: sm[4].trim(),
+    });
+  }
+
+  // ── Time Range ──
+  if (ev.type !== 'tryout') {
+    if (ev.trainingSessions.length === 0) {
+      const m = text.match(
+        /\bfrom\s+(\d{1,2}(?::\d{2})?\s*[AP]M)\s+to\s+(\d{1,2}(?::\d{2})?\s*[AP]M)/i,
+      );
+      if (m) {
+        ev.timeRange = `${normTime(m[1])} – ${normTime(m[2])}`;
+      } else {
+        TIME_RX.lastIndex = 0;
+        const m2 = TIME_RX.exec(text);
+        if (m2) ev.timeRange = `${normTime(m2[1])} – ${normTime(m2[2])}`;
+      }
+    }
+  }
+
+  // ── Drop-off and Pick-up ──
   const dropOffMatch = text.match(
     /[Dd]rop[-\s]?off\s*:?\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm|AM|PM))\s*[–\-to]+\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm|AM|PM))/i,
   );
   if (dropOffMatch) {
     ev.details.dropOff = `${normTime(dropOffMatch[1])} – ${normTime(dropOffMatch[2])}`;
   } else {
-    // Fallback to simpler pattern
     const simpleDropOff = text.match(
       /[Dd]rop[-\s]?off\s*:?\s*([^\n.]+?)(?=\s*(?:and|\.|$|Pick))/i,
     );
@@ -228,14 +318,13 @@ function parseEvent(text: string): ParsedEvent {
   if (pickUpMatch) {
     ev.details.pickUp = `${normTime(pickUpMatch[1])} – ${normTime(pickUpMatch[2])}`;
   } else {
-    // Fallback to simpler pattern
     const simplePickUp = text.match(
       /[Pp]ick[-\s]?up\s*:?\s*([^\n.]+?)(?=\s*(?:\.|and|$))/i,
     );
     if (simplePickUp) ev.details.pickUp = simplePickUp[1].trim();
   }
 
-  // Tryout Schedule
+  // ── Tryout Schedule ──
   if (ev.type === 'tryout') {
     const bRx =
       /[•\-*]\s*(?:[Gg]rades?\s*)?(\d+(?:[–\-]\d+)?):?\s*(\d{1,2}(?::\d{2})?\s*[AP]M)\s*[–\-]\s*(\d{1,2}(?::\d{2})?\s*[AP]M)/gi;
@@ -250,7 +339,7 @@ function parseEvent(text: string): ParsedEvent {
     }
   }
 
-  // Daily Schedule for Camp
+  // ── Daily Schedule for Camp ──
   if (ev.type === 'camp') {
     const bRx2 =
       /(\d{1,2}(?::\d{2})?\s*(?:am|pm|AM|PM))\s*(?:till|to|-|–)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm|AM|PM))[^,\n]*?[–\-,\s]+([^.\n,]{4,40})/gi;
@@ -273,7 +362,7 @@ function parseEvent(text: string): ParsedEvent {
     }
   }
 
-  // Coaches
+  // ── Coaches ──
   const cM = text.match(
     /(?:[Hh]eaded by|[Dd]irectors?:?)\s+([^.(]+?)(?:\(|\.|$)/,
   );
@@ -284,32 +373,50 @@ function parseEvent(text: string): ParsedEvent {
       .filter((n) => n.length > 3 && !/former|supported/i.test(n));
   }
 
-  // Ages/Grades
+  // ── Ages / Grades ──
   const aM = text.match(
-    /[Aa]ges?:?\s*([^\n.]+)|(?:[Gg]rades?\s*)(\d+(?:st|nd|rd|th)?(?:\s*[-–]\s*\d+(?:st|nd|rd|th)?)?(?:\s*grade)?)/i,
+    /[Aa]ges?\s*:?\s*([^\n.]+)|(?:[Gg]rades?\s*)(\d+(?:st|nd|rd|th)?(?:\s*[-–]\s*\d+(?:st|nd|rd|th)?)?(?:\s*grade)?)/i,
   );
   if (aM) ev.details.ages = (aM[1] || (aM[2] ? `Grades ${aM[2]}` : '')).trim();
 
-  // Gender
-  if (/boys and girls|co-?ed/i.test(text)) ev.details.gender = 'Boys & Girls';
-  else if (/\bgirls\b/i.test(text) && !/\bboys\b/i.test(text))
-    ev.details.gender = 'Girls';
-  else if (/\bboys\b/i.test(text) && !/\bgirls\b/i.test(text))
-    ev.details.gender = 'Boys';
+  // ── Gender ──
+  const genderLine = text.match(/[Gg]ender\s*:?\s*([^\n]+)/);
+  if (genderLine) {
+    const g = genderLine[1].toLowerCase();
+    if (/boys and girls|girls and boys|co-?ed|both/i.test(g))
+      ev.details.gender = 'Boys & Girls';
+    else if (/girls/i.test(g) && !/boys/i.test(g)) ev.details.gender = 'Girls';
+    else if (/boys/i.test(g) && !/girls/i.test(g)) ev.details.gender = 'Boys';
+    else ev.details.gender = genderLine[1].trim();
+  } else {
+    if (/boys and girls|co-?ed/i.test(text)) ev.details.gender = 'Boys & Girls';
+    else if (/\bgirls\b/i.test(text) && !/\bboys\b/i.test(text))
+      ev.details.gender = 'Girls';
+    else if (/\bboys\b/i.test(text) && !/\bgirls\b/i.test(text))
+      ev.details.gender = 'Boys';
+  }
 
-  // Price
+  // ── Price ──
   const prM = text.match(/\$\s*(\d+(?:\.\d{2})?)/);
   if (prM) ev.details.price = `$${prM[1]}`;
 
-  // Limited Spots
+  // ── Limited Spots ──
   ev.hasLimitedSpots = /limited|spots|space is limited|secure.*spot/i.test(
     text,
   );
 
-  // Description
+  // ── Notes (Note #1, Note #2, etc.) ──
+  const noteRx = /[Nn]ote\s*#?\d*\s*:?\s*([^\n]+(?:\n(?![Nn]ote)[^\n]+)*)/g;
+  let nm: RegExpExecArray | null;
+  while ((nm = noteRx.exec(text)) !== null) {
+    const note = nm[1].replace(/\n/g, ' ').trim();
+    if (note.length > 10) ev.notes.push(note);
+  }
+
+  // ── Description ──
   const sents = text.match(/[^.!?]+[.!?]+/g) ?? [];
   const skip =
-    /cost:|location:|ages:|gender:|spots are limited|tryout details|📍|🗓|headed by|director|drop.?off|pick.?up/i;
+    /cost:|location:|ages:|gender:|spots are limited|tryout details|📍|🗓|headed by|director|drop.?off|pick.?up|register|start date|end date|duration|note #/i;
   const desc: string[] = [];
   for (const s of sents) {
     if (!skip.test(s) && s.trim().length > 35) {
@@ -360,6 +467,13 @@ const EventCard: React.FC<{
   onRegister?: () => void;
 }> = ({ ev, accent, onRegister }) => {
   const isTryout = ev.type === 'tryout';
+
+  const handleRegister = () => {
+    if (ev.registerUrl) {
+      window.open(ev.registerUrl, '_blank', 'noopener,noreferrer');
+    }
+    onRegister?.();
+  };
 
   return (
     <div className='agd-event'>
@@ -412,13 +526,26 @@ const EventCard: React.FC<{
         )}
       </div>
 
-      {/* ── Programme details ── */}
+      {/* ── About ── */}
+      {ev.description && (
+        <div className='agd-tile'>
+          <TileHead
+            icon='ti-article'
+            label={isTryout ? 'About Tryouts' : 'About the Program'}
+          />
+          <p className='agd-desc'>{ev.description}</p>
+        </div>
+      )}
+
+      {/* ── Program Details ── */}
       {(ev.details.ages ||
         ev.details.gender ||
+        ev.duration ||
+        ev.days ||
         ev.details.dropOff ||
         ev.details.pickUp) && (
         <div className='agd-tile'>
-          <TileHead icon='ti-info-circle' label='Programme Details' />
+          <TileHead icon='ti-info-circle' label='Program Details' />
           <ul className='agd-list'>
             {ev.details.ages && (
               <InfoRow icon='ti-school'>
@@ -428,6 +555,16 @@ const EventCard: React.FC<{
             {ev.details.gender && (
               <InfoRow icon='ti-gender-bigender'>
                 <strong>Gender:</strong> {ev.details.gender}
+              </InfoRow>
+            )}
+            {ev.duration && (
+              <InfoRow icon='ti-clock-hour-4'>
+                <strong>Duration:</strong> {ev.duration}
+              </InfoRow>
+            )}
+            {ev.days && (
+              <InfoRow icon='ti-calendar-week'>
+                <strong>Days:</strong> {ev.days}
               </InfoRow>
             )}
             {ev.details.dropOff && (
@@ -445,30 +582,55 @@ const EventCard: React.FC<{
       )}
 
       {/* ── Address ── */}
-      {ev.address && (
+      {(ev.address || ev.location) && (
         <div className='agd-tile'>
-          <TileHead icon='ti-map-pin' label='Location Address' />
+          <TileHead icon='ti-map-pin' label='Location' />
           <ul className='agd-list'>
             <InfoRow icon='ti-location-pin'>
               {ev.schoolName && <strong>{ev.schoolName}</strong>}
               {ev.schoolName && ev.address && <br />}
-              {ev.address}
+              {ev.address || ev.location}
             </InfoRow>
           </ul>
-          <a
-            className='agd-map-link'
-            href={`https://www.google.com/maps/search/${encodeURIComponent(
-              ev.schoolName + ' ' + ev.address,
-            )}`}
-            target='_blank'
-            rel='noopener noreferrer'
-          >
-            <i className='ti ti-external-link' /> Open in Google Maps
-          </a>
+          {(ev.address || ev.schoolName) && (
+            <a
+              className='agd-map-link'
+              href={`https://www.google.com/maps/search/${encodeURIComponent(
+                [ev.schoolName, ev.address].filter(Boolean).join(' '),
+              )}`}
+              target='_blank'
+              rel='noopener noreferrer'
+            >
+              <i className='ti ti-external-link' /> Open in Google Maps
+            </a>
+          )}
         </div>
       )}
 
-      {/* ── Tryout schedule ── */}
+      {/* ── Training Sessions ── */}
+      {ev.trainingSessions.length > 0 && (
+        <div className='agd-tile'>
+          <TileHead icon='ti-calendar-event' label='Training Sessions' />
+          <div className='agd-sched'>
+            {ev.trainingSessions.map((s, i) => (
+              <div key={i} className='agd-srow'>
+                <div className='agd-stime' style={{ color: accent }}>
+                  {s.time}
+                </div>
+                <div className='agd-slabel'>
+                  <i
+                    className='ti ti-users'
+                    style={{ color: accent, marginRight: 7 }}
+                  />
+                  {s.grades}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Tryout Schedule ── */}
       {isTryout && ev.tryoutSchedule.length > 0 && (
         <div className='agd-tile'>
           <TileHead icon='ti-calendar-event' label='Tryout Schedule' />
@@ -491,8 +653,8 @@ const EventCard: React.FC<{
         </div>
       )}
 
-      {/* ── Camp hours ── */}
-      {!isTryout && ev.timeRange && (
+      {/* ── Camp Hours (only when no sessions) ── */}
+      {!isTryout && ev.timeRange && ev.trainingSessions.length === 0 && (
         <div className='agd-tile'>
           <TileHead icon='ti-clock' label='Camp Hours' />
           <ul className='agd-list'>
@@ -503,7 +665,7 @@ const EventCard: React.FC<{
         </div>
       )}
 
-      {/* ── Daily schedule ── */}
+      {/* ── Daily Schedule ── */}
       {!isTryout && ev.schedule.length > 0 && (
         <div className='agd-tile'>
           <TileHead icon='ti-list-check' label='Daily Schedule' />
@@ -533,11 +695,42 @@ const EventCard: React.FC<{
         </div>
       )}
 
+      {/* ── Notes ── */}
+      {ev.notes.length > 0 && (
+        <div className='agd-tile'>
+          <TileHead icon='ti-notes' label='Important Notes' />
+          <ul className='agd-list'>
+            {ev.notes.map((note, i) => (
+              <InfoRow key={i} icon='ti-info-square'>
+                {note}
+              </InfoRow>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* ── Contact ── */}
+      {ev.contactEmail && (
+        <div className='agd-tile'>
+          <TileHead icon='ti-mail' label='Contact' />
+          <ul className='agd-list'>
+            <InfoRow icon='ti-at'>
+              <a
+                href={`mailto:${ev.contactEmail}`}
+                style={{ color: accent, textDecoration: 'none' }}
+              >
+                {ev.contactEmail}
+              </a>
+            </InfoRow>
+          </ul>
+        </div>
+      )}
+
       {/* ── Price ── */}
       {ev.details.price && (
         <button
           className='agd-tile agd-tile--price agd-tile--clickable'
-          onClick={onRegister}
+          onClick={handleRegister}
           style={{ cursor: 'pointer', width: '100%', textAlign: 'left' }}
         >
           <TileHead icon='ti-currency-dollar' label='Investment' />
@@ -550,26 +743,17 @@ const EventCard: React.FC<{
         </button>
       )}
 
-      {/* ── About ── */}
-      {ev.description && (
-        <div className='agd-tile'>
-          <TileHead
-            icon='ti-article'
-            label={isTryout ? 'About Tryouts' : 'About the Programme'}
-          />
-          <p className='agd-desc'>{ev.description}</p>
-        </div>
-      )}
-
       {/* ── CTA ── */}
       <div className='agd-tile agd-tile--cta'>
         <button
           className='agd-cta'
           style={{ background: accent, boxShadow: `0 6px 20px ${accent}44` }}
-          onClick={onRegister}
+          onClick={handleRegister}
         >
           <i className='ti ti-user-plus' />
-          Register Now
+          {ev.registerUrl
+            ? `Register at ${ev.registerUrl.replace(/^https?:\/\//, '')}`
+            : 'Register Now'}
           <i className='ti ti-arrow-right' />
         </button>
         {ev.hasLimitedSpots && (

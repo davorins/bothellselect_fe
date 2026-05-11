@@ -75,6 +75,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   // Track if background video should be paused
   const [isBackgroundVideoPaused, setIsBackgroundVideoPaused] = useState(false);
   const backgroundVideoCurrentTime = useRef<number>(0);
+  const wasBackgroundPlaying = useRef<boolean>(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const popupVideoRef = useRef<HTMLVideoElement>(null);
@@ -251,7 +252,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     setIsMobile(window.innerWidth <= 768);
   }, []);
 
-  // Handle fullscreen change events
+  // Handle fullscreen change events - PAUSE BACKGROUND VIDEO
   useEffect(() => {
     const handleFullscreenChange = () => {
       const isFullscreen = !!(
@@ -266,6 +267,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       if (isFullscreen) {
         // Pause background video when entering fullscreen
         if (videoRef.current && !videoRef.current.paused) {
+          wasBackgroundPlaying.current = true;
           backgroundVideoCurrentTime.current = videoRef.current.currentTime;
           videoRef.current.pause();
           setIsBackgroundVideoPaused(true);
@@ -273,13 +275,18 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         }
       } else {
         // Resume background video when exiting fullscreen if it was playing before
-        if (isBackgroundVideoPaused && videoRef.current) {
+        if (
+          wasBackgroundPlaying.current &&
+          videoRef.current &&
+          isBackgroundVideoPaused
+        ) {
           videoRef.current.currentTime = backgroundVideoCurrentTime.current;
           videoRef.current
             .play()
             .then(() => {
               setVideoControls((prev) => ({ ...prev, isPlaying: true }));
               setIsBackgroundVideoPaused(false);
+              wasBackgroundPlaying.current = false;
             })
             .catch(() => {
               setVideoControls((prev) => ({ ...prev, isPlaying: false }));
@@ -310,11 +317,12 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     };
   }, [isBackgroundVideoPaused]);
 
-  // Handle popup video open/close
+  // Handle popup video open/close - PAUSE BACKGROUND VIDEO
   useEffect(() => {
     if (showVideoPopup) {
       // Pause background video when popup opens
       if (videoRef.current && !videoRef.current.paused) {
+        wasBackgroundPlaying.current = true;
         backgroundVideoCurrentTime.current = videoRef.current.currentTime;
         videoRef.current.pause();
         setIsBackgroundVideoPaused(true);
@@ -322,13 +330,18 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       }
     } else {
       // Resume background video when popup closes if it was playing before
-      if (isBackgroundVideoPaused && videoRef.current) {
+      if (
+        wasBackgroundPlaying.current &&
+        videoRef.current &&
+        isBackgroundVideoPaused
+      ) {
         videoRef.current.currentTime = backgroundVideoCurrentTime.current;
         videoRef.current
           .play()
           .then(() => {
             setVideoControls((prev) => ({ ...prev, isPlaying: true }));
             setIsBackgroundVideoPaused(false);
+            wasBackgroundPlaying.current = false;
           })
           .catch(() => {
             setVideoControls((prev) => ({ ...prev, isPlaying: false }));
@@ -417,11 +430,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const openVideoPopup = useCallback(() => {
     setShowVideoPopup(true);
     closeControlsPanel();
-    if (videoRef.current && videoControls.isPlaying) {
-      videoRef.current.pause();
-      setVideoControls((prev) => ({ ...prev, isPlaying: false }));
-    }
-  }, [videoControls.isPlaying, closeControlsPanel]);
+  }, [closeControlsPanel]);
 
   const closeVideoPopup = useCallback(() => {
     setShowVideoPopup(false);
@@ -506,6 +515,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         onDragOver={isAdmin ? handleDrag : undefined}
         onDrop={isAdmin ? handleDrop : undefined}
       >
+        {/* Video - Only on Desktop (hidden on mobile) */}
         {!isMobile && promoVideoUrl && !videoError ? (
           <video
             ref={videoRef}
@@ -546,15 +556,15 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         <div className='hp-stage__top-stripe-enhanced' />
         <div className='hp-stage__bottom-stripe-enhanced' />
 
-        <div className='hp-stage__logo'>
+        {/* <div className='hp-stage__logo'>
           <ImageWithBasePath
             src='assets/img/watermark-logo.png'
             alt='Bothell Select AAU Basketball'
             className='hp-stage__logo-img'
           />
-        </div>
+        </div> */}
 
-        {promoVideoUrl && !videoError && (
+        {!isMobile && promoVideoUrl && !videoError && (
           <>
             {!showControlsPanel && (
               <button
@@ -744,12 +754,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
               <div className='hp-admin-panel'>
                 <div className='hp-admin-panel__header'>
                   <h4>Video Management</h4>
-                  <button
-                    onClick={() => setShowAdminPanel(false)}
-                    className='hp-admin-panel__close'
-                  >
-                    <i className='ti ti-x' />
-                  </button>
                 </div>
                 <div className='hp-admin-panel__body'>
                   <div className='hp-admin-panel__status'>
