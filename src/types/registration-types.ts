@@ -332,6 +332,7 @@ export interface RegistrationFormConfig {
   };
   description?: string;
   trainingDetails?: TrainingDetails;
+  tryoutDetails?: TryoutDetails;
   tournamentName?: string;
   tournamentYear?: number;
   displayName?: string;
@@ -472,6 +473,35 @@ export interface TryoutSpecificConfig {
   createdAt?: string;
   updatedAt?: string;
   __v?: number;
+  tryoutDetails?: {
+    startDate: string;
+    endDate: string;
+    duration: string;
+    gender: string;
+    days: string[];
+    location: {
+      name: string;
+      address: string;
+      city: string;
+      state: string;
+      zipCode: string;
+    };
+    tryoutSessions: Array<{
+      id?: string;
+      number: number;
+      startTime: string;
+      endTime: string;
+      grades: string;
+    }>;
+    notes: string[];
+    dropOffTime: string;
+    pickUpTime: string;
+    hasLimitedSpots: boolean;
+    contactEmail: string;
+    ageGroups: string[];
+    maxParticipants: number | null;
+    whatToBring: string[];
+  };
 }
 
 export interface TrainingSession {
@@ -505,4 +535,38 @@ export interface TrainingDetails {
   contactEmail: string;
   ageGroups: string[];
   maxParticipants: number | null;
+}
+
+export interface TryoutSession {
+  id?: string;
+  number: number;
+  startTime: string;
+  endTime: string;
+  grades: string;
+}
+
+export interface TryoutLocation {
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+export interface TryoutDetails {
+  startDate: string;
+  endDate: string;
+  duration: string;
+  gender: string;
+  days: string[];
+  location: TryoutLocation;
+  tryoutSessions: TryoutSession[];
+  notes: string[];
+  dropOffTime: string;
+  pickUpTime: string;
+  hasLimitedSpots: boolean;
+  contactEmail: string;
+  ageGroups: string[];
+  maxParticipants: number | null;
+  whatToBring: string[];
 }

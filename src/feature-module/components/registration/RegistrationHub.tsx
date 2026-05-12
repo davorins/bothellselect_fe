@@ -37,6 +37,11 @@ const isTryoutConfig = (config: any): config is TryoutSpecificConfig => {
 const tryoutToRegistrationConfig = (
   tryoutConfig: TryoutSpecificConfig,
 ): RegistrationFormConfig => {
+  console.log('🔍 tryoutToRegistrationConfig - input:', {
+    tryoutName: tryoutConfig.tryoutName,
+    hasTryoutDetails: !!(tryoutConfig as any).tryoutDetails,
+    tryoutDetails: (tryoutConfig as any).tryoutDetails,
+  });
   return {
     _id: tryoutConfig._id,
     season: tryoutConfig.tryoutName,
@@ -65,6 +70,7 @@ const tryoutToRegistrationConfig = (
     updatedAt: tryoutConfig.updatedAt,
     __v: tryoutConfig.__v,
     description: tryoutConfig.description || '',
+    tryoutDetails: (tryoutConfig as any).tryoutDetails,
   };
 };
 

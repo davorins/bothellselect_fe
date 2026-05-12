@@ -382,6 +382,7 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
           updatedAt: activeTryout.updatedAt,
           __v: activeTryout.__v,
           description: activeTryout.description || '',
+          tryoutDetails: activeTryout.tryoutDetails,
         };
       }
 

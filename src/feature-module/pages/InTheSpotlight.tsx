@@ -41,51 +41,49 @@ const InTheSpotlight = () => {
         backgroundAttachment: 'fixed',
       }}
     >
-      <div className='spotlight-glass-overlay'>
-        <div className='spotlight-glass-container'>
-          {/* Header Section */}
-          <div className='text-center mb-5'>
-            <h1 className='mb-3 display-4 fw-bold spotlight-glass-title'>
-              In The Spotlight
-            </h1>
-            <h4 className='mb-5 spotlight-glass-subtitle'>
-              Celebrating player achievements and team highlights.
-            </h4>
-          </div>
-
-          {/* Content Section */}
-          {loading ? (
-            <div className='spotlight-glass-loading'>
-              <div className='spotlight-glass-spinner'></div>
-              <p>Loading spotlight content...</p>
-            </div>
-          ) : error ? (
-            <div className='spotlight-glass-error'>
-              <p>{error}</p>
-              <button
-                className='spotlight-glass-retry-btn'
-                onClick={() => window.location.reload()}
-              >
-                Try Again
-              </button>
-            </div>
-          ) : items.length === 0 ? (
-            <div className='spotlight-glass-empty'>
-              <h3>No spotlight items yet</h3>
-              <p>Check back later for exciting updates!</p>
-            </div>
-          ) : (
-            <Masonry
-              breakpointCols={breakpointCols}
-              className='spotlight-glass-masonry-grid'
-              columnClassName='spotlight-glass-masonry-column'
-            >
-              {items.map((item) => (
-                <SpotlightCard key={item._id} item={item} />
-              ))}
-            </Masonry>
-          )}
+      <div className='spotlight-glass-container'>
+        {/* Header Section */}
+        <div className='text-center mb-5'>
+          <h1 className='mb-3 display-4 fw-bold spotlight-glass-title'>
+            In The Spotlight
+          </h1>
+          <h4 className='mb-5 spotlight-glass-subtitle'>
+            Celebrating player achievements and team highlights.
+          </h4>
         </div>
+
+        {/* Content Section */}
+        {loading ? (
+          <div className='spotlight-glass-loading'>
+            <div className='spotlight-glass-spinner'></div>
+            <p>Loading spotlight content...</p>
+          </div>
+        ) : error ? (
+          <div className='spotlight-glass-error'>
+            <p>{error}</p>
+            <button
+              className='spotlight-glass-retry-btn'
+              onClick={() => window.location.reload()}
+            >
+              Try Again
+            </button>
+          </div>
+        ) : items.length === 0 ? (
+          <div className='spotlight-glass-empty'>
+            <h3>No spotlight items yet</h3>
+            <p>Check back later for exciting updates!</p>
+          </div>
+        ) : (
+          <Masonry
+            breakpointCols={breakpointCols}
+            className='spotlight-glass-masonry-grid'
+            columnClassName='spotlight-glass-masonry-column'
+          >
+            {items.map((item) => (
+              <SpotlightCard key={item._id} item={item} />
+            ))}
+          </Masonry>
+        )}
       </div>
     </div>
   );

@@ -18,8 +18,45 @@ interface TryoutFormConfigProps {
   onSeasonSelect?: (season: SeasonEvent) => void;
 }
 
-// Helper type to ensure description is always a string
-type TryoutConfigWithDescription = TryoutSpecificConfig & {
+interface TryoutSession {
+  id?: string;
+  number: number;
+  startTime: string;
+  endTime: string;
+  grades: string;
+}
+
+interface TryoutLocation {
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+interface ExtendedTryoutDetails {
+  startDate: string;
+  endDate: string;
+  duration: string;
+  gender: string;
+  days: string[];
+  location: TryoutLocation;
+  tryoutSessions: TryoutSession[];
+  notes: string[];
+  dropOffTime: string;
+  pickUpTime: string;
+  hasLimitedSpots: boolean;
+  contactEmail: string;
+  ageGroups: string[];
+  maxParticipants: number | null;
+  whatToBring: string[];
+}
+
+interface ExtendedTryoutConfig extends TryoutSpecificConfig {
+  tryoutDetails?: ExtendedTryoutDetails;
+}
+
+type TryoutConfigWithDescription = ExtendedTryoutConfig & {
   description: string;
 };
 
@@ -31,13 +68,39 @@ const TryoutFormConfig: React.FC<TryoutFormConfigProps> = ({
   selectedSeason = null,
   onSeasonSelect,
 }) => {
-  // Initialize state with all required fields including description as string
+  const defaultTryoutDetails: ExtendedTryoutDetails = {
+    startDate: '',
+    endDate: '',
+    duration: '',
+    gender: '',
+    days: [],
+    location: {
+      name: '',
+      address: '',
+      city: '',
+      state: '',
+      zipCode: '',
+    },
+    tryoutSessions: [],
+    notes: [],
+    dropOffTime: '',
+    pickUpTime: '',
+    hasLimitedSpots: false,
+    contactEmail: '',
+    ageGroups: [],
+    maxParticipants: null,
+    whatToBring: [],
+  };
+
   const [tryoutConfig, setTryoutConfig] = useState<TryoutConfigWithDescription>(
     () => {
       if (initialConfig) {
         return {
           ...initialConfig,
           description: initialConfig.description || '',
+          tryoutDetails:
+            (initialConfig as ExtendedTryoutConfig).tryoutDetails ||
+            defaultTryoutDetails,
         };
       }
 
@@ -60,12 +123,20 @@ const TryoutFormConfig: React.FC<TryoutFormConfigProps> = ({
         eventId: '',
         season: '',
         description: '',
+        tryoutDetails: defaultTryoutDetails,
       };
     },
   );
 
-  const [newDate, setNewDate] = useState('');
-  const [newLocation, setNewLocation] = useState('');
+  const [newSession, setNewSession] = useState<
+    Omit<TryoutSession, 'id' | 'number'>
+  >({
+    startTime: '',
+    endTime: '',
+    grades: '',
+  });
+  const [newNote, setNewNote] = useState('');
+  const [newWhatToBring, setNewWhatToBring] = useState('');
   const [originalTryoutName, setOriginalTryoutName] = useState<string>('');
   const [nameError, setNameError] = useState<string>('');
   const [seasonError, setSeasonError] = useState<string>('');
@@ -74,30 +145,27 @@ const TryoutFormConfig: React.FC<TryoutFormConfigProps> = ({
     'idle' | 'saving' | 'success' | 'error'
   >('idle');
   const [hasChanges, setHasChanges] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    'basic' | 'schedule' | 'location' | 'details'
+  >('basic');
+
   const initialConfigRef = useRef<TryoutConfigWithDescription | null>(null);
 
-  // Update ref when initial config changes
   useEffect(() => {
     if (initialConfig) {
-      console.log('📦 Initial config loaded:', {
-        description: initialConfig.description,
-        descriptionLength: initialConfig.description?.length,
-      });
-
-      const configWithDescription: TryoutConfigWithDescription = {
+      const configWithDetails: TryoutConfigWithDescription = {
         ...initialConfig,
         description: initialConfig.description || '',
+        tryoutDetails:
+          (initialConfig as ExtendedTryoutConfig).tryoutDetails ||
+          defaultTryoutDetails,
       };
-
-      setTryoutConfig(configWithDescription);
+      setTryoutConfig(configWithDetails);
       setOriginalTryoutName(initialConfig.tryoutName || '');
-      initialConfigRef.current = JSON.parse(
-        JSON.stringify(configWithDescription),
-      );
+      initialConfigRef.current = JSON.parse(JSON.stringify(configWithDetails));
     }
   }, [initialConfig]);
 
-  // Auto-fill tryout name based on season
   useEffect(() => {
     if (selectedSeason && !isEditing) {
       const suggestedName = `${selectedSeason.season} Tryout ${selectedSeason.year}`;
@@ -112,39 +180,99 @@ const TryoutFormConfig: React.FC<TryoutFormConfigProps> = ({
     }
   }, [selectedSeason, isEditing]);
 
-  // Track changes
   useEffect(() => {
     if (!initialConfigRef.current) return;
-
     const currentConfigStr = JSON.stringify(tryoutConfig);
     const initialConfigStr = JSON.stringify(initialConfigRef.current);
-
-    const hasUnsavedChanges = currentConfigStr !== initialConfigStr;
-    setHasChanges(hasUnsavedChanges);
-
-    if (hasUnsavedChanges) {
-      console.log('🔄 Config has unsaved changes:', {
-        descriptionChanged:
-          tryoutConfig.description !== initialConfigRef.current?.description,
-        newDescriptionLength: tryoutConfig.description?.length || 0,
-        oldDescriptionLength:
-          initialConfigRef.current?.description?.length || 0,
-      });
-    }
+    setHasChanges(currentConfigStr !== initialConfigStr);
   }, [tryoutConfig]);
 
-  // Description handler - fixed
-  const handleDescriptionChange = (html: string) => {
-    console.log('📝 Description updated:', {
-      length: html.length,
-      hasContent: html.trim().length > 0,
-      preview: html.substring(0, 100) + '...',
-    });
-
+  const updateTryoutDetails = (updates: Partial<ExtendedTryoutDetails>) => {
     setTryoutConfig((prev) => ({
       ...prev,
-      description: html,
+      tryoutDetails: { ...prev.tryoutDetails!, ...updates },
     }));
+  };
+
+  const handleDescriptionChange = (html: string) => {
+    setTryoutConfig((prev) => ({ ...prev, description: html }));
+  };
+
+  const handleAddSession = () => {
+    if (newSession.startTime && newSession.endTime && newSession.grades) {
+      const sessions = tryoutConfig.tryoutDetails?.tryoutSessions || [];
+      const newSessionWithId: TryoutSession = {
+        ...newSession,
+        id: Date.now().toString(),
+        number: sessions.length + 1,
+      };
+      updateTryoutDetails({ tryoutSessions: [...sessions, newSessionWithId] });
+      setNewSession({ startTime: '', endTime: '', grades: '' });
+    }
+  };
+
+  const handleRemoveSession = (sessionId: string) => {
+    const sessions = (tryoutConfig.tryoutDetails?.tryoutSessions || []).filter(
+      (s) => s.id !== sessionId,
+    );
+    const renumberedSessions = sessions.map((session, idx) => ({
+      ...session,
+      number: idx + 1,
+    }));
+    updateTryoutDetails({ tryoutSessions: renumberedSessions });
+  };
+
+  const handleAddNote = () => {
+    if (newNote.trim()) {
+      updateTryoutDetails({
+        notes: [...(tryoutConfig.tryoutDetails?.notes || []), newNote.trim()],
+      });
+      setNewNote('');
+    }
+  };
+
+  const handleRemoveNote = (noteIndex: number) => {
+    updateTryoutDetails({
+      notes: tryoutConfig.tryoutDetails?.notes?.filter(
+        (_, i) => i !== noteIndex,
+      ),
+    });
+  };
+
+  const handleAddWhatToBring = () => {
+    if (newWhatToBring.trim()) {
+      updateTryoutDetails({
+        whatToBring: [
+          ...(tryoutConfig.tryoutDetails?.whatToBring || []),
+          newWhatToBring.trim(),
+        ],
+      });
+      setNewWhatToBring('');
+    }
+  };
+
+  const handleRemoveWhatToBring = (itemIndex: number) => {
+    updateTryoutDetails({
+      whatToBring: tryoutConfig.tryoutDetails?.whatToBring?.filter(
+        (_, i) => i !== itemIndex,
+      ),
+    });
+  };
+
+  const handleDayToggle = (day: string) => {
+    const currentDays = tryoutConfig.tryoutDetails?.days || [];
+    const updatedDays = currentDays.includes(day)
+      ? currentDays.filter((d) => d !== day)
+      : [...currentDays, day];
+    updateTryoutDetails({ days: updatedDays });
+  };
+
+  const handleAgeGroupToggle = (ageGroup: string) => {
+    const currentGroups = tryoutConfig.tryoutDetails?.ageGroups || [];
+    const updatedGroups = currentGroups.includes(ageGroup)
+      ? currentGroups.filter((g) => g !== ageGroup)
+      : [...currentGroups, ageGroup];
+    updateTryoutDetails({ ageGroups: updatedGroups });
   };
 
   const validateTryoutName = (name: string): boolean => {
@@ -179,106 +307,109 @@ const TryoutFormConfig: React.FC<TryoutFormConfigProps> = ({
     if (onSeasonSelect) {
       onSeasonSelect(season);
     }
-
     const updates: Partial<TryoutConfigWithDescription> = {
       eventId: season.eventId,
       season: season.season,
       tryoutYear: season.year,
     };
-
     if (!isEditing && !tryoutConfig.tryoutName) {
       const suggestedName = `${season.season} Tryout ${season.year}`;
       updates.tryoutName = suggestedName;
       updates.displayName = suggestedName;
     }
-
     setTryoutConfig((prev) => ({ ...prev, ...updates }));
   };
 
-  const addDate = () => {
-    if (newDate) {
-      setTryoutConfig((prev) => ({
-        ...prev,
-        tryoutDates: [...prev.tryoutDates, newDate],
-      }));
-      setNewDate('');
+  const generateDescriptionFromDetails = (
+    details: ExtendedTryoutDetails,
+  ): string => {
+    let desc = '';
+    if (details.startDate) desc += `Start Date: ${details.startDate}\n`;
+    if (details.endDate) desc += `End Date: ${details.endDate}\n`;
+    if (details.duration) desc += `Duration: ${details.duration}\n`;
+    if (details.gender) desc += `Gender: ${details.gender}\n`;
+    if (details.days.length) desc += `Days: ${details.days.join(', ')}\n\n`;
+    if (details.tryoutSessions.length) {
+      desc += `Tryout Sessions:\n`;
+      details.tryoutSessions.forEach((session) => {
+        desc += `${session.number}) ${session.startTime} - ${session.endTime} (${session.grades})\n`;
+      });
+      desc += '\n';
     }
-  };
-
-  const removeDate = (index: number) => {
-    setTryoutConfig((prev) => ({
-      ...prev,
-      tryoutDates: prev.tryoutDates.filter((_, i) => i !== index),
-    }));
-  };
-
-  const addLocation = () => {
-    if (newLocation.trim()) {
-      setTryoutConfig((prev) => ({
-        ...prev,
-        locations: [...prev.locations, newLocation.trim()],
-      }));
-      setNewLocation('');
+    if (details.location.name) {
+      desc += `Location: ${details.location.name}`;
+      if (details.location.address) {
+        desc += ` (${details.location.address}`;
+        if (details.location.city) desc += `, ${details.location.city}`;
+        if (details.location.state) desc += `, ${details.location.state}`;
+        if (details.location.zipCode) desc += ` ${details.location.zipCode}`;
+        desc += `)`;
+      }
+      desc += '\n\n';
     }
-  };
-
-  const removeLocation = (index: number) => {
-    setTryoutConfig((prev) => ({
-      ...prev,
-      locations: prev.locations.filter((_, i) => i !== index),
-    }));
+    if (details.dropOffTime) desc += `Check-in: ${details.dropOffTime}\n`;
+    if (details.whatToBring.length) {
+      desc += `What to Bring:\n`;
+      details.whatToBring.forEach((item) => {
+        desc += `• ${item}\n`;
+      });
+      desc += '\n';
+    }
+    if (details.notes.length) {
+      desc += `Notes:\n`;
+      details.notes.forEach((note) => {
+        desc += `• ${note}\n`;
+      });
+      desc += '\n';
+    }
+    if (details.contactEmail) desc += `Contact: ${details.contactEmail}\n`;
+    return desc;
   };
 
   const handleSave = async () => {
-    console.log('💾 Starting save process...');
-
-    if (!validateSeason()) {
+    if (!validateSeason() || !validateTryoutName(tryoutConfig.tryoutName)) {
       return;
     }
 
-    if (!validateTryoutName(tryoutConfig.tryoutName)) {
-      return;
-    }
-
-    if (!tryoutConfig.tryoutYear) {
-      alert('Tryout year is required');
-      return;
-    }
-
-    if (tryoutConfig.tryoutFee < 0) {
-      alert('Tryout fee must be a positive number');
-      return;
-    }
-
-    // Prepare config for saving - convert to TryoutSpecificConfig
     const configToSave: TryoutSpecificConfig = {
-      ...tryoutConfig,
-      tryoutFee: Number(tryoutConfig.tryoutFee) || 50,
+      tryoutName: tryoutConfig.tryoutName,
       tryoutYear: Number(tryoutConfig.tryoutYear),
-      description: tryoutConfig.description, // Already guaranteed to be string
+      displayName: tryoutConfig.displayName,
+      registrationDeadline: tryoutConfig.registrationDeadline,
+      tryoutDates: tryoutConfig.tryoutDates || [],
+      locations: tryoutConfig.locations || [],
+      divisions: tryoutConfig.divisions,
+      ageGroups: tryoutConfig.ageGroups,
+      requiresPayment: tryoutConfig.requiresPayment,
+      requiresRoster: tryoutConfig.requiresRoster,
+      requiresInsurance: tryoutConfig.requiresInsurance,
+      paymentDeadline: tryoutConfig.paymentDeadline,
+      refundPolicy: tryoutConfig.refundPolicy,
+      tryoutFee: Number(tryoutConfig.tryoutFee) || 50,
+      isActive: tryoutConfig.isActive,
+      eventId: tryoutConfig.eventId,
+      season: tryoutConfig.season,
+      description: tryoutConfig.description || '',
+      tryoutDetails: tryoutConfig.tryoutDetails,
     };
 
-    console.log('📤 Sending config to save:', {
-      tryoutName: configToSave.tryoutName,
-      description: configToSave.description,
-      descriptionLength: configToSave.description?.length,
-      tryoutYear: configToSave.tryoutYear,
-      tryoutFee: configToSave.tryoutFee,
-    });
+    console.log(
+      '📤 FINAL CONFIG TO SAVE:',
+      JSON.stringify(configToSave, null, 2),
+    );
+    console.log('📤 tryoutDetails being saved:', configToSave.tryoutDetails);
 
     setIsSaving(true);
     setSaveStatus('saving');
 
     try {
       await onTryoutConfigUpdate(configToSave, originalTryoutName);
-      console.log('✅ Save successful!');
       setSaveStatus('success');
       setHasChanges(false);
       initialConfigRef.current = JSON.parse(JSON.stringify(tryoutConfig));
-
       setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (error: any) {
-      console.error('❌ Error saving tryout config:', error);
+      console.error('Error saving tryout config:', error);
       setSaveStatus('error');
       alert(`Error saving tryout config: ${error.message || 'Unknown error'}`);
     } finally {
@@ -297,6 +428,7 @@ const TryoutFormConfig: React.FC<TryoutFormConfigProps> = ({
 
   return (
     <div className='tryout-form-config'>
+      {/* Header */}
       <div className='d-flex justify-content-between align-items-center mb-4'>
         <h4>
           Tryout Configuration
@@ -321,30 +453,27 @@ const TryoutFormConfig: React.FC<TryoutFormConfigProps> = ({
               {tryoutConfig.isActive ? 'Tryout Active' : 'Tryout Inactive'}
             </label>
           </div>
-
           {saveStatus === 'success' && (
             <span className='text-success'>
-              <i className='ti ti-circle-check me-1'></i>
-              Saved successfully!
+              <i className='ti ti-circle-check me-1'></i>Saved!
             </span>
           )}
           {saveStatus === 'error' && (
             <span className='text-danger'>
-              <i className='ti ti-alert-circle me-1'></i>
-              Error saving
+              <i className='ti ti-alert-circle me-1'></i>Error
             </span>
           )}
         </div>
       </div>
 
+      {/* Unsaved Changes Bar */}
       <div className='card mb-4'>
         <div className='card-body'>
           <div className='d-flex justify-content-between align-items-center'>
             <div>
               {hasChanges && (
                 <span className='text-warning'>
-                  <i className='ti ti-alert-circle me-1'></i>
-                  You have unsaved changes
+                  <i className='ti ti-alert-circle me-1'></i>Unsaved changes
                 </span>
               )}
               {seasonError && (
@@ -375,15 +504,9 @@ const TryoutFormConfig: React.FC<TryoutFormConfigProps> = ({
                     Saving...
                   </>
                 ) : isEditing ? (
-                  <>
-                    <i className='ti ti-device-floppy me-2'></i>
-                    Update Tryout
-                  </>
+                  'Update Tryout'
                 ) : (
-                  <>
-                    <i className='ti ti-plus me-2'></i>
-                    Create Tryout
-                  </>
+                  'Create Tryout'
                 )}
               </button>
             </div>
@@ -391,347 +514,704 @@ const TryoutFormConfig: React.FC<TryoutFormConfigProps> = ({
         </div>
       </div>
 
-      <div className='card mb-4'>
-        <div className='card-header'>
-          <h5>Tryout Description</h5>
-          <small className='text-muted'>
-            This description will appear above the tryout registration form
-          </small>
-        </div>
-        <div className='card-body'>
-          <div className='mb-3'>
-            <label className='form-label'>Tryout Description *</label>
-            <RichTextEditor
-              value={tryoutConfig.description}
-              onChange={handleDescriptionChange}
-              placeholder='Enter a detailed description of this tryout...'
-              showPreview={true}
-            />
-            <small className='form-text text-muted'>
-              Include details like dates, times, location, what to bring, etc.
-            </small>
-          </div>
+      {/* Tabs */}
+      <ul className='nav nav-tabs mb-4'>
+        <li className='nav-item'>
+          <button
+            className={`nav-link ${activeTab === 'basic' ? 'active' : ''}`}
+            onClick={() => setActiveTab('basic')}
+          >
+            <i className='ti ti-settings me-1'></i>Basic
+          </button>
+        </li>
+        <li className='nav-item'>
+          <button
+            className={`nav-link ${activeTab === 'schedule' ? 'active' : ''}`}
+            onClick={() => setActiveTab('schedule')}
+          >
+            <i className='ti ti-calendar me-1'></i>Schedule
+          </button>
+        </li>
+        <li className='nav-item'>
+          <button
+            className={`nav-link ${activeTab === 'location' ? 'active' : ''}`}
+            onClick={() => setActiveTab('location')}
+          >
+            <i className='ti ti-map-pin me-1'></i>Location
+          </button>
+        </li>
+        <li className='nav-item'>
+          <button
+            className={`nav-link ${activeTab === 'details' ? 'active' : ''}`}
+            onClick={() => setActiveTab('details')}
+          >
+            <i className='ti ti-info-circle me-1'></i>Details
+          </button>
+        </li>
+      </ul>
 
-          <div className='alert alert-info mt-4'>
-            <i className='ti ti-info-circle me-2'></i>
-            <strong>How it will appear to parents:</strong>
-            <div className='mt-3 description-preview p-4 bg-white rounded border'>
-              <div className='d-flex align-items-center mb-3'>
-                <i className='ti ti-target-arrow text-primary me-2'></i>
-                <h5 className='mb-0 text-primary'>
-                  {tryoutConfig.tryoutName || 'Tryout'}{' '}
-                  {tryoutConfig.tryoutYear}
-                </h5>
-              </div>
-              <div
-                className='description-content'
-                style={{
-                  fontSize: '16px',
-                  lineHeight: '1.6',
-                  color: '#333',
-                }}
-                dangerouslySetInnerHTML={{
-                  __html:
-                    tryoutConfig.description ||
-                    '<p class="text-muted">No description set yet</p>',
-                }}
+      {/* ========== BASIC TAB ========== */}
+      {activeTab === 'basic' && (
+        <>
+          <div className='card mb-4'>
+            <div className='card-header'>
+              <h5>Tryout Description</h5>
+              <small className='text-muted'>
+                This description will appear above the tryout registration form
+              </small>
+            </div>
+            <div className='card-body'>
+              <RichTextEditor
+                value={tryoutConfig.description}
+                onChange={handleDescriptionChange}
+                placeholder='Enter a detailed description...'
+                showPreview={true}
               />
             </div>
           </div>
-        </div>
-      </div>
 
-      {!isEditing && (
+          {!isEditing && (
+            <div className='card mb-4'>
+              <div className='card-header'>
+                <h5>Link to Season</h5>
+                <small className='text-muted'>
+                  Tryouts must be linked to an existing season
+                </small>
+              </div>
+              <div className='card-body'>
+                {seasonEvents.length === 0 ? (
+                  <div className='alert alert-warning'>
+                    No seasons found. Please create a season first.
+                  </div>
+                ) : (
+                  <div className='list-group'>
+                    {seasonEvents.map((season) => (
+                      <button
+                        key={season.eventId}
+                        type='button'
+                        className={`list-group-item list-group-item-action ${selectedSeason?.eventId === season.eventId ? 'active' : ''}`}
+                        onClick={() => handleSeasonSelect(season)}
+                      >
+                        <div className='d-flex w-100 justify-content-between'>
+                          <h6 className='mb-1'>{season.season}</h6>
+                          <small>{season.year}</small>
+                        </div>
+                        <small>Event ID: {season.eventId}</small>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className='card mb-4'>
+            <div className='card-header'>
+              <h5>Basic Information</h5>
+            </div>
+            <div className='card-body'>
+              <div className='row'>
+                <div className='col-md-6 mb-3'>
+                  <label className='form-label'>Tryout Name *</label>
+                  <input
+                    type='text'
+                    className={`form-control ${nameError ? 'is-invalid' : ''}`}
+                    value={tryoutConfig.tryoutName}
+                    onChange={handleTryoutNameChange}
+                    disabled={!tryoutConfig.eventId && !isEditing}
+                  />
+                  {nameError && (
+                    <div className='invalid-feedback'>{nameError}</div>
+                  )}
+                </div>
+                <div className='col-md-6 mb-3'>
+                  <label className='form-label'>Tryout Year *</label>
+                  <input
+                    type='number'
+                    className='form-control'
+                    value={tryoutConfig.tryoutYear}
+                    onChange={(e) =>
+                      setTryoutConfig((prev) => ({
+                        ...prev,
+                        tryoutYear:
+                          parseInt(e.target.value) || new Date().getFullYear(),
+                      }))
+                    }
+                    disabled={!tryoutConfig.eventId && !isEditing}
+                  />
+                </div>
+              </div>
+              <div className='row'>
+                <div className='col-md-6 mb-3'>
+                  <label className='form-label'>Display Name</label>
+                  <input
+                    type='text'
+                    className='form-control'
+                    value={tryoutConfig.displayName || ''}
+                    onChange={(e) =>
+                      setTryoutConfig((prev) => ({
+                        ...prev,
+                        displayName: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div className='col-md-6 mb-3'>
+                  <label className='form-label'>Tryout Fee</label>
+                  <div className='input-group'>
+                    <span className='input-group-text'>$</span>
+                    <input
+                      type='number'
+                      className='form-control'
+                      value={tryoutConfig.tryoutFee}
+                      onChange={(e) =>
+                        setTryoutConfig((prev) => ({
+                          ...prev,
+                          tryoutFee: Number(e.target.value) || 50,
+                        }))
+                      }
+                      min='0'
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className='row'>
+                <div className='col-md-6 mb-3'>
+                  <label className='form-label'>Start Date</label>
+                  <input
+                    type='text'
+                    className='form-control'
+                    placeholder='e.g., February 27'
+                    value={tryoutConfig.tryoutDetails?.startDate || ''}
+                    onChange={(e) =>
+                      updateTryoutDetails({ startDate: e.target.value })
+                    }
+                  />
+                </div>
+                <div className='col-md-6 mb-3'>
+                  <label className='form-label'>End Date</label>
+                  <input
+                    type='text'
+                    className='form-control'
+                    placeholder='e.g., February 28'
+                    value={tryoutConfig.tryoutDetails?.endDate || ''}
+                    onChange={(e) =>
+                      updateTryoutDetails({ endDate: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <div className='row'>
+                <div className='col-md-6 mb-3'>
+                  <label className='form-label'>Duration</label>
+                  <input
+                    type='text'
+                    className='form-control'
+                    placeholder='e.g., 2 days'
+                    value={tryoutConfig.tryoutDetails?.duration || ''}
+                    onChange={(e) =>
+                      updateTryoutDetails({ duration: e.target.value })
+                    }
+                  />
+                </div>
+                <div className='col-md-6 mb-3'>
+                  <label className='form-label'>Gender</label>
+                  <select
+                    className='form-select'
+                    value={tryoutConfig.tryoutDetails?.gender || ''}
+                    onChange={(e) =>
+                      updateTryoutDetails({ gender: e.target.value })
+                    }
+                  >
+                    <option value=''>Select gender</option>
+                    <option value='Boys'>Boys Only</option>
+                    <option value='Girls'>Girls Only</option>
+                    <option value='Boys & Girls'>Boys & Girls</option>
+                  </select>
+                </div>
+              </div>
+              <div className='mb-3'>
+                <label className='form-label'>Age Groups / Grades</label>
+                <div className='d-flex gap-3 flex-wrap'>
+                  {['3rd-5th', '6th-8th', '9th-12th'].map((group) => (
+                    <div key={group} className='form-check'>
+                      <input
+                        type='checkbox'
+                        className='form-check-input'
+                        id={`age-group-${group}`}
+                        checked={
+                          tryoutConfig.tryoutDetails?.ageGroups?.includes(
+                            group,
+                          ) || false
+                        }
+                        onChange={() => handleAgeGroupToggle(group)}
+                      />
+                      <label
+                        className='form-check-label'
+                        htmlFor={`age-group-${group}`}
+                      >
+                        {group}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className='mb-3'>
+                <label className='form-label'>Days of Week</label>
+                <div className='d-flex gap-3 flex-wrap'>
+                  {[
+                    'Monday',
+                    'Tuesday',
+                    'Wednesday',
+                    'Thursday',
+                    'Friday',
+                    'Saturday',
+                    'Sunday',
+                  ].map((day) => (
+                    <div key={day} className='form-check'>
+                      <input
+                        type='checkbox'
+                        className='form-check-input'
+                        id={`day-${day}`}
+                        checked={
+                          tryoutConfig.tryoutDetails?.days?.includes(day) ||
+                          false
+                        }
+                        onChange={() => handleDayToggle(day)}
+                      />
+                      <label
+                        className='form-check-label'
+                        htmlFor={`day-${day}`}
+                      >
+                        {day.slice(0, 3)}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ========== SCHEDULE TAB ========== */}
+      {activeTab === 'schedule' && (
+        <>
+          <div className='card mb-4'>
+            <div className='card-header'>
+              <h5>Tryout Sessions</h5>
+              <small className='text-muted'>
+                Add tryout sessions by grade level
+              </small>
+            </div>
+            <div className='card-body'>
+              {(tryoutConfig.tryoutDetails?.tryoutSessions || []).map(
+                (session) => (
+                  <div
+                    key={session.id}
+                    className='d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded'
+                  >
+                    <div>
+                      <strong>Session {session.number}:</strong>{' '}
+                      {session.startTime} - {session.endTime}
+                      <span className='text-muted ms-2'>
+                        Grades: {session.grades}
+                      </span>
+                    </div>
+                    <button
+                      className='btn btn-sm btn-outline-danger'
+                      onClick={() => handleRemoveSession(session.id!)}
+                    >
+                      <i className='ti ti-trash'></i>
+                    </button>
+                  </div>
+                ),
+              )}
+              <div className='row mt-3'>
+                <div className='col-md-3 mb-2'>
+                  <input
+                    type='text'
+                    className='form-control'
+                    placeholder='Start time (e.g., 5:00 PM)'
+                    value={newSession.startTime}
+                    onChange={(e) =>
+                      setNewSession({
+                        ...newSession,
+                        startTime: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className='col-md-3 mb-2'>
+                  <input
+                    type='text'
+                    className='form-control'
+                    placeholder='End time (e.g., 6:30 PM)'
+                    value={newSession.endTime}
+                    onChange={(e) =>
+                      setNewSession({ ...newSession, endTime: e.target.value })
+                    }
+                  />
+                </div>
+                <div className='col-md-4 mb-2'>
+                  <input
+                    type='text'
+                    className='form-control'
+                    placeholder='Grades (e.g., 4th-5th grade)'
+                    value={newSession.grades}
+                    onChange={(e) =>
+                      setNewSession({ ...newSession, grades: e.target.value })
+                    }
+                  />
+                </div>
+                <div className='col-md-2 mb-2'>
+                  <button
+                    className='btn btn-primary w-100'
+                    onClick={handleAddSession}
+                    disabled={
+                      !newSession.startTime ||
+                      !newSession.endTime ||
+                      !newSession.grades
+                    }
+                  >
+                    <i className='ti ti-plus'></i> Add
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className='row'>
+            <div className='col-md-6 mb-3'>
+              <label className='form-label'>Check-in / Drop-off Time</label>
+              <input
+                type='text'
+                className='form-control'
+                placeholder='e.g., 4:30-5:00 PM'
+                value={tryoutConfig.tryoutDetails?.dropOffTime || ''}
+                onChange={(e) =>
+                  updateTryoutDetails({ dropOffTime: e.target.value })
+                }
+              />
+            </div>
+            <div className='col-md-6 mb-3'>
+              <label className='form-label'>Pick-up Time</label>
+              <input
+                type='text'
+                className='form-control'
+                placeholder='e.g., 9:30 PM'
+                value={tryoutConfig.tryoutDetails?.pickUpTime || ''}
+                onChange={(e) =>
+                  updateTryoutDetails({ pickUpTime: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          <div className='mb-3'>
+            <div className='form-check form-switch'>
+              <input
+                className='form-check-input'
+                type='checkbox'
+                checked={tryoutConfig.tryoutDetails?.hasLimitedSpots || false}
+                onChange={(e) =>
+                  updateTryoutDetails({ hasLimitedSpots: e.target.checked })
+                }
+              />
+              <label className='form-check-label fw-bold'>
+                Limited Spots Available
+              </label>
+            </div>
+          </div>
+
+          <div className='mb-3'>
+            <label className='form-label'>Max Participants (Optional)</label>
+            <input
+              type='number'
+              className='form-control'
+              placeholder='e.g., 50'
+              value={tryoutConfig.tryoutDetails?.maxParticipants || ''}
+              onChange={(e) =>
+                updateTryoutDetails({
+                  maxParticipants: parseInt(e.target.value) || null,
+                })
+              }
+              min='1'
+            />
+          </div>
+
+          <div className='row'>
+            <div className='col-md-6 mb-3'>
+              <label className='form-label'>Registration Deadline</label>
+              <input
+                type='date'
+                className='form-control'
+                value={tryoutConfig.registrationDeadline || ''}
+                onChange={(e) =>
+                  setTryoutConfig((prev) => ({
+                    ...prev,
+                    registrationDeadline: e.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className='col-md-6 mb-3'>
+              <label className='form-label'>Payment Deadline</label>
+              <input
+                type='date'
+                className='form-control'
+                value={tryoutConfig.paymentDeadline || ''}
+                onChange={(e) =>
+                  setTryoutConfig((prev) => ({
+                    ...prev,
+                    paymentDeadline: e.target.value,
+                  }))
+                }
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ========== LOCATION TAB ========== */}
+      {activeTab === 'location' && (
         <div className='card mb-4'>
           <div className='card-header'>
-            <h5>Link to Season</h5>
+            <h5>Tryout Location</h5>
             <small className='text-muted'>
-              Tryouts must be linked to an existing season
+              Enter the physical location of the tryout
             </small>
           </div>
           <div className='card-body'>
             <div className='mb-3'>
-              <label className='form-label'>Select Season *</label>
-              {seasonEvents.length === 0 ? (
-                <div className='alert alert-warning'>
-                  <i className='ti ti-alert-triangle me-2'></i>
-                  No seasons found. Please create a season first.
-                  <div className='mt-2'>
-                    <a
-                      href='/admin/seasons'
-                      className='btn btn-sm btn-primary'
-                      target='_blank'
-                      rel='noopener noreferrer'
-                    >
-                      <i className='ti ti-calendar-plus me-1'></i>
-                      Create Season
-                    </a>
-                  </div>
-                </div>
-              ) : (
-                <div className='list-group'>
-                  {seasonEvents.map((season) => (
+              <label className='form-label'>Location Name</label>
+              <input
+                type='text'
+                className='form-control'
+                placeholder='e.g., Skyview Middle School'
+                value={tryoutConfig.tryoutDetails?.location?.name || ''}
+                onChange={(e) =>
+                  updateTryoutDetails({
+                    location: {
+                      ...tryoutConfig.tryoutDetails?.location,
+                      name: e.target.value,
+                      address:
+                        tryoutConfig.tryoutDetails?.location?.address || '',
+                      city: tryoutConfig.tryoutDetails?.location?.city || '',
+                      state: tryoutConfig.tryoutDetails?.location?.state || '',
+                      zipCode:
+                        tryoutConfig.tryoutDetails?.location?.zipCode || '',
+                    },
+                  })
+                }
+              />
+            </div>
+            <div className='mb-3'>
+              <label className='form-label'>Street Address</label>
+              <input
+                type='text'
+                className='form-control'
+                placeholder='e.g., 21404 35th Ave SE'
+                value={tryoutConfig.tryoutDetails?.location?.address || ''}
+                onChange={(e) =>
+                  updateTryoutDetails({
+                    location: {
+                      ...tryoutConfig.tryoutDetails?.location,
+                      name: tryoutConfig.tryoutDetails?.location?.name || '',
+                      address: e.target.value,
+                      city: tryoutConfig.tryoutDetails?.location?.city || '',
+                      state: tryoutConfig.tryoutDetails?.location?.state || '',
+                      zipCode:
+                        tryoutConfig.tryoutDetails?.location?.zipCode || '',
+                    },
+                  })
+                }
+              />
+            </div>
+            <div className='row'>
+              <div className='col-md-4 mb-3'>
+                <label className='form-label'>City</label>
+                <input
+                  type='text'
+                  className='form-control'
+                  placeholder='Bothell'
+                  value={tryoutConfig.tryoutDetails?.location?.city || ''}
+                  onChange={(e) =>
+                    updateTryoutDetails({
+                      location: {
+                        ...tryoutConfig.tryoutDetails?.location,
+                        name: tryoutConfig.tryoutDetails?.location?.name || '',
+                        address:
+                          tryoutConfig.tryoutDetails?.location?.address || '',
+                        city: e.target.value,
+                        state:
+                          tryoutConfig.tryoutDetails?.location?.state || '',
+                        zipCode:
+                          tryoutConfig.tryoutDetails?.location?.zipCode || '',
+                      },
+                    })
+                  }
+                />
+              </div>
+              <div className='col-md-4 mb-3'>
+                <label className='form-label'>State</label>
+                <input
+                  type='text'
+                  className='form-control'
+                  placeholder='WA'
+                  value={tryoutConfig.tryoutDetails?.location?.state || ''}
+                  onChange={(e) =>
+                    updateTryoutDetails({
+                      location: {
+                        ...tryoutConfig.tryoutDetails?.location,
+                        name: tryoutConfig.tryoutDetails?.location?.name || '',
+                        address:
+                          tryoutConfig.tryoutDetails?.location?.address || '',
+                        city: tryoutConfig.tryoutDetails?.location?.city || '',
+                        state: e.target.value,
+                        zipCode:
+                          tryoutConfig.tryoutDetails?.location?.zipCode || '',
+                      },
+                    })
+                  }
+                />
+              </div>
+              <div className='col-md-4 mb-3'>
+                <label className='form-label'>ZIP Code</label>
+                <input
+                  type='text'
+                  className='form-control'
+                  placeholder='98021'
+                  value={tryoutConfig.tryoutDetails?.location?.zipCode || ''}
+                  onChange={(e) =>
+                    updateTryoutDetails({
+                      location: {
+                        ...tryoutConfig.tryoutDetails?.location,
+                        name: tryoutConfig.tryoutDetails?.location?.name || '',
+                        address:
+                          tryoutConfig.tryoutDetails?.location?.address || '',
+                        city: tryoutConfig.tryoutDetails?.location?.city || '',
+                        state:
+                          tryoutConfig.tryoutDetails?.location?.state || '',
+                        zipCode: e.target.value,
+                      },
+                    })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========== DETAILS TAB ========== */}
+      {activeTab === 'details' && (
+        <>
+          <div className='card mb-4'>
+            <div className='card-header'>
+              <h5>What to Bring</h5>
+              <small className='text-muted'>
+                Items players should bring to the tryout
+              </small>
+            </div>
+            <div className='card-body'>
+              <div className='input-group mb-3'>
+                <input
+                  type='text'
+                  className='form-control'
+                  placeholder='e.g., Basketball shoes, Water bottle'
+                  value={newWhatToBring}
+                  onChange={(e) => setNewWhatToBring(e.target.value)}
+                />
+                <button
+                  className='btn btn-outline-primary'
+                  onClick={handleAddWhatToBring}
+                  disabled={!newWhatToBring.trim()}
+                >
+                  Add
+                </button>
+              </div>
+              {(tryoutConfig.tryoutDetails?.whatToBring || []).map(
+                (item, idx) => (
+                  <div
+                    key={idx}
+                    className='d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded'
+                  >
+                    <span>{item}</span>
                     <button
-                      key={season.eventId}
-                      type='button'
-                      className={`list-group-item list-group-item-action ${
-                        selectedSeason?.eventId === season.eventId
-                          ? 'active'
-                          : ''
-                      }`}
-                      onClick={() => handleSeasonSelect(season)}
+                      className='btn btn-sm btn-outline-danger'
+                      onClick={() => handleRemoveWhatToBring(idx)}
                     >
-                      <div className='d-flex w-100 justify-content-between'>
-                        <h6 className='text-black mb-1'>{season.season}</h6>
-                        <small className='text-black'>{season.year}</small>
-                      </div>
-                      <small className='text-muted'>
-                        Event ID: {season.eventId}
-                      </small>
+                      <i className='ti ti-trash'></i>
                     </button>
-                  ))}
-                </div>
-              )}
-              {seasonError && (
-                <div className='invalid-feedback d-block'>{seasonError}</div>
+                  </div>
+                ),
               )}
             </div>
+          </div>
 
-            {selectedSeason && (
-              <div className='alert alert-info'>
-                <i className='ti ti-link me-2'></i>
-                Linked to:{' '}
-                <strong>
-                  {selectedSeason.season} {selectedSeason.year}
-                </strong>
-                <div className='mt-1'>
-                  <small>Event ID: {selectedSeason.eventId}</small>
+          <div className='card mb-4'>
+            <div className='card-header'>
+              <h5>Important Notes</h5>
+              <small className='text-muted'>
+                Additional information for parents and players
+              </small>
+            </div>
+            <div className='card-body'>
+              <div className='input-group mb-3'>
+                <input
+                  type='text'
+                  className='form-control'
+                  placeholder='Add an important note'
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
+                />
+                <button
+                  className='btn btn-outline-primary'
+                  onClick={handleAddNote}
+                  disabled={!newNote.trim()}
+                >
+                  Add
+                </button>
+              </div>
+              {(tryoutConfig.tryoutDetails?.notes || []).map((note, idx) => (
+                <div
+                  key={idx}
+                  className='d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded'
+                >
+                  <span>{note}</span>
+                  <button
+                    className='btn btn-sm btn-outline-danger'
+                    onClick={() => handleRemoveNote(idx)}
+                  >
+                    <i className='ti ti-trash'></i>
+                  </button>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
 
-      {isEditing && tryoutConfig.eventId && tryoutConfig.season && (
-        <div className='card mb-4'>
-          <div className='card-header'>
-            <h5>Linked Season</h5>
-          </div>
-          <div className='card-body'>
-            <div className='alert alert-info'>
-              <i className='ti ti-link me-2'></i>
-              This tryout is linked to:{' '}
-              <strong>
-                {tryoutConfig.season} {tryoutConfig.tryoutYear}
-              </strong>
-              <div className='mt-1'>
-                <small>Event ID: {tryoutConfig.eventId}</small>
-              </div>
-              <div className='mt-1'>
+          <div className='card mb-4'>
+            <div className='card-header'>
+              <h5>Contact & Policies</h5>
+            </div>
+            <div className='card-body'>
+              <div className='mb-3'>
+                <label className='form-label'>Contact Email</label>
+                <input
+                  type='email'
+                  className='form-control'
+                  placeholder='e.g., info@bothellselect.com'
+                  value={tryoutConfig.tryoutDetails?.contactEmail || ''}
+                  onChange={(e) =>
+                    updateTryoutDetails({ contactEmail: e.target.value })
+                  }
+                />
                 <small className='text-muted'>
-                  Season cannot be changed after creation
+                  Email for parents to contact with questions
                 </small>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className='card mb-4'>
-        <div className='card-header'>
-          <h5>Basic Tryout Information</h5>
-        </div>
-        <div className='card-body'>
-          <div className='row'>
-            <div className='col-md-6'>
-              <div className='mb-3'>
-                <label className='form-label'>Tryout Name *</label>
-                <input
-                  type='text'
-                  className={`form-control ${nameError ? 'is-invalid' : ''}`}
-                  value={tryoutConfig.tryoutName}
-                  onChange={handleTryoutNameChange}
-                  onBlur={(e) => validateTryoutName(e.target.value)}
-                  placeholder='e.g., Spring Tryouts 2025'
-                  disabled={!tryoutConfig.eventId && !isEditing}
-                />
-                {nameError ? (
-                  <div className='invalid-feedback'>{nameError}</div>
-                ) : (
-                  <small className='form-text text-muted'>
-                    Unique name for this tryout. Cannot be changed after
-                    creation.
-                  </small>
-                )}
-              </div>
-            </div>
-            <div className='col-md-6'>
-              <div className='mb-3'>
-                <label className='form-label'>Tryout Year *</label>
-                <input
-                  type='number'
-                  className='form-control'
-                  value={tryoutConfig.tryoutYear}
-                  onChange={(e) =>
-                    setTryoutConfig((prev) => ({
-                      ...prev,
-                      tryoutYear:
-                        parseInt(e.target.value) || new Date().getFullYear(),
-                    }))
-                  }
-                  min='2024'
-                  max='2030'
-                  disabled={!tryoutConfig.eventId && !isEditing}
-                />
-                <small className='form-text text-muted'>
-                  Year the tryout will take place (auto-filled from season)
-                </small>
-              </div>
-            </div>
-          </div>
-
-          <div className='row'>
-            <div className='col-md-6'>
-              <div className='mb-3'>
-                <label className='form-label'>Display Name (Optional)</label>
-                <input
-                  type='text'
-                  className='form-control'
-                  value={tryoutConfig.displayName || ''}
-                  onChange={(e) =>
-                    setTryoutConfig((prev) => ({
-                      ...prev,
-                      displayName: e.target.value,
-                    }))
-                  }
-                  placeholder='e.g., Bothell Select Spring Tryouts'
-                  disabled={!tryoutConfig.eventId && !isEditing}
-                />
-                <small className='form-text text-muted'>
-                  User-friendly name shown to registrants
-                </small>
-              </div>
-            </div>
-            <div className='col-md-6'>
-              <div className='mb-3'>
-                <label className='form-label'>Tryout Fee *</label>
-                <div className='input-group'>
-                  <span className='input-group-text'>$</span>
-                  <input
-                    type='number'
-                    className='form-control'
-                    value={tryoutConfig.tryoutFee}
-                    onChange={(e) =>
-                      setTryoutConfig((prev) => ({
-                        ...prev,
-                        tryoutFee: Number(e.target.value) || 50,
-                      }))
-                    }
-                    min='0'
-                    step='1'
-                    disabled={!tryoutConfig.eventId && !isEditing}
-                  />
-                </div>
-                <small className='form-text text-muted'>Price per player</small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className='row mb-4'>
-        <div className='col-md-6'>
-          <div className='card'>
-            <div className='card-header'>
-              <h5>Schedule</h5>
-            </div>
-            <div className='card-body'>
-              <div className='mb-3'>
-                <label className='form-label'>Registration Deadline</label>
-                <input
-                  type='date'
-                  className='form-control'
-                  value={tryoutConfig.registrationDeadline || ''}
-                  onChange={(e) =>
-                    setTryoutConfig((prev) => ({
-                      ...prev,
-                      registrationDeadline: e.target.value,
-                    }))
-                  }
-                  disabled={!tryoutConfig.eventId && !isEditing}
-                />
-                <small className='form-text text-muted'>
-                  Last day to register for tryouts
-                </small>
-              </div>
-
-              <div className='mb-3'>
-                <label className='form-label'>Payment Deadline</label>
-                <input
-                  type='date'
-                  className='form-control'
-                  value={tryoutConfig.paymentDeadline || ''}
-                  onChange={(e) =>
-                    setTryoutConfig((prev) => ({
-                      ...prev,
-                      paymentDeadline: e.target.value,
-                    }))
-                  }
-                  disabled={!tryoutConfig.eventId && !isEditing}
-                />
-                <small className='form-text text-muted'>
-                  Last day to complete payment
-                </small>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className='col-md-6'>
-          <div className='card h-100'>
-            <div className='card-header'>
-              <h5>Requirements</h5>
-            </div>
-            <div className='card-body'>
-              <div className='form-check form-switch mb-3'>
-                <input
-                  className='form-check-input'
-                  type='checkbox'
-                  checked={tryoutConfig.requiresRoster}
-                  onChange={(e) =>
-                    setTryoutConfig((prev) => ({
-                      ...prev,
-                      requiresRoster: e.target.checked,
-                    }))
-                  }
-                  disabled={!tryoutConfig.eventId && !isEditing}
-                />
-                <label className='form-check-label'>Requires Roster Info</label>
-                <small className='form-text text-muted d-block'>
-                  Players must provide roster information
-                </small>
-              </div>
-
-              <div className='form-check form-switch mb-3'>
-                <input
-                  className='form-check-input'
-                  type='checkbox'
-                  checked={tryoutConfig.requiresInsurance}
-                  onChange={(e) =>
-                    setTryoutConfig((prev) => ({
-                      ...prev,
-                      requiresInsurance: e.target.checked,
-                    }))
-                  }
-                  disabled={!tryoutConfig.eventId && !isEditing}
-                />
-                <label className='form-check-label'>Requires Insurance</label>
-                <small className='form-text text-muted d-block'>
-                  Players must provide proof of insurance
-                </small>
-              </div>
-
               <div className='mb-3'>
                 <label className='form-label'>Refund Policy</label>
                 <textarea
@@ -744,183 +1224,50 @@ const TryoutFormConfig: React.FC<TryoutFormConfigProps> = ({
                       refundPolicy: e.target.value,
                     }))
                   }
-                  placeholder='Enter refund policy details...'
-                  disabled={!tryoutConfig.eventId && !isEditing}
                 />
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className='row mb-4'>
-        <div className='col-md-6'>
-          <div className='card h-100'>
-            <div className='card-header'>
-              <h6 className='mb-0'>Tryout Dates</h6>
-            </div>
-            <div className='card-body'>
-              <div className='input-group mb-3'>
-                <input
-                  type='date'
-                  className='form-control'
-                  value={newDate}
-                  onChange={(e) => setNewDate(e.target.value)}
-                  disabled={!tryoutConfig.eventId && !isEditing}
-                />
-                <button
-                  className='btn btn-outline-primary'
-                  type='button'
-                  onClick={addDate}
-                  disabled={(!tryoutConfig.eventId && !isEditing) || !newDate}
-                >
-                  Add
-                </button>
-              </div>
-
-              {tryoutConfig.tryoutDates.length > 0 ? (
-                <div className='list-group'>
-                  {tryoutConfig.tryoutDates.map((date, index) => (
-                    <div
-                      key={index}
-                      className='list-group-item d-flex justify-content-between align-items-center'
-                    >
-                      <span>{new Date(date).toLocaleDateString()}</span>
-                      <button
-                        className='btn btn-sm btn-outline-danger'
-                        onClick={() => removeDate(index)}
-                        disabled={!tryoutConfig.eventId && !isEditing}
-                      >
-                        <i className='ti ti-trash'></i>
-                      </button>
-                    </div>
-                  ))}
+              <div className='row'>
+                <div className='col-md-6'>
+                  <div className='form-check form-switch mb-3'>
+                    <input
+                      className='form-check-input'
+                      type='checkbox'
+                      checked={tryoutConfig.requiresRoster}
+                      onChange={(e) =>
+                        setTryoutConfig((prev) => ({
+                          ...prev,
+                          requiresRoster: e.target.checked,
+                        }))
+                      }
+                    />
+                    <label className='form-check-label'>
+                      Requires Roster Info
+                    </label>
+                  </div>
                 </div>
-              ) : (
-                <p className='text-muted small mb-0'>No dates added yet</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className='col-md-6'>
-          <div className='card h-100'>
-            <div className='card-header'>
-              <h6 className='mb-0'>Locations</h6>
-            </div>
-            <div className='card-body'>
-              <div className='input-group mb-3'>
-                <input
-                  type='text'
-                  className='form-control'
-                  value={newLocation}
-                  onChange={(e) => setNewLocation(e.target.value)}
-                  placeholder='Add location (e.g., Bothell High School Gym)'
-                  disabled={!tryoutConfig.eventId && !isEditing}
-                />
-                <button
-                  className='btn btn-outline-primary'
-                  type='button'
-                  onClick={addLocation}
-                  disabled={
-                    (!tryoutConfig.eventId && !isEditing) || !newLocation.trim()
-                  }
-                >
-                  Add
-                </button>
-              </div>
-
-              {tryoutConfig.locations.length > 0 ? (
-                <div className='list-group'>
-                  {tryoutConfig.locations.map((location, index) => (
-                    <div
-                      key={index}
-                      className='list-group-item d-flex justify-content-between align-items-center'
-                    >
-                      <span>{location}</span>
-                      <button
-                        className='btn btn-sm btn-outline-danger'
-                        onClick={() => removeLocation(index)}
-                        disabled={!tryoutConfig.eventId && !isEditing}
-                      >
-                        <i className='ti ti-trash'></i>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className='text-muted small mb-0'>No locations added yet</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className='card'>
-        <div className='card-header'>
-          <h5>Payment Configuration</h5>
-        </div>
-        <div className='card-body'>
-          <div className='row'>
-            <div className='col-md-6'>
-              <div className='mb-3'>
-                <label className='form-label'>Tryout Fee (per player) *</label>
-                <div className='input-group'>
-                  <span className='input-group-text'>$</span>
-                  <input
-                    type='number'
-                    className='form-control'
-                    value={tryoutConfig.tryoutFee}
-                    onChange={(e) =>
-                      setTryoutConfig((prev) => ({
-                        ...prev,
-                        tryoutFee: Number(e.target.value) || 50,
-                      }))
-                    }
-                    min='0'
-                    step='1'
-                    disabled={!tryoutConfig.eventId && !isEditing}
-                  />
-                </div>
-                <small className='form-text text-muted'>
-                  Per player tryout fee. This will be used for payment
-                  calculations.
-                </small>
-              </div>
-            </div>
-            <div className='col-md-6'>
-              <div className='mb-3'>
-                <label className='form-label'>Requires Payment</label>
-                <div className='form-check form-switch mt-2'>
-                  <input
-                    className='form-check-input'
-                    type='checkbox'
-                    checked={tryoutConfig.requiresPayment}
-                    onChange={(e) =>
-                      setTryoutConfig((prev) => ({
-                        ...prev,
-                        requiresPayment: e.target.checked,
-                      }))
-                    }
-                    style={{ transform: 'scale(1.2)' }}
-                    disabled={!tryoutConfig.eventId && !isEditing}
-                  />
-                  <label className='form-check-label fw-bold'>
-                    {tryoutConfig.requiresPayment
-                      ? 'Payment Required'
-                      : 'Free Tryout'}
-                  </label>
-                  <small className='form-text text-muted d-block'>
-                    {tryoutConfig.requiresPayment
-                      ? 'Players must complete payment to register for tryout'
-                      : 'No payment required for this tryout'}
-                  </small>
+                <div className='col-md-6'>
+                  <div className='form-check form-switch mb-3'>
+                    <input
+                      className='form-check-input'
+                      type='checkbox'
+                      checked={tryoutConfig.requiresInsurance}
+                      onChange={(e) =>
+                        setTryoutConfig((prev) => ({
+                          ...prev,
+                          requiresInsurance: e.target.checked,
+                        }))
+                      }
+                    />
+                    <label className='form-check-label'>
+                      Requires Insurance
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

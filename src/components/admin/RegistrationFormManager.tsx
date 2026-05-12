@@ -30,7 +30,7 @@ const RegistrationFormManager: React.FC = () => {
   >('forms');
   const [seasonEvents, setSeasonEvents] = useState<SeasonEvent[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<SeasonEvent | null>(
-    null
+    null,
   );
   const [formConfigs, setFormConfigs] = useState<
     Record<string, RegistrationFormConfigType>
@@ -48,7 +48,7 @@ const RegistrationFormManager: React.FC = () => {
     Record<string, TryoutSpecificConfig>
   >({});
   const [selectedTryoutKey, setSelectedTryoutKey] = useState<string | null>(
-    null
+    null,
   );
   const [previewType, setPreviewType] = useState<
     'training' | 'tournament' | 'tryout'
@@ -282,7 +282,7 @@ const RegistrationFormManager: React.FC = () => {
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(
-          `Failed to save tournament configuration: ${errorText}`
+          `Failed to save tournament configuration: ${errorText}`,
         );
       }
 
@@ -328,6 +328,7 @@ const RegistrationFormManager: React.FC = () => {
         eventId: config.eventId,
         season: config.season,
         description: config.description || '',
+        tryoutDetails: config.tryoutDetails,
       };
 
       const response = await fetch(`${API_BASE_URL}/admin/tryout-configs`, {
@@ -371,7 +372,7 @@ const RegistrationFormManager: React.FC = () => {
         console.error('Failed to save config:', error);
       }
     },
-    [selectedSeason]
+    [selectedSeason],
   );
 
   const handleTournamentConfigUpdate = useCallback(
@@ -387,7 +388,7 @@ const RegistrationFormManager: React.FC = () => {
         throw error;
       }
     },
-    []
+    [],
   );
 
   const handleTryoutConfigUpdate = useCallback(
@@ -403,7 +404,7 @@ const RegistrationFormManager: React.FC = () => {
         throw error;
       }
     },
-    []
+    [],
   );
 
   const createNewSeason = async (newSeason: Omit<SeasonEvent, 'eventId'>) => {
@@ -714,7 +715,7 @@ const RegistrationFormManager: React.FC = () => {
                                   )}
                                 </div>
                               </button>
-                            )
+                            ),
                           )}
                         </div>
                       )}
@@ -809,7 +810,7 @@ const RegistrationFormManager: React.FC = () => {
                           onClick={() => {
                             if (seasonEvents.length === 0) {
                               alert(
-                                'Please create a season first before creating a tryout'
+                                'Please create a season first before creating a tryout',
                               );
                               return;
                             }
@@ -899,7 +900,7 @@ const RegistrationFormManager: React.FC = () => {
                                   )}
                                 </div>
                               </button>
-                            )
+                            ),
                           )}
                         </div>
                       )}
@@ -917,7 +918,7 @@ const RegistrationFormManager: React.FC = () => {
                       selectedSeason={seasonEvents.find(
                         (season) =>
                           season.eventId ===
-                          tryoutConfigs[selectedTryoutKey]?.eventId
+                          tryoutConfigs[selectedTryoutKey]?.eventId,
                       )}
                       onSeasonSelect={(season) => {
                         setTryoutConfigs((prev) => ({
@@ -1042,7 +1043,7 @@ const RegistrationFormManager: React.FC = () => {
                               Object.keys(tournamentConfigs).length > 0
                             ) {
                               setSelectedTournamentKey(
-                                Object.keys(tournamentConfigs)[0]
+                                Object.keys(tournamentConfigs)[0],
                               );
                             }
                           }}
@@ -1061,7 +1062,7 @@ const RegistrationFormManager: React.FC = () => {
                               Object.keys(tryoutConfigs).length > 0
                             ) {
                               setSelectedTryoutKey(
-                                Object.keys(tryoutConfigs)[0]
+                                Object.keys(tryoutConfigs)[0],
                               );
                             }
                           }}
@@ -1101,7 +1102,7 @@ const RegistrationFormManager: React.FC = () => {
                                     <small>{config.tournamentYear}</small>
                                   </div>
                                 </button>
-                              )
+                              ),
                             )
                           )}
                         </div>
@@ -1135,7 +1136,7 @@ const RegistrationFormManager: React.FC = () => {
                                     <small>{config.tryoutYear}</small>
                                   </div>
                                 </button>
-                              )
+                              ),
                             )
                           )}
                         </div>
@@ -1176,8 +1177,8 @@ const RegistrationFormManager: React.FC = () => {
                           {previewType === 'training'
                             ? 'Please select a season to preview training forms.'
                             : previewType === 'tournament'
-                            ? 'Please select a tournament to preview.'
-                            : 'Please select a tryout to preview.'}
+                              ? 'Please select a tournament to preview.'
+                              : 'Please select a tryout to preview.'}
                         </p>
                       </Card.Body>
                     </Card>

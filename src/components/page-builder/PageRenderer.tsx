@@ -342,8 +342,17 @@ const PageRenderer: React.FC<PageRendererProps> = ({
 
       // Process tryout configs
       if (tryoutConfigsData.length > 0) {
+        console.log('🎯 PageRenderer - tryoutConfigsData:', tryoutConfigsData);
+        console.log('🎯 PageRenderer - looking for active tryout...');
+
         const activeTryout = tryoutConfigsData.find(
           (config: TryoutSpecificConfig) => config.isActive,
+        );
+
+        console.log('🎯 PageRenderer - activeTryout found:', activeTryout);
+        console.log(
+          '🎯 PageRenderer - activeTryout.tryoutDetails:',
+          activeTryout?.tryoutDetails,
         );
 
         if (activeTryout) {
@@ -376,6 +385,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
             updatedAt: activeTryout.updatedAt,
             __v: activeTryout.__v,
             description: activeTryout.description || '',
+            tryoutDetails: activeTryout.tryoutDetails, // ✅ THIS MUST BE PRESENT
           };
         }
       }

@@ -8,18 +8,6 @@
   background-attachment: fixed;
   position: relative;
 }
-
-/* Overlay for readability */
-.spotlight-glass-overlay {
-  min-height: 100vh;
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.6) 0%,
-    rgba(0, 0, 0, 0.4) 100%
-  );
-  padding: 60px 20px;
-}
-
 /* Main Container */
 .spotlight-glass-container {
   max-width: 1000px;
@@ -307,10 +295,6 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .spotlight-glass-overlay {
-    padding: 40px 16px;
-  }
-
   .spotlight-glass-header {
     margin-bottom: 40px;
     padding: 30px 16px;
