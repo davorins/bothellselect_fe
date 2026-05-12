@@ -317,7 +317,6 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
   }, [eventData, formData]);
 
   // Calculate effective player/team count
-  // Calculate effective player/team count
   const getEffectiveRegistrationCount = useCallback((): number => {
     console.log('🔍 getEffectiveRegistrationCount called:', {
       registrationType,
@@ -330,24 +329,6 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
     }
 
     if (registrationType === 'training') {
-      // For training, if we're in payment step, the effectivePlayers should already be filtered
-      // to only include unpaid players. So we can just return their length directly.
-      // But preserve the logic for cases where seasons data is checked
-      if (effectivePlayers.length === 0) {
-        return 0;
-      }
-
-      // Check if we need to filter based on seasons or just use the players as-is
-      const hasSeasonsData = effectivePlayers.some(
-        (player: Player) => player.seasons && player.seasons.length > 0,
-      );
-
-      if (!hasSeasonsData) {
-        // If no seasons data, assume these are the players to pay for
-        return effectivePlayers.length;
-      }
-
-      // Otherwise, filter for unpaid players
       const unpaidTrainingPlayers = effectivePlayers.filter(
         (player: Player) => {
           if (!player.seasons || player.seasons.length === 0) {
@@ -404,7 +385,6 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
       return unpaidTryoutPlayers.length;
     }
 
-    // For other registration types (player/default)
     const unpaidPlayers = effectivePlayers.filter(
       (player: Player) =>
         !player.paymentComplete || player.paymentStatus !== 'paid',

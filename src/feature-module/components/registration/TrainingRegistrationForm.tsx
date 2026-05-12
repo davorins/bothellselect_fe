@@ -616,7 +616,36 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
       const newPlayers = savedPlayers.filter(
         (p) => p._id && p.fullName?.trim(),
       );
-      const allPlayersForPayment = [...selectedUnpaidPlayers, ...newPlayers];
+
+      // FIX: Deduplicate players by ID
+      const playerMap = new Map<string, Player>();
+
+      // Add selected unpaid players first
+      selectedUnpaidPlayers.forEach((player) => {
+        if (player._id) {
+          playerMap.set(player._id, player);
+        }
+      });
+
+      // Add new players (only if not already in map by ID)
+      newPlayers.forEach((player) => {
+        if (player._id && !playerMap.has(player._id)) {
+          playerMap.set(player._id, player);
+        }
+      });
+
+      const allPlayersForPayment = Array.from(playerMap.values());
+
+      // Debug log to verify
+      console.log('🔍 Payment players composition:', {
+        selectedUnpaidCount: selectedUnpaidPlayers.length,
+        newPlayersCount: newPlayers.length,
+        deduplicatedCount: allPlayersForPayment.length,
+        players: allPlayersForPayment.map((p) => ({
+          id: p._id,
+          name: p.fullName,
+        })),
+      });
 
       setPlayersForTraining(allPlayersForPayment);
       setCurrentStep('payment');
