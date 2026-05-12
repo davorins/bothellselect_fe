@@ -198,24 +198,7 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
     return [];
   };
 
-  // Helper to check if tryout has valid location data
-  const hasValidTryoutLocation = (): boolean => {
-    const locations = getTryoutLocations();
-    return locations.length > 0;
-  };
-
-  // Helper to get first location name for header
-  const getFirstLocationName = (): string | null => {
-    const locations = getTryoutLocations();
-    return locations.length > 0 ? locations[0].name : null;
-  };
-
-  // Helper to get location count for header display
-  const getLocationCount = (): number => {
-    return getTryoutLocations().length;
-  };
-
-  // TRAINING VIEW (existing working code)
+  // TRAINING VIEW
   if (!isTryout && trainingDetails) {
     const hasValidTrainingDetails =
       trainingDetails.startDate ||
@@ -297,12 +280,6 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             <h2 className='agd-title'>
               {config?.season} {config?.year} Training Program
             </h2>
-            {trainingDetails.location?.name && (
-              <p className='agd-sub'>
-                <i className='ti ti-building-school' style={{ opacity: 0.5 }} />{' '}
-                {trainingDetails.location.name}
-              </p>
-            )}
             {(trainingDetails.startDate || trainingDetails.endDate) && (
               <p className='agd-sub'>
                 <i className='ti ti-calendar' style={{ opacity: 0.5 }} />{' '}
@@ -498,21 +475,22 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             </div>
           )}
 
-          {config?.pricing?.basePrice && config.pricing.basePrice > 0 && (
-            <button
-              className='agd-tile agd-tile--price agd-tile--clickable'
-              onClick={handleRegister}
-              style={{ cursor: 'pointer', width: '100%', textAlign: 'left' }}
-            >
-              <TileHead icon='ti-currency-dollar' label='Investment' />
-              <div className='agd-price'>
-                <span className='agd-pamount' style={{ color: '#ffffff' }}>
-                  ${config.pricing.basePrice}
-                </span>
-                <span className='agd-pper'>per child</span>
-              </div>
-            </button>
-          )}
+          {typeof config?.pricing?.basePrice === 'number' &&
+            config.pricing.basePrice > 0 && (
+              <button
+                className='agd-tile agd-tile--price agd-tile--clickable'
+                onClick={handleRegister}
+                style={{ cursor: 'pointer', width: '100%', textAlign: 'left' }}
+              >
+                <TileHead icon='ti-currency-dollar' label='Investment' />
+                <div className='agd-price'>
+                  <span className='agd-pamount' style={{ color: '#ffffff' }}>
+                    ${config.pricing.basePrice}
+                  </span>
+                  <span className='agd-pper'>per child</span>
+                </div>
+              </button>
+            )}
 
           <div className='agd-tile agd-tile--cta'>
             <button
@@ -832,7 +810,7 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             </div>
           )}
 
-          {config.tryoutFee && config.tryoutFee > 0 && (
+          {typeof config.tryoutFee === 'number' && config.tryoutFee > 0 && (
             <button
               className='agd-tile agd-tile--price agd-tile--clickable'
               onClick={handleRegister}

@@ -79,6 +79,10 @@ const tournamentToRegistrationConfig = (
 const tryoutToRegistrationConfig = (
   tryoutConfig: TryoutSpecificConfig,
 ): RegistrationFormConfig => {
+  const locationStrings: string[] | undefined = tryoutConfig.locations
+    ?.map((loc) => loc.name)
+    .filter(Boolean);
+
   return {
     _id: tryoutConfig._id,
     season: tryoutConfig.tryoutName,
@@ -95,7 +99,7 @@ const tryoutToRegistrationConfig = (
     displayName: tryoutConfig.displayName,
     registrationDeadline: tryoutConfig.registrationDeadline,
     tryoutDates: tryoutConfig.tryoutDates,
-    locations: tryoutConfig.locations,
+    locations: locationStrings,
     divisions: tryoutConfig.divisions,
     ageGroups: tryoutConfig.ageGroups,
     requiresRoster: tryoutConfig.requiresRoster,
@@ -107,6 +111,7 @@ const tryoutToRegistrationConfig = (
     updatedAt: tryoutConfig.updatedAt,
     __v: tryoutConfig.__v,
     description: tryoutConfig.description || '',
+    tryoutDetails: (tryoutConfig as any).tryoutDetails,
   };
 };
 

@@ -771,11 +771,14 @@
   }
 
   .htr-expanded-container {
-    bottom: 0px;
+    bottom: 80px;
     width: 98%;
   }
   .htr-expanded-content {
     padding: 10px;
+  }
+  .spotlight-modal-glass {
+    height: 76vh;
   }
 
   .htr-dock-inner {

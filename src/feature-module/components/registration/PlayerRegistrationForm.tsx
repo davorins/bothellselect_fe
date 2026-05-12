@@ -57,6 +57,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     user: currentUser,
     createTempAccount,
     checkAuth,
+    refreshPlayers,
     players: userPlayers,
   } = useAuth();
 
@@ -586,7 +587,6 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     }
 
     try {
-      // Add selected existing players that aren't already in the list
       const selectedExistingPlayers = (userPlayers || []).filter(
         (p) =>
           selectedPlayerIds.includes(p._id!) &&
@@ -595,26 +595,15 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
 
       const allPlayersToSave = [...playersData, ...selectedExistingPlayers];
 
-      // SAVE PLAYERS TO DATABASE - savePlayerData returns boolean
       const success = await savePlayerData(allPlayersToSave);
-
       if (!success) {
         throw new Error('Failed to save players');
       }
 
-      await checkAuth();
-
-      // Use the updated players from state after save
-      const allPlayers = [
-        ...(userPlayers?.filter((p) => selectedPlayerIds.includes(p._id!)) ||
-          []),
-        ...players,
-      ];
-
-      setLocalSavedPlayers(allPlayers);
+      await refreshPlayers();
 
       if (onPlayerRegistrationComplete) {
-        onPlayerRegistrationComplete(allPlayers);
+        onPlayerRegistrationComplete(localSavedPlayers);
       }
 
       setRegistrationTimestamp(new Date().toLocaleString());
@@ -717,7 +706,8 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   // ── Render success ────────────────────────────────────────────────────────────
 
   const renderSuccessMessage = () => {
-    const registeredPlayers = userPlayers || localSavedPlayers || [];
+    const registeredPlayers =
+      localSavedPlayers.length > 0 ? localSavedPlayers : userPlayers || [];
 
     // Remove duplicates based on _id if needed (safety measure)
     const uniquePlayers = registeredPlayers.filter(

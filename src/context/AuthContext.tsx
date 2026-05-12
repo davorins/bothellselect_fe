@@ -490,15 +490,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setPlayers([]);
       return;
     }
-
-    try {
-      const playersData = await fetchParentPlayers(parentId);
-      setPlayers(playersData);
-    } catch (error) {
-      console.error('Error refreshing players:', error);
-      setPlayers([]);
-    }
-  }, [fetchParentPlayers]); // Now fetchParentPlayers is stable
+    const playersData = await fetchParentPlayers(parentId);
+    setPlayers(playersData);
+  }, [fetchParentPlayers]);
 
   const fetchAllGuardians = useCallback(async (queryParams = '') => {
     try {

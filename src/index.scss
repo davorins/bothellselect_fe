@@ -228,8 +228,8 @@ span.form-icon {
    general control, and restoring the $light version at the bottom
    where it was re-declared. If both are intentional, scope them. */
 .select__control {
-  background-color: #506ee4 !important;
-  border-color: #506ee4 !important;
+  // background-color: #506ee4 !important;
+  border-color: rgba(89, 66, 48, 0.09) !important;
 }
 
 .select__control:hover {
