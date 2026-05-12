@@ -271,21 +271,42 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
   }, [userPlayers, getPaidPlayersForTraining]);
 
   const getEffectivePlayerCount = useCallback((): number => {
-    const paidPlayers = getPaidPlayersForTraining();
-    const paidPlayerIds = new Set(paidPlayers.map((p) => p._id));
-    const selectedUnpaidCount = selectedPlayerIds.filter(
-      (id) => !paidPlayerIds.has(id),
-    ).length;
-    const newPlayersCount = players.filter(
-      (p) => !p._id && p.fullName?.trim(),
-    ).length;
-    return selectedUnpaidCount + newPlayersCount;
-  }, [selectedPlayerIds, players, getPaidPlayersForTraining]);
+    let count = 0;
+
+    // Selected existing players
+    if (selectedPlayerIds?.length > 0) {
+      count += selectedPlayerIds.length;
+    }
+
+    // New players being created
+    if (players?.length > 0) {
+      const validNewPlayers = players.filter(
+        (p) => p.fullName?.trim().length > 0,
+      );
+      count += validNewPlayers.length;
+    }
+
+    console.log('👥 Effective player count for payment:', count);
+    return count;
+  }, [selectedPlayerIds, players]);
 
   const calculatePaymentAmount = (): number => {
     const playerCount = getEffectivePlayerCount();
-    const price = selectedPackage?.price || defaultFormConfig.pricing.basePrice;
-    return price * 100 * playerCount;
+
+    console.log('💰 calculatePaymentAmount:', {
+      playerCount,
+      selectedPackage: selectedPackage?.price,
+      basePrice: defaultFormConfig.pricing.basePrice,
+    });
+
+    if (playerCount <= 0) {
+      console.warn('⚠️ No players counted for payment!');
+      return 7500; // fallback $75
+    }
+
+    const price =
+      selectedPackage?.price || defaultFormConfig.pricing.basePrice || 75;
+    return price * 100 * playerCount; // e.g. 7500 for 1 player
   };
 
   // ─── Step Navigation ──────────────────────────────────────────────────────
@@ -495,6 +516,15 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
       const savedPlayers: Player[] = [];
 
       for (const player of playersWithoutId) {
+        // DEBUG: Log what we're sending
+        console.log('🔍 Creating player with:', {
+          fullName: player.fullName,
+          season: player.season,
+          dynamicSeason: dynamicSeasonEvent.season,
+          registrationYear: player.registrationYear,
+          dynamicYear: dynamicSeasonEvent.year,
+        });
+
         const playerData = {
           fullName: player.fullName.trim(),
           gender: player.gender,
@@ -510,6 +540,8 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
           skipSeasonRegistration: false,
           registrationType: 'training',
         };
+
+        console.log('📤 Sending playerData:', playerData);
 
         try {
           const response = await axios.post(
