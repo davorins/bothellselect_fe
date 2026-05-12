@@ -393,7 +393,7 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
                     onRegister={handleToggleView}
                   />
                 </div>
-                <button
+                {/* <button
                   className='reg-toggle-btn'
                   onClick={handleToggleView}
                   disabled={isAnimating}
@@ -401,7 +401,7 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
                   <i className='ti ti-eye'></i>
                   <span>Continue to Registration Form</span>
                   <i className='ti ti-arrow-right'></i>
-                </button>
+                </button> */}
               </div>
             )}
 
@@ -514,11 +514,11 @@ const RegistrationHub: React.FC<RegistrationHubProps> = ({
                 config={toRegistrationConfig(selectedForm.config)}
                 onRegister={handleToggleView}
               />
-              <button className='reg-toggle-btn' onClick={handleToggleView}>
+              {/* <button className='reg-toggle-btn' onClick={handleToggleView}>
                 <i className='ti ti-chevron-down'></i>
                 <span>Continue to Registration Form</span>
                 <i className='ti ti-arrow-right'></i>
-              </button>
+              </button> */}
             </>
           )}
 

@@ -118,11 +118,11 @@ const PublicTournamentsListPage: React.FC = () => {
 
       console.log(
         'Fetching from:',
-        `${API_URL}/tournaments/public?${queryParams}`
+        `${API_URL}/tournaments/public?${queryParams}`,
       );
 
       const response = await fetch(
-        `${API_URL}/tournaments/public?${queryParams}`
+        `${API_URL}/tournaments/public?${queryParams}`,
       );
       const data = await response.json();
 
@@ -312,7 +312,7 @@ const PublicTournamentsListPage: React.FC = () => {
           style={{
             marginTop: 54,
             marginBottom: 24,
-            background: 'linear-gradient(135deg, #594230 0%, #6FCCD8 100%)',
+            background: 'linear-gradient(135deg, #506ee4 0%, #6FCCD8 100%)',
             color: 'white',
             border: 'none',
             borderRadius: 12,
@@ -362,7 +362,7 @@ const PublicTournamentsListPage: React.FC = () => {
                         (t) =>
                           t.status === 'ongoing' ||
                           t.status === 'open' ||
-                          t.status === 'draft'
+                          t.status === 'draft',
                       ).length
                     }
                     valueStyle={{ color: 'white', fontSize: 32 }}
@@ -523,7 +523,7 @@ const PublicTournamentsListPage: React.FC = () => {
                 const levelBadge = getLevelTag(tournament.levelOfCompetition);
                 const tournamentDurationDays = calculateTournamentDuration(
                   tournament.startDate,
-                  tournament.endDate
+                  tournament.endDate,
                 );
 
                 return (
@@ -547,7 +547,7 @@ const PublicTournamentsListPage: React.FC = () => {
                             style={{
                               height: 120,
                               background:
-                                'linear-gradient(135deg, #594230 0%, #6FCCD8 100%)',
+                                'linear-gradient(135deg, #506ee4 0%, #6FCCD8 100%)',
                               position: 'relative',
                               display: 'flex',
                               alignItems: 'center',
@@ -796,7 +796,7 @@ const PublicTournamentsListPage: React.FC = () => {
                   title='Active Tournaments'
                   value={
                     tournaments.filter(
-                      (t) => t.status === 'ongoing' || t.status === 'open'
+                      (t) => t.status === 'ongoing' || t.status === 'open',
                     ).length
                   }
                   prefix={<FireOutlined />}

@@ -293,21 +293,10 @@
    MODAL STYLES
    ============================================ */
 
-.spotlight-modal-overlay {
-  position: fixed;
-  inset: 0;
-  backdrop-filter: blur(24px) saturate(180%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100000;
-  padding: 20px;
-}
-
 .spotlight-modal-glass {
   width: 100%;
   max-width: 1100px;
-  height: 85vh;
+  height: 55vh;
   background: rgba(20, 25, 45, 0.96);
   backdrop-filter: blur(22px);
   border-radius: 28px;
@@ -316,6 +305,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  margin: auto;
 }
 
 /* Modal Header */

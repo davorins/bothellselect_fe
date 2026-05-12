@@ -5325,7 +5325,7 @@ button:focus {
 .btn.btn-light {
   background-color: rgba(89, 66, 48, 0.25);
   border: 1px solid rgba(89, 66, 48, 0.25);
-  color: #594230;
+  color: #506ee4;
 }
 .btn.btn-light:hover,
 .btn.btn-light:focus,
@@ -5725,7 +5725,7 @@ button:focus {
 .btn-outline-light.active {
   background-color: rgba(89, 66, 48, 0.25);
   border: 1px solid rgba(89, 66, 48, 0.25);
-  color: #594230 !important;
+  color: #506ee4 !important;
 }
 
 .btn-outline-dark {

@@ -239,7 +239,7 @@ export const exportEmailList = <T extends ExtendedTableRecord>(data: T[]) => {
       icon: 'warning',
       title: 'No Emails Found',
       text: 'No valid email addresses found to export.',
-      confirmButtonColor: '#594230',
+      confirmButtonColor: '#506ee4',
       confirmButtonText: 'OK',
     });
     return;
@@ -262,7 +262,7 @@ export const exportEmailList = <T extends ExtendedTableRecord>(data: T[]) => {
     icon: 'success',
     title: 'Export Complete',
     html: `<p style="color:#555"><strong>${uniqueEmails.length}</strong> email${uniqueEmails.length > 1 ? 's' : ''} exported to CSV.</p>`,
-    confirmButtonColor: '#594230',
+    confirmButtonColor: '#506ee4',
     confirmButtonText: 'Done',
     timer: 3000,
     timerProgressBar: true,
@@ -288,7 +288,7 @@ export const copyEmailListToClipboard = <T extends ExtendedTableRecord>(
       icon: 'warning',
       title: 'No Emails Found',
       text: 'No valid email addresses found to copy.',
-      confirmButtonColor: '#594230',
+      confirmButtonColor: '#506ee4',
       confirmButtonText: 'OK',
     });
     onError?.('No valid email addresses found to copy');
@@ -315,7 +315,7 @@ export const copyEmailListToClipboard = <T extends ExtendedTableRecord>(
             </div>
           </div>
         `,
-        confirmButtonColor: '#594230',
+        confirmButtonColor: '#506ee4',
         confirmButtonText: 'Done',
         showCloseButton: true,
         timer: 5000,
@@ -328,7 +328,7 @@ export const copyEmailListToClipboard = <T extends ExtendedTableRecord>(
         icon: 'error',
         title: 'Copy Failed',
         text: 'Could not copy emails to clipboard. Please try again.',
-        confirmButtonColor: '#594230',
+        confirmButtonColor: '#506ee4',
         confirmButtonText: 'OK',
       });
       onError?.('Failed to copy emails to clipboard');

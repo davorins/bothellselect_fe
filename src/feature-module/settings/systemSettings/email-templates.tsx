@@ -539,7 +539,7 @@ const EmailTemplates = () => {
     // Style links
     styledHtml = styledHtml.replace(
       /<a(\s[^>]*)?>/g,
-      '<a style="color: #594230; text-decoration: none; border-bottom: 1px solid #594230; padding-bottom: 1px;"$1>',
+      '<a style="color: #506ee4; text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;"$1>',
     );
 
     // Style bold and italic
@@ -556,7 +556,7 @@ const EmailTemplates = () => {
     // Style blockquotes
     styledHtml = styledHtml.replace(
       /<blockquote(\s[^>]*)?>/g,
-      '<blockquote style="margin: 20px 0; padding: 15px 20px; background-color: #f8f9fa; border-left: 4px solid #594230; color: #555; font-style: italic;"$1>',
+      '<blockquote style="margin: 20px 0; padding: 15px 20px; background-color: #f8f9fa; border-left: 4px solid #506ee4; color: #555; font-style: italic;"$1>',
     );
 
     return styledHtml;
@@ -590,8 +590,8 @@ const EmailTemplates = () => {
           
           <div style="margin-top: 12px; font-size: 14px;">
             ${phone ? `<div style="margin-bottom: 4px;"><span style="color: #666;">Phone:</span> <span style="color: #333;">${phone}</span></div>` : ''}
-            ${email ? `<div style="margin-bottom: 4px;"><span style="color: #666;">Email:</span> <a href="mailto:${email}" style="color: #594230; text-decoration: none;">${email}</a></div>` : ''}
-            ${website ? `<div style="margin-bottom: 4px;"><span style="color: #666;">Website:</span> <a href="${website}" style="color: #594230; text-decoration: none;">${website}</a></div>` : ''}
+            ${email ? `<div style="margin-bottom: 4px;"><span style="color: #666;">Email:</span> <a href="mailto:${email}" style="color: #506ee4; text-decoration: none;">${email}</a></div>` : ''}
+            ${website ? `<div style="margin-bottom: 4px;"><span style="color: #666;">Website:</span> <a href="${website}" style="color: #506ee4; text-decoration: none;">${website}</a></div>` : ''}
             ${additionalInfo ? `<div style="margin-top: 8px; color: #666; font-size: 13px;">${additionalInfo}</div>` : ''}
           </div>
         </div>
@@ -691,13 +691,13 @@ const EmailTemplates = () => {
                 <div style="text-align: center; font-size: 13px; color: #666; padding: 30px 0 20px; margin-top: 40px; border-top: 1px solid #eaeaea;">
                   <p style="margin: 0 0 8px;">You're receiving this email because you're part of <strong style="color: #333;">Bothell Select</strong>.</p>
                   <p style="margin: 0;">
-                    <a href="https://bothellselect.com/general-settings/notifications-settings" style="color: #594230; text-decoration: none; border-bottom: 1px solid #594230; padding-bottom: 1px;">
+                    <a href="https://bothellselect.com/general-settings/notifications-settings" style="color: #506ee4; text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;">
                       Unsubscribe
                     </a> • 
-                    <a href="https://bothellselect.com/contact-us" style="color: #594230; text-decoration: none; border-bottom: 1px solid #594230; padding-bottom: 1px;">
+                    <a href="https://bothellselect.com/contact-us" style="color: #506ee4; text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;">
                       Contact Us
                     </a> • 
-                    <a href="https://bothellselect.com" style="color: #594230; text-decoration: none; border-bottom: 1px solid #594230; padding-bottom: 1px;">
+                    <a href="https://bothellselect.com" style="color: #506ee4; text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;">
                       Website
                     </a>
                   </p>
@@ -757,7 +757,7 @@ const EmailTemplates = () => {
     const attachmentItems = attachments
       .map(
         (att) => `
-      <div style="margin: 12px 0; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #594230;">
+      <div style="margin: 12px 0; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #506ee4;">
         <div style="display: flex; align-items: center; gap: 12px;">
           <div style="font-size: 24px; line-height: 1;">${getFileIcon(
             att.mimeType,
@@ -776,7 +776,7 @@ const EmailTemplates = () => {
             ? `
           <div style="margin-top: 8px; font-size: 13px;">
             <a href="${att.url}" 
-               style="color: #594230; text-decoration: none; border-bottom: 1px solid #594230; padding-bottom: 1px;"
+               style="color: #506ee4; text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;"
                target="_blank" rel="noopener noreferrer">
               🔗 Direct download link
             </a>

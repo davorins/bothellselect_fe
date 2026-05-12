@@ -77,7 +77,7 @@ const ParentDashboard = () => {
         size: 7,
       },
     },
-    colors: ['#594230', '#6FCCD8'], // Color for the lines
+    colors: ['#506ee4', '#6FCCD8'], // Color for the lines
     legend: {
       position: 'top',
       horizontalAlign: 'left',

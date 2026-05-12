@@ -164,7 +164,7 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
       setFollowModalVisible(false);
       setEmail('');
       message.success(
-        `You're now following ${tournament.name}! Updates will be sent to ${email}`
+        `You're now following ${tournament.name}! Updates will be sent to ${email}`,
       );
     } else {
       message.warning('Please enter your email address');
@@ -189,25 +189,25 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
       case 'twitter':
         window.open(
           `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-            text
+            text,
           )}&url=${encodeURIComponent(url)}`,
-          '_blank'
+          '_blank',
         );
         break;
       case 'facebook':
         window.open(
           `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-            url
+            url,
           )}`,
-          '_blank'
+          '_blank',
         );
         break;
       case 'linkedin':
         window.open(
           `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-            url
+            url,
           )}`,
-          '_blank'
+          '_blank',
         );
         break;
     }
@@ -294,7 +294,7 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
           marginTop: 54,
           marginBottom: 24,
           background:
-            'linear-gradient(135deg, #594230 0%, #5096e4 50%, #6FCCD8 100%)',
+            'linear-gradient(135deg, #506ee4 0%, #5096e4 50%, #6FCCD8 100%)',
           color: 'white',
           position: 'relative',
           overflow: 'hidden',
@@ -444,7 +444,7 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
                         style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13 }}
                       >
                         {new Date(
-                          tournament.registrationDeadline
+                          tournament.registrationDeadline,
                         ).toLocaleDateString()}
                       </div>
                     </div>
@@ -644,8 +644,8 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
                       {tournament.status === 'completed'
                         ? '100%'
                         : tournament.status === 'ongoing'
-                        ? '50%'
-                        : '25%'}
+                          ? '50%'
+                          : '25%'}
                     </Text>
                   </Space>
                   <Progress
@@ -653,8 +653,8 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
                       tournament.status === 'completed'
                         ? 100
                         : tournament.status === 'ongoing'
-                        ? 50
-                        : 25
+                          ? 50
+                          : 25
                     }
                     strokeColor={{
                       '0%': '#52c41a',

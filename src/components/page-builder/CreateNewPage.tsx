@@ -30,7 +30,7 @@ const CreateNewPage: React.FC = () => {
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -92,14 +92,14 @@ const CreateNewPage: React.FC = () => {
               defaultSectionSpacing: '3rem',
               backgroundColor: '#ffffff',
               textColor: '#333333',
-              accentColor: '#594230',
+              accentColor: '#506ee4',
               canonicalUrl: '',
               openGraphImage: '',
               headerScripts: '',
               footerScripts: '',
             },
           }),
-        }
+        },
       );
 
       console.log('📥 Response status:', response.status);
@@ -112,20 +112,20 @@ const CreateNewPage: React.FC = () => {
       } catch (parseError) {
         console.error('❌ Failed to parse response:', parseError);
         throw new Error(
-          `Server returned invalid JSON. Status: ${response.status}`
+          `Server returned invalid JSON. Status: ${response.status}`,
         );
       }
 
       if (!response.ok) {
         throw new Error(
-          data.message || `HTTP error! status: ${response.status}`
+          data.message || `HTTP error! status: ${response.status}`,
         );
       }
 
       if (data.success) {
         console.log(
           '✅ Page created successfully, redirecting to:',
-          `/admin/page-builder/edit/${data.data._id}`
+          `/admin/page-builder/edit/${data.data._id}`,
         );
 
         // Show SweetAlert success message
@@ -150,7 +150,7 @@ const CreateNewPage: React.FC = () => {
       });
 
       setError(
-        err.message || 'Failed to create page. Check console for details.'
+        err.message || 'Failed to create page. Check console for details.',
       );
 
       // Show more detailed error to user

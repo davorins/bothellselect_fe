@@ -463,106 +463,104 @@ const SpotlightContent: React.FC<SpotlightContentProps> = ({
 
       {/* Modal */}
       {showImageModalState && selectedImage && (
-        <div className='spotlight-modal-overlay' onClick={handleBackdropClick}>
-          <div className='spotlight-modal-glass'>
-            <div className='spotlight-modal-header'>
-              <div className='spotlight-modal-title'>
-                <Star size={16} />
-                <span>Image Preview</span>
-              </div>
-              <button
-                className='spotlight-modal-close'
-                onClick={handleCloseModal}
-              >
-                <X size={20} />
-              </button>
+        <div className='spotlight-modal-glass' onClick={handleBackdropClick}>
+          <div className='spotlight-modal-header'>
+            <div className='spotlight-modal-title'>
+              <Star size={16} />
+              <span>Image Preview</span>
             </div>
+            <button
+              className='spotlight-modal-close'
+              onClick={handleCloseModal}
+            >
+              <X size={20} />
+            </button>
+          </div>
 
-            <div className='spotlight-modal-toolbar'>
-              <button
-                className='spotlight-modal-tool-btn'
-                onClick={handleZoomIn}
-                title='Zoom In (Mouse wheel)'
-              >
-                <ZoomIn size={18} />
-              </button>
-              <button
-                className='spotlight-modal-tool-btn'
-                onClick={handleZoomOut}
-                title='Zoom Out (Mouse wheel)'
-              >
-                <ZoomOut size={18} />
-              </button>
-              <button
-                className='spotlight-modal-tool-btn'
-                onClick={handleResetZoom}
-                title='Reset Zoom'
-              >
-                <RotateCcw size={18} />
-              </button>
-              <div className='spotlight-modal-zoom-level'>
-                {Math.round(zoomLevel * 100)}%
-              </div>
+          <div className='spotlight-modal-toolbar'>
+            <button
+              className='spotlight-modal-tool-btn'
+              onClick={handleZoomIn}
+              title='Zoom In (Mouse wheel)'
+            >
+              <ZoomIn size={18} />
+            </button>
+            <button
+              className='spotlight-modal-tool-btn'
+              onClick={handleZoomOut}
+              title='Zoom Out (Mouse wheel)'
+            >
+              <ZoomOut size={18} />
+            </button>
+            <button
+              className='spotlight-modal-tool-btn'
+              onClick={handleResetZoom}
+              title='Reset Zoom'
+            >
+              <RotateCcw size={18} />
+            </button>
+            <div className='spotlight-modal-zoom-level'>
+              {Math.round(zoomLevel * 100)}%
             </div>
+          </div>
 
-            <div className='spotlight-modal-image-wrapper'>
-              <div
-                ref={containerRef}
-                className='spotlight-modal-image-container'
-                onWheel={handleWheel}
-                onMouseDown={handleDragStart}
-                onMouseMove={handleDragMove}
-                onMouseUp={handleDragEnd}
-                onMouseLeave={handleDragEnd}
-                style={{
-                  cursor:
-                    zoomLevel > 1
-                      ? isDragging
-                        ? 'grabbing'
-                        : 'grab'
-                      : 'default',
-                }}
-              >
-                {isImageLoading && (
-                  <div className='spotlight-modal-loader'>
-                    <div className='spinner-border text-light' role='status'>
-                      <span className='visually-hidden'>Loading...</span>
-                    </div>
+          <div className='spotlight-modal-image-wrapper'>
+            <div
+              ref={containerRef}
+              className='spotlight-modal-image-container'
+              onWheel={handleWheel}
+              onMouseDown={handleDragStart}
+              onMouseMove={handleDragMove}
+              onMouseUp={handleDragEnd}
+              onMouseLeave={handleDragEnd}
+              style={{
+                cursor:
+                  zoomLevel > 1
+                    ? isDragging
+                      ? 'grabbing'
+                      : 'grab'
+                    : 'default',
+              }}
+            >
+              {isImageLoading && (
+                <div className='spotlight-modal-loader'>
+                  <div className='spinner-border text-light' role='status'>
+                    <span className='visually-hidden'>Loading...</span>
                   </div>
-                )}
-                <img
-                  ref={imageRef}
-                  src={selectedImage}
-                  alt='Full size preview'
-                  className='spotlight-modal-image'
-                  style={{
-                    transform: `translate(${position.x}px, ${position.y}px) scale(${zoomLevel})`,
-                    transition: isDragging
-                      ? 'none'
-                      : 'transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1)',
-                    opacity: isImageLoading ? 0 : 1,
-                  }}
-                  draggable='false'
-                  onLoad={(e) => {
-                    const img = e.target as HTMLImageElement;
-                    setImageNaturalSize({
-                      width: img.naturalWidth,
-                      height: img.naturalHeight,
-                    });
-                    setIsImageLoading(false);
-                  }}
-                />
-              </div>
+                </div>
+              )}
+              <img
+                ref={imageRef}
+                src={selectedImage}
+                alt='Full size preview'
+                className='spotlight-modal-image'
+                style={{
+                  transform: `translate(${position.x}px, ${position.y}px) scale(${zoomLevel})`,
+                  transition: isDragging
+                    ? 'none'
+                    : 'transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1)',
+                  opacity: isImageLoading ? 0 : 1,
+                }}
+                draggable='false'
+                onLoad={(e) => {
+                  const img = e.target as HTMLImageElement;
+                  setImageNaturalSize({
+                    width: img.naturalWidth,
+                    height: img.naturalHeight,
+                  });
+                  setIsImageLoading(false);
+                }}
+              />
             </div>
+          </div>
 
-            <div className='spotlight-modal-footer'>
-              <div className='spotlight-modal-instructions'>
-                <span>
-                  🖱️ {zoomLevel > 1 ? 'Click & drag to pan' : 'Scroll to zoom'}
-                </span>
-                <span>⎋ Press ESC to close</span>
-                <span>✕ Click outside to close</span>
-              </div>
+          <div className='spotlight-modal-footer'>
+            <div className='spotlight-modal-instructions'>
+              <span>
+                🖱️ {zoomLevel > 1 ? 'Click & drag to pan' : 'Scroll to zoom'}
+              </span>
+              <span>⎋ Press ESC to close</span>
+              <span>✕ Click outside to close</span>
             </div>
           </div>
         </div>

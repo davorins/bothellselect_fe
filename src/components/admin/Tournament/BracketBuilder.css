@@ -1,6 +1,7 @@
 .enhanced-bracket-builder {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
 }
 
 .builder-header {
@@ -681,7 +682,7 @@
 
 /* Button Customization */
 .ant-btn-primary {
-  background: linear-gradient(135deg, #706258 0%, #594230 100%);
+  background: linear-gradient(135deg, #706258 0%, #506ee4 100%);
   border: none;
 }
 
@@ -696,13 +697,13 @@
 }
 
 .ant-btn-dashed:hover {
-  border-color: #594230 !important;
+  border-color: #506ee4 !important;
   color: #706258 !important;
 }
 
 .ant-btn-variant-outlined:not(:disabled):not(.ant-btn-disabled):hover {
-  color: #594230 !important;
-  border-color: #594230 !important;
+  color: #506ee4 !important;
+  border-color: #506ee4 !important;
 }
 
 /* Space Customization */
@@ -1111,7 +1112,9 @@
 /* Draggable match styling for both layouts */
 .match-teams-mobile [class*='droppable'],
 .match-teams-desktop [class*='droppable'] {
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .match-teams-mobile [class*='droppable']:hover,

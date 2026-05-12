@@ -42,7 +42,7 @@ const UserTickets: React.FC<UserTicketsProps> = ({
   const [userEmail, setUserEmail] = useState(email || '');
   const [showSearch, setShowSearch] = useState(!email);
   const [emailSending, setEmailSending] = useState<{ [key: string]: boolean }>(
-    {}
+    {},
   );
   const [emailSent, setEmailSent] = useState<{ [key: string]: boolean }>({});
 
@@ -142,7 +142,7 @@ const UserTickets: React.FC<UserTicketsProps> = ({
         title: 'No Receipt Available',
         text: 'This ticket does not have a receipt available for download.',
         confirmButtonText: 'OK',
-        confirmButtonColor: '#594230',
+        confirmButtonColor: '#506ee4',
         customClass: {
           confirmButton: 'btn btn-primary',
         },
@@ -158,7 +158,7 @@ const UserTickets: React.FC<UserTicketsProps> = ({
         title: 'Cannot Send Receipt',
         text: 'No receipt or email available for this ticket.',
         confirmButtonText: 'OK',
-        confirmButtonColor: '#594230',
+        confirmButtonColor: '#506ee4',
         customClass: {
           confirmButton: 'btn btn-primary',
         },
@@ -181,7 +181,7 @@ const UserTickets: React.FC<UserTicketsProps> = ({
             amount: ticket.amount,
             purchasedAt: ticket.purchasedAt,
           },
-        }
+        },
       );
 
       if (response.data.success) {
@@ -197,7 +197,7 @@ const UserTickets: React.FC<UserTicketsProps> = ({
         `,
           showConfirmButton: true,
           confirmButtonText: 'OK',
-          confirmButtonColor: '#594230',
+          confirmButtonColor: '#506ee4',
           customClass: {
             confirmButton: 'btn btn-primary',
           },

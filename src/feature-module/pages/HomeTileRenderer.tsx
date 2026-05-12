@@ -188,7 +188,7 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
           defaultSectionSpacing: '2rem',
           backgroundColor: 'transparent',
           textColor: '#ffffff',
-          accentColor: '#594230',
+          accentColor: '#506ee4',
           canonicalUrl: '/',
           openGraphImage: '',
           headerScripts: '',

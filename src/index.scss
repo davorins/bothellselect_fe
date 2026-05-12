@@ -38,8 +38,8 @@ a {
 
 //ant datatable pagination
 .ant-pagination-item.ant-pagination-item-1.ant-pagination-item-active {
-  background: #594230;
-  border-color: #594230;
+  background: #506ee4;
+  border-color: #506ee4;
   color: #fff;
 }
 
@@ -52,7 +52,7 @@ h4,
 // date range picker
 .daterangepicker td.active,
 .daterangepicker td.active:hover {
-  background-color: #594230;
+  background-color: #506ee4;
   color: #fff;
 }
 
@@ -62,8 +62,8 @@ h4,
 
 .applyBtn.btn.btn-sm.btn-primary {
   color: #fff;
-  background-color: #594230;
-  border: 1px solid #594230;
+  background-color: #506ee4;
+  border: 1px solid #506ee4;
 }
 
 // react-select plugin
@@ -247,12 +247,12 @@ span.form-icon {
 }
 
 .select__control {
-  background-color: #594230 !important;
-  border-color: #594230 !important;
+  background-color: #506ee4 !important;
+  border-color: #506ee4 !important;
 }
 
 .select__control:hover {
-  border-color: #594230 !important;
+  border-color: #506ee4 !important;
 }
 
 // .slick-slide {
@@ -415,35 +415,35 @@ div.popover {
 
 div.rc-slider-track,
 .rc-slider-tracks {
-  background-color: #594230;
+  background-color: #506ee4;
 }
 
 div.rc-slider-handle {
-  border: solid 2px #594230;
+  border: solid 2px #506ee4;
 }
 
 span.rc-slider-dot-active {
-  border-color: #594230;
+  border-color: #506ee4;
 }
 
 div.rc-slider-handle:active {
-  border-color: #594230;
-  box-shadow: 0 0 5px #594230;
+  border-color: #506ee4;
+  box-shadow: 0 0 5px #506ee4;
   cursor: grabbing;
 }
 
 .rc-slider-handle-dragging.rc-slider-handle-dragging.rc-slider-handle-dragging {
-  border-color: #594230;
-  box-shadow: 0 0 0 5px #594230;
+  border-color: #506ee4;
+  box-shadow: 0 0 0 5px #506ee4;
 }
 
 div.rc-slider-handle:hover {
-  border-color: #594230;
+  border-color: #506ee4;
 }
 
 div.rc-slider-handle-dragging.rc-slider-handle-dragging.rc-slider-handle-dragging {
-  border-color: #594230;
-  box-shadow: 0 0 0 5px #594230;
+  border-color: #506ee4;
+  box-shadow: 0 0 0 5px #506ee4;
 }
 
 [data-theme='dark'] {
@@ -581,12 +581,12 @@ div.rc-slider-handle-dragging.rc-slider-handle-dragging.rc-slider-handle-draggin
 }
 
 div.css-b62m3t-container .react-select__option--is-focused {
-  background-color: #594230;
+  background-color: #506ee4;
   color: #fff;
 }
 
 div.css-b62m3t-container .react-select__option--is-selected {
-  background-color: #594230;
+  background-color: #506ee4;
   color: #fff;
 }
 
@@ -768,7 +768,7 @@ div.sidebar-themesettings
     }
 
     table td.p-datepicker-today > span {
-      background-color: #594230;
+      background-color: #506ee4;
       color: #fff;
     }
   }
@@ -927,7 +927,7 @@ div.sidebar-themesettings
 }
 
 .theme-layout.active .layout-img img {
-  border: 1px solid #594230;
+  border: 1px solid #506ee4;
   border-radius: 5px;
 }
 
@@ -939,7 +939,7 @@ div.sidebar-themesettings
 .theme-layout.active .layout-type:after {
   content: '\f058';
   font-family: 'Fontawesome';
-  color: #594230;
+  color: #506ee4;
   font-weight: 700;
   font-size: 12px;
   display: flex;
@@ -957,11 +957,11 @@ div.sidebar-themesettings
 }
 
 .theme-colorselect.active label {
-  outline: 1px solid #594230;
+  outline: 1px solid #506ee4;
 }
 
 .theme-colorselect.active label.primary-topbar {
-  background: #594230;
+  background: #506ee4;
 }
 
 .theme-colorselect.active label.primary-topbar:after,
@@ -972,7 +972,7 @@ div.sidebar-themesettings
 .theme-colorselect.active label:after {
   content: '\f058';
   font-family: 'Fontawesome';
-  color: #594230;
+  color: #506ee4;
   font-weight: 700;
   font-size: 12px;
   display: flex;
@@ -989,11 +989,11 @@ div.sidebar-themesettings
 }
 
 .theme-mode.active label {
-  border: 1px solid #594230;
+  border: 1px solid #506ee4;
 }
 
 .theme-mode.active label .avatar {
-  color: #594230;
+  color: #506ee4;
   background-color: #f2f5ff;
 }
 
@@ -1002,14 +1002,14 @@ div.sidebar-themesettings
 }
 
 .theme-sidebarcolor.active label {
-  border-color: #594230 !important;
+  border-color: #506ee4 !important;
   position: relative;
 }
 
 .theme-sidebarcolor.active label:after {
   content: '\f058';
   font-family: 'Fontawesome';
-  color: #594230;
+  color: #506ee4;
   font-weight: 700;
   font-size: 12px;
   display: flex;
@@ -1030,7 +1030,7 @@ div.sidebar-themesettings
 }
 
 .theme-sidebarbg.active label img {
-  border-color: #594230 !important;
+  border-color: #506ee4 !important;
 }
 
 .theme-colorsset.active label:after {
@@ -1112,7 +1112,7 @@ div.sidebar-themesettings
 }
 
 .select .ant-select-selection-item {
-  background: #594230 !important;
+  background: #506ee4 !important;
 }
 
 .ant-select-selection-item-content {
@@ -1136,8 +1136,8 @@ div.sidebar-themesettings
 }
 
 .fc .fc-customButton-button.fc-button.fc-button-primary {
-  background-color: #594230;
-  border-color: #594230;
+  background-color: #506ee4;
+  border-color: #506ee4;
   color: #fff;
   font-size: 15px;
   font-weight: 500;
@@ -1456,12 +1456,12 @@ div.ant-picker-date-panel {
 }
 
 div.css-b62m3t-container .react-select__option--is-focused {
-  background-color: #594230;
+  background-color: #506ee4;
   color: #fff;
 }
 
 div.css-b62m3t-container .react-select__option--is-selected {
-  background-color: #594230;
+  background-color: #506ee4;
   color: #fff;
 }
 
@@ -1769,6 +1769,7 @@ input[type='text'] {
 
   .header .header-left {
     left: 0;
+    background-color: rgba(0, 0, 0, 1);
   }
 }
 
@@ -2277,7 +2278,7 @@ input[type='text'] {
   background: #d97706;
 } /* amber-ish */
 .badge-1 {
-  background: #594230;
+  background: #506ee4;
 } /* sky */
 .badge-2 {
   background: #16a34a;
@@ -2338,14 +2339,14 @@ input[type='text'] {
 
     &.active {
       .step-number {
-        background-color: #594230;
+        background-color: #506ee4;
         color: white;
-        border-color: #594230;
+        border-color: #506ee4;
         transform: scale(1.1);
         box-shadow: 0 4px 8px rgba(89, 66, 48, 0.3);
       }
       .step-label {
-        color: #594230;
+        color: #506ee4;
         font-weight: bold;
       }
     }
@@ -2765,7 +2766,7 @@ input[type='text'] {
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #594230;
+    background: #506ee4;
     border-radius: 10px;
   }
 
@@ -2790,7 +2791,7 @@ input[type='text'] {
 }
 
 .pricing-package:hover {
-  border-color: #594230;
+  border-color: #506ee4;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
@@ -2971,7 +2972,7 @@ a.custom-btn-close:hover {
 
 /* SweetAlert2 brand overrides */
 .swal2-timer-progress-bar {
-  background: #594230 !important;
+  background: #506ee4 !important;
 }
 .swal2-popup {
   border-radius: 14px !important;
@@ -3037,4 +3038,9 @@ header .dropdown-menu,
   .footer .footer-links a i {
     font-size: 1.1rem;
   }
+}
+
+.header .nav .nav-item a.nav-link {
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
 }

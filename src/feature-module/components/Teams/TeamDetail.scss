@@ -18,12 +18,12 @@
         transition: all 0.3s;
 
         &:hover {
-          color: #594230 !important;
+          color: #506ee4 !important;
         }
 
         &.ant-tabs-tab-active {
           .ant-tabs-tab-btn {
-            color: #594230 !important;
+            color: #506ee4 !important;
             font-weight: 500;
           }
         }
@@ -31,7 +31,7 @@
 
       // Active tab indicator
       .ant-tabs-ink-bar {
-        background: #594230 !important;
+        background: #506ee4 !important;
       }
     }
   }
@@ -71,7 +71,7 @@
         padding: 4px 16px;
         font-size: 0.9rem;
         font-weight: 600;
-        color: #594230 !important;
+        color: #506ee4 !important;
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -107,7 +107,7 @@
         border-radius: 30px;
         padding: 4px 16px;
         font-weight: 600;
-        color: #594230 !important;
+        color: #506ee4 !important;
         font-size: 0.9rem;
         display: inline-flex;
         align-items: center;
@@ -124,12 +124,12 @@
   .btn-outline-primary {
     &:hover {
       color: #ffffff !important;
-      background: #594230 !important;
+      background: #506ee4 !important;
     }
 
     &.active {
       background: #ffffff !important;
-      color: #594230 !important;
+      color: #506ee4 !important;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
   }
@@ -150,18 +150,18 @@
       border-radius: 40px;
       font-weight: 600;
       font-size: 1rem;
-      color: #594230;
+      color: #506ee4;
       cursor: pointer;
       transition: all 0.2s ease;
 
       &:hover {
         color: #ffffff !important;
-        background: #594230 !important;
+        background: #506ee4 !important;
       }
 
       &.active {
         background: #ffffff !important;
-        color: #594230 !important;
+        color: #506ee4 !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
       }
 
@@ -197,7 +197,7 @@
     .ant-pagination-total-text {
       order: 0;
       margin-right: auto;
-      color: #594230 !important;
+      color: #506ee4 !important;
     }
   }
 }
@@ -229,7 +229,7 @@
   .aau-number {
     font-family: monospace;
     font-size: 0.9rem;
-    color: #594230 !important;
+    color: #506ee4 !important;
   }
 }
 
@@ -249,7 +249,7 @@
       h6 {
         font-size: 14px;
         font-weight: 600;
-        color: #594230 !important;
+        color: #506ee4 !important;
         margin: 0;
       }
     }
@@ -280,24 +280,24 @@
     transition: all 0.2s;
 
     &.btn-outline-primary {
-      border: 1px solid #594230 !important;
-      color: #594230 !important;
+      border: 1px solid #506ee4 !important;
+      color: #506ee4 !important;
       background: transparent;
 
       &:hover {
-        background: #594230 !important;
+        background: #506ee4 !important;
         color: white;
       }
     }
 
     &.btn-primary {
-      background: #594230 !important;
-      border: 1px solid #594230 !important;
+      background: #506ee4 !important;
+      border: 1px solid #506ee4 !important;
       color: white;
 
       &:hover {
-        background: #594230 !important;
-        border-color: #594230 !important;
+        background: #506ee4 !important;
+        border-color: #506ee4 !important;
       }
     }
 

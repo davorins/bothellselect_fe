@@ -19,7 +19,7 @@
 
 .tournament-match-card:hover {
   transform: translateY(-2px);
-  border-left-color: #594230;
+  border-left-color: #506ee4;
 }
 
 .tournament-match-card.completed {
@@ -49,13 +49,13 @@
 .bracket-connector::before {
   content: '';
   position: absolute;
-  background: #594230;
+  background: #506ee4;
   z-index: 0;
 }
 
 /* Tournament header gradient */
 .tournament-header-gradient {
-  background: linear-gradient(135deg, #594230 0%, #6fccd8 100%);
+  background: linear-gradient(135deg, #506ee4 0%, #6fccd8 100%);
   color: white;
 }
 
@@ -63,7 +63,7 @@
 .status-badge-open {
   background: #e6f7ff;
   border-color: #91d5ff;
-  color: #594230;
+  color: #506ee4;
 }
 
 .status-badge-ongoing {
@@ -190,7 +190,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #594230, #6fccd8);
+  background: linear-gradient(135deg, #506ee4, #6fccd8);
   color: white;
   font-weight: bold;
   font-size: 16px;
@@ -548,7 +548,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #594230, #6fccd8);
+  background: linear-gradient(135deg, #506ee4, #6fccd8);
   color: white;
   font-weight: bold;
   font-size: 14px;
@@ -1002,7 +1002,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #594230, #6fccd8);
+  background: linear-gradient(135deg, #506ee4, #6fccd8);
   color: white;
   font-weight: bold;
   font-size: 10px;

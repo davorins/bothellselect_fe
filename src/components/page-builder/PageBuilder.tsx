@@ -627,7 +627,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
               page.settings?.defaultSectionSpacing || '3rem',
             backgroundColor: page.settings?.backgroundColor || '#ffffff',
             textColor: page.settings?.textColor || '#333333',
-            accentColor: page.settings?.accentColor || '#594230',
+            accentColor: page.settings?.accentColor || '#506ee4',
             canonicalUrl: page.settings?.canonicalUrl || '',
             openGraphImage: page.settings?.openGraphImage || '',
             headerScripts: page.settings?.headerScripts || '',
@@ -1539,7 +1539,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialPage }) => {
                             <input
                               type='color'
                               className='form-control form-control-color'
-                              value={page.settings.accentColor || '#594230'}
+                              value={page.settings.accentColor || '#506ee4'}
                               onChange={(e) =>
                                 updatePageSetting('accentColor', e.target.value)
                               }

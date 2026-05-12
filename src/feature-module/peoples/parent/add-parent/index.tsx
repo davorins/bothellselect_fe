@@ -64,7 +64,7 @@ const swalToast = (
   });
 
 const swalError = (title: string, text: string) =>
-  Swal.fire({ icon: 'error', title, text, confirmButtonColor: '#594230' });
+  Swal.fire({ icon: 'error', title, text, confirmButtonColor: '#506ee4' });
 
 const AddParent = ({ isEdit }: { isEdit: boolean }) => {
   const location = useLocation();

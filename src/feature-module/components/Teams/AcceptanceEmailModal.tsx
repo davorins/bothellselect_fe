@@ -71,7 +71,7 @@ const AcceptanceEmailModal: React.FC<AcceptanceEmailModalProps> = ({
     if (paymentType === 'square' || paymentType === 'both') {
       html += `<tr><td style="padding:10px 0;border-bottom:1px solid #eee;">
         <strong>Square</strong><br/>
-        <a href="${squareLink || '#'}" style="color:#594230;word-break:break-all;">${squareLink || '[Square link]'}</a>
+        <a href="${squareLink || '#'}" style="color:#506ee4;word-break:break-all;">${squareLink || '[Square link]'}</a>
       </td></tr>`;
     }
     if (paymentType === 'zelle' || paymentType === 'both') {
@@ -110,22 +110,22 @@ const AcceptanceEmailModal: React.FC<AcceptanceEmailModalProps> = ({
           of receiving this email.
         </p>
       </div>
-      <h3 style="color:#594230;font-size:16px;margin-bottom:8px;">Payment Options</h3>
+      <h3 style="color:#506ee4;font-size:16px;margin-bottom:8px;">Payment Options</h3>
       <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;overflow:hidden;">
         <tbody>${buildPaymentRowsHtml()}</tbody>
       </table>
       ${
         additionalInfo.trim()
           ? `
-      <div style="background:#f0f4f8;padding:15px;border-radius:5px;margin:20px 0;border-left:4px solid #594230;">
-        <h3 style="margin-top:0;color:#594230;">Additional Information</h3>
+      <div style="background:#f0f4f8;padding:15px;border-radius:5px;margin:20px 0;border-left:4px solid #506ee4;">
+        <h3 style="margin-top:0;color:#506ee4;">Additional Information</h3>
         <p style="margin:0;white-space:pre-line;color:#333;">${additionalInfo.trim()}</p>
       </div>`
           : ''
       }
       <p style="font-size:14px;color:#555;margin-top:24px;">
         If you have any questions please reach out at
-        <a href="mailto:bothellselect@proton.me" style="color:#594230;">bothellselect@proton.me</a>.
+        <a href="mailto:bothellselect@proton.me" style="color:#506ee4;">bothellselect@proton.me</a>.
       </p>
       <p style="font-size:15px;font-weight:bold;color:#333;">We look forward to a great season ahead!</p>
       <p style="font-size:14px;color:#555;margin-bottom:0;">

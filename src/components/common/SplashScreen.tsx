@@ -15,7 +15,7 @@ const SplashScreen: React.FC = () => {
       {/* Ripple Glow */}
       <motion.div
         className='absolute w-40 h-40 rounded-full'
-        style={{ border: '2px solid #594230' }}
+        style={{ border: '2px solid #506ee4' }}
         animate={{
           scale: [1, 1.3],
           opacity: [1, 0],
@@ -50,19 +50,19 @@ const SplashScreen: React.FC = () => {
             cx='50'
             cy='50'
             r='45'
-            stroke='#594230'
+            stroke='#506ee4'
             strokeWidth='8'
             fill='transparent'
           />
           <path
             d='M15,50 A35,35 0 0,1 85,50'
-            stroke='#594230'
+            stroke='#506ee4'
             strokeWidth='4'
             fill='none'
           />
           <path
             d='M50,15 A35,35 0 0,0 50,85'
-            stroke='#594230'
+            stroke='#506ee4'
             strokeWidth='4'
             fill='none'
           />
@@ -71,7 +71,7 @@ const SplashScreen: React.FC = () => {
 
       {/* Bothell Select Text */}
       <div className='absolute bottom-12 text-center'>
-        <h1 className='text-xl tracking-wider' style={{ color: '#594230' }}>
+        <h1 className='text-xl tracking-wider' style={{ color: '#506ee4' }}>
           Bothell Select
         </h1>
         <div className='mt-2 text-sm text-gray-600'>Loading...</div>

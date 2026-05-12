@@ -284,8 +284,8 @@ const FormBuilder: React.FC = () => {
     storeSubmissions: true,
     captcha: false,
     submitButtonStyle: {
-      color: '#594230',
-      backgroundColor: '#594230',
+      color: '#506ee4',
+      backgroundColor: '#506ee4',
       textColor: '#ffffff',
     },
     paymentSettings: {
@@ -523,8 +523,8 @@ const FormBuilder: React.FC = () => {
         storeSubmissions: true,
         captcha: false,
         submitButtonStyle: {
-          color: '#594230',
-          backgroundColor: '#594230',
+          color: '#506ee4',
+          backgroundColor: '#506ee4',
           textColor: '#ffffff',
         },
         paymentSettings: {
@@ -2329,7 +2329,7 @@ const FormBuilder: React.FC = () => {
                     type='color'
                     value={
                       formSettings.submitButtonStyle?.backgroundColor ||
-                      '#594230'
+                      '#506ee4'
                     }
                     onChange={(e) =>
                       setFormSettings({
@@ -2344,7 +2344,7 @@ const FormBuilder: React.FC = () => {
                   <Form.Control
                     value={
                       formSettings.submitButtonStyle?.backgroundColor ||
-                      '#594230'
+                      '#506ee4'
                     }
                     onChange={(e) =>
                       setFormSettings({

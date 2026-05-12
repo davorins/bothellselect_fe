@@ -160,7 +160,7 @@ const PublicTournamentPage: React.FC = () => {
   const [standings, setStandings] = useState<TeamStanding[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [bracketView, setBracketView] = useState<'classic' | 'modern' | 'grid'>(
-    'classic'
+    'classic',
   );
   const [fullscreen, setFullscreen] = useState(false);
   const [selectedRound, setSelectedRound] = useState<number>(1);
@@ -195,7 +195,7 @@ const PublicTournamentPage: React.FC = () => {
 
         // Fetch tournament data
         const tournamentRes = await axios.get(
-          `${API_URL}/tournaments/${tournamentId}/public`
+          `${API_URL}/tournaments/${tournamentId}/public`,
         );
 
         // Handle different API response formats
@@ -225,7 +225,7 @@ const PublicTournamentPage: React.FC = () => {
         // Fetch matches - USE PUBLIC ENDPOINT
         try {
           const matchesRes = await axios.get(
-            `${API_URL}/tournaments/${tournamentId}/matches/public`
+            `${API_URL}/tournaments/${tournamentId}/matches/public`,
           );
           let matchesData: Match[] = [];
 
@@ -329,7 +329,7 @@ const PublicTournamentPage: React.FC = () => {
         // Fetch standings - USE PUBLIC ENDPOINT
         try {
           const standingsRes = await axios.get(
-            `${API_URL}/tournaments/${tournamentId}/standings/public`
+            `${API_URL}/tournaments/${tournamentId}/standings/public`,
           );
           let standingsData: TeamStanding[] = [];
 
@@ -351,7 +351,7 @@ const PublicTournamentPage: React.FC = () => {
         setError(
           error.response?.data?.message ||
             error.message ||
-            'Failed to load tournament. Please try again.'
+            'Failed to load tournament. Please try again.',
         );
       } finally {
         setLoading(false);
@@ -434,7 +434,7 @@ const PublicTournamentPage: React.FC = () => {
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute(
       'download',
-      `schedule-${tournament.name.replace(/\s+/g, '-')}.json`
+      `schedule-${tournament.name.replace(/\s+/g, '-')}.json`,
     );
     linkElement.click();
 
@@ -525,7 +525,7 @@ const PublicTournamentPage: React.FC = () => {
       matchDurations.length > 0
         ? Math.round(
             matchDurations.reduce((sum: number, dur: number) => sum + dur, 0) /
-              matchDurations.length
+              matchDurations.length,
           )
         : 40; // Default to 40 minutes if no durations available
 
@@ -534,7 +534,7 @@ const PublicTournamentPage: React.FC = () => {
       Math.ceil(
         (new Date(tournament.endDate).getTime() -
           new Date(tournament.startDate).getTime()) /
-          (1000 * 3600 * 24)
+          (1000 * 3600 * 24),
       ) + 1;
 
     return [
@@ -703,8 +703,8 @@ const PublicTournamentPage: React.FC = () => {
               position === 1
                 ? '#ffd700'
                 : position <= 4
-                ? '#52c41a'
-                : '#d9d9d9',
+                  ? '#52c41a'
+                  : '#d9d9d9',
             color: position <= 4 ? '#fff' : '#000',
           }}
         />
@@ -1013,7 +1013,7 @@ const PublicTournamentPage: React.FC = () => {
                     try {
                       // Convert to string and trim if it's a string
                       const scheduledTimeStr = String(
-                        match.scheduledTime
+                        match.scheduledTime,
                       ).trim();
 
                       if (
@@ -1083,7 +1083,7 @@ const PublicTournamentPage: React.FC = () => {
                           const bNum = parseInt(b.replace(/\D/g, '')) || 0;
                           if (aNum !== bNum) return aNum - bNum;
                           return a.localeCompare(b);
-                        }
+                        },
                       );
 
                       return (
@@ -1103,7 +1103,7 @@ const PublicTournamentPage: React.FC = () => {
                                     <CalendarOutlined
                                       style={{
                                         fontSize: '18px',
-                                        color: '#594230',
+                                        color: '#506ee4',
                                       }}
                                     />
                                     <Title level={4} style={{ margin: 0 }}>
@@ -1211,10 +1211,10 @@ const PublicTournamentPage: React.FC = () => {
                                               match.status === 'completed'
                                                 ? '#52c41a'
                                                 : match.status === 'in-progress'
-                                                ? '#f5222d'
-                                                : match.team1 && match.team2
-                                                ? '#1890ff'
-                                                : '#d9d9d9'
+                                                  ? '#f5222d'
+                                                  : match.team1 && match.team2
+                                                    ? '#1890ff'
+                                                    : '#d9d9d9'
                                             }`,
                                           }}
                                           className='mb-4'
@@ -1265,25 +1265,25 @@ const PublicTournamentPage: React.FC = () => {
                                                             'male'
                                                               ? '#1890ff20'
                                                               : match.sex.toLowerCase() ===
-                                                                'female'
-                                                              ? '#eb2f9620'
-                                                              : '#722ed120',
+                                                                  'female'
+                                                                ? '#eb2f9620'
+                                                                : '#722ed120',
                                                           color:
                                                             match.sex.toLowerCase() ===
                                                             'male'
                                                               ? '#1890ff'
                                                               : match.sex.toLowerCase() ===
-                                                                'female'
-                                                              ? '#eb2f96'
-                                                              : '#722ed1',
+                                                                  'female'
+                                                                ? '#eb2f96'
+                                                                : '#722ed1',
                                                           border: `1px solid ${
                                                             match.sex.toLowerCase() ===
                                                             'male'
                                                               ? '#1890ff40'
                                                               : match.sex.toLowerCase() ===
-                                                                'female'
-                                                              ? '#eb2f9640'
-                                                              : '#722ed140'
+                                                                  'female'
+                                                                ? '#eb2f9640'
+                                                                : '#722ed140'
                                                           }`,
                                                         }}
                                                       >
@@ -1299,12 +1299,12 @@ const PublicTournamentPage: React.FC = () => {
                                                         'completed'
                                                           ? '#52c41a'
                                                           : match.status ===
-                                                            'in-progress'
-                                                          ? '#f5222d'
-                                                          : match.team1 &&
-                                                            match.team2
-                                                          ? '#1890ff'
-                                                          : '#faad14',
+                                                              'in-progress'
+                                                            ? '#f5222d'
+                                                            : match.team1 &&
+                                                                match.team2
+                                                              ? '#1890ff'
+                                                              : '#faad14',
                                                       color: '#fff',
                                                       padding: '2px 8px',
                                                       borderRadius: '4px',
@@ -1316,12 +1316,12 @@ const PublicTournamentPage: React.FC = () => {
                                                     'in-progress'
                                                       ? 'LIVE'
                                                       : match.status ===
-                                                        'completed'
-                                                      ? 'FINAL'
-                                                      : match.team1 &&
-                                                        match.team2
-                                                      ? 'READY'
-                                                      : 'PENDING'}
+                                                          'completed'
+                                                        ? 'FINAL'
+                                                        : match.team1 &&
+                                                            match.team2
+                                                          ? 'READY'
+                                                          : 'PENDING'}
                                                   </div>
                                                 </div>
                                                 {match.scheduledTime && (
@@ -1343,7 +1343,7 @@ const PublicTournamentPage: React.FC = () => {
                                                       }}
                                                     >
                                                       {new Date(
-                                                        match.scheduledTime
+                                                        match.scheduledTime,
                                                       ).toLocaleTimeString([], {
                                                         hour: '2-digit',
                                                         minute: '2-digit',
@@ -1470,7 +1470,7 @@ const PublicTournamentPage: React.FC = () => {
                                     title='Completed'
                                     value={
                                       dateMatches.filter(
-                                        (m) => m.status === 'completed'
+                                        (m) => m.status === 'completed',
                                       ).length
                                     }
                                     prefix={<CheckCircleOutlined />}
@@ -1482,7 +1482,7 @@ const PublicTournamentPage: React.FC = () => {
                                     title='In Progress'
                                     value={
                                       dateMatches.filter(
-                                        (m) => m.status === 'in-progress'
+                                        (m) => m.status === 'in-progress',
                                       ).length
                                     }
                                     prefix={<PlayCircleOutlined />}
@@ -1531,15 +1531,15 @@ const PublicTournamentPage: React.FC = () => {
                     {dateFilter === 'all'
                       ? `No matches found for Round ${selectedRound}`
                       : `No matches for Round ${selectedRound} on ${selectedDate.format(
-                          'MMMM D, YYYY'
+                          'MMMM D, YYYY',
                         )}`}
                   </Title>
                   <Text type='secondary'>
                     {dateFilter === 'all'
                       ? 'Try selecting a different round.'
                       : hasRoundMatches
-                      ? `Round ${selectedRound} matches exist on different dates.`
-                      : `No Round ${selectedRound} matches in this tournament.`}
+                        ? `Round ${selectedRound} matches exist on different dates.`
+                        : `No Round ${selectedRound} matches in this tournament.`}
                   </Text>
                 </div>
               }
@@ -1601,7 +1601,7 @@ const PublicTournamentPage: React.FC = () => {
                         <Select.Option key={grade} value={grade}>
                           Grade {grade}
                         </Select.Option>
-                      )
+                      ),
                     )}
                   </Select>
                   <Button type='primary' block icon={<FilterOutlined />}>
@@ -1806,7 +1806,7 @@ const PublicTournamentPage: React.FC = () => {
             <Timeline mode='alternate'>
               {matchesForSelectedRound.map(
                 (
-                  match // Changed from filteredMatches
+                  match, // Changed from filteredMatches
                 ) => (
                   <Timeline.Item
                     key={match._id}
@@ -1814,8 +1814,8 @@ const PublicTournamentPage: React.FC = () => {
                       match.status === 'completed'
                         ? 'green'
                         : match.status === 'in-progress'
-                        ? 'red'
-                        : 'blue'
+                          ? 'red'
+                          : 'blue'
                     }
                     dot={
                       match.status === 'in-progress' ? (
@@ -1835,8 +1835,8 @@ const PublicTournamentPage: React.FC = () => {
                           match.status === 'completed'
                             ? '#52c41a'
                             : match.status === 'in-progress'
-                            ? '#f5222d'
-                            : '#1890ff'
+                              ? '#f5222d'
+                              : '#1890ff'
                         }`,
                       }}
                     >
@@ -1916,7 +1916,7 @@ const PublicTournamentPage: React.FC = () => {
                                       day: 'numeric',
                                       hour: '2-digit',
                                       minute: '2-digit',
-                                    }
+                                    },
                                   )}
                                 </Text>
                               </Space>
@@ -1935,7 +1935,7 @@ const PublicTournamentPage: React.FC = () => {
                       </Row>
                     </Card>
                   </Timeline.Item>
-                )
+                ),
               )}
             </Timeline>
           ) : (
@@ -1947,15 +1947,15 @@ const PublicTournamentPage: React.FC = () => {
                     {dateFilter === 'all'
                       ? `No matches found for Round ${selectedRound}`
                       : `No matches for Round ${selectedRound} on ${selectedDate.format(
-                          'MMMM D, YYYY'
+                          'MMMM D, YYYY',
                         )}`}
                   </Title>
                   <Text type='secondary'>
                     {dateFilter === 'all'
                       ? 'Try selecting a different round.'
                       : hasRoundMatches
-                      ? `Round ${selectedRound} matches exist on different dates.`
-                      : `No Round ${selectedRound} matches in this tournament.`}
+                        ? `Round ${selectedRound} matches exist on different dates.`
+                        : `No Round ${selectedRound} matches in this tournament.`}
                   </Text>
                 </div>
               }
@@ -2217,8 +2217,8 @@ const PublicTournamentPage: React.FC = () => {
                   'download',
                   `tournament-${tournament.name.replace(
                     /\s+/g,
-                    '-'
-                  )}-export.json`
+                    '-',
+                  )}-export.json`,
                 );
                 linkElement.click();
                 message.success('Data exported successfully!');

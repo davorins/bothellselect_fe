@@ -132,7 +132,7 @@ export const EmailTemplateSelector: React.FC = () => {
     // Style links
     styledHtml = styledHtml.replace(
       /<a(\s[^>]*)?>/g,
-      '<a style="color: #594230; text-decoration: none; border-bottom: 1px solid #594230; padding-bottom: 1px;"$1>',
+      '<a style="color: #506ee4; text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;"$1>',
     );
 
     // Style bold and italic
@@ -149,7 +149,7 @@ export const EmailTemplateSelector: React.FC = () => {
     // Style blockquotes
     styledHtml = styledHtml.replace(
       /<blockquote(\s[^>]*)?>/g,
-      '<blockquote style="margin: 20px 0; padding: 15px 20px; background-color: #f8f9fa; border-left: 4px solid #594230; color: #555; font-style: italic;"$1>',
+      '<blockquote style="margin: 20px 0; padding: 15px 20px; background-color: #f8f9fa; border-left: 4px solid #506ee4; color: #555; font-style: italic;"$1>',
     );
 
     return styledHtml;
@@ -238,13 +238,13 @@ export const EmailTemplateSelector: React.FC = () => {
                 <div style="text-align: center; font-size: 13px; color: #666; padding: 30px 0 20px; margin-top: 40px; border-top: 1px solid #eaeaea;">
                   <p style="margin: 0 0 8px;">You're receiving this email because you're part of <strong style="color: #333;">Bothell Select</strong>.</p>
                   <p style="margin: 0;">
-                    <a href="https://bothellselect.com/general-settings/notifications-settings" style="color: #594230; text-decoration: none; border-bottom: 1px solid #594230; padding-bottom: 1px;">
+                    <a href="https://bothellselect.com/general-settings/notifications-settings" style="color: #506ee4; text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;">
                       Unsubscribe
                     </a> • 
-                    <a href="https://bothellselect.com/contact-us" style="color: #594230; text-decoration: none; border-bottom: 1px solid #594230; padding-bottom: 1px;">
+                    <a href="https://bothellselect.com/contact-us" style="color: #506ee4; text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;">
                       Contact Us
                     </a> • 
-                    <a href="https://bothellselect.com" style="color: #594230; text-decoration: none; border-bottom: 1px solid #594230; padding-bottom: 1px;">
+                    <a href="https://bothellselect.com" style="color: #506ee4; text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;">
                       Website
                     </a>
                   </p>
@@ -325,7 +325,7 @@ export const EmailTemplateSelector: React.FC = () => {
               email
                 ? `<div style="margin-bottom: 4px;">
               <span style="color: #666;">Email:</span> 
-              <a href="mailto:${email}" style="color: #594230; text-decoration: none;">${email}</a>
+              <a href="mailto:${email}" style="color: #506ee4; text-decoration: none;">${email}</a>
             </div>`
                 : ''
             }
@@ -334,7 +334,7 @@ export const EmailTemplateSelector: React.FC = () => {
               website
                 ? `<div style="margin-bottom: 4px;">
               <span style="color: #666;">Website:</span> 
-              <a href="${website}" style="color: #594230; text-decoration: none;">${website}</a>
+              <a href="${website}" style="color: #506ee4; text-decoration: none;">${website}</a>
             </div>`
                 : ''
             }

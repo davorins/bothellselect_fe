@@ -342,7 +342,7 @@ export const exportPlayerParentEmails = <T extends PlayerTableData>(
       text: hasParents
         ? 'No valid parent email addresses found. Ensure parents have valid emails.'
         : 'No parents associated with the selected players.',
-      confirmButtonColor: '#594230',
+      confirmButtonColor: '#506ee4',
       confirmButtonText: 'OK',
     });
     return;
@@ -365,7 +365,7 @@ export const exportPlayerParentEmails = <T extends PlayerTableData>(
     icon: 'success',
     title: 'Export Complete',
     html: `<p style="color:#555"><strong>${uniqueEmails.length}</strong> email${uniqueEmails.length > 1 ? 's' : ''} exported to CSV.</p>`,
-    confirmButtonColor: '#594230',
+    confirmButtonColor: '#506ee4',
     confirmButtonText: 'Done',
     timer: 3000,
     timerProgressBar: true,
@@ -398,7 +398,7 @@ export const copyPlayerParentEmailsToClipboard = <T extends PlayerTableData>(
       icon: 'warning',
       title: 'No Emails Found',
       text: msg,
-      confirmButtonColor: '#594230',
+      confirmButtonColor: '#506ee4',
       confirmButtonText: 'OK',
     });
     onError?.(msg);
@@ -421,7 +421,7 @@ export const copyPlayerParentEmailsToClipboard = <T extends PlayerTableData>(
             </div>
           </div>
         `,
-        confirmButtonColor: '#594230',
+        confirmButtonColor: '#506ee4',
         confirmButtonText: 'Done',
         showCloseButton: true,
         timer: 5000,
@@ -434,7 +434,7 @@ export const copyPlayerParentEmailsToClipboard = <T extends PlayerTableData>(
         icon: 'error',
         title: 'Copy Failed',
         text: 'Could not copy emails to clipboard. Please try again.',
-        confirmButtonColor: '#594230',
+        confirmButtonColor: '#506ee4',
         confirmButtonText: 'OK',
       });
       onError?.('Failed to copy parent emails to clipboard');
