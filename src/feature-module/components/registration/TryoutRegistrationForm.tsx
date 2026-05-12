@@ -820,7 +820,10 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
                       <li className='mt-2'>
                         <i className='ti ti-map-pin text-primary me-2'></i>
                         <strong>Location:</strong>{' '}
-                        {effectiveTryoutConfig.locations.join(', ')}
+                        {effectiveTryoutConfig.locations &&
+                        effectiveTryoutConfig.locations.length > 0
+                          ? effectiveTryoutConfig.locations.join(', ')
+                          : 'To be announced'}
                       </li>
                       <li className='mt-2'>
                         <i className='ti ti-bell-ringing text-primary me-2'></i>
@@ -911,12 +914,13 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
                       .join(', ')}
                   </p>
                 )}
-                {effectiveTryoutConfig.locations.length > 0 && (
-                  <p className='mb-2'>
-                    <strong>Locations:</strong>{' '}
-                    {effectiveTryoutConfig.locations.join(', ')}
-                  </p>
-                )}
+                {effectiveTryoutConfig.locations &&
+                  effectiveTryoutConfig.locations.length > 0 && (
+                    <p className='mb-2'>
+                      <strong>Locations:</strong>{' '}
+                      {effectiveTryoutConfig.locations.join(', ')}
+                    </p>
+                  )}
               </div>
             </div>
 

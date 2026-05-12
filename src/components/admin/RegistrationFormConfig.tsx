@@ -7,6 +7,7 @@ import {
   PricingPackage,
   TrainingDetails,
   TrainingSession,
+  TrainingLocation,
 } from '../../types/registration-types';
 import RichTextEditor from '../common/RichTextEditor';
 
@@ -49,6 +50,14 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
     maxParticipants: null,
   };
 
+  const defaultLocation: TrainingLocation = {
+    name: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+  };
+
   const defaultConfig: ExtendedFormConfig = {
     isActive: false,
     requiresPayment: true,
@@ -67,13 +76,22 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
     price: 0,
     description: '',
   });
-  const [newSession, setNewSession] = useState<
-    Omit<TrainingSession, 'id' | 'number'>
-  >({
+
+  // Updated new session state with date and location
+  const [newSession, setNewSession] = useState<{
+    date: string;
+    startTime: string;
+    endTime: string;
+    grades: string;
+    location: TrainingLocation;
+  }>({
+    date: '',
     startTime: '',
     endTime: '',
     grades: '',
+    location: defaultLocation,
   });
+
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [newNote, setNewNote] = useState('');
@@ -161,6 +179,7 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
     setHasUnsavedChanges(true);
   };
 
+  // Updated handleAddSession with date and location
   const handleAddSession = () => {
     if (newSession.startTime && newSession.endTime && newSession.grades) {
       const sessions = config.trainingDetails?.trainingSessions || [];
@@ -172,7 +191,13 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
       updateTrainingDetails({
         trainingSessions: [...sessions, newSessionWithId],
       });
-      setNewSession({ startTime: '', endTime: '', grades: '' });
+      setNewSession({
+        date: '',
+        startTime: '',
+        endTime: '',
+        grades: '',
+        location: defaultLocation,
+      });
     }
   };
 
@@ -180,12 +205,33 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
     const sessions = (config.trainingDetails?.trainingSessions || []).filter(
       (s) => s.id !== sessionId,
     );
-    // Renumber remaining sessions
     const renumberedSessions = sessions.map((session, idx) => ({
       ...session,
       number: idx + 1,
     }));
     updateTrainingDetails({ trainingSessions: renumberedSessions });
+  };
+
+  const handleUpdateSessionLocation = (
+    sessionId: string,
+    location: Partial<TrainingLocation>,
+  ) => {
+    const sessions = [...(config.trainingDetails?.trainingSessions || [])];
+    const sessionIndex = sessions.findIndex((s) => s.id === sessionId);
+    if (sessionIndex !== -1) {
+      sessions[sessionIndex] = {
+        ...sessions[sessionIndex],
+        location: {
+          name: sessions[sessionIndex].location?.name || '',
+          address: sessions[sessionIndex].location?.address || '',
+          city: sessions[sessionIndex].location?.city || '',
+          state: sessions[sessionIndex].location?.state || '',
+          zipCode: sessions[sessionIndex].location?.zipCode || '',
+          ...location,
+        },
+      };
+      updateTrainingDetails({ trainingSessions: sessions });
+    }
   };
 
   const handleAddNote = () => {
@@ -219,13 +265,18 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
     updateTrainingDetails({ ageGroups: updatedGroups });
   };
 
+  const getFullAddress = (location: TrainingLocation): string => {
+    return [location.address, location.city, location.state, location.zipCode]
+      .filter(Boolean)
+      .join(', ');
+  };
+
   const handleSave = async () => {
     if (!hasUnsavedChanges) return;
 
     try {
       setIsSaving(true);
 
-      // Generate description from structured data for backward compatibility
       const generatedDescription = generateDescriptionFromTrainingDetails(
         config.trainingDetails!,
       );
@@ -266,14 +317,18 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
     if (details.days.length) desc += `Days: ${details.days.join(', ')}\n\n`;
 
     if (details.trainingSessions.length) {
-      desc += `Times:\n`;
+      desc += `Training Sessions:\n`;
       details.trainingSessions.forEach((session) => {
-        desc += `${session.number}) ${session.startTime} - ${session.endTime} (${session.grades})\n`;
+        desc += `${session.number}) `;
+        if (session.date) desc += `${session.date} `;
+        desc += `${session.startTime} - ${session.endTime} (${session.grades})`;
+        if (session.location?.name) desc += ` @ ${session.location.name}`;
+        desc += `\n`;
       });
       desc += '\n';
     }
 
-    if (details.location.name) {
+    if (details.location?.name) {
       desc += `Location: ${details.location.name}`;
       if (details.location.address) {
         desc += ` (${details.location.address}`;
@@ -303,7 +358,6 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
     return desc;
   };
 
-  // Common section styles
   const sectionStyle = { borderLeft: '3px solid #0d6efd', paddingLeft: '1rem' };
 
   return (
@@ -364,14 +418,6 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
               onClick={() => setActiveTab('schedule')}
             >
               <i className='ti ti-calendar me-1'></i> Schedule & Sessions
-            </button>
-          </li>
-          <li className='nav-item'>
-            <button
-              className={`nav-link ${activeTab === 'location' ? 'active' : ''}`}
-              onClick={() => setActiveTab('location')}
-            >
-              <i className='ti ti-map-pin me-1'></i> Location
             </button>
           </li>
           <li className='nav-item'>
@@ -508,95 +554,252 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
             </div>
           </div>
 
-          {/* Schedule & Sessions Tab */}
+          {/* Schedule & Sessions Tab - Updated with date and location per session */}
           <div
             className={`tab-pane ${activeTab === 'schedule' ? 'active' : ''}`}
           >
             <div className='row'>
               <div className='col-12 mb-4'>
                 <div style={sectionStyle}>
-                  <h6 className='mb-3'>Training Sessions</h6>
+                  <h6 className='mb-3'>Training Sessions with Locations</h6>
 
+                  {/* Existing Sessions List */}
                   {(config.trainingDetails?.trainingSessions || []).map(
                     (session) => (
-                      <div
-                        key={session.id}
-                        className='d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded'
-                      >
-                        <div>
-                          <strong>Session {session.number}:</strong>{' '}
-                          {session.startTime} - {session.endTime}
-                          <span className='text-muted ms-2'>
-                            Grades: {session.grades}
-                          </span>
+                      <div key={session.id} className='card mb-3 bg-light'>
+                        <div className='card-body'>
+                          <div className='d-flex justify-content-between align-items-start mb-3'>
+                            <h6 className='mb-0'>Session {session.number}</h6>
+                            <button
+                              type='button'
+                              className='btn btn-sm btn-outline-danger'
+                              onClick={() => handleRemoveSession(session.id!)}
+                            >
+                              <i className='ti ti-trash'></i> Remove
+                            </button>
+                          </div>
+                          <div className='row'>
+                            <div className='col-md-3 mb-2'>
+                              <strong>Date:</strong>
+                              <p className='mb-0'>
+                                {session.date || 'Not specified'}
+                              </p>
+                            </div>
+                            <div className='col-md-3 mb-2'>
+                              <strong>Time:</strong>
+                              <p className='mb-0'>
+                                {session.startTime} - {session.endTime}
+                              </p>
+                            </div>
+                            <div className='col-md-3 mb-2'>
+                              <strong>Grades:</strong>
+                              <p className='mb-0'>{session.grades}</p>
+                            </div>
+                            <div className='col-md-3 mb-2'>
+                              <strong>Location:</strong>
+                              {session.location?.name ? (
+                                <>
+                                  <p className='mb-0'>
+                                    {session.location.name}
+                                  </p>
+                                  {getFullAddress(session.location) && (
+                                    <small className='text-muted'>
+                                      {getFullAddress(session.location)}
+                                    </small>
+                                  )}
+                                </>
+                              ) : (
+                                <p className='mb-0 text-muted'>
+                                  No location set
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Edit Location Button */}
+                          <button
+                            type='button'
+                            className='btn btn-sm btn-outline-secondary mt-2'
+                            onClick={() => {
+                              const newLocation = prompt(
+                                'Enter location name:',
+                                session.location?.name || '',
+                              );
+                              if (newLocation) {
+                                handleUpdateSessionLocation(session.id!, {
+                                  name: newLocation,
+                                });
+                              }
+                            }}
+                          >
+                            <i className='ti ti-edit'></i> Edit Location
+                          </button>
                         </div>
-                        <button
-                          type='button'
-                          className='btn btn-sm btn-outline-danger'
-                          onClick={() => handleRemoveSession(session.id!)}
-                        >
-                          <i className='ti ti-trash'></i>
-                        </button>
                       </div>
                     ),
                   )}
 
-                  <div className='row mt-3'>
-                    <div className='col-md-3 mb-2'>
-                      <input
-                        type='text'
-                        className='form-control'
-                        placeholder='Start time (e.g., 9am)'
-                        value={newSession.startTime}
-                        onChange={(e) =>
-                          setNewSession({
-                            ...newSession,
-                            startTime: e.target.value,
-                          })
-                        }
-                      />
+                  {/* Add New Session Form */}
+                  <div className='border-top pt-4'>
+                    <h6 className='mb-3'>Add New Session</h6>
+                    <div className='row'>
+                      <div className='col-md-2 mb-2'>
+                        <input
+                          type='text'
+                          className='form-control'
+                          placeholder='Date (e.g., Jun 15)'
+                          value={newSession.date}
+                          onChange={(e) =>
+                            setNewSession({
+                              ...newSession,
+                              date: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className='col-md-2 mb-2'>
+                        <input
+                          type='text'
+                          className='form-control'
+                          placeholder='Start time'
+                          value={newSession.startTime}
+                          onChange={(e) =>
+                            setNewSession({
+                              ...newSession,
+                              startTime: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className='col-md-2 mb-2'>
+                        <input
+                          type='text'
+                          className='form-control'
+                          placeholder='End time'
+                          value={newSession.endTime}
+                          onChange={(e) =>
+                            setNewSession({
+                              ...newSession,
+                              endTime: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className='col-md-3 mb-2'>
+                        <input
+                          type='text'
+                          className='form-control'
+                          placeholder='Grades (e.g., 3rd-5th)'
+                          value={newSession.grades}
+                          onChange={(e) =>
+                            setNewSession({
+                              ...newSession,
+                              grades: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className='col-md-3 mb-2'>
+                        <input
+                          type='text'
+                          className='form-control'
+                          placeholder='Location name'
+                          value={newSession.location.name}
+                          onChange={(e) =>
+                            setNewSession({
+                              ...newSession,
+                              location: {
+                                ...newSession.location,
+                                name: e.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </div>
                     </div>
-                    <div className='col-md-3 mb-2'>
-                      <input
-                        type='text'
-                        className='form-control'
-                        placeholder='End time (e.g., 11am)'
-                        value={newSession.endTime}
-                        onChange={(e) =>
-                          setNewSession({
-                            ...newSession,
-                            endTime: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className='col-md-4 mb-2'>
-                      <input
-                        type='text'
-                        className='form-control'
-                        placeholder='Grades (e.g., 3rd, 4th, 5th grade)'
-                        value={newSession.grades}
-                        onChange={(e) =>
-                          setNewSession({
-                            ...newSession,
-                            grades: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className='col-md-2 mb-2'>
-                      <button
-                        type='button'
-                        className='btn btn-primary w-100'
-                        onClick={handleAddSession}
-                        disabled={
-                          !newSession.startTime ||
-                          !newSession.endTime ||
-                          !newSession.grades
-                        }
-                      >
-                        <i className='ti ti-plus'></i> Add Session
-                      </button>
+                    <div className='row'>
+                      <div className='col-md-4 mb-2'>
+                        <input
+                          type='text'
+                          className='form-control'
+                          placeholder='Address (optional)'
+                          value={newSession.location.address}
+                          onChange={(e) =>
+                            setNewSession({
+                              ...newSession,
+                              location: {
+                                ...newSession.location,
+                                address: e.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className='col-md-2 mb-2'>
+                        <input
+                          type='text'
+                          className='form-control'
+                          placeholder='City'
+                          value={newSession.location.city}
+                          onChange={(e) =>
+                            setNewSession({
+                              ...newSession,
+                              location: {
+                                ...newSession.location,
+                                city: e.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className='col-md-2 mb-2'>
+                        <input
+                          type='text'
+                          className='form-control'
+                          placeholder='State'
+                          value={newSession.location.state}
+                          onChange={(e) =>
+                            setNewSession({
+                              ...newSession,
+                              location: {
+                                ...newSession.location,
+                                state: e.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className='col-md-2 mb-2'>
+                        <input
+                          type='text'
+                          className='form-control'
+                          placeholder='ZIP'
+                          value={newSession.location.zipCode}
+                          onChange={(e) =>
+                            setNewSession({
+                              ...newSession,
+                              location: {
+                                ...newSession.location,
+                                zipCode: e.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className='col-md-2 mb-2'>
+                        <button
+                          type='button'
+                          className='btn btn-primary w-100'
+                          onClick={handleAddSession}
+                          disabled={
+                            !newSession.startTime ||
+                            !newSession.endTime ||
+                            !newSession.grades
+                          }
+                        >
+                          <i className='ti ti-plus'></i> Add Session
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -663,160 +866,34 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
                   min='1'
                 />
               </div>
-            </div>
-          </div>
 
-          {/* Location Tab */}
-          <div
-            className={`tab-pane ${activeTab === 'location' ? 'active' : ''}`}
-          >
-            <div className='row'>
-              <div className='col-12 mb-3'>
-                <label className='form-label'>Location Name</label>
+              <div className='col-md-6 mb-3'>
+                <label className='form-label'>Registration Deadline</label>
                 <input
-                  type='text'
+                  type='date'
                   className='form-control'
-                  placeholder='e.g., Kenmore Middle School'
-                  value={config.trainingDetails?.location?.name || ''}
+                  value={config.registrationDeadline || ''}
                   onChange={(e) =>
-                    updateTrainingDetails({
-                      location: {
-                        ...config.trainingDetails?.location,
-                        name: e.target.value,
-                        address:
-                          config.trainingDetails?.location?.address || '',
-                        city: config.trainingDetails?.location?.city || '',
-                        state: config.trainingDetails?.location?.state || '',
-                        zipCode:
-                          config.trainingDetails?.location?.zipCode || '',
-                      },
-                    })
+                    updateConfig({ registrationDeadline: e.target.value })
                   }
                 />
               </div>
 
-              <div className='col-12 mb-3'>
-                <label className='form-label'>Street Address</label>
+              <div className='col-md-6 mb-3'>
+                <label className='form-label'>Payment Deadline</label>
                 <input
-                  type='text'
+                  type='date'
                   className='form-control'
-                  placeholder='e.g., 20323 66th Avenue NE'
-                  value={config.trainingDetails?.location?.address || ''}
+                  value={config.paymentDeadline || ''}
                   onChange={(e) =>
-                    updateTrainingDetails({
-                      location: {
-                        ...config.trainingDetails?.location,
-                        name: config.trainingDetails?.location?.name || '',
-                        address: e.target.value,
-                        city: config.trainingDetails?.location?.city || '',
-                        state: config.trainingDetails?.location?.state || '',
-                        zipCode:
-                          config.trainingDetails?.location?.zipCode || '',
-                      },
-                    })
+                    updateConfig({ paymentDeadline: e.target.value })
                   }
                 />
-              </div>
-
-              <div className='col-md-4 mb-3'>
-                <label className='form-label'>City</label>
-                <input
-                  type='text'
-                  className='form-control'
-                  placeholder='Kenmore'
-                  value={config.trainingDetails?.location?.city || ''}
-                  onChange={(e) =>
-                    updateTrainingDetails({
-                      location: {
-                        ...config.trainingDetails?.location,
-                        name: config.trainingDetails?.location?.name || '',
-                        address:
-                          config.trainingDetails?.location?.address || '',
-                        city: e.target.value,
-                        state: config.trainingDetails?.location?.state || '',
-                        zipCode:
-                          config.trainingDetails?.location?.zipCode || '',
-                      },
-                    })
-                  }
-                />
-              </div>
-
-              <div className='col-md-4 mb-3'>
-                <label className='form-label'>State</label>
-                <input
-                  type='text'
-                  className='form-control'
-                  placeholder='WA'
-                  value={config.trainingDetails?.location?.state || ''}
-                  onChange={(e) =>
-                    updateTrainingDetails({
-                      location: {
-                        ...config.trainingDetails?.location,
-                        name: config.trainingDetails?.location?.name || '',
-                        address:
-                          config.trainingDetails?.location?.address || '',
-                        city: config.trainingDetails?.location?.city || '',
-                        state: e.target.value,
-                        zipCode:
-                          config.trainingDetails?.location?.zipCode || '',
-                      },
-                    })
-                  }
-                />
-              </div>
-
-              <div className='col-md-4 mb-3'>
-                <label className='form-label'>ZIP Code</label>
-                <input
-                  type='text'
-                  className='form-control'
-                  placeholder='98028'
-                  value={config.trainingDetails?.location?.zipCode || ''}
-                  onChange={(e) =>
-                    updateTrainingDetails({
-                      location: {
-                        ...config.trainingDetails?.location,
-                        name: config.trainingDetails?.location?.name || '',
-                        address:
-                          config.trainingDetails?.location?.address || '',
-                        city: config.trainingDetails?.location?.city || '',
-                        state: config.trainingDetails?.location?.state || '',
-                        zipCode: e.target.value,
-                      },
-                    })
-                  }
-                />
-              </div>
-
-              <div className='col-12'>
-                <button
-                  type='button'
-                  className='btn btn-outline-secondary btn-sm'
-                  onClick={() => {
-                    const addr = [
-                      config.trainingDetails?.location?.address,
-                      config.trainingDetails?.location?.city,
-                      config.trainingDetails?.location?.state,
-                      config.trainingDetails?.location?.zipCode,
-                    ]
-                      .filter(Boolean)
-                      .join(', ');
-                    if (addr) {
-                      window.open(
-                        `https://www.google.com/maps/search/${encodeURIComponent(addr)}`,
-                        '_blank',
-                      );
-                    }
-                  }}
-                >
-                  <i className='ti ti-map-search'></i> Preview in Google Maps
-                </button>
               </div>
             </div>
           </div>
 
-          {/* Additional Details Tab */}
+          {/* Additional Details Tab - Removed separate location tab since location is now per session */}
           <div
             className={`tab-pane ${activeTab === 'details' ? 'active' : ''}`}
           >

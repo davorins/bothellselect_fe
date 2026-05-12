@@ -271,42 +271,21 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
   }, [userPlayers, getPaidPlayersForTraining]);
 
   const getEffectivePlayerCount = useCallback((): number => {
-    let count = 0;
-
-    // Selected existing players
-    if (selectedPlayerIds?.length > 0) {
-      count += selectedPlayerIds.length;
-    }
-
-    // New players being created
-    if (players?.length > 0) {
-      const validNewPlayers = players.filter(
-        (p) => p.fullName?.trim().length > 0,
-      );
-      count += validNewPlayers.length;
-    }
-
-    console.log('👥 Effective player count for payment:', count);
-    return count;
-  }, [selectedPlayerIds, players]);
+    const paidPlayers = getPaidPlayersForTraining();
+    const paidPlayerIds = new Set(paidPlayers.map((p) => p._id));
+    const selectedUnpaidCount = selectedPlayerIds.filter(
+      (id) => !paidPlayerIds.has(id),
+    ).length;
+    const newPlayersCount = players.filter(
+      (p) => !p._id && p.fullName?.trim(),
+    ).length;
+    return selectedUnpaidCount + newPlayersCount;
+  }, [selectedPlayerIds, players, getPaidPlayersForTraining]);
 
   const calculatePaymentAmount = (): number => {
     const playerCount = getEffectivePlayerCount();
-
-    console.log('💰 calculatePaymentAmount:', {
-      playerCount,
-      selectedPackage: selectedPackage?.price,
-      basePrice: defaultFormConfig.pricing.basePrice,
-    });
-
-    if (playerCount <= 0) {
-      console.warn('⚠️ No players counted for payment!');
-      return 7500; // fallback $75
-    }
-
-    const price =
-      selectedPackage?.price || defaultFormConfig.pricing.basePrice || 75;
-    return price * 100 * playerCount; // e.g. 7500 for 1 player
+    const price = selectedPackage?.price || defaultFormConfig.pricing.basePrice;
+    return price * 100 * playerCount;
   };
 
   // ─── Step Navigation ──────────────────────────────────────────────────────
@@ -516,15 +495,6 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
       const savedPlayers: Player[] = [];
 
       for (const player of playersWithoutId) {
-        // DEBUG: Log what we're sending
-        console.log('🔍 Creating player with:', {
-          fullName: player.fullName,
-          season: player.season,
-          dynamicSeason: dynamicSeasonEvent.season,
-          registrationYear: player.registrationYear,
-          dynamicYear: dynamicSeasonEvent.year,
-        });
-
         const playerData = {
           fullName: player.fullName.trim(),
           gender: player.gender,
@@ -540,8 +510,6 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
           skipSeasonRegistration: false,
           registrationType: 'training',
         };
-
-        console.log('📤 Sending playerData:', playerData);
 
         try {
           const response = await axios.post(
@@ -634,54 +602,71 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
     setFormError(null);
 
     try {
-      // Save players to database (parent responsibility)
-      const savedPlayers = await savePlayerData(playersData);
+      console.log('🔍 handlePlayerComplete START:', {
+        playersDataLength: playersData.length,
+        playersData: playersData.map((p) => ({
+          id: p._id,
+          name: p.fullName,
+          hasId: !!p._id,
+        })),
+        selectedPlayerIds,
+        userPlayersLength: userPlayers?.length || 0,
+      });
 
-      // Then collect players for payment
+      // Save players to database
+      const savedPlayers = await savePlayerData(playersData);
+      console.log(
+        '🔍 savedPlayers after save:',
+        savedPlayers.map((p) => ({ id: p._id, name: p.fullName })),
+      );
+
+      // Get paid players
       const paidPlayers = getPaidPlayersForTraining();
       const paidPlayerIds = new Set(paidPlayers.map((p) => p._id));
+      console.log('🔍 paidPlayerIds:', Array.from(paidPlayerIds));
 
+      // Get selected existing players
       const selectedUnpaidPlayers = (userPlayers || []).filter(
         (p) => selectedPlayerIds.includes(p._id!) && !paidPlayerIds.has(p._id!),
       );
+      console.log(
+        '🔍 selectedUnpaidPlayers:',
+        selectedUnpaidPlayers.map((p) => ({ id: p._id, name: p.fullName })),
+      );
 
+      // Get newly created players
       const newPlayers = savedPlayers.filter(
         (p) => p._id && p.fullName?.trim(),
       );
+      console.log(
+        '🔍 newPlayers:',
+        newPlayers.map((p) => ({ id: p._id, name: p.fullName })),
+      );
 
-      // FIX: Deduplicate players by ID
-      const playerMap = new Map<string, Player>();
+      // Combine
+      const allPlayersForPayment = [...selectedUnpaidPlayers, ...newPlayers];
+      console.log(
+        '🔍 allPlayersForPayment FINAL:',
+        allPlayersForPayment.map((p) => ({ id: p._id, name: p.fullName })),
+      );
 
-      // Add selected unpaid players first
-      selectedUnpaidPlayers.forEach((player) => {
-        if (player._id) {
-          playerMap.set(player._id, player);
-        }
-      });
-
-      // Add new players (only if not already in map by ID)
-      newPlayers.forEach((player) => {
-        if (player._id && !playerMap.has(player._id)) {
-          playerMap.set(player._id, player);
-        }
-      });
-
-      const allPlayersForPayment = Array.from(playerMap.values());
-
-      // Debug log to verify
-      console.log('🔍 Payment players composition:', {
-        selectedUnpaidCount: selectedUnpaidPlayers.length,
-        newPlayersCount: newPlayers.length,
-        deduplicatedCount: allPlayersForPayment.length,
-        players: allPlayersForPayment.map((p) => ({
-          id: p._id,
-          name: p.fullName,
-        })),
-      });
+      if (allPlayersForPayment.length === 0) {
+        console.error('❌ No players for payment!');
+        setFormError(
+          'No players selected for training. Please add at least one player.',
+        );
+        return;
+      }
 
       setPlayersForTraining(allPlayersForPayment);
+      console.log(
+        '🔍 playersForTraining state set to:',
+        allPlayersForPayment.length,
+      );
+
       setCurrentStep('payment');
     } catch (error: any) {
+      console.error('❌ Error in handlePlayerComplete:', error);
       setFormError(error.message || 'Failed to save player information');
     } finally {
       setIsSubmitting(false);

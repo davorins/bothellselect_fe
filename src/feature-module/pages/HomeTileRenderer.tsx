@@ -357,6 +357,10 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
 
       const activeTryout = tryoutConfigs.find((c) => c.isActive);
       if (activeTryout) {
+        const locationStrings: string[] = (activeTryout.locations || [])
+          .map((loc) => loc.name)
+          .filter(Boolean);
+
         configs.tryout = {
           _id: activeTryout._id,
           season: activeTryout.tryoutName,
@@ -370,7 +374,7 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
           displayName: activeTryout.displayName,
           registrationDeadline: activeTryout.registrationDeadline,
           tryoutDates: activeTryout.tryoutDates || [],
-          locations: activeTryout.locations || [],
+          locations: locationStrings,
           divisions: activeTryout.divisions || [],
           ageGroups: activeTryout.ageGroups || [],
           requiresRoster: activeTryout.requiresRoster || false,

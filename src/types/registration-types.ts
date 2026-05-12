@@ -460,7 +460,7 @@ export interface TryoutSpecificConfig {
   description?: string;
   registrationDeadline: string;
   tryoutDates: string[];
-  locations: string[];
+  locations?: TryoutLocation[];
   divisions?: string[];
   ageGroups?: string[];
   requiresPayment: boolean;
@@ -486,6 +486,7 @@ export interface TryoutSpecificConfig {
       state: string;
       zipCode: string;
     };
+    locations?: TryoutLocation[];
     tryoutSessions: Array<{
       id?: string;
       number: number;
@@ -507,9 +508,11 @@ export interface TryoutSpecificConfig {
 export interface TrainingSession {
   id?: string;
   number: number;
+  date?: string;
   startTime: string;
   endTime: string;
   grades: string;
+  location?: TrainingLocation;
 }
 
 export interface TrainingLocation {
@@ -527,6 +530,7 @@ export interface TrainingDetails {
   gender: string;
   days: string[];
   location: TrainingLocation;
+  locations?: TrainingLocation[];
   trainingSessions: TrainingSession[];
   notes: string[];
   dropOffTime: string;
@@ -543,6 +547,8 @@ export interface TryoutSession {
   startTime: string;
   endTime: string;
   grades: string;
+  location?: TryoutLocation;
+  date?: string;
 }
 
 export interface TryoutLocation {
@@ -560,6 +566,7 @@ export interface TryoutDetails {
   gender: string;
   days: string[];
   location: TryoutLocation;
+  locations?: TryoutLocation[];
   tryoutSessions: TryoutSession[];
   notes: string[];
   dropOffTime: string;

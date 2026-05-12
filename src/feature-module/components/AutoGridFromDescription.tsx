@@ -1,13 +1,15 @@
-// AutoGridFromDescription.tsx - Add tryout support while keeping training intact
+// AutoGridFromDescription.tsx - Complete working solution
 import React from 'react';
 import './AutoGridFromDescription.css';
 
 interface TrainingSession {
   id?: string;
   number: number;
+  date?: string;
   startTime: string;
   endTime: string;
   grades: string;
+  location?: TryoutLocation;
 }
 
 interface TrainingLocation {
@@ -35,13 +37,14 @@ interface TrainingDetails {
   maxParticipants: number | null;
 }
 
-// Add TryoutDetails interface
 interface TryoutSession {
   id?: string;
   number: number;
+  date?: string;
   startTime: string;
   endTime: string;
   grades: string;
+  location?: TryoutLocation;
 }
 
 interface TryoutLocation {
@@ -58,7 +61,8 @@ interface TryoutDetails {
   duration: string;
   gender: string;
   days: string[];
-  location: TryoutLocation;
+  locations?: TryoutLocation[];
+  location?: TryoutLocation;
   tryoutSessions: TryoutSession[];
   notes: string[];
   dropOffTime: string;
@@ -84,7 +88,7 @@ interface RegistrationFormConfig {
   };
   description?: string;
   trainingDetails?: TrainingDetails;
-  tryoutDetails?: TryoutDetails; // Add this
+  tryoutDetails?: TryoutDetails;
   tryoutName?: string;
   tryoutYear?: number;
   tryoutFee?: number;
@@ -177,7 +181,41 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
   const tryoutDetails = config?.tryoutDetails;
   const isTryout = !!tryoutDetails;
 
-  // TRAINING VIEW (existing working code - keep exactly as is)
+  // Helper function to get tryout locations (handles both old and new format)
+  const getTryoutLocations = (): TryoutLocation[] => {
+    if (!tryoutDetails) return [];
+
+    // New format: locations array
+    if (tryoutDetails.locations && tryoutDetails.locations.length > 0) {
+      return tryoutDetails.locations;
+    }
+
+    // Old format: single location
+    if (tryoutDetails.location && tryoutDetails.location.name) {
+      return [tryoutDetails.location];
+    }
+
+    return [];
+  };
+
+  // Helper to check if tryout has valid location data
+  const hasValidTryoutLocation = (): boolean => {
+    const locations = getTryoutLocations();
+    return locations.length > 0;
+  };
+
+  // Helper to get first location name for header
+  const getFirstLocationName = (): string | null => {
+    const locations = getTryoutLocations();
+    return locations.length > 0 ? locations[0].name : null;
+  };
+
+  // Helper to get location count for header display
+  const getLocationCount = (): number => {
+    return getTryoutLocations().length;
+  };
+
+  // TRAINING VIEW (existing working code)
   if (!isTryout && trainingDetails) {
     const hasValidTrainingDetails =
       trainingDetails.startDate ||
@@ -376,20 +414,55 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
 
           {(trainingDetails.trainingSessions?.length || 0) > 0 && (
             <div className='agd-tile'>
-              <TileHead icon='ti-calendar-event' label='Training Sessions' />
-              <div className='agd-sched'>
+              <TileHead icon='ti-calendar-event' label='Training Schedule' />
+              <div className='agd-sessions-container'>
                 {trainingDetails.trainingSessions.map((session) => (
-                  <div key={session.id} className='agd-srow'>
-                    <div className='agd-stime' style={{ color: accent }}>
-                      {formatTimeRange(session.startTime, session.endTime)}
+                  <div key={session.id} className='agd-session-card'>
+                    <div className='agd-session-header'>
+                      <div className='agd-session-time'>
+                        {session.date && (
+                          <span className='agd-session-date'>
+                            <i className='ti ti-calendar' />
+                            {session.date}
+                          </span>
+                        )}
+                        <span className='agd-session-time-range'>
+                          <i className='ti ti-clock' />
+                          {formatTimeRange(session.startTime, session.endTime)}
+                        </span>
+                      </div>
+                      <span className='agd-session-grades'>
+                        <i className='ti ti-users' />
+                        Grades {session.grades}
+                      </span>
                     </div>
-                    <div className='agd-slabel'>
-                      <i
-                        className='ti ti-users'
-                        style={{ color: accent, marginRight: 7 }}
-                      />
-                      {session.grades}
-                    </div>
+
+                    {session.location?.name && (
+                      <div className='agd-session-location'>
+                        <i className='ti ti-map-pin agd-session-location-icon' />
+                        <div className='agd-session-location-details'>
+                          <span className='agd-session-location-name'>
+                            {session.location.name}
+                          </span>
+                          {getFullAddress(session.location) && (
+                            <span className='agd-session-location-address'>
+                              {getFullAddress(session.location)}
+                            </span>
+                          )}
+                          {getFullAddress(session.location) && (
+                            <a
+                              className='agd-session-map-link'
+                              href={`https://www.google.com/maps/search/${encodeURIComponent([session.location.name, getFullAddress(session.location)].filter(Boolean).join(' '))}`}
+                              target='_blank'
+                              rel='noopener noreferrer'
+                            >
+                              <i className='ti ti-external-link' /> Open in
+                              Google Maps
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -459,11 +532,12 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
     );
   }
 
-  // TRYOUT VIEW (new - same layout as training)
+  // TRYOUT VIEW
   if (isTryout && tryoutDetails) {
+    const tryoutLocations = getTryoutLocations();
     const hasValidTryoutDetails =
       tryoutDetails.startDate ||
-      tryoutDetails.location?.name ||
+      tryoutLocations.length > 0 ||
       (tryoutDetails.tryoutSessions?.length || 0) > 0;
 
     if (!hasValidTryoutDetails) {
@@ -543,12 +617,6 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
               {config.displayName || config.tryoutName || 'Tryout'}{' '}
               {config.tryoutYear || ''}
             </h2>
-            {tryoutDetails.location?.name && (
-              <p className='agd-sub'>
-                <i className='ti ti-building-school' style={{ opacity: 0.5 }} />{' '}
-                {tryoutDetails.location.name}
-              </p>
-            )}
             {(tryoutDetails.startDate || tryoutDetails.endDate) && (
               <p className='agd-sub'>
                 <i className='ti ti-calendar' style={{ opacity: 0.5 }} />{' '}
@@ -631,49 +699,91 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             </div>
           )}
 
-          {(tryoutDetails.location?.name ||
-            getFullAddress(tryoutDetails.location)) && (
+          {/* Locations section - supports multiple locations */}
+          {tryoutLocations.length > 0 && (
             <div className='agd-tile'>
-              <TileHead icon='ti-map-pin' label='Location' />
-              <ul className='agd-list'>
-                <InfoRow icon='ti-location-pin'>
-                  {tryoutDetails.location?.name && (
-                    <strong>{tryoutDetails.location.name}</strong>
-                  )}
-                  {tryoutDetails.location?.name &&
-                    getFullAddress(tryoutDetails.location) && <br />}
-                  {getFullAddress(tryoutDetails.location)}
-                </InfoRow>
-              </ul>
-              {getFullAddress(tryoutDetails.location) && (
-                <a
-                  className='agd-map-link'
-                  href={`https://www.google.com/maps/search/${encodeURIComponent([tryoutDetails.location.name, getFullAddress(tryoutDetails.location)].filter(Boolean).join(' '))}`}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                >
-                  <i className='ti ti-external-link' /> Open in Google Maps
-                </a>
-              )}
+              <TileHead
+                icon='ti-map-pin'
+                label={tryoutLocations.length === 1 ? 'Location' : 'Locations'}
+              />
+              <div className='agd-locations'>
+                {tryoutLocations.map((location, idx) => (
+                  <div key={idx} className='agd-location-item'>
+                    <ul className='agd-list'>
+                      <InfoRow icon='ti-location-pin'>
+                        <strong>{location.name}</strong>
+                        {location.name && getFullAddress(location) && <br />}
+                        {getFullAddress(location)}
+                      </InfoRow>
+                    </ul>
+                    {getFullAddress(location) && (
+                      <a
+                        className='agd-map-link'
+                        href={`https://www.google.com/maps/search/${encodeURIComponent([location.name, getFullAddress(location)].filter(Boolean).join(' '))}`}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                      >
+                        <i className='ti ti-external-link' /> Open in Google
+                        Maps
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
           {(tryoutDetails.tryoutSessions?.length || 0) > 0 && (
             <div className='agd-tile'>
               <TileHead icon='ti-calendar-event' label='Tryout Schedule' />
-              <div className='agd-sched'>
+              <div className='agd-sessions-container'>
                 {tryoutDetails.tryoutSessions.map((session) => (
-                  <div key={session.id} className='agd-srow'>
-                    <div className='agd-stime' style={{ color: accent }}>
-                      {formatTimeRange(session.startTime, session.endTime)}
+                  <div key={session.id} className='agd-session-card'>
+                    <div className='agd-session-header'>
+                      <div className='agd-session-time'>
+                        {session.date && (
+                          <span className='agd-session-date'>
+                            <i className='ti ti-calendar' />
+                            {session.date}
+                          </span>
+                        )}
+                        <span className='agd-session-time-range'>
+                          <i className='ti ti-clock' />
+                          {formatTimeRange(session.startTime, session.endTime)}
+                        </span>
+                      </div>
+                      <span className='agd-session-grades'>
+                        <i className='ti ti-users' />
+                        Grades {session.grades}
+                      </span>
                     </div>
-                    <div className='agd-slabel'>
-                      <i
-                        className='ti ti-users'
-                        style={{ color: accent, marginRight: 7 }}
-                      />
-                      Grades {session.grades}
-                    </div>
+
+                    {session.location?.name && (
+                      <div className='agd-session-location'>
+                        <i className='ti ti-map-pin agd-session-location-icon' />
+                        <div className='agd-session-location-details'>
+                          <span className='agd-session-location-name'>
+                            {session.location.name}
+                          </span>
+                          {getFullAddress(session.location) && (
+                            <span className='agd-session-location-address'>
+                              {getFullAddress(session.location)}
+                            </span>
+                          )}
+                          {getFullAddress(session.location) && (
+                            <a
+                              className='agd-session-map-link'
+                              href={`https://www.google.com/maps/search/${encodeURIComponent([session.location.name, getFullAddress(session.location)].filter(Boolean).join(' '))}`}
+                              target='_blank'
+                              rel='noopener noreferrer'
+                            >
+                              <i className='ti ti-external-link' /> Open in
+                              Google Maps
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

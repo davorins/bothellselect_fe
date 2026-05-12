@@ -42,6 +42,11 @@ const tryoutToRegistrationConfig = (
     hasTryoutDetails: !!(tryoutConfig as any).tryoutDetails,
     tryoutDetails: (tryoutConfig as any).tryoutDetails,
   });
+
+  const locationStrings: string[] | undefined = tryoutConfig.locations
+    ?.map((loc) => loc.name)
+    .filter(Boolean);
+
   return {
     _id: tryoutConfig._id,
     season: tryoutConfig.tryoutName,
@@ -58,7 +63,7 @@ const tryoutToRegistrationConfig = (
     displayName: tryoutConfig.displayName,
     registrationDeadline: tryoutConfig.registrationDeadline,
     tryoutDates: tryoutConfig.tryoutDates,
-    locations: tryoutConfig.locations,
+    locations: locationStrings,
     divisions: tryoutConfig.divisions,
     ageGroups: tryoutConfig.ageGroups,
     requiresRoster: tryoutConfig.requiresRoster,

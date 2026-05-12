@@ -342,21 +342,17 @@ const PageRenderer: React.FC<PageRendererProps> = ({
 
       // Process tryout configs
       if (tryoutConfigsData.length > 0) {
-        console.log('🎯 PageRenderer - tryoutConfigsData:', tryoutConfigsData);
-        console.log('🎯 PageRenderer - looking for active tryout...');
-
         const activeTryout = tryoutConfigsData.find(
           (config: TryoutSpecificConfig) => config.isActive,
         );
 
-        console.log('🎯 PageRenderer - activeTryout found:', activeTryout);
-        console.log(
-          '🎯 PageRenderer - activeTryout.tryoutDetails:',
-          activeTryout?.tryoutDetails,
-        );
-
         if (activeTryout) {
           console.log(`🎯 Found ACTIVE tryout: ${activeTryout.tryoutName}`);
+
+          const locationStrings: string[] = (activeTryout.locations || [])
+            .map((loc) => loc.name)
+            .filter(Boolean);
+
           configsData.tryout = {
             _id: activeTryout._id,
             season: activeTryout.tryoutName,
@@ -373,7 +369,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
             displayName: activeTryout.displayName,
             registrationDeadline: activeTryout.registrationDeadline,
             tryoutDates: activeTryout.tryoutDates || [],
-            locations: activeTryout.locations || [],
+            locations: locationStrings,
             divisions: activeTryout.divisions || [],
             ageGroups: activeTryout.ageGroups || [],
             requiresRoster: activeTryout.requiresRoster || false,
@@ -385,7 +381,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
             updatedAt: activeTryout.updatedAt,
             __v: activeTryout.__v,
             description: activeTryout.description || '',
-            tryoutDetails: activeTryout.tryoutDetails, // ✅ THIS MUST BE PRESENT
+            tryoutDetails: activeTryout.tryoutDetails,
           };
         }
       }
