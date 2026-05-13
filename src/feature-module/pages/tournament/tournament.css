@@ -19,7 +19,7 @@
 
 .tournament-match-card:hover {
   transform: translateY(-2px);
-  border-left-color: #506ee4;
+  border-left-color: rgba(0, 0, 0, 0.7);
 }
 
 .tournament-match-card.completed {
@@ -63,7 +63,7 @@
 .status-badge-open {
   background: #e6f7ff;
   border-color: #91d5ff;
-  color: #506ee4;
+  color: rgba(0, 0, 0, 0.7);
 }
 
 .status-badge-ongoing {

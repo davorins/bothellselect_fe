@@ -38,7 +38,7 @@ a {
 /* ant datatable pagination */
 .ant-pagination-item.ant-pagination-item-1.ant-pagination-item-active {
   background: #506ee4;
-  border-color: #506ee4;
+  border-color: rgba(0, 0, 0, 0.7);
   color: #fff;
 }
 
@@ -51,7 +51,7 @@ h4,
 /* date range picker — merged both duplicate blocks */
 .daterangepicker td.active,
 .daterangepicker td.active:hover {
-  background-color: #506ee4;
+  background-color: rgba(0, 0, 0, 0.7);
   color: #fff;
 }
 
@@ -61,7 +61,7 @@ h4,
 
 .applyBtn.btn.btn-sm.btn-primary {
   color: #fff;
-  background-color: #506ee4;
+  background-color: rgba(0, 0, 0, 0.7);
   border: 1px solid #506ee4;
 }
 
@@ -228,12 +228,12 @@ span.form-icon {
    general control, and restoring the $light version at the bottom
    where it was re-declared. If both are intentional, scope them. */
 .select__control {
-  // background-color: #506ee4 !important;
-  border-color: rgba(89, 66, 48, 0.09) !important;
+  // background-color: rgba(0, 0, 0, .7) !important;
+  border-color: rgba(80, 110, 228, 0.09) !important;
 }
 
 .select__control:hover {
-  border-color: #506ee4 !important;
+  border-color: rgba(0, 0, 0, 0.7) !important;
 }
 
 .p-dropdown-label.p-inputtext .p-d-flex.p-ai-center img,
@@ -382,7 +382,7 @@ div.popover {
 
 div.rc-slider-track,
 .rc-slider-tracks {
-  background-color: #506ee4;
+  background-color: rgba(0, 0, 0, 0.7);
 }
 
 div.rc-slider-handle {
@@ -390,26 +390,26 @@ div.rc-slider-handle {
 }
 
 span.rc-slider-dot-active {
-  border-color: #506ee4;
+  border-color: rgba(0, 0, 0, 0.7);
 }
 
 div.rc-slider-handle:active {
-  border-color: #506ee4;
+  border-color: rgba(0, 0, 0, 0.7);
   box-shadow: 0 0 5px #506ee4;
   cursor: grabbing;
 }
 
 .rc-slider-handle-dragging.rc-slider-handle-dragging.rc-slider-handle-dragging {
-  border-color: #506ee4;
+  border-color: rgba(0, 0, 0, 0.7);
   box-shadow: 0 0 0 5px #506ee4;
 }
 
 div.rc-slider-handle:hover {
-  border-color: #506ee4;
+  border-color: rgba(0, 0, 0, 0.7);
 }
 
 div.rc-slider-handle-dragging.rc-slider-handle-dragging.rc-slider-handle-dragging {
-  border-color: #506ee4;
+  border-color: rgba(0, 0, 0, 0.7);
   box-shadow: 0 0 0 5px #506ee4;
 }
 
@@ -544,7 +544,7 @@ div.rc-slider-handle-dragging.rc-slider-handle-dragging.rc-slider-handle-draggin
 /* react-select focused/selected states — deduplicated: were declared twice identically */
 div.css-b62m3t-container .react-select__option--is-focused,
 div.css-b62m3t-container .react-select__option--is-selected {
-  background-color: #506ee4;
+  background-color: rgba(0, 0, 0, 0.7);
   color: #fff;
 }
 
@@ -727,7 +727,7 @@ div.sidebar-themesettings
     }
 
     table td.p-datepicker-today > span {
-      background-color: #506ee4;
+      background-color: rgba(0, 0, 0, 0.7);
       color: #fff;
     }
   }
@@ -898,7 +898,7 @@ div.sidebar-themesettings
 .theme-layout.active .layout-type:after {
   content: '\f058';
   font-family: 'Fontawesome';
-  color: #506ee4;
+  color: rgba(0, 0, 0, 0.7);
   font-weight: 700;
   font-size: 12px;
   display: flex;
@@ -931,7 +931,7 @@ div.sidebar-themesettings
 .theme-colorsset.active label:after {
   content: '\f058';
   font-family: 'Font Awesome 5 Free';
-  color: #506ee4;
+  color: rgba(0, 0, 0, 0.7);
   font-weight: 700;
   font-size: 12px;
   display: flex;
@@ -952,12 +952,12 @@ div.sidebar-themesettings
 }
 
 .theme-mode.active label .avatar {
-  color: #506ee4;
+  color: rgba(0, 0, 0, 0.7);
   background-color: #f2f5ff;
 }
 
 .theme-sidebarcolor.active label {
-  border-color: #506ee4 !important;
+  border-color: rgba(0, 0, 0, 0.7) !important;
   position: relative;
 }
 
@@ -966,7 +966,7 @@ div.sidebar-themesettings
 }
 
 .theme-sidebarbg.active label img {
-  border-color: #506ee4 !important;
+  border-color: rgba(0, 0, 0, 0.7) !important;
 }
 
 /* RTL layout */
@@ -1052,8 +1052,8 @@ div.sidebar-themesettings
 }
 
 .fc .fc-customButton-button.fc-button.fc-button-primary {
-  background-color: #506ee4;
-  border-color: #506ee4;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-color: rgba(0, 0, 0, 0.7);
   color: #fff;
   font-size: 15px;
   font-weight: 500;
@@ -2142,7 +2142,7 @@ a.custom-btn-close:hover {
   align-items: center;
   width: 100%;
   max-width: 800px;
-  margin: 0 auto;
+  margin: 2rem auto;
   padding: 10px 0;
 
   .step {
@@ -2157,20 +2157,20 @@ a.custom-btn-close:hover {
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background-color: rgba(89, 66, 48, 0.9);
+      background-color: rgba(80, 110, 228, 0.9);
       color: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
       margin-bottom: 0.5rem;
-      border: 3px solid rgba(89, 66, 48, 1);
+      border: 3px solid rgba(80, 110, 228, 1);
       transition: all 0.3s ease;
     }
 
     .step-label {
       font-size: 0.75rem;
-      color: rgba(89, 66, 48, 1);
+      color: rgba(0, 0, 0, 0.7);
       font-weight: 500;
       text-align: center;
       white-space: nowrap;
@@ -2180,26 +2180,26 @@ a.custom-btn-close:hover {
 
     &.active {
       .step-number {
-        background-color: #506ee4;
+        background-color: rgba(0, 0, 0, 0.7);
         color: white;
-        border-color: #506ee4;
+        border-color: rgba(0, 0, 0, 0.7);
         transform: scale(1.1);
-        box-shadow: 0 4px 8px rgba(89, 66, 48, 0.3);
+        box-shadow: 0 4px 8px rgba(80, 110, 228, 0.3);
       }
       .step-label {
-        color: #506ee4;
+        color: rgba(0, 0, 0, 0.7);
         font-weight: bold;
       }
     }
 
     &.completed {
       .step-number {
-        background-color: rgba(89, 66, 48, 1);
+        background-color: rgba(80, 110, 228, 1);
         color: white;
-        border-color: rgba(89, 66, 48, 1);
+        border-color: rgba(80, 110, 228, 1);
       }
       .step-label {
-        color: rgba(89, 66, 48, 1);
+        color: rgba(80, 110, 228, 1);
       }
     }
   }
@@ -2207,13 +2207,13 @@ a.custom-btn-close:hover {
   .step-connector {
     flex: 1;
     height: 3px;
-    background-color: rgba(89, 66, 48, 0.3);
+    background-color: rgba(80, 110, 228, 0.3);
     margin: 0 0.5rem;
     margin-top: 18px;
     min-width: 20px;
 
     .step.completed + & {
-      background-color: rgba(89, 66, 48, 1);
+      background-color: rgba(80, 110, 228, 1);
     }
   }
 }
@@ -2621,13 +2621,13 @@ a.custom-btn-close:hover {
 }
 
 .pricing-package:hover {
-  border-color: #506ee4;
+  border-color: rgba(0, 0, 0, 0.7);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .pricing-package.selected {
-  border-color: rgba(89, 66, 48, 1);
+  border-color: rgba(80, 110, 228, 1);
   background-color: rgba(40, 167, 69, 0.05);
   box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
 }
@@ -2649,13 +2649,13 @@ a.custom-btn-close:hover {
   background: #f8f9fa;
   padding: 1rem;
   border-radius: 0.5rem;
-  border-left: 4px solid rgba(89, 66, 48, 1);
+  border-left: 4px solid rgba(80, 110, 228, 1);
 }
 
 .form-payment-amount {
   font-size: 1.5rem;
   font-weight: bold;
-  color: rgba(89, 66, 48, 1);
+  color: rgba(80, 110, 228, 1);
 }
 
 /* Drag and Drop — deduplicated: .form-fields-list and .drag-handle each declared twice */
@@ -2819,4 +2819,8 @@ header .dropdown-menu,
 .header .nav .nav-item a.nav-link {
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.8);
+}
+
+.flashing-hand {
+  padding: 0 1rem;
 }

@@ -697,13 +697,13 @@
 }
 
 .ant-btn-dashed:hover {
-  border-color: #506ee4 !important;
+  border-color: rgba(0, 0, 0, 0.7) !important;
   color: #706258 !important;
 }
 
 .ant-btn-variant-outlined:not(:disabled):not(.ant-btn-disabled):hover {
-  color: #506ee4 !important;
-  border-color: #506ee4 !important;
+  color: rgba(0, 0, 0, 0.7) !important;
+  border-color: rgba(0, 0, 0, 0.7) !important;
 }
 
 /* Space Customization */

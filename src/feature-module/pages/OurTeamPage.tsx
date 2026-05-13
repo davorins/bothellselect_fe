@@ -47,8 +47,8 @@ const OurTeamPage = () => {
             /* Stripe 1: Colored */
             linear-gradient(
               90deg,
-              rgba(89, 66, 48, .035) 0%,
-              rgba(89, 66, 48, .035) 14.2857%,
+              rgba(80, 110, 228, .035) 0%,
+              rgba(80, 110, 228, .035) 14.2857%,
               transparent 14.2857%
             ),
             /* Stripe 2: White */
@@ -61,8 +61,8 @@ const OurTeamPage = () => {
             /* Stripe 3: Colored */
             linear-gradient(
               90deg,
-              rgba(89, 66, 48, .035) 28.5714%,
-              rgba(89, 66, 48, .035) 42.8571%,
+              rgba(80, 110, 228, .035) 28.5714%,
+              rgba(80, 110, 228, .035) 42.8571%,
               transparent 42.8571%
             ),
             /* Stripe 4: White */
@@ -75,8 +75,8 @@ const OurTeamPage = () => {
             /* Stripe 5: Colored */
             linear-gradient(
               90deg,
-              rgba(89, 66, 48, .035) 57.1428%,
-              rgba(89, 66, 48, .035) 71.4285%,
+              rgba(80, 110, 228, .035) 57.1428%,
+              rgba(80, 110, 228, .035) 71.4285%,
               transparent 71.4285%
             ),
             /* Stripe 6: White */
@@ -89,8 +89,8 @@ const OurTeamPage = () => {
             /* Stripe 7: Colored */
             linear-gradient(
               90deg,
-              rgba(89, 66, 48, .035) 85.7142%,
-              rgba(89, 66, 48, .035) 100%
+              rgba(80, 110, 228, .035) 85.7142%,
+              rgba(80, 110, 228, .035) 100%
             );
           background-size: 100% 100%;
           background-repeat: no-repeat;
@@ -138,13 +138,13 @@ const OurTeamPage = () => {
           --stripe-width: calc(100% / 7);
           background-image: repeating-linear-gradient(
             90deg,
-            rgba(89, 66, 48, .035) 0 var(--stripe-width),
+            rgba(80, 110, 228, .035) 0 var(--stripe-width),
             #ffffff var(--stripe-width) calc(var(--stripe-width) * 2),
-            rgba(89, 66, 48, .035) calc(var(--stripe-width) * 2) calc(var(--stripe-width) * 3),
+            rgba(80, 110, 228, .035) calc(var(--stripe-width) * 2) calc(var(--stripe-width) * 3),
             #ffffff calc(var(--stripe-width) * 3) calc(var(--stripe-width) * 4),
-            rgba(89, 66, 48, .035) calc(var(--stripe-width) * 4) calc(var(--stripe-width) * 5),
+            rgba(80, 110, 228, .035) calc(var(--stripe-width) * 4) calc(var(--stripe-width) * 5),
             #ffffff calc(var(--stripe-width) * 5) calc(var(--stripe-width) * 6),
-            rgba(89, 66, 48, .035) calc(var(--stripe-width) * 6) 100%
+            rgba(80, 110, 228, .035) calc(var(--stripe-width) * 6) 100%
           );
           z-index: 1;
         }

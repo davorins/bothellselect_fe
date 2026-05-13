@@ -540,7 +540,7 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
 
   const getDashboardRoute = () =>
     role === 'coach'
-      ? routes.coachDashboard || '/coach-dashboard'
+      ? routes.coachDashboard || '/dashboard'
       : routes.adminDashboard;
 
   // Navigation config
@@ -772,17 +772,6 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
                   </div>
                 </div>
 
-                {/* Dashboard link */}
-                <UserDropdownItem
-                  to={getDashboardRoute()}
-                  icon='ti ti-layout-dashboard'
-                  onClick={() => setUserOpen(false)}
-                >
-                  Dashboard
-                </UserDropdownItem>
-
-                <div style={S.divider()} />
-
                 <UserDropdownItem
                   to={routes.profile}
                   icon='ti ti-user-circle'
@@ -829,7 +818,7 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
               onMouseLeave={() => setLoginHovered(false)}
             >
               <i className='ti ti-login' style={{ fontSize: 14 }} />
-              Log In / Register
+              Log In
             </button>
           )}
         </div>
@@ -938,7 +927,7 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
             <div className='mobile-nav-section auth-section'>
               <button className='mobile-auth-btn' onClick={handleLoginRedirect}>
                 <i className='ti ti-login' />
-                <span>Login / Register</span>
+                <span>Login</span>
                 <i className='ti ti-arrow-right' />
               </button>
             </div>

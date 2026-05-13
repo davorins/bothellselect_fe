@@ -36,7 +36,7 @@
 }
 
 .progress-step.current .step-number {
-  background-color: #506ee4;
+  background-color: rgba(0, 0, 0, 0.7);
   color: white;
   transform: scale(1.1);
 }
@@ -62,7 +62,7 @@
 }
 
 .progress-step.active .step-label {
-  color: #506ee4;
+  color: rgba(0, 0, 0, 0.7);
 }
 
 .wizard-content {
@@ -150,7 +150,7 @@
 }
 
 .form-control:focus {
-  border-color: #506ee4;
+  border-color: rgba(0, 0, 0, 0.7);
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
@@ -175,8 +175,8 @@
 }
 
 .btn-primary {
-  background-color: #506ee4;
-  border-color: #506ee4;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-color: rgba(0, 0, 0, 0.7);
 }
 
 .btn-primary:hover {

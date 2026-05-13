@@ -1226,28 +1226,6 @@
   text-decoration: underline;
 }
 
-/* Success/error message styling */
-.reg-form-wrapper .alert-success {
-  background: rgba(40, 167, 69, 0.15) !important;
-  border: 1px solid rgba(40, 167, 69, 0.4) !important;
-  border-radius: 12px !important;
-  color: #d4ffd4 !important;
-  padding: 12px 16px !important;
-  margin-bottom: 20px !important;
-}
-
-.reg-form-wrapper .alert-warning {
-  background: rgba(255, 193, 7, 0.15) !important;
-  border: 1px solid rgba(255, 193, 7, 0.4) !important;
-  color: #ffe4a3 !important;
-}
-
-.reg-form-wrapper .alert-danger {
-  background: rgba(220, 53, 69, 0.15) !important;
-  border: 1px solid rgba(220, 53, 69, 0.4) !important;
-  color: #ffc4c4 !important;
-}
-
 /* Email display styling */
 .reg-form-wrapper strong {
   color: rgba(0, 0, 0, 0.7) !important;
@@ -1552,11 +1530,11 @@
   }
 
   .reg-form-wrapper .form-content .card .card-body {
-    border: 1px solid rgba(89, 66, 48, 0.09);
+    border: 1px solid rgba(80, 110, 228, 0.09);
   }
 
   .reg-form-wrapper .form-content .card .card-body .card.mobile {
-    border: 1px solid rgba(89, 66, 48, 0.09);
+    border: 1px solid rgba(80, 110, 228, 0.09);
   }
 
   .reg-form-wrapper .form-content .make-a-payment-mobile {

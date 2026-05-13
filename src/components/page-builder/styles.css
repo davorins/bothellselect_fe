@@ -41,8 +41,8 @@
 }
 
 .section-item.active {
-  border-left-color: rgba(89, 66, 48, 1);
-  background-color: rgba(89, 66, 48, 0.05);
+  border-left-color: rgba(80, 110, 228, 1);
+  background-color: rgba(80, 110, 228, 0.05);
 }
 
 .section-actions {
@@ -70,7 +70,7 @@
 
 .section-type-card:hover {
   background-color: rgba(0, 123, 255, 0.1);
-  border-color: rgba(89, 66, 48, 1);
+  border-color: rgba(80, 110, 228, 1);
   transform: translateY(-1px);
 }
 
@@ -86,8 +86,8 @@
 }
 
 .dynamic-page .editable-section:hover {
-  border-color: rgba(89, 66, 48, 1);
-  background-color: rgba(89, 66, 48, 0.05);
+  border-color: rgba(80, 110, 228, 1);
+  background-color: rgba(80, 110, 228, 0.05);
 }
 
 .dynamic-page .editable-section::before {
@@ -95,7 +95,7 @@
   position: absolute;
   top: -20px;
   right: 0;
-  background: rgba(89, 66, 48, 1);
+  background: rgba(80, 110, 228, 1);
   color: white;
   padding: 2px 8px;
   font-size: 0.75rem;
@@ -110,15 +110,15 @@
 
 /* Form Selector Tabs */
 .form-selector-tabs .nav-link {
-  color: rgba(89, 66, 48, 0.75);
+  color: rgba(80, 110, 228, 0.75);
   border: none;
   padding: 0.75rem 1.5rem;
   transition: all 0.2s ease;
 }
 
 .form-selector-tabs .nav-link.active {
-  color: rgba(89, 66, 48, 1);
-  border-bottom-color: rgba(89, 66, 48, 1);
+  color: rgba(80, 110, 228, 1);
+  border-bottom-color: rgba(80, 110, 228, 1);
   background: transparent;
 }
 
@@ -138,8 +138,8 @@
 }
 
 .template-card.selected {
-  border-color: rgba(89, 66, 48, 1);
-  background-color: rgba(89, 66, 48, 0.05);
+  border-color: rgba(80, 110, 228, 1);
+  background-color: rgba(80, 110, 228, 0.05);
 }
 
 /* Page List Table */
@@ -167,7 +167,7 @@
 
 /* Sponsors Editor Styles */
 .sponsors-list .sponsor-item {
-  border-left: 4px solid rgba(89, 66, 48, 1);
+  border-left: 4px solid rgba(80, 110, 228, 1);
 }
 
 .sponsors-list .sponsor-item:nth-child(4n + 1) {
@@ -179,7 +179,7 @@
 }
 
 .sponsors-list .sponsor-item:nth-child(4n + 3) {
-  border-left-color: rgba(89, 66, 48, 0.75); /* Gray for silver */
+  border-left-color: rgba(80, 110, 228, 0.75); /* Gray for silver */
 }
 
 .sponsors-list .sponsor-item:nth-child(4n + 4) {
@@ -192,13 +192,13 @@
   border-radius: 0;
   padding: 0.5rem 1rem;
   background: transparent;
-  color: rgba(89, 66, 48, 0.75);
+  color: rgba(80, 110, 228, 0.75);
 }
 
 .btn-tab.active {
-  color: rgba(89, 66, 48, 1);
-  border-bottom: 2px solid rgba(89, 66, 48, 1);
-  background: rgba(89, 66, 48, 0.05);
+  color: rgba(80, 110, 228, 1);
+  border-bottom: 2px solid rgba(80, 110, 228, 1);
+  background: rgba(80, 110, 228, 0.05);
 }
 
 .rich-text-editor .markdown-textarea {

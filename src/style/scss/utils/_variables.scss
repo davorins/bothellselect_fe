@@ -31,7 +31,7 @@ $warning-hover: darken($warning, 10%);
 $danger: #e82646;
 $danger-hover: darken($danger, 10%);
 $dark: #202c4b;
-$light: rgba(89, 66, 48, 0.075);
+$light: rgba(80, 110, 228, 0.075);
 $white: #fff;
 $black: #000;
 $purple: #4a00e5;
@@ -151,15 +151,15 @@ $indigo-800: #33a8e9;
 $indigo-900: #1a9de7;
 
 // Light
-$light-100: rgba(89, 66, 48, 0.01);
-$light-200: rgba(89, 66, 48, 0.02);
-$light-300: rgba(89, 66, 48, 0.03);
-$light-400: rgba(89, 66, 48, 0.04);
-$light-500: rgba(89, 66, 48, 0.05);
-$light-600: rgba(89, 66, 48, 0.06);
-$light-700: rgba(89, 66, 48, 0.07);
-$light-800: rgba(89, 66, 48, 0.08);
-$light-900: rgba(89, 66, 48, 0.09);
+$light-100: rgba(80, 110, 228, 0.01);
+$light-200: rgba(80, 110, 228, 0.02);
+$light-300: rgba(80, 110, 228, 0.03);
+$light-400: rgba(80, 110, 228, 0.04);
+$light-500: rgba(80, 110, 228, 0.05);
+$light-600: rgba(80, 110, 228, 0.06);
+$light-700: rgba(80, 110, 228, 0.07);
+$light-800: rgba(80, 110, 228, 0.08);
+$light-900: rgba(80, 110, 228, 0.09);
 
 // Gray
 $gray-100: #e6e8eb;
@@ -296,9 +296,9 @@ $theme-colors: (
   'teal': $teal,
 );
 
-$text-color: #60564e;
+$text-color: rgba(0, 0, 0, 0.7);
 $title-color: #403c39;
-$sub-title: #60564e;
+$sub-title: #506ee4;
 $body-bg: #fff;
 $text-muted: #7d746d;
 $default-background: #f7f8f9;
@@ -334,7 +334,7 @@ $appstore: #000;
 
 // Gradient Variables
 $primary-transparent: rgba(0, 0, 0, 0.25);
-$secondary-transparent: rgba(89, 66, 48, 0.25);
+$secondary-transparent: rgba(80, 110, 228, 0.25);
 $success-transparent: #e8f9e8;
 $warning-transparent: #fef8ea;
 $danger-transparent: #fde9ed;
