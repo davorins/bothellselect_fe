@@ -176,7 +176,7 @@
   transition: all 0.2s ease;
   position: absolute;
   right: 24px;
-  bottom: 70px;
+  bottom: 138px;
   z-index: 5;
 }
 .hp-controls-open:hover {
@@ -198,7 +198,7 @@
 .hp-controls--visible {
   transform: translateY(0);
   pointer-events: all;
-  bottom: 50px;
+  bottom: 118px;
 }
 .hp-controls__panel {
   background: linear-gradient(
