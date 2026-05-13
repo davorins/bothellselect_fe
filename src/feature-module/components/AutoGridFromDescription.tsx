@@ -303,6 +303,20 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             )}
           </div>
 
+          <div className='agd-tile agd-tile--cta'>
+            <button
+              className='agd-cta'
+              style={{
+                background: accent,
+                boxShadow: `0 6px 20px ${accent}44`,
+              }}
+              onClick={handleRegister}
+            >
+              <i className='ti ti-user-plus' /> Register Now{' '}
+              <i className='ti ti-arrow-right' />
+            </button>
+          </div>
+
           {config?.description && (
             <div className='agd-tile'>
               <TileHead icon='ti-article' label='About the Program' />
@@ -491,20 +505,6 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
                 </div>
               </button>
             )}
-
-          <div className='agd-tile agd-tile--cta'>
-            <button
-              className='agd-cta'
-              style={{
-                background: accent,
-                boxShadow: `0 6px 20px ${accent}44`,
-              }}
-              onClick={handleRegister}
-            >
-              <i className='ti ti-user-plus' /> Register Now{' '}
-              <i className='ti ti-arrow-right' />
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -616,6 +616,20 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
                 Limited Spots
               </span>
             )}
+          </div>
+
+          <div className='agd-tile agd-tile--cta'>
+            <button
+              className='agd-cta'
+              style={{
+                background: accent,
+                boxShadow: `0 6px 20px ${accent}44`,
+              }}
+              onClick={handleRegister}
+            >
+              <i className='ti ti-user-plus' /> Register for Tryout{' '}
+              <i className='ti ti-arrow-right' />
+            </button>
           </div>
 
           {config?.description && (
@@ -825,20 +839,6 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
               </div>
             </button>
           )}
-
-          <div className='agd-tile agd-tile--cta'>
-            <button
-              className='agd-cta'
-              style={{
-                background: accent,
-                boxShadow: `0 6px 20px ${accent}44`,
-              }}
-              onClick={handleRegister}
-            >
-              <i className='ti ti-user-plus' /> Register for Tryout{' '}
-              <i className='ti ti-arrow-right' />
-            </button>
-          </div>
         </div>
       </div>
     );
