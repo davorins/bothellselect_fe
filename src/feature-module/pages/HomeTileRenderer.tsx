@@ -683,7 +683,7 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
 
           {/* Dock with all tiles as icons */}
           <div className='htr-dock'>
-            <div className='glow-effect' />
+            {/* <div className='glow-effect' /> */}
             <div className='htr-dock-inner'>
               {sections.map((section) => {
                 const meta = sectionToTileMeta(section);
@@ -742,7 +742,7 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
       {/* Tiles grid view - side by side on desktop, stacked on mobile */}
       {!activeTileId && (
         <div className='htr-tiles-wrapper'>
-          <div className='glow-effect' />
+          {/* <div className='glow-effect' /> */}
           <div className='htr-tiles-grid'>
             {sections.map((section, idx) => {
               const meta = sectionToTileMeta(section);
