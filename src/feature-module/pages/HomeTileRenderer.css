@@ -776,6 +776,7 @@
   }
   .htr-expanded-content {
     padding: 10px;
+    max-height: calc(90vh - 50px - 16px - 16px);
   }
   .spotlight-modal-glass {
     height: 76vh;
