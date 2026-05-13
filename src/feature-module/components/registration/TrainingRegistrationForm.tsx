@@ -696,9 +696,8 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
   const handleComplete = () => {
     if (onSuccess) {
       onSuccess(formData);
-    } else {
-      navigate(all_routes.adminDashboard);
     }
+    navigate(routes.profile);
   };
 
   const handleAddMorePlayers = () => {

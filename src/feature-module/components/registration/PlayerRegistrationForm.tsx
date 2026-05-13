@@ -637,7 +637,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     if (onSuccess) {
       onSuccess(formData);
     }
-    navigate('/pages/profile');
+    navigate(routes.profile);
   };
 
   const handleAddMorePlayers = () => {
