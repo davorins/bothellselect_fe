@@ -723,28 +723,6 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       >
         <div className={containerClass}>
           {/* Section Title - NEVER show for spotlight sections */}
-          {shouldShowSectionHeader &&
-            section.title &&
-            section.config?.showTitle !== false && (
-              <div className='section-header mb-4' style={contentStyle}>
-                <h2
-                  className={`section-title ${
-                    section.styles?.titleClass || ''
-                  }`}
-                  style={titleStyle}
-                >
-                  {section.title}
-                </h2>
-                {section.subtitle && (
-                  <p
-                    className='section-subtitle text-muted'
-                    style={subtitleStyle}
-                  >
-                    {section.subtitle}
-                  </p>
-                )}
-              </div>
-            )}
 
           {/* Section Content based on type */}
           <div
