@@ -105,7 +105,7 @@ const ProgramLeadership = () => {
             <div
               className={`leader-content ${expandedLeader === 'zlatko' ? 'expanded' : ''}`}
             >
-              <div className='leader-stats-grid'>
+              {/* <div className='leader-stats-grid'>
                 <div className='stat-item'>
                   <div className='stat-value'>14.6</div>
                   <div className='stat-label'>Points/Game (College)</div>
@@ -118,7 +118,7 @@ const ProgramLeadership = () => {
                   <div className='stat-value'>4.1</div>
                   <div className='stat-label'>Rebounds/Game</div>
                 </div>
-              </div>
+              </div> */}
 
               <div className='leader-bio-full'>
                 <p>
