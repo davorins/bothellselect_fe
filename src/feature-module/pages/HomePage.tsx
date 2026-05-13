@@ -534,7 +534,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           <div
             className={`hp-stage__placeholder ${dragActive ? 'is-drag-active' : ''}`}
           >
-            {isAdmin && (
+            {/* {isAdmin && (
               <div className='hp-stage__placeholder-msg'>
                 <i className='ti ti-video-off' />
                 <span>
@@ -545,16 +545,13 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                       : 'No promo video — use admin panel to upload'}
                 </span>
               </div>
-            )}
+            )} */}
           </div>
         )}
 
         <div className='hp-overlay'>
           <HomeTileRenderer pageSlug='home' />
         </div>
-
-        <div className='hp-stage__top-stripe-enhanced' />
-        <div className='hp-stage__bottom-stripe-enhanced' />
 
         {/* <div className='hp-stage__logo'>
           <ImageWithBasePath

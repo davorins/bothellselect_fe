@@ -18,12 +18,12 @@
     width: 100%;
     height: 100%;
     background-image: url('../../../public/assets/img/bg/main.png');
-    background-size: contain;
+    background-size: cover;
     background-repeat: no-repeat;
     background-position: bottom right;
     pointer-events: none;
     z-index: 2;
-    opacity: 0.7;
+    opacity: 1;
     mix-blend-mode: overlay;
   }
 }
@@ -589,48 +589,6 @@
 .hp-popup__close-btn:hover {
   background: rgba(255, 255, 255, 0.15);
   transform: translateY(-2px);
-}
-
-/* Top and Bottom Stripes */
-.hp-stage__top-stripe-enhanced {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 40%;
-  max-height: 40%;
-  z-index: 2;
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.98) 0%,
-    rgba(0, 0, 0, 0.9) 10%,
-    rgba(0, 0, 0, 0.7) 25%,
-    rgba(0, 0, 0, 0.4) 45%,
-    rgba(0, 0, 0, 0.15) 65%,
-    rgba(0, 0, 0, 0.05) 80%,
-    rgba(0, 0, 0, 0) 100%
-  );
-}
-.hp-stage__bottom-stripe-enhanced {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60%;
-  max-height: 60%;
-  z-index: 2;
-  pointer-events: none;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.98) 0%,
-    rgba(0, 0, 0, 0.7) 10%,
-    rgba(0, 0, 0, 0.5) 25%,
-    rgba(0, 0, 0, 0.3) 45%,
-    rgba(0, 0, 0, 0.15) 65%,
-    rgba(0, 0, 0, 0.05) 80%,
-    rgba(0, 0, 0, 0) 100%
-  );
 }
 
 /* ============================================
