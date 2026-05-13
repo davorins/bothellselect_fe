@@ -50,7 +50,7 @@ const OurTeamPage = () => {
         'We instill values of sportsmanship, respect, and integrity in our campers, teaching them to compete with honor and respect for their opponents, coaches, and officials.',
     },
     {
-      icon: 'ti ti-smile',
+      icon: 'ti ti-confetti',
       title: 'Fun & Positive Environment',
       description:
         'We believe that learning and improvement are most effective in a fun, positive, and supportive environment. Our coaches strive to create an atmosphere where campers feel motivated, encouraged, and inspired to do their best.',
