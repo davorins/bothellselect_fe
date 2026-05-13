@@ -496,22 +496,18 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
               className='welcome-content'
               dangerouslySetInnerHTML={{ __html: section.content || '' }}
             />
-            {/* <div className='welcome-cta'>
+            <div className='welcome-cta'>
               <button
                 className='welcome-btn'
-                onClick={() => {
-                  // Optional: scroll to registration or next section
-                  const nextSection = document.querySelector('.htr-tile');
-                  nextSection?.scrollIntoView({ behavior: 'smooth' });
-                }}
+                onClick={() => navigate('/about-us')}
               >
-                Explore More
+                Learn More
                 <i
                   className='ti ti-arrow-right'
                   style={{ marginLeft: '8px' }}
                 ></i>
               </button>
-            </div> */}
+            </div>
           </div>
         );
 
