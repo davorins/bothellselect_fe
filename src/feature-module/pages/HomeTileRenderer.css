@@ -424,7 +424,6 @@
   width: 100%;
   max-width: 860px;
   margin: 0 auto;
-  padding: 3rem 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -622,10 +621,10 @@
 /* ── Mobile ────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .htr-tiles-wrapper {
-    padding: 20px;
     overflow-x: hidden;
     overflow-y: auto;
     max-height: calc(100vh - 60px);
+    bottom: 0;
   }
 
   .htr-tiles-grid {
@@ -742,6 +741,7 @@
 @media (max-width: 480px) {
   .htr-tiles-wrapper {
     padding: 16px;
+    bottom: 0 !important;
   }
   .htr-tiles-grid {
     gap: 12px;
@@ -821,6 +821,11 @@
     padding: 10px 24px;
     font-size: 0.9rem;
   }
+
+  .welcome-container {
+    position: relative;
+    bottom: 20px;
+  }
 }
 
 /* Landscape */
@@ -840,10 +845,6 @@
 /* Safe area insets */
 @supports (padding: max(0px)) {
   @media (max-width: 768px) {
-    .htr-tiles-wrapper {
-      padding-top: max(20px, env(safe-area-inset-top));
-      padding-bottom: max(20px, env(safe-area-inset-bottom));
-    }
     .htr-dock {
       bottom: max(10px, env(safe-area-inset-bottom));
     }

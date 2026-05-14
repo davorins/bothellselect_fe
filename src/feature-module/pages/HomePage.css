@@ -649,11 +649,6 @@
     max-height: 60px;
   }
 
-  /* Adjust tile overlay position */
-  .hp-overlay {
-    padding: 0 14px 100px;
-  }
-
   .hp-admin-toggle,
   .hp-stage__placeholder-msg {
     display: none;
@@ -665,9 +660,6 @@
   .hp-stage {
     background-position: center 70% !important;
   }
-  .hp-overlay {
-    padding: 0 12px 90px;
-  }
 }
 
 /* Landscape mode on mobile */
@@ -675,8 +667,5 @@
   .hp-stage {
     background-size: cover !important;
     background-position: center !important;
-  }
-  .hp-overlay {
-    padding-bottom: 60px;
   }
 }
