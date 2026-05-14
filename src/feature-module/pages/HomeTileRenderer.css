@@ -736,6 +736,11 @@
   .welcome-icon {
     font-size: 2.5rem;
   }
+
+  .contact-illustration-img,
+  .hero-img-col {
+    display: none;
+  }
 }
 
 @media (max-width: 480px) {
