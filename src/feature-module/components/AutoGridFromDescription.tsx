@@ -278,7 +278,7 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
               <i className='ti ti-ball-basketball' />
             </div>
             <h2 className='agd-title'>
-              {config?.season} {config?.year} Training Program
+              {config?.season} {config?.year}
             </h2>
             {(trainingDetails.startDate || trainingDetails.endDate) && (
               <p className='agd-sub'>
