@@ -130,7 +130,6 @@ interface TeamStanding {
   points: number;
 }
 
-// Define sortable keys as a type
 type SortableKey =
   | 'position'
   | 'matchesPlayed'
@@ -193,12 +192,10 @@ const PublicTournamentPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        // Fetch tournament data
         const tournamentRes = await axios.get(
           `${API_URL}/tournaments/${tournamentId}/public`,
         );
 
-        // Handle different API response formats
         let tournamentData: Tournament;
         if (tournamentRes.data.tournament) {
           tournamentData = tournamentRes.data.tournament;
@@ -212,17 +209,14 @@ const PublicTournamentPage: React.FC = () => {
 
         setTournament(tournamentData);
 
-        // Store teams with their sex information
         const teamsWithSex = tournamentData.registeredTeams || [];
         setTeams(teamsWithSex);
 
-        // Create a map of team IDs to team data (including sex)
         const teamMap = new Map();
         teamsWithSex.forEach((team) => {
           teamMap.set(team._id, team);
         });
 
-        // Fetch matches - USE PUBLIC ENDPOINT
         try {
           const matchesRes = await axios.get(
             `${API_URL}/tournaments/${tournamentId}/matches/public`,
@@ -237,11 +231,9 @@ const PublicTournamentPage: React.FC = () => {
             matchesData = matchesRes.data;
           }
 
-          // Enrich match data with team sex information
           const enrichedMatches = matchesData.map((match) => {
             const enrichedMatch = { ...match };
 
-            // If team1 is an object with _id, enrich it with sex
             if (
               match.team1 &&
               typeof match.team1 === 'object' &&
@@ -259,7 +251,6 @@ const PublicTournamentPage: React.FC = () => {
               }
             }
 
-            // If team2 is an object with _id, enrich it with sex
             if (
               match.team2 &&
               typeof match.team2 === 'object' &&
@@ -277,7 +268,6 @@ const PublicTournamentPage: React.FC = () => {
               }
             }
 
-            // If team1 is just an ObjectId string, create a basic team object
             if (typeof match.team1 === 'string') {
               const team1Data = teamMap.get(match.team1);
               if (team1Data) {
@@ -291,7 +281,6 @@ const PublicTournamentPage: React.FC = () => {
               }
             }
 
-            // If team2 is just an ObjectId string, create a basic team object
             if (typeof match.team2 === 'string') {
               const team2Data = teamMap.get(match.team2);
               if (team2Data) {
@@ -305,7 +294,6 @@ const PublicTournamentPage: React.FC = () => {
               }
             }
 
-            // Add a match-level sex field based on team sexes
             if (enrichedMatch.team1?.sex || enrichedMatch.team2?.sex) {
               if (enrichedMatch.team1?.sex === enrichedMatch.team2?.sex) {
                 enrichedMatch.sex = enrichedMatch.team1?.sex;
@@ -326,7 +314,6 @@ const PublicTournamentPage: React.FC = () => {
           setMatches([]);
         }
 
-        // Fetch standings - USE PUBLIC ENDPOINT
         try {
           const standingsRes = await axios.get(
             `${API_URL}/tournaments/${tournamentId}/standings/public`,
@@ -361,7 +348,6 @@ const PublicTournamentPage: React.FC = () => {
     fetchTournamentDetails();
   }, [tournamentId]);
 
-  // Set selectedRound to the highest round when matches are loaded
   useEffect(() => {
     if (matches.length > 0) {
       const maxRound = Math.max(...matches.map((match) => match.round));
@@ -462,7 +448,6 @@ const PublicTournamentPage: React.FC = () => {
     message.success('Tournament link copied!');
   };
 
-  // Date filter functions
   const handleDateChange = (date: dayjs.Dayjs) => {
     setSelectedDate(date);
   };
@@ -483,7 +468,6 @@ const PublicTournamentPage: React.FC = () => {
     setDateFilter(filter);
   };
 
-  // Helper functions
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'open':
@@ -512,11 +496,9 @@ const PublicTournamentPage: React.FC = () => {
     }
   };
 
-  // Memoized values
   const tournamentStats = useMemo(() => {
     if (!tournament) return [];
 
-    // Calculate average match duration from matches
     const matchDurations = matches
       .filter((m) => m.duration !== undefined && m.duration !== null)
       .map((m) => m.duration as number);
@@ -527,9 +509,8 @@ const PublicTournamentPage: React.FC = () => {
             matchDurations.reduce((sum: number, dur: number) => sum + dur, 0) /
               matchDurations.length,
           )
-        : 40; // Default to 40 minutes if no durations available
+        : 40;
 
-    // Tournament duration in days
     const durationDays =
       Math.ceil(
         (new Date(tournament.endDate).getTime() -
@@ -581,7 +562,6 @@ const PublicTournamentPage: React.FC = () => {
     return sorted;
   }, [standings, sortConfig]);
 
-  // Filter matches by selected date
   const filteredMatches = useMemo(() => {
     if (!matches || matches.length === 0) return [];
 
@@ -589,7 +569,6 @@ const PublicTournamentPage: React.FC = () => {
       return matches;
     }
 
-    // Filter for selected day
     return matches.filter((match) => {
       if (!match.scheduledTime) return false;
 
@@ -612,10 +591,8 @@ const PublicTournamentPage: React.FC = () => {
 
   const matchesForSelectedRound = useMemo(() => {
     if (dateFilter === 'all') {
-      // If viewing all dates, show all matches for the selected round
       return matches.filter((match) => match.round === selectedRound);
     } else {
-      // If viewing specific date, filter by both date AND round
       return matches.filter((match) => {
         if (!match.scheduledTime) return false;
 
@@ -632,18 +609,15 @@ const PublicTournamentPage: React.FC = () => {
     }
   }, [matches, selectedRound, selectedDate, dateFilter]);
 
-  // Keep selectedRound updated when filteredMatches changes
   useEffect(() => {
     if (
       availableRounds.length > 0 &&
       !availableRounds.includes(selectedRound)
     ) {
-      // If current selectedRound is not in availableRounds, set to the first (highest) round
       setSelectedRound(availableRounds[0]);
     }
   }, [availableRounds, selectedRound]);
 
-  // Group matches by date for the date filter display
   const matchesByDate = useMemo(() => {
     const grouped: Record<string, Match[]> = {};
 
@@ -672,14 +646,6 @@ const PublicTournamentPage: React.FC = () => {
     return grouped;
   }, [matches]);
 
-  // Get dates with matches for the date picker
-  const datesWithMatches = useMemo(() => {
-    return Object.keys(matchesByDate)
-      .filter((key) => key !== 'Unscheduled')
-      .map((dateStr) => dayjs(dateStr));
-  }, [matchesByDate]);
-
-  // Check if selected date has matches
   const hasMatchesForSelectedDate = useMemo(() => {
     if (dateFilter === 'all') return true;
 
@@ -687,7 +653,6 @@ const PublicTournamentPage: React.FC = () => {
     return matchesByDate[dateKey] && matchesByDate[dateKey].length > 0;
   }, [selectedDate, matchesByDate, dateFilter]);
 
-  // Table columns
   const standingsColumns = [
     {
       title: 'Pos',
@@ -812,7 +777,6 @@ const PublicTournamentPage: React.FC = () => {
     },
   ];
 
-  // Tab items configuration (FIXED for Ant Design v5)
   const tabItems = [
     {
       key: 'bracket',
@@ -824,18 +788,18 @@ const PublicTournamentPage: React.FC = () => {
       ),
       children: (
         <div style={{ padding: '24px 0' }}>
-          {/* Date Filter Section */}
-          <Card
-            style={{
-              marginBottom: 24,
-              borderRadius: 8,
-              background: 'linear-gradient(135deg, #f6f8ff 0%, #f0f2ff 100%)',
-            }}
-          >
+          <div className='glass-filter-card' style={{ marginBottom: 24 }}>
             <Row gutter={[16, 16]} align='middle'>
               <Col xs={24} md={12}>
                 <Space direction='vertical' style={{ width: '100%' }}>
-                  <Text strong style={{ fontSize: 14, marginBottom: 4 }}>
+                  <Text
+                    strong
+                    style={{
+                      fontSize: 14,
+                      marginBottom: 4,
+                      color: 'rgba(255,255,255,0.8)',
+                    }}
+                  >
                     Showing matches for:
                   </Text>
                   <div
@@ -845,27 +809,24 @@ const PublicTournamentPage: React.FC = () => {
                       icon={<LeftOutlined />}
                       onClick={() => navigateDate('prev')}
                       size='large'
-                      style={{ minWidth: 40 }}
                       disabled={dateFilter === 'all'}
+                      className='glass-btn-outline'
                     />
-                    <div
-                      style={{
-                        flex: 1,
-                        textAlign: 'center',
-                        padding: '8px 16px',
-                        background: '#fafafa',
-                        borderRadius: 6,
-                        border: '1px solid #d9d9d9',
-                      }}
-                    >
-                      <Text strong style={{ fontSize: 16 }}>
+                    <div className='glass-date-display'>
+                      <Text strong style={{ fontSize: 16, color: 'white' }}>
                         {dateFilter === 'all'
                           ? 'All Dates'
                           : selectedDate.format('dddd, MMMM D, YYYY')}
                       </Text>
                       {dateFilter === 'day' && (
                         <div>
-                          <Text type='secondary' style={{ fontSize: 12 }}>
+                          <Text
+                            type='secondary'
+                            style={{
+                              fontSize: 12,
+                              color: 'rgba(255,255,255,0.5)',
+                            }}
+                          >
                             {hasMatchesForSelectedDate
                               ? `${
                                   matchesByDate[
@@ -881,8 +842,8 @@ const PublicTournamentPage: React.FC = () => {
                       icon={<RightOutlined />}
                       onClick={() => navigateDate('next')}
                       size='large'
-                      style={{ minWidth: 40 }}
                       disabled={dateFilter === 'all'}
+                      className='glass-btn-outline'
                     />
                   </div>
                 </Space>
@@ -894,11 +855,9 @@ const PublicTournamentPage: React.FC = () => {
                       value={dateFilter}
                       onChange={(e) => handleDateFilterChange(e.target.value)}
                       size='large'
-                      style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}
+                      className='glass-radio-group'
                     >
-                      <Radio.Button value='day'>
-                        <CalendarOutlined /> Day View
-                      </Radio.Button>
+                      <Radio.Button value='day'>Day View</Radio.Button>
                       <Radio.Button value='all'>All Dates</Radio.Button>
                     </Radio.Group>
                   </Col>
@@ -908,6 +867,7 @@ const PublicTournamentPage: React.FC = () => {
                       onClick={goToToday}
                       size='large'
                       disabled={dateFilter === 'all'}
+                      className='glass-btn-outline'
                     >
                       Today
                     </Button>
@@ -919,10 +879,9 @@ const PublicTournamentPage: React.FC = () => {
                       size='large'
                       style={{ width: 180 }}
                       disabled={dateFilter === 'all'}
+                      className='glass-datepicker'
                       disabledDate={(current) => {
-                        // Only disable dates that don't have matches
                         if (dateFilter === 'all') return true;
-
                         const dateKey = current.format('YYYY-MM-DD');
                         return (
                           !matchesByDate[dateKey] ||
@@ -934,35 +893,30 @@ const PublicTournamentPage: React.FC = () => {
                 </Row>
               </Col>
             </Row>
-          </Card>
+          </div>
 
           <div style={{ marginBottom: 24 }}>
             <Row gutter={[16, 16]} justify='space-between' align='middle'>
               <Col>
                 <Space>
-                  <Text strong>Round:</Text>
+                  <Text strong style={{ color: 'rgba(255,255,255,0.8)' }}>
+                    Round:
+                  </Text>
                   <Select
                     placeholder='Select Round'
                     value={selectedRound}
                     onChange={setSelectedRound}
                     style={{ width: 180 }}
                     size='middle'
-                    disabled={matches.length === 0} // Changed from filteredMatches to matches
+                    disabled={matches.length === 0}
+                    className='glass-select'
                   >
                     {availableRounds.map((round) => (
                       <Select.Option key={round} value={round}>
                         <Space>
                           <span>Round {round}</span>
                           {round === availableRounds[0] && (
-                            <Tag
-                              color='blue'
-                              style={{
-                                marginLeft: 4,
-                                fontSize: 10,
-                                padding: '0 4px',
-                                lineHeight: '16px',
-                              }}
-                            >
+                            <Tag color='blue' style={{ marginLeft: 4 }}>
                               Latest
                             </Tag>
                           )}
@@ -977,12 +931,14 @@ const PublicTournamentPage: React.FC = () => {
                   <Button
                     icon={<DownloadOutlined />}
                     onClick={downloadSchedule}
+                    className='glass-btn-outline'
                   >
                     Download Schedule
                   </Button>
                   <Button
                     icon={<FullscreenOutlined />}
                     onClick={toggleFullscreen}
+                    className='glass-btn-outline'
                   >
                     Fullscreen
                   </Button>
@@ -991,19 +947,15 @@ const PublicTournamentPage: React.FC = () => {
             </Row>
           </div>
 
-          {matchesForSelectedRound.length > 0 ? ( // Changed from filteredMatches to matchesForSelectedRound
+          {matchesForSelectedRound.length > 0 ? (
             <div className='bracket-grid-container'>
-              {/* Get matches for selected round - use matchesForSelectedRound */}
               {(() => {
-                const roundMatches = matchesForSelectedRound; // Changed from filteredMatches.filter
-
-                // Group matches by date
+                const roundMatches = matchesForSelectedRound;
                 const matchesByDate: Record<string, typeof roundMatches> = {};
 
                 roundMatches.forEach((match) => {
                   let dateKey: string;
 
-                  // Check if scheduledTime exists and is a valid date string
                   if (
                     match.scheduledTime !== null &&
                     match.scheduledTime !== undefined &&
@@ -1011,7 +963,6 @@ const PublicTournamentPage: React.FC = () => {
                     match.scheduledTime !== ''
                   ) {
                     try {
-                      // Convert to string and trim if it's a string
                       const scheduledTimeStr = String(
                         match.scheduledTime,
                       ).trim();
@@ -1023,8 +974,6 @@ const PublicTournamentPage: React.FC = () => {
                         dateKey = 'Unscheduled';
                       } else {
                         const matchDate = new Date(scheduledTimeStr);
-
-                        // Check if it's a valid date
                         if (isNaN(matchDate.getTime())) {
                           dateKey = 'Unscheduled';
                         } else {
@@ -1032,11 +981,9 @@ const PublicTournamentPage: React.FC = () => {
                         }
                       }
                     } catch (error) {
-                      console.log('Error parsing date:', error);
                       dateKey = 'Unscheduled';
                     }
                   } else {
-                    // Use a special key for unscheduled matches
                     dateKey = 'Unscheduled';
                   }
 
@@ -1046,7 +993,6 @@ const PublicTournamentPage: React.FC = () => {
                   matchesByDate[dateKey].push(match);
                 });
 
-                // Sort dates chronologically
                 const sortedDates = Object.keys(matchesByDate).sort((a, b) => {
                   if (a === 'Unscheduled') return 1;
                   if (b === 'Unscheduled') return -1;
@@ -1060,7 +1006,6 @@ const PublicTournamentPage: React.FC = () => {
                       const matchDate =
                         dateKey === 'Unscheduled' ? null : new Date(dateKey);
 
-                      // Group matches by court for this date
                       const matchesByCourt: Record<string, typeof dateMatches> =
                         {};
 
@@ -1072,13 +1017,10 @@ const PublicTournamentPage: React.FC = () => {
                         matchesByCourt[courtKey].push(match);
                       });
 
-                      // Sort courts alphabetically or by number
                       const sortedCourts = Object.keys(matchesByCourt).sort(
                         (a, b) => {
                           if (a === 'Unassigned') return 1;
                           if (b === 'Unassigned') return -1;
-
-                          // Extract numbers from court names for better sorting
                           const aNum = parseInt(a.replace(/\D/g, '')) || 0;
                           const bNum = parseInt(b.replace(/\D/g, '')) || 0;
                           if (aNum !== bNum) return aNum - bNum;
@@ -1088,7 +1030,6 @@ const PublicTournamentPage: React.FC = () => {
 
                       return (
                         <div key={dateKey} className='date-section'>
-                          {/* Date Header */}
                           <div className='date-header'>
                             <div
                               style={{
@@ -1106,7 +1047,10 @@ const PublicTournamentPage: React.FC = () => {
                                         color: '#506ee4',
                                       }}
                                     />
-                                    <Title level={4} style={{ margin: 0 }}>
+                                    <Title
+                                      level={4}
+                                      style={{ margin: 0, color: 'white' }}
+                                    >
                                       {matchDate.toLocaleDateString('en-US', {
                                         weekday: 'long',
                                         month: 'long',
@@ -1145,38 +1089,20 @@ const PublicTournamentPage: React.FC = () => {
                                 )}
                               </Space>
                             </div>
-
-                            {/* Court Summary */}
-                            {matchDate && sortedCourts.length > 1 && (
-                              <div
-                                style={{
-                                  marginTop: '12px',
-                                  marginBottom: '20px',
-                                }}
-                              >
-                                <Space wrap>
-                                  <Text type='secondary'>Courts:</Text>
-                                  {sortedCourts.map((court) => (
-                                    <Tag key={court} color='cyan'>
-                                      {court} ({matchesByCourt[court].length})
-                                    </Tag>
-                                  ))}
-                                </Space>
-                              </div>
-                            )}
                           </div>
 
-                          {/* Court Columns Layout */}
                           <div className='court-columns-layout'>
                             {sortedCourts.map((court) => (
                               <div key={court} className='court-column'>
-                                {/* Court Header */}
-                                <div className='court-header ms-2'>
+                                <div className='court-header'>
                                   <Space align='center'>
                                     <EnvironmentOutlined
                                       style={{ color: '#1890ff' }}
                                     />
-                                    <Title level={5} style={{ margin: 0 }}>
+                                    <Title
+                                      level={5}
+                                      style={{ margin: 0, color: 'white' }}
+                                    >
                                       {court}
                                     </Title>
                                     <Badge
@@ -1186,11 +1112,9 @@ const PublicTournamentPage: React.FC = () => {
                                   </Space>
                                 </div>
 
-                                {/* Matches for this Court */}
                                 <div className='court-matches'>
                                   {matchesByCourt[court]
                                     .sort((a, b) => {
-                                      // Sort by scheduled time if available, then by match number
                                       if (a.scheduledTime && b.scheduledTime) {
                                         return (
                                           new Date(a.scheduledTime).getTime() -
@@ -1204,23 +1128,8 @@ const PublicTournamentPage: React.FC = () => {
                                         key={match._id}
                                         className='court-match-card'
                                       >
-                                        <Card
-                                          size='small'
-                                          style={{
-                                            borderLeft: `4px solid ${
-                                              match.status === 'completed'
-                                                ? '#52c41a'
-                                                : match.status === 'in-progress'
-                                                  ? '#f5222d'
-                                                  : match.team1 && match.team2
-                                                    ? '#1890ff'
-                                                    : '#d9d9d9'
-                                            }`,
-                                          }}
-                                          className='mb-4'
-                                        >
+                                        <div className='glass-match-card'>
                                           <div className='court-match-content'>
-                                            {/* Match Number and Status */}
                                             <div className='court-match-header'>
                                               <Space
                                                 direction='vertical'
@@ -1246,71 +1155,22 @@ const PublicTournamentPage: React.FC = () => {
                                                       strong
                                                       style={{
                                                         fontSize: '12px',
+                                                        color:
+                                                          'rgba(255,255,255,0.8)',
                                                       }}
                                                     >
                                                       Match #{match.matchNumber}
                                                     </Text>
                                                     {match.sex && (
                                                       <span
-                                                        style={{
-                                                          display:
-                                                            'inline-flex',
-                                                          alignItems: 'center',
-                                                          padding: '2px 8px',
-                                                          borderRadius: '4px',
-                                                          fontSize: '10px',
-                                                          fontWeight: 'bold',
-                                                          backgroundColor:
-                                                            match.sex.toLowerCase() ===
-                                                            'male'
-                                                              ? '#1890ff20'
-                                                              : match.sex.toLowerCase() ===
-                                                                  'female'
-                                                                ? '#eb2f9620'
-                                                                : '#722ed120',
-                                                          color:
-                                                            match.sex.toLowerCase() ===
-                                                            'male'
-                                                              ? '#1890ff'
-                                                              : match.sex.toLowerCase() ===
-                                                                  'female'
-                                                                ? '#eb2f96'
-                                                                : '#722ed1',
-                                                          border: `1px solid ${
-                                                            match.sex.toLowerCase() ===
-                                                            'male'
-                                                              ? '#1890ff40'
-                                                              : match.sex.toLowerCase() ===
-                                                                  'female'
-                                                                ? '#eb2f9640'
-                                                                : '#722ed140'
-                                                          }`,
-                                                        }}
+                                                        className={`match-sex-badge match-sex-${match.sex.toLowerCase()}`}
                                                       >
                                                         {match.sex}
                                                       </span>
                                                     )}
                                                   </div>
                                                   <div
-                                                    className={`court-match-status match-status-${match.status}`}
-                                                    style={{
-                                                      backgroundColor:
-                                                        match.status ===
-                                                        'completed'
-                                                          ? '#52c41a'
-                                                          : match.status ===
-                                                              'in-progress'
-                                                            ? '#f5222d'
-                                                            : match.team1 &&
-                                                                match.team2
-                                                              ? '#1890ff'
-                                                              : '#faad14',
-                                                      color: '#fff',
-                                                      padding: '2px 8px',
-                                                      borderRadius: '4px',
-                                                      fontSize: '10px',
-                                                      fontWeight: 'bold',
-                                                    }}
+                                                    className={`match-status-badge match-status-${match.status}`}
                                                   >
                                                     {match.status ===
                                                     'in-progress'
@@ -1332,14 +1192,17 @@ const PublicTournamentPage: React.FC = () => {
                                                   >
                                                     <ClockCircleOutlined
                                                       style={{
-                                                        fontSize: '20px',
+                                                        fontSize: '14px',
                                                         marginRight: '4px',
+                                                        color:
+                                                          'rgba(255,255,255,0.6)',
                                                       }}
                                                     />
                                                     <Text
-                                                      type='secondary'
                                                       style={{
-                                                        fontSize: '20px',
+                                                        fontSize: '14px',
+                                                        color:
+                                                          'rgba(255,255,255,0.8)',
                                                       }}
                                                     >
                                                       {new Date(
@@ -1354,9 +1217,7 @@ const PublicTournamentPage: React.FC = () => {
                                               </Space>
                                             </div>
 
-                                            {/* Teams and Score */}
                                             <div className='court-match-teams'>
-                                              {/* Team 1 */}
                                               <div className='court-team-row'>
                                                 <div className='court-team-info'>
                                                   <div
@@ -1364,7 +1225,6 @@ const PublicTournamentPage: React.FC = () => {
                                                     title={
                                                       match.team1?.name || 'TBD'
                                                     }
-                                                    style={{ fontSize: '22px' }}
                                                   >
                                                     {match.team1?.name || 'TBD'}
                                                   </div>
@@ -1379,25 +1239,27 @@ const PublicTournamentPage: React.FC = () => {
                                                 >
                                                   <Text
                                                     strong
-                                                    style={{ fontSize: '24px' }}
+                                                    style={{
+                                                      fontSize: '22px',
+                                                      color: 'white',
+                                                    }}
                                                   >
                                                     {match.team1Score}
                                                   </Text>
                                                 </div>
                                               </div>
 
-                                              {/* VS Divider */}
                                               <Divider
                                                 style={{
                                                   margin: '6px 0',
-                                                  fontSize: '16px',
-                                                  color: '#999',
+                                                  fontSize: '12px',
+                                                  color:
+                                                    'rgba(255,255,255,0.4)',
                                                 }}
                                               >
                                                 VS
                                               </Divider>
 
-                                              {/* Team 2 */}
                                               <div className='court-team-row'>
                                                 <div className='court-team-info'>
                                                   <div
@@ -1405,7 +1267,6 @@ const PublicTournamentPage: React.FC = () => {
                                                     title={
                                                       match.team2?.name || 'TBD'
                                                     }
-                                                    style={{ fontSize: '22px' }}
                                                   >
                                                     {match.team2?.name || 'TBD'}
                                                   </div>
@@ -1420,7 +1281,10 @@ const PublicTournamentPage: React.FC = () => {
                                                 >
                                                   <Text
                                                     strong
-                                                    style={{ fontSize: '24px' }}
+                                                    style={{
+                                                      fontSize: '22px',
+                                                      color: 'white',
+                                                    }}
                                                   >
                                                     {match.team2Score}
                                                   </Text>
@@ -1428,7 +1292,7 @@ const PublicTournamentPage: React.FC = () => {
                                               </div>
                                             </div>
                                           </div>
-                                        </Card>
+                                        </div>
                                       </div>
                                     ))}
                                 </div>
@@ -1436,30 +1300,36 @@ const PublicTournamentPage: React.FC = () => {
                             ))}
                           </div>
 
-                          {/* Date Summary */}
                           {matchDate ? (
-                            <div
-                              className='date-summary'
-                              style={{
-                                marginTop: '24px',
-                                marginBottom: '48px',
-                                padding: '16px',
-                                background:
-                                  'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                                borderRadius: '8px',
-                              }}
-                            >
+                            <div className='date-summary'>
                               <Row gutter={[16, 16]}>
                                 <Col xs={24} sm={6}>
                                   <Statistic
-                                    title='Total Matches'
+                                    title={
+                                      <span
+                                        style={{
+                                          color: 'rgba(255,255,255,0.6)',
+                                        }}
+                                      >
+                                        Total Matches
+                                      </span>
+                                    }
                                     value={dateMatches.length}
                                     prefix={<TeamOutlined />}
+                                    valueStyle={{ color: 'white' }}
                                   />
                                 </Col>
                                 <Col xs={24} sm={6}>
                                   <Statistic
-                                    title='Courts Used'
+                                    title={
+                                      <span
+                                        style={{
+                                          color: 'rgba(255,255,255,0.6)',
+                                        }}
+                                      >
+                                        Courts Used
+                                      </span>
+                                    }
                                     value={sortedCourts.length}
                                     prefix={<EnvironmentOutlined />}
                                     valueStyle={{ color: '#1890ff' }}
@@ -1467,7 +1337,15 @@ const PublicTournamentPage: React.FC = () => {
                                 </Col>
                                 <Col xs={24} sm={6}>
                                   <Statistic
-                                    title='Completed'
+                                    title={
+                                      <span
+                                        style={{
+                                          color: 'rgba(255,255,255,0.6)',
+                                        }}
+                                      >
+                                        Completed
+                                      </span>
+                                    }
                                     value={
                                       dateMatches.filter(
                                         (m) => m.status === 'completed',
@@ -1479,7 +1357,15 @@ const PublicTournamentPage: React.FC = () => {
                                 </Col>
                                 <Col xs={24} sm={6}>
                                   <Statistic
-                                    title='In Progress'
+                                    title={
+                                      <span
+                                        style={{
+                                          color: 'rgba(255,255,255,0.6)',
+                                        }}
+                                      >
+                                        In Progress
+                                      </span>
+                                    }
                                     value={
                                       dateMatches.filter(
                                         (m) => m.status === 'in-progress',
@@ -1492,27 +1378,14 @@ const PublicTournamentPage: React.FC = () => {
                               </Row>
                             </div>
                           ) : (
-                            <div
-                              className='date-summary'
-                              style={{
-                                marginTop: '24px',
-                                marginBottom: '48px',
-                                padding: '16px',
-                                background:
-                                  'linear-gradient(135deg, #fafafa 0%, #f0f0f0 100%)',
-                                borderRadius: '8px',
-                              }}
-                            >
-                              <Row gutter={[16, 16]}>
-                                <Col span={24}>
-                                  <Alert
-                                    message='Unscheduled Matches'
-                                    description='These matches are waiting to be scheduled. Times, dates, and courts will be assigned later.'
-                                    type='info'
-                                    showIcon
-                                  />
-                                </Col>
-                              </Row>
+                            <div className='date-summary'>
+                              <Alert
+                                message='Unscheduled Matches'
+                                description='These matches are waiting to be scheduled. Times, dates, and courts will be assigned later.'
+                                type='info'
+                                showIcon
+                                className='glass-alert'
+                              />
                             </div>
                           )}
                         </div>
@@ -1527,14 +1400,12 @@ const PublicTournamentPage: React.FC = () => {
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
                 <div>
-                  <Title level={4}>
+                  <Title level={4} style={{ color: 'white' }}>
                     {dateFilter === 'all'
                       ? `No matches found for Round ${selectedRound}`
-                      : `No matches for Round ${selectedRound} on ${selectedDate.format(
-                          'MMMM D, YYYY',
-                        )}`}
+                      : `No matches for Round ${selectedRound} on ${selectedDate.format('MMMM D, YYYY')}`}
                   </Title>
-                  <Text type='secondary'>
+                  <Text style={{ color: 'rgba(255,255,255,0.6)' }}>
                     {dateFilter === 'all'
                       ? 'Try selecting a different round.'
                       : hasRoundMatches
@@ -1546,12 +1417,20 @@ const PublicTournamentPage: React.FC = () => {
             >
               <Space>
                 {dateFilter === 'day' && hasRoundMatches && (
-                  <Button type='primary' onClick={() => setDateFilter('all')}>
+                  <Button
+                    type='primary'
+                    onClick={() => setDateFilter('all')}
+                    className='glass-btn-primary'
+                  >
                     <CalendarOutlined /> View All Round {selectedRound} Matches
                   </Button>
                 )}
                 {dateFilter === 'day' && (
-                  <Button icon={<CalendarOutlined />} onClick={goToToday}>
+                  <Button
+                    icon={<CalendarOutlined />}
+                    onClick={goToToday}
+                    className='glass-btn-outline'
+                  >
                     Go to Today
                   </Button>
                 )}
@@ -1560,6 +1439,7 @@ const PublicTournamentPage: React.FC = () => {
                   onClick={() =>
                     setDateFilter(dateFilter === 'day' ? 'all' : 'day')
                   }
+                  className='glass-btn-outline'
                 >
                   {dateFilter === 'day' ? 'View All Dates' : 'View by Day'}
                 </Button>
@@ -1581,12 +1461,16 @@ const PublicTournamentPage: React.FC = () => {
         <div style={{ padding: '24px 0' }}>
           <Row gutter={[16, 16]}>
             <Col xs={24} md={8}>
-              <Card title='Team Filters' size='small'>
+              <div className='glass-filter-sidebar'>
+                <Title level={5} style={{ color: 'white', marginBottom: 16 }}>
+                  Team Filters
+                </Title>
                 <Space direction='vertical' style={{ width: '100%' }}>
                   <Select
                     placeholder='Filter by Level'
                     style={{ width: '100%' }}
                     allowClear
+                    className='glass-select'
                   >
                     <Select.Option value='gold'>Gold</Select.Option>
                     <Select.Option value='silver'>Silver</Select.Option>
@@ -1595,6 +1479,7 @@ const PublicTournamentPage: React.FC = () => {
                     placeholder='Filter by Grade'
                     style={{ width: '100%' }}
                     allowClear
+                    className='glass-select'
                   >
                     {Array.from(new Set(teams.map((t) => t.grade))).map(
                       (grade) => (
@@ -1604,11 +1489,16 @@ const PublicTournamentPage: React.FC = () => {
                       ),
                     )}
                   </Select>
-                  <Button type='primary' block icon={<FilterOutlined />}>
+                  <Button
+                    type='primary'
+                    block
+                    icon={<FilterOutlined />}
+                    className='glass-btn-primary'
+                  >
                     Apply Filters
                   </Button>
                 </Space>
-              </Card>
+              </div>
             </Col>
             <Col xs={24} md={16}>
               {teams.length > 0 ? (
@@ -1617,11 +1507,7 @@ const PublicTournamentPage: React.FC = () => {
                   dataSource={teams}
                   renderItem={(team) => (
                     <List.Item>
-                      <Card
-                        hoverable
-                        style={{ borderRadius: 8 }}
-                        styles={{ body: { padding: 16 } }}
-                      >
+                      <div className='glass-team-card'>
                         <Space align='center' style={{ width: '100%' }}>
                           <Avatar
                             size='large'
@@ -1635,7 +1521,10 @@ const PublicTournamentPage: React.FC = () => {
                             {team.name.charAt(0)}
                           </Avatar>
                           <div style={{ flex: 1 }}>
-                            <Title level={5} style={{ margin: 0 }}>
+                            <Title
+                              level={5}
+                              style={{ margin: 0, color: 'white' }}
+                            >
                               {team.name}
                             </Title>
                             <Space size={[4, 4]} wrap style={{ marginTop: 4 }}>
@@ -1653,10 +1542,14 @@ const PublicTournamentPage: React.FC = () => {
                             </Space>
                           </div>
                           <Tooltip title='View Team Details'>
-                            <Button type='link' icon={<InfoCircleOutlined />} />
+                            <Button
+                              type='link'
+                              icon={<InfoCircleOutlined />}
+                              className='glass-link'
+                            />
                           </Tooltip>
                         </Space>
-                      </Card>
+                      </div>
                     </List.Item>
                   )}
                 />
@@ -1664,8 +1557,10 @@ const PublicTournamentPage: React.FC = () => {
                 <Empty
                   description={
                     <div>
-                      <Title level={4}>No teams registered yet</Title>
-                      <Text type='secondary'>
+                      <Title level={4} style={{ color: 'white' }}>
+                        No teams registered yet
+                      </Title>
+                      <Text style={{ color: 'rgba(255,255,255,0.6)' }}>
                         Teams will appear once they register for the tournament.
                       </Text>
                     </div>
@@ -1694,14 +1589,17 @@ const PublicTournamentPage: React.FC = () => {
               rowKey={(record) => record.team._id}
               pagination={{ pageSize: 10 }}
               size='middle'
+              className='glass-table'
             />
           ) : (
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
                 <div>
-                  <Title level={4}>No standings available</Title>
-                  <Text type='secondary'>
+                  <Title level={4} style={{ color: 'white' }}>
+                    No standings available
+                  </Title>
+                  <Text style={{ color: 'rgba(255,255,255,0.6)' }}>
                     Standings will appear once matches have been played.
                   </Text>
                 </div>
@@ -1721,18 +1619,18 @@ const PublicTournamentPage: React.FC = () => {
       ),
       children: (
         <div style={{ padding: '24px 0' }}>
-          {/* Date Filter for Schedule Tab */}
-          <Card
-            style={{
-              marginBottom: 24,
-              borderRadius: 8,
-              background: 'linear-gradient(135deg, #f6f8ff 0%, #f0f2ff 100%)',
-            }}
-          >
+          <div className='glass-filter-card' style={{ marginBottom: 24 }}>
             <Row gutter={[16, 16]} align='middle'>
               <Col xs={24} md={12}>
                 <Space direction='vertical' style={{ width: '100%' }}>
-                  <Text strong style={{ fontSize: 14, marginBottom: 4 }}>
+                  <Text
+                    strong
+                    style={{
+                      fontSize: 14,
+                      marginBottom: 4,
+                      color: 'rgba(255,255,255,0.8)',
+                    }}
+                  >
                     Showing matches for:
                   </Text>
                   <div
@@ -1742,20 +1640,11 @@ const PublicTournamentPage: React.FC = () => {
                       icon={<LeftOutlined />}
                       onClick={() => navigateDate('prev')}
                       size='large'
-                      style={{ minWidth: 40 }}
                       disabled={dateFilter === 'all'}
+                      className='glass-btn-outline'
                     />
-                    <div
-                      style={{
-                        flex: 1,
-                        textAlign: 'center',
-                        padding: '8px 16px',
-                        background: '#fafafa',
-                        borderRadius: 6,
-                        border: '1px solid #d9d9d9',
-                      }}
-                    >
-                      <Text strong style={{ fontSize: 16 }}>
+                    <div className='glass-date-display'>
+                      <Text strong style={{ fontSize: 16, color: 'white' }}>
                         {dateFilter === 'all'
                           ? 'All Dates'
                           : selectedDate.format('dddd, MMMM D, YYYY')}
@@ -1765,8 +1654,8 @@ const PublicTournamentPage: React.FC = () => {
                       icon={<RightOutlined />}
                       onClick={() => navigateDate('next')}
                       size='large'
-                      style={{ minWidth: 40 }}
                       disabled={dateFilter === 'all'}
+                      className='glass-btn-outline'
                     />
                   </div>
                 </Space>
@@ -1778,11 +1667,9 @@ const PublicTournamentPage: React.FC = () => {
                       value={dateFilter}
                       onChange={(e) => handleDateFilterChange(e.target.value)}
                       size='large'
-                      style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}
+                      className='glass-radio-group'
                     >
-                      <Radio.Button value='day'>
-                        <CalendarOutlined /> Day View
-                      </Radio.Button>
+                      <Radio.Button value='day'>Day View</Radio.Button>
                       <Radio.Button value='all'>All Dates</Radio.Button>
                     </Radio.Group>
                   </Col>
@@ -1792,6 +1679,7 @@ const PublicTournamentPage: React.FC = () => {
                       onClick={goToToday}
                       size='large'
                       disabled={dateFilter === 'all'}
+                      className='glass-btn-outline'
                     >
                       Today
                     </Button>
@@ -1799,158 +1687,131 @@ const PublicTournamentPage: React.FC = () => {
                 </Row>
               </Col>
             </Row>
-          </Card>
+          </div>
 
-          {/* Schedule timeline - use matchesForSelectedRound instead of filteredMatches */}
-          {matchesForSelectedRound.length > 0 ? ( // Changed from filteredMatches
-            <Timeline mode='alternate'>
-              {matchesForSelectedRound.map(
-                (
-                  match, // Changed from filteredMatches
-                ) => (
-                  <Timeline.Item
-                    key={match._id}
-                    color={
-                      match.status === 'completed'
-                        ? 'green'
-                        : match.status === 'in-progress'
-                          ? 'red'
-                          : 'blue'
-                    }
-                    dot={
-                      match.status === 'in-progress' ? (
-                        <PlayCircleOutlined style={{ fontSize: '16px' }} />
-                      ) : match.status === 'completed' ? (
-                        <CheckCircleOutlined style={{ fontSize: '16px' }} />
-                      ) : (
-                        <ClockCircleOutlined style={{ fontSize: '16px' }} />
-                      )
-                    }
-                  >
-                    <Card
-                      size='small'
-                      style={{
-                        width: '100%',
-                        borderLeft: `4px solid ${
-                          match.status === 'completed'
-                            ? '#52c41a'
-                            : match.status === 'in-progress'
-                              ? '#f5222d'
-                              : '#1890ff'
-                        }`,
-                      }}
-                    >
-                      <Row gutter={[16, 8]}>
-                        <Col span={24}>
-                          <Space align='center'>
-                            <Tag color='blue'>Round {match.round}</Tag>
-                            <Text strong>Match #{match.matchNumber}</Text>
-                            {match.court && (
-                              <Tag color='green'>Court {match.court}</Tag>
-                            )}
-                            {match.duration && (
-                              <Tag color='purple'>{match.duration} mins</Tag>
-                            )}
-                          </Space>
-                        </Col>
-                        <Col span={24}>
-                          {/* Mobile: Vertical layout (hidden on desktop) */}
-                          <div className='mobile-match-display'>
-                            <Row gutter={16} align='middle'>
-                              <Col
-                                span={24}
-                                style={{
-                                  textAlign: 'center',
-                                  marginBottom: '12px',
-                                }}
+          {matchesForSelectedRound.length > 0 ? (
+            <Timeline mode='alternate' className='glass-timeline'>
+              {matchesForSelectedRound.map((match) => (
+                <Timeline.Item
+                  key={match._id}
+                  color={
+                    match.status === 'completed'
+                      ? 'green'
+                      : match.status === 'in-progress'
+                        ? 'red'
+                        : 'blue'
+                  }
+                  dot={
+                    match.status === 'in-progress' ? (
+                      <PlayCircleOutlined style={{ fontSize: '16px' }} />
+                    ) : match.status === 'completed' ? (
+                      <CheckCircleOutlined style={{ fontSize: '16px' }} />
+                    ) : (
+                      <ClockCircleOutlined style={{ fontSize: '16px' }} />
+                    )
+                  }
+                >
+                  <div className='glass-timeline-card'>
+                    <Row gutter={[16, 8]}>
+                      <Col span={24}>
+                        <Space align='center'>
+                          <Tag color='blue'>Round {match.round}</Tag>
+                          <Text strong style={{ color: 'white' }}>
+                            Match #{match.matchNumber}
+                          </Text>
+                          {match.court && (
+                            <Tag color='green'>Court {match.court}</Tag>
+                          )}
+                          {match.duration && (
+                            <Tag color='purple'>{match.duration} mins</Tag>
+                          )}
+                        </Space>
+                      </Col>
+                      <Col span={24}>
+                        <Row gutter={16} align='middle'>
+                          <Col span={10} style={{ textAlign: 'right' }}>
+                            <Space direction='vertical' size={0}>
+                              <Text
+                                strong
+                                style={{ fontSize: '16px', color: 'white' }}
                               >
-                                <Space direction='vertical' size={0}>
-                                  <Text strong style={{ fontSize: '16px' }}>
-                                    {match.team1?.name || 'TBD'}
-                                  </Text>
-                                  <Text
-                                    type='secondary'
-                                    style={{ fontSize: '12px' }}
-                                  ></Text>
-                                </Space>
-                              </Col>
-                              <Col
-                                span={24}
-                                style={{
-                                  textAlign: 'center',
-                                  marginBottom: '16px',
-                                }}
+                                {match.team1?.name || 'TBD'}
+                              </Text>
+                            </Space>
+                          </Col>
+                          <Col span={4} style={{ textAlign: 'center' }}>
+                            <Title
+                              level={3}
+                              style={{ margin: 0, color: '#fbbf24' }}
+                            >
+                              {match.team1Score} - {match.team2Score}
+                            </Title>
+                          </Col>
+                          <Col span={10} style={{ textAlign: 'left' }}>
+                            <Space direction='vertical' size={0}>
+                              <Text
+                                strong
+                                style={{ fontSize: '16px', color: 'white' }}
                               >
-                                <Space direction='vertical' size={0}>
-                                  <Title level={3} style={{ margin: 0 }}>
-                                    {match.team1Score} - {match.team2Score}
-                                  </Title>
-                                </Space>
-                              </Col>
-                              <Col span={24} style={{ textAlign: 'center' }}>
-                                <Space direction='vertical' size={0}>
-                                  <Text strong style={{ fontSize: '16px' }}>
-                                    {match.team2?.name || 'TBD'}
-                                  </Text>
-                                  <Text
-                                    type='secondary'
-                                    style={{ fontSize: '12px' }}
-                                  ></Text>
-                                </Space>
-                              </Col>
-                            </Row>
-                          </div>
-                        </Col>
-                        <Col span={24}>
-                          <Divider style={{ margin: '8px 0' }} />
-                          <Space wrap>
-                            {match.scheduledTime && (
+                                {match.team2?.name || 'TBD'}
+                              </Text>
+                            </Space>
+                          </Col>
+                        </Row>
+                      </Col>
+                      <Col span={24}>
+                        <Divider style={{ margin: '8px 0' }} />
+                        <Space wrap>
+                          {match.scheduledTime && (
+                            <Space>
+                              <ClockCircleOutlined
+                                style={{ color: 'rgba(255,255,255,0.6)' }}
+                              />
+                              <Text style={{ color: 'rgba(255,255,255,0.6)' }}>
+                                {new Date(match.scheduledTime).toLocaleString(
+                                  [],
+                                  {
+                                    weekday: 'short',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  },
+                                )}
+                              </Text>
+                            </Space>
+                          )}
+                          {match.duration !== undefined &&
+                            match.duration !== null && (
                               <Space>
-                                <ClockCircleOutlined />
-                                <Text type='secondary'>
-                                  {new Date(match.scheduledTime).toLocaleString(
-                                    [],
-                                    {
-                                      weekday: 'short',
-                                      month: 'short',
-                                      day: 'numeric',
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                    },
-                                  )}
+                                <ClockCircleOutlined
+                                  style={{ color: 'rgba(255,255,255,0.6)' }}
+                                />
+                                <Text
+                                  style={{ color: 'rgba(255,255,255,0.6)' }}
+                                >
+                                  Duration: {match.duration} minutes
                                 </Text>
                               </Space>
                             )}
-                            {match.duration !== undefined &&
-                              match.duration !== null && (
-                                <Space>
-                                  <ClockCircleOutlined />
-                                  <Text type='secondary'>
-                                    Duration: {match.duration} minutes
-                                  </Text>
-                                </Space>
-                              )}
-                          </Space>
-                        </Col>
-                      </Row>
-                    </Card>
-                  </Timeline.Item>
-                ),
-              )}
+                        </Space>
+                      </Col>
+                    </Row>
+                  </div>
+                </Timeline.Item>
+              ))}
             </Timeline>
           ) : (
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
                 <div>
-                  <Title level={4}>
+                  <Title level={4} style={{ color: 'white' }}>
                     {dateFilter === 'all'
                       ? `No matches found for Round ${selectedRound}`
-                      : `No matches for Round ${selectedRound} on ${selectedDate.format(
-                          'MMMM D, YYYY',
-                        )}`}
+                      : `No matches for Round ${selectedRound} on ${selectedDate.format('MMMM D, YYYY')}`}
                   </Title>
-                  <Text type='secondary'>
+                  <Text style={{ color: 'rgba(255,255,255,0.6)' }}>
                     {dateFilter === 'all'
                       ? 'Try selecting a different round.'
                       : hasRoundMatches
@@ -1962,12 +1823,20 @@ const PublicTournamentPage: React.FC = () => {
             >
               <Space>
                 {dateFilter === 'day' && hasRoundMatches && (
-                  <Button type='primary' onClick={() => setDateFilter('all')}>
+                  <Button
+                    type='primary'
+                    onClick={() => setDateFilter('all')}
+                    className='glass-btn-primary'
+                  >
                     <CalendarOutlined /> View All Round {selectedRound} Matches
                   </Button>
                 )}
                 {dateFilter === 'day' && (
-                  <Button icon={<CalendarOutlined />} onClick={goToToday}>
+                  <Button
+                    icon={<CalendarOutlined />}
+                    onClick={goToToday}
+                    className='glass-btn-outline'
+                  >
                     Go to Today
                   </Button>
                 )}
@@ -1976,6 +1845,7 @@ const PublicTournamentPage: React.FC = () => {
                   onClick={() =>
                     setDateFilter(dateFilter === 'day' ? 'all' : 'day')
                   }
+                  className='glass-btn-outline'
                 >
                   {dateFilter === 'day' ? 'View All Dates' : 'View by Day'}
                 </Button>
@@ -1990,27 +1860,28 @@ const PublicTournamentPage: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#f0f2f5',
-        }}
-      >
-        <Card style={{ padding: 48, textAlign: 'center', borderRadius: 8 }}>
-          <Spin
-            indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />}
-            size='large'
-          />
-          <Title level={4} style={{ marginTop: 24, marginBottom: 8 }}>
-            Loading Tournament
-          </Title>
-          <Text type='secondary'>
-            Please wait while we fetch tournament details...
-          </Text>
-        </Card>
+      <div className='tournament-public-root'>
+        <div className='tournament-bg' />
+        <div className='tournament-orb tournament-orb-1' />
+        <div className='tournament-orb tournament-orb-2' />
+        <div className='tournament-orb tournament-orb-3' />
+        <div className='tournament-loading'>
+          <div className='glass-card-loading'>
+            <Spin
+              indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />}
+              size='large'
+            />
+            <Title
+              level={4}
+              style={{ marginTop: 24, marginBottom: 8, color: 'white' }}
+            >
+              Loading Tournament
+            </Title>
+            <Text style={{ color: 'rgba(255,255,255,0.6)' }}>
+              Please wait while we fetch tournament details...
+            </Text>
+          </div>
+        </div>
       </div>
     );
   }
@@ -2018,27 +1889,30 @@ const PublicTournamentPage: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#f0f2f5',
-        }}
-      >
-        <Card style={{ textAlign: 'center', maxWidth: 500, borderRadius: 8 }}>
-          <Alert
-            message='Error Loading Tournament'
-            description={error}
-            type='error'
-            showIcon
-            style={{ marginBottom: 24 }}
-          />
-          <Button type='primary' onClick={() => navigate('/tournaments')}>
-            Browse Tournaments
-          </Button>
-        </Card>
+      <div className='tournament-public-root'>
+        <div className='tournament-bg' />
+        <div className='tournament-orb tournament-orb-1' />
+        <div className='tournament-orb tournament-orb-2' />
+        <div className='tournament-orb tournament-orb-3' />
+        <div className='tournament-loading'>
+          <div className='glass-card-error'>
+            <Alert
+              message='Error Loading Tournament'
+              description={error}
+              type='error'
+              showIcon
+              className='glass-alert'
+            />
+            <Button
+              type='primary'
+              onClick={() => navigate('/tournaments')}
+              className='glass-btn-primary'
+              style={{ marginTop: 16 }}
+            >
+              Browse Tournaments
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -2046,36 +1920,37 @@ const PublicTournamentPage: React.FC = () => {
   // No tournament state
   if (!tournament) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#f0f2f5',
-        }}
-      >
-        <Card style={{ textAlign: 'center', maxWidth: 500, borderRadius: 8 }}>
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={
-              <div>
-                <Title level={4}>Tournament not found</Title>
-                <Text type='secondary'>
-                  The tournament you're looking for doesn't exist or has been
-                  removed.
-                </Text>
-              </div>
-            }
-          />
-          <Button
-            type='primary'
-            onClick={() => navigate('/tournaments')}
-            style={{ marginTop: 16 }}
-          >
-            Browse Tournaments
-          </Button>
-        </Card>
+      <div className='tournament-public-root'>
+        <div className='tournament-bg' />
+        <div className='tournament-orb tournament-orb-1' />
+        <div className='tournament-orb tournament-orb-2' />
+        <div className='tournament-orb tournament-orb-3' />
+        <div className='tournament-loading'>
+          <div className='glass-card-empty'>
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <div>
+                  <Title level={4} style={{ color: 'white' }}>
+                    Tournament not found
+                  </Title>
+                  <Text style={{ color: 'rgba(255,255,255,0.6)' }}>
+                    The tournament you're looking for doesn't exist or has been
+                    removed.
+                  </Text>
+                </div>
+              }
+            />
+            <Button
+              type='primary'
+              onClick={() => navigate('/tournaments')}
+              className='glass-btn-primary'
+              style={{ marginTop: 16 }}
+            >
+              Browse Tournaments
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -2083,8 +1958,13 @@ const PublicTournamentPage: React.FC = () => {
   const formatBadge = getFormatBadge(tournament.format);
 
   return (
-    <div style={{ background: '#f0f2f5', minHeight: '100vh' }}>
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px' }}>
+    <div className='tournament-public-root'>
+      <div className='tournament-bg' />
+      <div className='tournament-orb tournament-orb-1' />
+      <div className='tournament-orb tournament-orb-2' />
+      <div className='tournament-orb tournament-orb-3' />
+
+      <div className='tournament-public-wrap'>
         {/* Tournament Header */}
         <AntDesignTournamentHeader
           tournament={tournament}
@@ -2101,44 +1981,27 @@ const PublicTournamentPage: React.FC = () => {
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           {tournamentStats.map((stat, index) => (
             <Col xs={24} sm={12} md={6} key={index}>
-              <Card
-                size='small'
-                style={{
-                  borderRadius: 8,
-                  borderLeft: `4px solid ${stat.color}`,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                }}
-              >
-                <Space align='start'>
-                  <Avatar
-                    style={{
-                      backgroundColor: stat.color + '20',
-                      color: stat.color,
-                    }}
-                    icon={stat.icon}
-                  />
-                  <div>
-                    <Text type='secondary' style={{ fontSize: 12 }}>
-                      {stat.title}
-                    </Text>
-                    <Title level={4} style={{ margin: '4px 0 0 0' }}>
-                      {stat.value}
-                    </Title>
-                  </div>
-                </Space>
-              </Card>
+              <div className='glass-stat-card'>
+                <div
+                  className='glass-stat-icon'
+                  style={{
+                    backgroundColor: stat.color + '20',
+                    color: stat.color,
+                  }}
+                >
+                  {stat.icon}
+                </div>
+                <div className='glass-stat-content'>
+                  <div className='glass-stat-label'>{stat.title}</div>
+                  <div className='glass-stat-value'>{stat.value}</div>
+                </div>
+              </div>
             </Col>
           ))}
         </Row>
 
         {/* Main Content Tabs */}
-        <Card
-          style={{
-            borderRadius: 8,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            overflow: 'hidden',
-          }}
-        >
+        <div className='glass-card-tabs'>
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -2146,16 +2009,20 @@ const PublicTournamentPage: React.FC = () => {
             tabBarExtraContent={
               <Space>
                 <Tooltip title='Export Data'>
-                  <Button icon={<ExportOutlined />} onClick={handleExport}>
+                  <Button
+                    icon={<ExportOutlined />}
+                    onClick={handleExport}
+                    className='glass-btn-outline'
+                  >
                     Export
                   </Button>
                 </Tooltip>
               </Space>
             }
+            className='glass-tabs'
           />
-        </Card>
+        </div>
 
-        {/* Modals */}
         {/* Follow Modal */}
         <Modal
           title='Follow Tournament'
@@ -2163,26 +2030,29 @@ const PublicTournamentPage: React.FC = () => {
           onCancel={() => setFollowModalVisible(false)}
           onOk={handleConfirmFollow}
           okText='Follow Tournament'
-          okButtonProps={{ type: 'primary' }}
+          className='glass-modal'
+          wrapClassName='glass-modal-wrap'
         >
-          <Alert
-            message='Stay Updated'
-            description='Get notified about match results, schedule changes, and important announcements.'
-            type='info'
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
-          <Input
-            placeholder='Enter your email address'
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            size='large'
-            style={{ marginBottom: 8 }}
-          />
-          <Text type='secondary' style={{ fontSize: 12 }}>
-            You can unsubscribe at any time. We'll only send tournament-related
-            updates.
-          </Text>
+          <div className='glass-modal-content'>
+            <Alert
+              message='Stay Updated'
+              description='Get notified about match results, schedule changes, and important announcements.'
+              type='info'
+              showIcon
+              className='glass-alert'
+            />
+            <Input
+              placeholder='Enter your email address'
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              size='large'
+              className='glass-input'
+            />
+            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+              You can unsubscribe at any time. We'll only send
+              tournament-related updates.
+            </Text>
+          </div>
         </Modal>
 
         {/* Export Modal */}
@@ -2190,8 +2060,13 @@ const PublicTournamentPage: React.FC = () => {
           title='Export Tournament Data'
           open={exportModalVisible}
           onCancel={() => setExportModalVisible(false)}
+          className='glass-modal'
           footer={[
-            <Button key='cancel' onClick={() => setExportModalVisible(false)}>
+            <Button
+              key='cancel'
+              onClick={() => setExportModalVisible(false)}
+              className='glass-btn-secondary'
+            >
               Cancel
             </Button>,
             <Button
@@ -2199,7 +2074,6 @@ const PublicTournamentPage: React.FC = () => {
               type='primary'
               onClick={() => {
                 if (!tournament) return;
-
                 const data = {
                   tournament,
                   matches,
@@ -2215,15 +2089,13 @@ const PublicTournamentPage: React.FC = () => {
                 linkElement.setAttribute('href', dataUri);
                 linkElement.setAttribute(
                   'download',
-                  `tournament-${tournament.name.replace(
-                    /\s+/g,
-                    '-',
-                  )}-export.json`,
+                  `tournament-${tournament.name.replace(/\s+/g, '-')}-export.json`,
                 );
                 linkElement.click();
                 message.success('Data exported successfully!');
                 setExportModalVisible(false);
               }}
+              className='glass-btn-primary'
             >
               Export as JSON
             </Button>,
@@ -2233,28 +2105,674 @@ const PublicTournamentPage: React.FC = () => {
               onClick={() => {
                 message.info('CSV export coming soon!');
               }}
+              className='glass-btn-primary'
             >
               Export as CSV
             </Button>,
           ]}
         >
-          <Alert
-            message='Export Options'
-            description='Choose the format and data you want to export from this tournament.'
-            type='info'
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
-          <Radio.Group defaultValue='all'>
-            <Space direction='vertical'>
-              <Radio value='all'>All tournament data</Radio>
-              <Radio value='bracket'>Bracket matches only</Radio>
-              <Radio value='teams'>Team information only</Radio>
-              <Radio value='standings'>Standings only</Radio>
-            </Space>
-          </Radio.Group>
+          <div className='glass-modal-content'>
+            <Alert
+              message='Export Options'
+              description='Choose the format and data you want to export from this tournament.'
+              type='info'
+              showIcon
+              className='glass-alert'
+            />
+            <Radio.Group defaultValue='all' className='glass-radio-group'>
+              <Space direction='vertical'>
+                <Radio value='all'>All tournament data</Radio>
+                <Radio value='bracket'>Bracket matches only</Radio>
+                <Radio value='teams'>Team information only</Radio>
+                <Radio value='standings'>Standings only</Radio>
+              </Space>
+            </Radio.Group>
+          </div>
         </Modal>
       </div>
+
+      <style>{`
+        /* ── Root & Background ──────────────────────────────────── */
+        .tournament-public-root {
+          min-height: 100vh;
+          background: #0a0a0a;
+          position: relative;
+          overflow-x: hidden;
+          font-family: 'DM Sans', sans-serif;
+        }
+
+        .tournament-bg {
+          position: fixed; inset: 0;
+          background:
+            radial-gradient(circle at 15% 40%, rgba(80,110,228,.15) 0%, transparent 55%),
+            radial-gradient(circle at 85% 70%, rgba(120,140,255,.1) 0%, transparent 55%);
+          pointer-events: none; z-index: 0;
+        }
+
+        .tournament-orb {
+          position: fixed; border-radius: 50%;
+          filter: blur(90px); pointer-events: none;
+          animation: orbFloat 22s ease-in-out infinite; z-index: 0;
+        }
+        .tournament-orb-1 { width:420px; height:420px; background:rgba(80,110,228,.15); top:-120px; left:-120px; animation-delay:0s; }
+        .tournament-orb-2 { width:520px; height:520px; background:rgba(120,140,255,.1); bottom:-160px; right:-160px; animation-delay:6s; }
+        .tournament-orb-3 { width:320px; height:320px; background:rgba(80,110,228,.1); top:45%; left:42%; animation-delay:12s; }
+
+        @keyframes orbFloat {
+          0%,100% { transform: translate(0,0) rotate(0deg); }
+          33% { transform: translate(28px,-28px) rotate(120deg); }
+          66% { transform: translate(-18px,18px) rotate(240deg); }
+        }
+
+        /* ── Wrapper ──────────────────────────────────────────── */
+        .tournament-public-wrap {
+          position: relative; z-index: 1;
+          max-width: 1400px; margin: 0 auto;
+          padding: 80px 24px 100px;
+        }
+
+        /* ── Loading & Error States ───────────────────────────── */
+        .tournament-loading {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px;
+        }
+
+        .glass-card-loading,
+        .glass-card-error,
+        .glass-card-empty {
+          background: rgba(15, 15, 15, 0.95);
+          backdrop-filter: blur(20px);
+          border-radius: 32px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          padding: 48px;
+          text-align: center;
+          max-width: 500px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        /* ── Glass Stat Cards ──────────────────────────────────── */
+        .glass-stat-card {
+          background: rgba(15, 15, 15, 0.85);
+          backdrop-filter: blur(16px);
+          border-radius: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          padding: 16px 20px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          transition: all 0.3s ease;
+        }
+
+        .glass-stat-card:hover {
+          transform: translateY(-4px);
+          border-color: rgba(80, 110, 228, 0.3);
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-stat-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 24px;
+        }
+
+        .glass-stat-content {
+          flex: 1;
+        }
+
+        .glass-stat-label {
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: rgba(255, 255, 255, 0.5);
+        }
+
+        .glass-stat-value {
+          font-size: 1.5rem;
+          font-weight: 800;
+          color: white;
+          line-height: 1.2;
+        }
+
+        /* ── Glass Tabs Card ───────────────────────────────────── */
+        .glass-card-tabs {
+          background: rgba(15, 15, 15, 0.85);
+          backdrop-filter: blur(20px);
+          border-radius: 32px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+
+        .glass-card-tabs:hover {
+          border-color: rgba(255, 255, 255, 0.12);
+          box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Tabs styling */
+        .glass-tabs .ant-tabs-nav {
+          background: rgba(0, 0, 0, 0.3);
+          margin: 0;
+          padding: 0 24px;
+        }
+
+        .glass-tabs .ant-tabs-tab {
+          color: rgba(255, 255, 255, 0.6);
+          padding: 16px 20px;
+        }
+
+        .glass-tabs .ant-tabs-tab-active {
+          color: #506ee4;
+        }
+
+        .glass-tabs .ant-tabs-tab:hover {
+          color: #506ee4;
+        }
+
+        .glass-tabs .ant-tabs-ink-bar {
+          background: linear-gradient(90deg, #506ee4, #7a94ff);
+          height: 3px;
+          border-radius: 3px;
+        }
+
+        .glass-tabs .ant-tabs-content-holder {
+          padding: 24px;
+        }
+
+        /* ── Glass Filter Card ──────────────────────────────────── */
+        .glass-filter-card {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 20px;
+          padding: 20px;
+        }
+
+        .glass-filter-sidebar {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 20px;
+          padding: 20px;
+        }
+
+        .glass-date-display {
+          flex: 1;
+          text-align: center;
+          padding: 8px 16px;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* ── Glass Table ───────────────────────────────────────── */
+        .glass-table .ant-table {
+          background: transparent;
+          color: rgba(255, 255, 255, 0.85);
+        }
+
+        .glass-table .ant-table-thead > tr > th {
+          background: rgba(80, 110, 228, 0.1);
+          color: white;
+          font-weight: 600;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-table .ant-table-tbody > tr > td {
+          background: transparent;
+          color: rgba(255, 255, 255, 0.8);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-table .ant-table-tbody > tr:hover > td {
+          background: rgba(80, 110, 228, 0.05);
+        }
+
+        /* ── Glass Team Card ───────────────────────────────────── */
+        .glass-team-card {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 20px;
+          padding: 16px;
+          transition: all 0.3s ease;
+        }
+
+        .glass-team-card:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(80, 110, 228, 0.3);
+          transform: translateY(-4px);
+        }
+
+        /* ── Glass Match Card ───────────────────────────────────── */
+        .glass-match-card {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 16px;
+          padding: 16px;
+          margin-bottom: 16px;
+          transition: all 0.3s ease;
+        }
+
+        .glass-match-card:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(80, 110, 228, 0.3);
+        }
+
+        /* ── Glass Timeline ─────────────────────────────────────── */
+        .glass-timeline .ant-timeline-item-content {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 20px;
+          padding: 4px;
+        }
+
+        .glass-timeline .ant-timeline-item-tail {
+          border-left-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-timeline-card {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 20px;
+          padding: 16px;
+        }
+
+        /* ── Glass Buttons ──────────────────────────────────────── */
+        .glass-btn-outline {
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          color: rgba(255, 255, 255, 0.85);
+        }
+
+        .glass-btn-outline:hover {
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(80, 110, 228, 0.3);
+          color: #506ee4;
+        }
+
+        .glass-btn-primary {
+          background: linear-gradient(135deg, #506ee4, #3f5cd6);
+          border: none;
+          color: white;
+        }
+
+        .glass-btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(80, 110, 228, 0.4);
+        }
+
+        .glass-btn-secondary {
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          color: rgba(255, 255, 255, 0.85);
+        }
+
+        .glass-btn-secondary:hover {
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        /* ── Glass Input ────────────────────────────────────────── */
+        .glass-input {
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 12px;
+          color: white;
+          margin: 16px 0;
+        }
+
+        .glass-input:focus,
+        .glass-input:hover {
+          background: rgba(255, 255, 255, 0.12);
+          border-color: #506ee4;
+        }
+
+        .glass-input input {
+          background: transparent;
+          color: white;
+        }
+
+        .glass-input input::placeholder {
+          color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* ── Glass Select ───────────────────────────────────────── */
+        .glass-select .ant-select-selector {
+          background: rgba(255, 255, 255, 0.08) !important;
+          border: 1px solid rgba(255, 255, 255, 0.15) !important;
+          color: white !important;
+        }
+
+        .glass-select .ant-select-arrow {
+          color: rgba(255, 255, 255, 0.5);
+        }
+
+        .glass-datepicker .ant-picker-input input {
+          color: white;
+        }
+
+        .glass-datepicker .ant-picker-suffix {
+          color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* ── Glass Radio Group ──────────────────────────────────── */
+        .glass-radio-group .ant-radio-wrapper {
+          color: rgba(255, 255, 255, 0.85);
+        }
+
+        .glass-radio-group .ant-radio-inner {
+          background-color: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-radio-group .ant-radio-checked .ant-radio-inner {
+          background-color: #506ee4;
+          border-color: #506ee4;
+        }
+
+        .glass-radio-group .ant-radio-button-wrapper {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.15);
+          color: rgba(255, 255, 255, 0.7);
+        }
+
+        .glass-radio-group .ant-radio-button-wrapper-checked {
+          background: #506ee4;
+          border-color: #506ee4;
+          color: white;
+        }
+
+        /* ── Glass Alert ────────────────────────────────────────── */
+        .glass-alert {
+          background: rgba(80, 110, 228, 0.1);
+          border: 1px solid rgba(80, 110, 228, 0.2);
+          border-radius: 16px;
+          margin-bottom: 16px;
+        }
+
+        .glass-alert .ant-alert-message,
+        .glass-alert .ant-alert-description {
+          color: rgba(255, 255, 255, 0.85);
+        }
+
+        /* ── Glass Modal ────────────────────────────────────────── */
+        .glass-modal .ant-modal-content {
+          background: rgba(10, 10, 10, 0.95);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 32px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-modal .ant-modal-header {
+          background: transparent;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-modal .ant-modal-title {
+          color: white;
+          font-weight: 700;
+        }
+
+        .glass-modal .ant-modal-close {
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .glass-modal .ant-modal-close:hover {
+          color: white;
+        }
+
+        .glass-modal .ant-modal-footer {
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-modal-content {
+          padding: 8px 0;
+        }
+
+        /* ── Glass Pagination ───────────────────────────────────── */
+        .glass-tabs .ant-pagination-item {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .glass-tabs .ant-pagination-item a {
+          color: rgba(255, 255, 255, 0.7);
+        }
+
+        .glass-tabs .ant-pagination-item-active {
+          background: #506ee4;
+          border-color: #506ee4;
+        }
+
+        .glass-tabs .ant-pagination-item-active a {
+          color: white;
+        }
+
+        .glass-tabs .ant-pagination-prev button,
+        .glass-tabs .ant-pagination-next button {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.15);
+          color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* ── Match Status Badges ──────────────────────────────────── */
+        .match-status-badge {
+          padding: 2px 8px;
+          border-radius: 4px;
+          font-size: 10px;
+          font-weight: bold;
+          color: #fff;
+        }
+
+        .match-status-completed {
+          background-color: #52c41a;
+        }
+
+        .match-status-in-progress {
+          background-color: #f5222d;
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .match-status-ready {
+          background-color: #1890ff;
+        }
+
+        .match-status-pending {
+          background-color: #faad14;
+        }
+
+        .match-sex-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 2px 8px;
+          border-radius: 4px;
+          font-size: 10px;
+          font-weight: bold;
+        }
+
+        .match-sex-male {
+          background-color: #1890ff20;
+          color: #1890ff;
+          border: 1px solid #1890ff40;
+        }
+
+        .match-sex-female {
+          background-color: #eb2f9620;
+          color: #eb2f96;
+          border: 1px solid #eb2f9640;
+        }
+
+        .match-sex-mixed {
+          background-color: #722ed120;
+          color: #722ed1;
+          border: 1px solid #722ed140;
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+
+        /* ── Court Layout ───────────────────────────────────────── */
+        .court-columns-layout {
+          display: flex;
+          gap: 24px;
+          overflow-x: auto;
+          padding: 8px 0;
+        }
+
+        .court-column {
+          flex: 1;
+          min-width: 320px;
+          background: rgba(255, 255, 255, 0.03);
+          border-radius: 20px;
+          padding: 16px;
+        }
+
+        .court-header {
+          padding: 12px;
+          margin-bottom: 16px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .court-matches {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .court-match-card {
+          width: 100%;
+        }
+
+        .court-match-content {
+          width: 100%;
+        }
+
+        .court-match-header {
+          margin-bottom: 12px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .court-match-teams {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .court-team-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .court-team-info {
+          flex: 1;
+        }
+
+        .court-team-name {
+          font-weight: 600;
+          font-size: 14px;
+          color: white;
+        }
+
+        .court-team-meta {
+          font-size: 11px;
+          color: rgba(255, 255, 255, 0.5);
+        }
+
+        .court-team-score {
+          font-weight: 700;
+          font-size: 18px;
+          color: white;
+        }
+
+        .date-section {
+          margin-bottom: 48px;
+        }
+
+        .date-header {
+          margin-bottom: 20px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid rgba(80, 110, 228, 0.3);
+        }
+
+        .date-summary {
+          margin-top: 24px;
+          margin-bottom: 48px;
+          padding: 20px;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 20px;
+        }
+
+        /* ── Glass Link ─────────────────────────────────────────── */
+        .glass-link {
+          color: #506ee4;
+        }
+
+        .glass-link:hover {
+          color: #7a94ff;
+        }
+
+        /* ── Responsive ───────────────────────────────────────── */
+        @media (max-width: 768px) {
+          .tournament-public-wrap {
+            padding: 60px 16px 80px;
+          }
+
+          .glass-stat-card {
+            padding: 12px 16px;
+          }
+
+          .glass-stat-value {
+            font-size: 1.2rem;
+          }
+
+          .glass-tabs .ant-tabs-nav {
+            padding: 0 12px;
+          }
+
+          .glass-tabs .ant-tabs-tab {
+            padding: 12px 12px;
+          }
+
+          .glass-tabs .ant-tabs-content-holder {
+            padding: 16px;
+          }
+
+          .court-columns-layout {
+            flex-direction: column;
+          }
+
+          .court-column {
+            min-width: auto;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .glass-tabs .ant-tabs-tab {
+            padding: 8px 8px;
+          }
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+          .tournament-orb,
+          .glass-stat-card,
+          .glass-card-tabs,
+          .glass-team-card,
+          .glass-match-card {
+            animation: none;
+            transition: none;
+          }
+        }
+      `}</style>
     </div>
   );
 };

@@ -108,7 +108,6 @@ const PublicTournamentsListPage: React.FC = () => {
     try {
       setLoading(true);
 
-      // Build query parameters
       const queryParams = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
         if (value && value !== '') {
@@ -116,27 +115,16 @@ const PublicTournamentsListPage: React.FC = () => {
         }
       });
 
-      console.log(
-        'Fetching from:',
-        `${API_URL}/tournaments/public?${queryParams}`,
-      );
-
       const response = await fetch(
         `${API_URL}/tournaments/public?${queryParams}`,
       );
       const data = await response.json();
 
-      console.log('API Response:', data); // Debug log
-
       if (data.success) {
         const tournamentsData = data.tournaments || data.data || [];
-        console.log('Tournaments loaded:', tournamentsData.length);
-        console.log('Tournament details:', tournamentsData);
-
         setTournaments(tournamentsData);
         setTotal(data.total || data.count || tournamentsData.length);
       } else {
-        console.log('API returned success: false');
         setTournaments([]);
         setTotal(0);
       }
@@ -254,7 +242,7 @@ const PublicTournamentsListPage: React.FC = () => {
   };
 
   const sortMenu = (
-    <Menu>
+    <Menu className='glass-dropdown-menu'>
       <Menu.Item
         key='date-desc'
         onClick={() => handleFilterChange('sortBy', 'startDate')}
@@ -284,104 +272,68 @@ const PublicTournamentsListPage: React.FC = () => {
 
   if (loading && tournaments.length === 0) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#f0f2f5',
-        }}
-      >
-        <Card style={{ padding: 48, textAlign: 'center', borderRadius: 8 }}>
-          <Spin size='large' />
-          <Title level={4} style={{ marginTop: 24, marginBottom: 8 }}>
-            Loading Tournaments
-          </Title>
-          <Text type='secondary'>Fetching tournament data...</Text>
-        </Card>
+      <div className='tournaments-root'>
+        <div className='tournaments-bg' />
+        <div className='tournaments-orb tournaments-orb-1' />
+        <div className='tournaments-orb tournaments-orb-2' />
+        <div className='tournaments-orb tournaments-orb-3' />
+        <div className='tournaments-loading'>
+          <div className='glass-card-loading'>
+            <Spin size='large' />
+            <Title level={4}>Loading Tournaments</Title>
+            <Text>Fetching tournament data...</Text>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ background: '#f0f2f5', minHeight: '100vh' }}>
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px' }}>
-        {/* Page Header */}
-        <Card
-          style={{
-            marginTop: 54,
-            marginBottom: 24,
-            background: 'linear-gradient(135deg, #506ee4 0%, #6FCCD8 100%)',
-            color: 'white',
-            border: 'none',
-            borderRadius: 12,
-            boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
-          }}
-          styles={{ body: { padding: 32 } }}
-        >
+    <div className='tournaments-root'>
+      {/* Background orbs */}
+      <div className='tournaments-bg' />
+      <div className='tournaments-orb tournaments-orb-1' />
+      <div className='tournaments-orb tournaments-orb-2' />
+      <div className='tournaments-orb tournaments-orb-3' />
+
+      <div className='tournaments-wrap'>
+        {/* Page Header - Glass styled */}
+        <div className='glass-header-card'>
           <Row gutter={[32, 32]} align='middle'>
             <Col xs={24} md={16}>
               <Space direction='vertical' size='middle'>
-                <Title
-                  level={1}
-                  style={{ color: 'white', margin: 0, fontSize: 42 }}
-                >
-                  <TrophyOutlined style={{ marginRight: 16, fontSize: 36 }} />
+                <Title level={1} className='glass-header-title'>
+                  <TrophyOutlined className='header-icon' />
                   Tournament Hub
                 </Title>
-                <Paragraph
-                  style={{
-                    color: 'rgba(255,255,255,0.85)',
-                    fontSize: 18,
-                    margin: 0,
-                  }}
-                >
+                <Paragraph className='glass-header-subtitle'>
                   Discover and join exciting tournaments. Find the perfect
                   competition for your team.
                 </Paragraph>
               </Space>
             </Col>
             <Col xs={24} md={8}>
-              <Space direction='vertical' style={{ width: '100%' }}>
-                <div
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    padding: 16,
-                    borderRadius: 8,
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                  }}
-                >
-                  <Statistic
-                    title={
-                      <Text style={{ color: 'white' }}>Active Tournaments</Text>
-                    }
-                    value={
-                      tournaments.filter(
-                        (t) =>
-                          t.status === 'ongoing' ||
-                          t.status === 'open' ||
-                          t.status === 'draft',
-                      ).length
-                    }
-                    valueStyle={{ color: 'white', fontSize: 32 }}
-                    prefix={<TeamOutlined />}
-                  />
-                </div>
-              </Space>
+              <div className='glass-stats-badge'>
+                <Statistic
+                  title={<span className='stat-title'>Active Tournaments</span>}
+                  value={
+                    tournaments.filter(
+                      (t) =>
+                        t.status === 'ongoing' ||
+                        t.status === 'open' ||
+                        t.status === 'draft',
+                    ).length
+                  }
+                  valueStyle={{ color: '#fbbf24', fontSize: 32 }}
+                  prefix={<TeamOutlined />}
+                />
+              </div>
             </Col>
           </Row>
-        </Card>
+        </div>
 
-        {/* Filters Section */}
-        <Card
-          style={{
-            marginBottom: 24,
-            borderRadius: 12,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
-        >
+        {/* Filters Section - Glass styled */}
+        <div className='glass-filters-card'>
           <Row gutter={[16, 16]} align='middle'>
             <Col xs={24} md={8}>
               <Search
@@ -392,6 +344,7 @@ const PublicTournamentsListPage: React.FC = () => {
                 onChange={(e) => handleFilterChange('search', e.target.value)}
                 onSearch={handleSearch}
                 allowClear
+                className='glass-search'
               />
             </Col>
             <Col xs={24} md={16}>
@@ -403,6 +356,8 @@ const PublicTournamentsListPage: React.FC = () => {
                   onChange={(value) => handleFilterChange('status', value)}
                   allowClear
                   size='large'
+                  className='glass-select'
+                  dropdownClassName='glass-dropdown'
                 >
                   <Option value='open'>Registration Open</Option>
                   <Option value='ongoing'>Live Tournaments</Option>
@@ -417,6 +372,8 @@ const PublicTournamentsListPage: React.FC = () => {
                   onChange={(value) => handleFilterChange('format', value)}
                   allowClear
                   size='large'
+                  className='glass-select'
+                  dropdownClassName='glass-dropdown'
                 >
                   <Option value='single-elimination'>Single Elimination</Option>
                   <Option value='double-elimination'>Double Elimination</Option>
@@ -432,6 +389,8 @@ const PublicTournamentsListPage: React.FC = () => {
                   }
                   allowClear
                   size='large'
+                  className='glass-select'
+                  dropdownClassName='glass-dropdown'
                 >
                   <Option value='gold'>Gold</Option>
                   <Option value='silver'>Silver</Option>
@@ -444,6 +403,8 @@ const PublicTournamentsListPage: React.FC = () => {
                   onChange={(value) => handleFilterChange('sex', value)}
                   allowClear
                   size='large'
+                  className='glass-select'
+                  dropdownClassName='glass-dropdown'
                 >
                   <Option value='male'>Male</Option>
                   <Option value='female'>Female</Option>
@@ -451,12 +412,20 @@ const PublicTournamentsListPage: React.FC = () => {
                 </Select>
 
                 <Dropdown overlay={sortMenu} placement='bottomRight'>
-                  <Button icon={<FilterOutlined />} size='large'>
+                  <Button
+                    icon={<FilterOutlined />}
+                    size='large'
+                    className='glass-btn-outline'
+                  >
                     Sort
                   </Button>
                 </Dropdown>
 
-                <Button onClick={clearFilters} size='large' type='default'>
+                <Button
+                  onClick={clearFilters}
+                  size='large'
+                  className='glass-btn-secondary'
+                >
                   Clear Filters
                 </Button>
               </Space>
@@ -471,11 +440,12 @@ const PublicTournamentsListPage: React.FC = () => {
             filters.search) && (
             <div style={{ marginTop: 16 }}>
               <Space wrap>
-                <Text type='secondary'>Active filters:</Text>
+                <Text className='filter-label'>Active filters:</Text>
                 {filters.status && (
                   <Tag
                     closable
                     onClose={() => handleFilterChange('status', '')}
+                    className='glass-tag'
                   >
                     Status: {filters.status}
                   </Tag>
@@ -484,6 +454,7 @@ const PublicTournamentsListPage: React.FC = () => {
                   <Tag
                     closable
                     onClose={() => handleFilterChange('format', '')}
+                    className='glass-tag'
                   >
                     Format: {filters.format}
                   </Tag>
@@ -492,12 +463,17 @@ const PublicTournamentsListPage: React.FC = () => {
                   <Tag
                     closable
                     onClose={() => handleFilterChange('levelOfCompetition', '')}
+                    className='glass-tag'
                   >
                     Level: {filters.levelOfCompetition}
                   </Tag>
                 )}
                 {filters.sex && (
-                  <Tag closable onClose={() => handleFilterChange('sex', '')}>
+                  <Tag
+                    closable
+                    onClose={() => handleFilterChange('sex', '')}
+                    className='glass-tag'
+                  >
                     Gender: {filters.sex}
                   </Tag>
                 )}
@@ -505,6 +481,7 @@ const PublicTournamentsListPage: React.FC = () => {
                   <Tag
                     closable
                     onClose={() => handleFilterChange('search', '')}
+                    className='glass-tag'
                   >
                     Search: {filters.search}
                   </Tag>
@@ -512,7 +489,7 @@ const PublicTournamentsListPage: React.FC = () => {
               </Space>
             </div>
           )}
-        </Card>
+        </div>
 
         {/* Tournaments Grid */}
         {tournaments.length > 0 ? (
@@ -532,193 +509,103 @@ const PublicTournamentsListPage: React.FC = () => {
                       to={`/tournaments/${tournament._id}`}
                       style={{ textDecoration: 'none' }}
                     >
-                      <Card
-                        hoverable
-                        style={{
-                          height: '100%',
-                          borderRadius: 12,
-                          overflow: 'hidden',
-                          border: '1px solid #f0f0f0',
-                          transition: 'all 0.3s ease',
-                        }}
-                        styles={{ body: { padding: 20 } }}
-                        cover={
-                          <div
-                            style={{
-                              height: 120,
-                              background:
-                                'linear-gradient(135deg, #506ee4 0%, #6FCCD8 100%)',
-                              position: 'relative',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <TrophyOutlined
-                              style={{
-                                fontSize: 48,
-                                color: 'rgba(255,255,255,0.9)',
-                              }}
-                            />
+                      <div className='glass-tournament-card'>
+                        <div className='tournament-card-cover'>
+                          <TrophyOutlined className='cover-icon' />
+                          <div className='status-badge'>
                             <Badge
                               status={getStatusColor(tournament.status) as any}
-                              text={
-                                <Text
-                                  strong
-                                  style={{ color: 'white', fontSize: 11 }}
-                                >
-                                  {getStatusText(tournament.status)}
-                                </Text>
-                              }
-                              style={{
-                                position: 'absolute',
-                                top: 12,
-                                right: 12,
-                                background: 'rgba(0,0,0,0.3)',
-                                padding: '4px 8px',
-                                borderRadius: 12,
-                              }}
+                              text={getStatusText(tournament.status)}
                             />
                           </div>
-                        }
-                      >
-                        <div style={{ marginBottom: 16 }}>
-                          <div
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'flex-start',
-                              marginBottom: 8,
-                            }}
-                          >
-                            <Title
-                              level={5}
-                              style={{ margin: 0, lineHeight: 1.3 }}
-                            >
+                        </div>
+                        <div className='tournament-card-content'>
+                          <div className='card-header'>
+                            <Title level={5} className='tournament-title'>
                               {tournament.name}
                             </Title>
-                            <Text
-                              type='secondary'
-                              style={{ lineHeight: 1.3, fontSize: 16 }}
-                            >
+                            <Text className='tournament-year'>
                               {tournament.year}
                             </Text>
                           </div>
-                        </div>
 
-                        {/* Tournament Tags */}
-                        <Space wrap style={{ marginBottom: 16 }}>
-                          <Tag
-                            color={formatBadge.color}
-                            icon={formatBadge.icon}
-                            style={{ margin: 0 }}
-                          >
-                            {formatBadge.text}
-                          </Tag>
-                          <Tag
-                            color={levelBadge.color}
-                            icon={levelBadge.icon}
-                            style={{ margin: 0 }}
-                          >
-                            {levelBadge.text}
-                          </Tag>
-                          <Tag color='cyan' style={{ margin: 0 }}>
-                            {tournament.sex}
-                          </Tag>
-                        </Space>
-
-                        {/* Tournament Stats */}
-                        <Space
-                          direction='vertical'
-                          size={8}
-                          style={{ width: '100%' }}
-                        >
-                          <Space
-                            align='center'
-                            style={{
-                              width: '100%',
-                              justifyContent: 'space-between',
-                            }}
-                          >
-                            <Space>
-                              <TeamOutlined style={{ color: '#52c41a' }} />
-                              <Text type='secondary' style={{ fontSize: 12 }}>
-                                Teams
-                              </Text>
-                            </Space>
-                            <Text strong>{tournament.teamCount}</Text>
+                          {/* Tournament Tags */}
+                          <Space wrap style={{ marginBottom: 16 }}>
+                            <Tag
+                              color={formatBadge.color}
+                              icon={formatBadge.icon}
+                              className='glass-tag'
+                            >
+                              {formatBadge.text}
+                            </Tag>
+                            <Tag
+                              color={levelBadge.color}
+                              icon={levelBadge.icon}
+                              className='glass-tag'
+                            >
+                              {levelBadge.text}
+                            </Tag>
+                            <Tag color='cyan' className='glass-tag'>
+                              {tournament.sex}
+                            </Tag>
                           </Space>
 
-                          <Space
-                            align='center'
-                            style={{
-                              width: '100%',
-                              justifyContent: 'space-between',
-                            }}
-                          >
-                            <Space>
-                              <CalendarOutlined style={{ color: '#1890ff' }} />
-                              <Text type='secondary' style={{ fontSize: 12 }}>
-                                Tournament
+                          {/* Tournament Stats */}
+                          <div className='stats-list'>
+                            <div className='stat-row'>
+                              <Space>
+                                <TeamOutlined className='stat-icon-success' />
+                                <Text className='stat-label'>Teams</Text>
+                              </Space>
+                              <Text strong className='stat-value'>
+                                {tournament.teamCount}
                               </Text>
-                            </Space>
-                            <Text strong>{tournamentDurationDays} days</Text>
-                          </Space>
+                            </div>
 
-                          <Space
-                            align='center'
-                            style={{
-                              width: '100%',
-                              justifyContent: 'space-between',
-                            }}
-                          >
-                            <Space>
-                              <ClockCircleOutlined
-                                style={{ color: '#722ed1' }}
-                              />
-                              <Text type='secondary' style={{ fontSize: 12 }}>
-                                Matches
+                            <div className='stat-row'>
+                              <Space>
+                                <CalendarOutlined className='stat-icon-primary' />
+                                <Text className='stat-label'>Tournament</Text>
+                              </Space>
+                              <Text strong className='stat-value'>
+                                {tournamentDurationDays} days
                               </Text>
-                            </Space>
-                            <Text strong>40 mins</Text>
-                          </Space>
+                            </div>
 
-                          <Space
-                            align='center'
-                            style={{
-                              width: '100%',
-                              justifyContent: 'space-between',
-                            }}
-                          >
-                            <Space>
-                              <CalendarOutlined style={{ color: '#fa8c16' }} />
-                              <Text type='secondary' style={{ fontSize: 12 }}>
-                                Dates
+                            <div className='stat-row'>
+                              <Space>
+                                <ClockCircleOutlined className='stat-icon-purple' />
+                                <Text className='stat-label'>Matches</Text>
+                              </Space>
+                              <Text strong className='stat-value'>
+                                40 mins
                               </Text>
-                            </Space>
-                            <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: 11 }}>
-                                {formatDate(tournament.startDate)}
-                              </div>
-                              <div style={{ fontSize: 11 }}>
-                                {formatDate(tournament.endDate)}
+                            </div>
+
+                            <div className='stat-row'>
+                              <Space>
+                                <CalendarOutlined className='stat-icon-orange' />
+                                <Text className='stat-label'>Dates</Text>
+                              </Space>
+                              <div className='date-range'>
+                                <div>{formatDate(tournament.startDate)}</div>
+                                <div>{formatDate(tournament.endDate)}</div>
                               </div>
                             </div>
-                          </Space>
-                        </Space>
+                          </div>
 
-                        <Divider style={{ margin: '16px 0' }} />
+                          <Divider className='card-divider' />
 
-                        {/* Action Button */}
-                        <Button
-                          type='primary'
-                          block
-                          icon={<EyeOutlined />}
-                          style={{ borderRadius: 6 }}
-                        >
-                          View Tournament
-                        </Button>
-                      </Card>
+                          <Button
+                            type='primary'
+                            block
+                            icon={<EyeOutlined />}
+                            className='glass-btn-primary view-btn'
+                          >
+                            View Tournament
+                          </Button>
+                        </div>
+                      </div>
                     </Link>
                   </Col>
                 );
@@ -727,7 +614,7 @@ const PublicTournamentsListPage: React.FC = () => {
 
             {/* Pagination */}
             {total > filters.limit && (
-              <div style={{ marginTop: 32, textAlign: 'center' }}>
+              <div className='pagination-wrapper'>
                 <Pagination
                   current={filters.page}
                   total={total}
@@ -740,19 +627,19 @@ const PublicTournamentsListPage: React.FC = () => {
                   showTotal={(total, range) =>
                     `${range[0]}-${range[1]} of ${total} tournaments`
                   }
-                  style={{ display: 'inline-block' }}
+                  className='glass-pagination'
                 />
               </div>
             )}
           </>
         ) : (
-          <Card style={{ borderRadius: 12, textAlign: 'center', padding: 48 }}>
+          <div className='glass-empty-card'>
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
                 <div>
                   <Title level={4}>No tournaments found</Title>
-                  <Text type='secondary'>
+                  <Text>
                     {filters.search || filters.status || filters.format
                       ? 'Try adjusting your filters or search terms'
                       : 'No tournaments are currently available'}
@@ -764,28 +651,24 @@ const PublicTournamentsListPage: React.FC = () => {
               <Button
                 type='primary'
                 onClick={clearFilters}
+                className='glass-btn-primary'
                 style={{ marginTop: 16 }}
               >
                 Clear All Filters
               </Button>
             )}
-          </Card>
+          </div>
         )}
 
         {/* Stats Footer */}
         {tournaments.length > 0 && (
-          <Card
-            style={{
-              marginTop: 32,
-              borderRadius: 12,
-              background: 'linear-gradient(135deg, #f6f8ff 0%, #f0f2ff 100%)',
-              border: 'none',
-            }}
-          >
+          <div className='glass-footer-stats'>
             <Row gutter={[32, 32]}>
               <Col xs={24} md={8}>
                 <Statistic
-                  title='Total Tournaments'
+                  title={
+                    <span className='footer-stat-title'>Total Tournaments</span>
+                  }
                   value={total}
                   prefix={<TrophyOutlined />}
                   valueStyle={{ color: '#1890ff' }}
@@ -793,7 +676,11 @@ const PublicTournamentsListPage: React.FC = () => {
               </Col>
               <Col xs={24} md={8}>
                 <Statistic
-                  title='Active Tournaments'
+                  title={
+                    <span className='footer-stat-title'>
+                      Active Tournaments
+                    </span>
+                  }
                   value={
                     tournaments.filter(
                       (t) => t.status === 'ongoing' || t.status === 'open',
@@ -805,16 +692,500 @@ const PublicTournamentsListPage: React.FC = () => {
               </Col>
               <Col xs={24} md={8}>
                 <Statistic
-                  title='Total Teams (Page)'
+                  title={
+                    <span className='footer-stat-title'>
+                      Total Teams (Page)
+                    </span>
+                  }
                   value={tournaments.reduce((sum, t) => sum + t.teamCount, 0)}
                   prefix={<TeamOutlined />}
                   valueStyle={{ color: '#722ed1' }}
                 />
               </Col>
             </Row>
-          </Card>
+          </div>
         )}
       </div>
+
+      <style>{`
+        /* ── Root & Background ──────────────────────────────────── */
+        .tournaments-root {
+          min-height: 100vh;
+          background: #0a0a0a;
+          position: relative;
+          overflow-x: hidden;
+          font-family: 'DM Sans', sans-serif;
+        }
+
+        .tournaments-bg {
+          position: fixed; inset: 0;
+          background:
+            radial-gradient(circle at 15% 40%, rgba(80,110,228,.15) 0%, transparent 55%),
+            radial-gradient(circle at 85% 70%, rgba(120,140,255,.1) 0%, transparent 55%);
+          pointer-events: none; z-index: 0;
+        }
+
+        .tournaments-orb {
+          position: fixed; border-radius: 50%;
+          filter: blur(90px); pointer-events: none;
+          animation: orbFloat 22s ease-in-out infinite; z-index: 0;
+        }
+        .tournaments-orb-1 { width:420px; height:420px; background:rgba(80,110,228,.15); top:-120px; left:-120px; animation-delay:0s; }
+        .tournaments-orb-2 { width:520px; height:520px; background:rgba(120,140,255,.1); bottom:-160px; right:-160px; animation-delay:6s; }
+        .tournaments-orb-3 { width:320px; height:320px; background:rgba(80,110,228,.1); top:45%; left:42%; animation-delay:12s; }
+
+        @keyframes orbFloat {
+          0%,100% { transform: translate(0,0) rotate(0deg); }
+          33% { transform: translate(28px,-28px) rotate(120deg); }
+          66% { transform: translate(-18px,18px) rotate(240deg); }
+        }
+
+        /* ── Wrapper ──────────────────────────────────────────── */
+        .tournaments-wrap {
+          position: relative; z-index: 1;
+          max-width: 1400px; margin: 0 auto;
+          padding: 80px 24px 100px;
+        }
+
+        /* ── Loading State ──────────────────────────────────────── */
+        .tournaments-loading {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px;
+        }
+
+        .glass-card-loading {
+          background: rgba(15, 15, 15, 0.95);
+          backdrop-filter: blur(20px);
+          border-radius: 32px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          padding: 48px;
+          text-align: center;
+          max-width: 500px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-card-loading h4 {
+          margin-top: 24px;
+          margin-bottom: 8px;
+          color: white;
+        }
+
+        .glass-card-loading p {
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* ── Glass Header Card ──────────────────────────────────── */
+        .glass-header-card {
+          background: linear-gradient(135deg, rgba(80,110,228,0.2), rgba(80,110,228,0.05));
+          backdrop-filter: blur(20px);
+          border-radius: 32px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          padding: 32px;
+          margin-bottom: 24px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-header-title {
+          color: white !important;
+          margin: 0 !important;
+          font-size: 42px !important;
+          font-weight: 800 !important;
+        }
+
+        .header-icon {
+          margin-right: 16px;
+          font-size: 36px;
+          color: #fbbf24;
+        }
+
+        .glass-header-subtitle {
+          color: rgba(255, 255, 255, 0.7) !important;
+          font-size: 18px !important;
+          margin: 0 !important;
+        }
+
+        .glass-stats-badge {
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(10px);
+          border-radius: 20px;
+          padding: 16px;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          text-align: center;
+        }
+
+        .stat-title {
+          color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* ── Glass Filters Card ─────────────────────────────────── */
+        .glass-filters-card {
+          background: rgba(15, 15, 15, 0.85);
+          backdrop-filter: blur(20px);
+          border-radius: 24px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          padding: 20px;
+          margin-bottom: 24px;
+          transition: all 0.3s ease;
+        }
+
+        .glass-filters-card:hover {
+          border-color: rgba(255, 255, 255, 0.15);
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        /* ── Glass Search ───────────────────────────────────────── */
+        .glass-search .ant-input-group-addon .ant-btn {
+          background: rgba(80, 110, 228, 0.8);
+          border-color: transparent;
+        }
+
+        .glass-search .ant-input {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.15);
+          color: white;
+        }
+
+        .glass-search .ant-input::placeholder {
+          color: rgba(255, 255, 255, 0.4);
+        }
+
+        .glass-search .ant-input:hover,
+        .glass-search .ant-input:focus {
+          background: rgba(255, 255, 255, 0.12);
+          border-color: #506ee4;
+        }
+
+        /* ── Glass Select ───────────────────────────────────────── */
+        .glass-select .ant-select-selector {
+          background: rgba(255, 255, 255, 0.08) !important;
+          border: 1px solid rgba(255, 255, 255, 0.15) !important;
+          color: white !important;
+        }
+
+        .glass-select .ant-select-arrow {
+          color: rgba(255, 255, 255, 0.5);
+        }
+
+        .glass-select .ant-select-selection-placeholder {
+          color: rgba(255, 255, 255, 0.4);
+        }
+
+        .glass-dropdown {
+          background: rgba(10, 10, 10, 0.95) !important;
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 16px;
+        }
+
+        .glass-dropdown .ant-dropdown-menu-item {
+          color: rgba(255, 255, 255, 0.8);
+        }
+
+        .glass-dropdown .ant-dropdown-menu-item:hover {
+          background: rgba(80, 110, 228, 0.2);
+        }
+
+        /* ── Glass Buttons ──────────────────────────────────────── */
+        .glass-btn-outline {
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          color: rgba(255, 255, 255, 0.85);
+        }
+
+        .glass-btn-outline:hover {
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(80, 110, 228, 0.3);
+          color: #506ee4;
+        }
+
+        .glass-btn-secondary {
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          color: rgba(255, 255, 255, 0.85);
+        }
+
+        .glass-btn-secondary:hover {
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .glass-btn-primary {
+          background: linear-gradient(135deg, #506ee4, #3f5cd6);
+          border: none;
+          color: white;
+        }
+
+        .glass-btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(80, 110, 228, 0.4);
+        }
+
+        /* ── Glass Tags ─────────────────────────────────────────── */
+        .glass-tag {
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          color: rgba(255, 255, 255, 0.8);
+        }
+
+        .filter-label {
+          color: rgba(255, 255, 255, 0.5);
+          font-size: 0.85rem;
+        }
+
+        /* ── Glass Tournament Card ──────────────────────────────── */
+        .glass-tournament-card {
+          background: rgba(15, 15, 15, 0.85);
+          backdrop-filter: blur(20px);
+          border-radius: 24px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          overflow: hidden;
+          transition: all 0.3s ease;
+          height: 100%;
+          cursor: pointer;
+        }
+
+        .glass-tournament-card:hover {
+          transform: translateY(-4px);
+          border-color: rgba(80, 110, 228, 0.3);
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .tournament-card-cover {
+          height: 120px;
+          background: linear-gradient(135deg, #506ee4, #6FCCD8);
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .cover-icon {
+          font-size: 48px;
+          color: rgba(255, 255, 255, 0.9);
+        }
+
+        .status-badge {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          background: rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(4px);
+          padding: 4px 8px;
+          border-radius: 12px;
+        }
+
+        .status-badge .ant-badge-status-text {
+          color: white !important;
+          font-size: 11px;
+          font-weight: bold;
+        }
+
+        .tournament-card-content {
+          padding: 20px;
+        }
+
+        .card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 16px;
+        }
+
+        .tournament-title {
+          color: white !important;
+          margin: 0 !important;
+          line-height: 1.3 !important;
+        }
+
+        .tournament-year {
+          color: rgba(255, 255, 255, 0.5);
+          font-size: 16px;
+        }
+
+        .stats-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-bottom: 16px;
+        }
+
+        .stat-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .stat-label {
+          color: rgba(255, 255, 255, 0.5);
+          font-size: 12px;
+        }
+
+        .stat-value {
+          color: white;
+          font-size: 14px;
+        }
+
+        .stat-icon-success {
+          color: #52c41a;
+        }
+
+        .stat-icon-primary {
+          color: #1890ff;
+        }
+
+        .stat-icon-purple {
+          color: #722ed1;
+        }
+
+        .stat-icon-orange {
+          color: #fa8c16;
+        }
+
+        .date-range {
+          text-align: right;
+        }
+
+        .date-range div {
+          font-size: 11px;
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .card-divider {
+          background: rgba(255, 255, 255, 0.08);
+          margin: 16px 0;
+        }
+
+        .view-btn {
+          border-radius: 8px;
+        }
+
+        /* ── Glass Empty Card ───────────────────────────────────── */
+        .glass-empty-card {
+          background: rgba(15, 15, 15, 0.85);
+          backdrop-filter: blur(20px);
+          border-radius: 24px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          padding: 48px;
+          text-align: center;
+        }
+
+        .glass-empty-card h4 {
+          color: white;
+        }
+
+        .glass-empty-card p {
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* ── Glass Footer Stats ─────────────────────────────────── */
+        .glass-footer-stats {
+          background: rgba(15, 15, 15, 0.85);
+          backdrop-filter: blur(20px);
+          border-radius: 24px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          padding: 32px;
+          margin-top: 32px;
+        }
+
+        .footer-stat-title {
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* ── Glass Pagination ───────────────────────────────────── */
+        .pagination-wrapper {
+          margin-top: 32px;
+          text-align: center;
+        }
+
+        .glass-pagination .ant-pagination-item {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .glass-pagination .ant-pagination-item a {
+          color: rgba(255, 255, 255, 0.7);
+        }
+
+        .glass-pagination .ant-pagination-item-active {
+          background: #506ee4;
+          border-color: #506ee4;
+        }
+
+        .glass-pagination .ant-pagination-item-active a {
+          color: white;
+        }
+
+        .glass-pagination .ant-pagination-prev button,
+        .glass-pagination .ant-pagination-next button {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.15);
+          color: rgba(255, 255, 255, 0.7);
+        }
+
+        .glass-pagination .ant-pagination-options-quick-jumper input {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.15);
+          color: white;
+        }
+
+        .glass-pagination .ant-pagination-total-text {
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* ── Responsive ───────────────────────────────────────── */
+        @media (max-width: 768px) {
+          .tournaments-wrap {
+            padding: 60px 16px 80px;
+          }
+
+          .glass-header-title {
+            font-size: 32px !important;
+          }
+
+          .glass-header-subtitle {
+            font-size: 14px !important;
+          }
+
+          .glass-filters-card {
+            padding: 16px;
+          }
+
+          .tournament-card-cover {
+            height: 100px;
+          }
+
+          .cover-icon {
+            font-size: 36px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .glass-header-title {
+            font-size: 24px !important;
+          }
+
+          .tournament-title {
+            font-size: 14px !important;
+          }
+
+          .tournament-year {
+            font-size: 12px;
+          }
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+          .tournaments-orb,
+          .glass-tournament-card,
+          .glass-filters-card {
+            animation: none;
+            transition: none;
+          }
+        }
+      `}</style>
     </div>
   );
 };

@@ -87,7 +87,7 @@ export default function LiveScoreTicker({ matches }: LiveScoreTickerProps) {
 
   const handlePrevMatch = () => {
     setCurrentMatchIndex(
-      (prev) => (prev - 1 + liveMatches.length) % liveMatches.length
+      (prev) => (prev - 1 + liveMatches.length) % liveMatches.length,
     );
   };
 
@@ -197,7 +197,7 @@ export default function LiveScoreTicker({ matches }: LiveScoreTickerProps) {
                   className={`text-4xl font-bold ${getScoreColor(
                     currentMatch.team1,
                     isTeam1Winning,
-                    isTeam1Winning
+                    isTeam1Winning,
                   )}`}
                 >
                   {currentMatch.team1Score}
@@ -214,7 +214,7 @@ export default function LiveScoreTicker({ matches }: LiveScoreTickerProps) {
                   className={`text-4xl font-bold ${getScoreColor(
                     currentMatch.team2,
                     isTeam2Winning,
-                    isTeam2Winning
+                    isTeam2Winning,
                   )}`}
                 >
                   {currentMatch.team2Score}

@@ -143,13 +143,13 @@ const TournamentAdminPage = () => {
         console.log('Tournament Year:', selectedTournament.year);
         const response = await fetch(
           `${API_BASE_URL}/registrations/by-tournament/${encodeURIComponent(
-            selectedTournament.name
+            selectedTournament.name,
           )}/${selectedTournament.year}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -166,12 +166,12 @@ const TournamentAdminPage = () => {
             reg.team?._id &&
             reg.team?.name &&
             reg.parent?._id &&
-            reg.parent?.fullName
+            reg.parent?.fullName,
         );
         setRegistrations(validRegistrations);
         if (validRegistrations.length !== data.length) {
           console.warn(
-            'Some registrations were filtered out due to missing data'
+            'Some registrations were filtered out due to missing data',
           );
         }
       } catch (err: unknown) {
@@ -193,7 +193,7 @@ const TournamentAdminPage = () => {
         setFilters((prev) => ({ ...prev, ...newFilters }));
         setPagination((prev) => ({ ...prev, current: 1 }));
       }, 300),
-    []
+    [],
   );
 
   // Filter registrations
@@ -321,7 +321,7 @@ const TournamentAdminPage = () => {
         },
       },
     ],
-    [currentUser]
+    [currentUser],
   );
 
   // Handlers
@@ -416,7 +416,7 @@ const TournamentAdminPage = () => {
                   onChange={(value) => {
                     const [name, year] = value.split('|');
                     const tournament = tournaments.find(
-                      (t) => t.name === name && t.year === parseInt(year)
+                      (t) => t.name === name && t.year === parseInt(year),
                     );
                     if (tournament) {
                       setSelectedTournament(tournament);
@@ -488,8 +488,8 @@ const TournamentAdminPage = () => {
                             {grade === 'PK'
                               ? 'Pre-K'
                               : grade === 'K'
-                              ? 'Kindergarten'
-                              : `${grade} Grade`}
+                                ? 'Kindergarten'
+                                : `${grade} Grade`}
                           </Select.Option>
                         ))}
                       </Select>
@@ -565,10 +565,10 @@ const TournamentAdminPage = () => {
                   {sortOrder === 'asc'
                     ? 'A-Z'
                     : sortOrder === 'desc'
-                    ? 'Z-A'
-                    : sortOrder === 'recentlyAdded'
-                    ? 'Recently Added'
-                    : 'Default'}
+                      ? 'Z-A'
+                      : sortOrder === 'recentlyAdded'
+                        ? 'Recently Added'
+                        : 'Default'}
                 </Link>
                 <div className='dropdown-menu'>
                   <Link
