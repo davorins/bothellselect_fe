@@ -1,941 +1,1226 @@
-import React, { useState, useCallback } from 'react';
-import { Modal } from 'react-bootstrap';
-import dayjs from 'dayjs';
+// src/feature-module/components/registration-modules/DynamicPlayerRegistrationModule.tsx
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-// Day index 0=Mon … 6=Sun
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
+import { Player } from '../../../types/registration-types';
+import { useDynamicFormFields } from '../../hooks/useDynamicFormFields';
+import GradeConfirmationBanner from './GradeConfirmationBanner';
+import PlayerFormFields from '../../../components/forms/PlayerFormFields';
+import { commonHealthConditions } from '../../constants/healthConditions';
 
-const SCHOOL_PRESETS = [
-  'Kenmore Middle School',
-  'Leota Middle School',
-  'Skyview Middle School',
-];
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-const COLOR_MAP: Record<string, string> = {
-  camp: '#ff00d2',
-  training: '#1abe17',
-  game: '#dc3545',
-  holidays: '#0f65cd',
-  celebration: '#eab300',
-  tryout: '#0d6efd',
+interface DynamicPlayerRegistrationModuleProps {
+  players: Player[];
+  onPlayersChange: (players: Player[]) => void;
+  registrationYear: number;
+  season: string;
+  isExistingUser?: boolean;
+  existingPlayers?: Player[];
+  paidPlayers?: Player[];
+  onValidationChange?: (isValid: boolean) => void;
+  showCheckboxes?: boolean;
+  selectedPlayerIds?: string[];
+  onPlayerSelection?: (playerId: string) => void;
+  onPaymentCalculation?: (playerCount: number) => void;
+  onComplete?: (players: Player[]) => void;
+  onBack?: () => void;
+  parentId?: string;
+  authToken?: string;
+  maxPlayers?: number;
+  allowMultiple?: boolean;
+  requiresPayment?: boolean;
+  hideUI?: boolean;
+  onSaveComplete?: () => void;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const isSamePlayer = (p1: Player, p2: Player): boolean =>
+  p1.fullName?.trim().toLowerCase() === p2.fullName?.trim().toLowerCase() &&
+  p1.dob === p2.dob &&
+  p1.gender === p2.gender;
+
+const parseHealthConcerns = (healthConcerns: string = '') => {
+  const concerns = healthConcerns
+    .split(',')
+    .map((c) => c.trim())
+    .filter(Boolean);
+  const selected = concerns
+    .filter((c) => commonHealthConditions.some((hc) => hc.label === c))
+    .map(
+      (c) =>
+        commonHealthConditions.find((hc) => hc.label === c) ?? {
+          value: 'custom',
+          label: c,
+        },
+    );
+  const custom = concerns
+    .filter((c) => !commonHealthConditions.some((hc) => hc.label === c))
+    .join(', ');
+  return { selected, custom, hasCustom: !!custom };
 };
 
-export interface GeneratedEvent {
-  title: string;
-  caption: string;
-  description: string;
-  start: string;
-  end: string;
-  category: string;
-  backgroundColor: string;
-  school?: { name: string; address: string; website: string };
-  allDay: boolean;
-}
+// ─── Component ────────────────────────────────────────────────────────────────
 
-interface TimeSlot {
-  id: number;
-  startTime: string; // "09:00"
-  endTime: string; // "11:00"
-  gradeLabel: string;
-}
-
-interface WeekConfig {
-  weekNum: number;
-  weekStart: Date; // Monday of that week
-  weekEnd: Date;
-  activeDays: number[]; // 0=Mon … 6=Sun
-  school: string;
-}
-
-interface Props {
-  show: boolean;
-  onHide: () => void;
-  onGenerate: (events: GeneratedEvent[]) => Promise<void>;
-  existingSchools?: string[];
-}
-
-let slotCounter = 10;
-
-const defaultSlots: TimeSlot[] = [
-  {
-    id: 1,
-    startTime: '09:00',
-    endTime: '11:00',
-    gradeLabel: '3rd / 4th / 5th grade',
-  },
-  {
-    id: 2,
-    startTime: '11:00',
-    endTime: '13:00',
-    gradeLabel: '6th / 7th / 8th grade',
-  },
-  {
-    id: 3,
-    startTime: '13:00',
-    endTime: '15:00',
-    gradeLabel: 'High School & College',
-  },
-];
-
-// Get Monday of the week for a given date
-function getMondayOf(d: Date): Date {
-  const dt = new Date(d);
-  const day = dt.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-  const diff = day === 0 ? -6 : 1 - day; // If Sunday, go back 6 days to Monday
-  dt.setDate(dt.getDate() + diff);
-  dt.setHours(0, 0, 0, 0);
-  return dt;
-}
-
-// Get the Monday that starts the week containing the given date
-function getWeekStart(date: Date): Date {
-  const dt = new Date(date);
-  const day = dt.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  dt.setDate(dt.getDate() + diff);
-  dt.setHours(0, 0, 0, 0);
-  return dt;
-}
-
-function addDays(d: Date, n: number): Date {
-  const dt = new Date(d);
-  dt.setDate(dt.getDate() + n);
-  return dt;
-}
-
-function fmt12(t: string): string {
-  const [h, m] = t.split(':').map(Number);
-  const ampm = h >= 12 ? 'pm' : 'am';
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${h12}${m ? ':' + String(m).padStart(2, '0') : ''}${ampm}`;
-}
-
-function getWeekNumber(date: Date, startDate: Date): number {
-  const startWeekStart = getWeekStart(startDate);
-  const currentWeekStart = getWeekStart(date);
-  const diffDays = Math.floor(
-    (currentWeekStart.getTime() - startWeekStart.getTime()) /
-      (1000 * 60 * 60 * 24),
+const DynamicPlayerRegistrationModule: React.FC<
+  DynamicPlayerRegistrationModuleProps
+> = ({
+  players,
+  onPlayersChange,
+  registrationYear,
+  season,
+  isExistingUser = false,
+  existingPlayers = [],
+  paidPlayers = [],
+  onValidationChange,
+  showCheckboxes = false,
+  selectedPlayerIds = [],
+  onPlayerSelection,
+  onPaymentCalculation,
+  onComplete,
+  onBack,
+  parentId,
+  authToken,
+  maxPlayers = 10,
+  allowMultiple = true,
+  requiresPayment = true,
+  hideUI = false,
+  onSaveComplete,
+}) => {
+  const [showNewPlayerForm, setShowNewPlayerForm] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [gradeConfirmed, setGradeConfirmed] = useState<Record<number, boolean>>(
+    {},
   );
-  return Math.floor(diffDays / 7) + 1;
-}
 
-function buildWeeks(startDateStr: string, endDateStr: string): WeekConfig[] {
-  if (!startDateStr || !endDateStr) return [];
+  // ── KEY FIX: Only show validation errors after first submit attempt ─────────
+  const hasAttemptedSubmitRef = useRef(false);
 
-  const start = new Date(startDateStr);
-  const end = new Date(endDateStr);
-  end.setHours(23, 59, 59, 999);
-
-  // Get the Monday of the week containing the start date
-  const firstMonday = getMondayOf(start);
-
-  const result: WeekConfig[] = [];
-  let cur = new Date(firstMonday);
-  let wNum = 1;
-
-  while (cur <= end) {
-    const weekEnd = addDays(cur, 6);
-
-    // Only add if the week overlaps with our date range
-    if (weekEnd >= start || cur <= end) {
-      result.push({
-        weekNum: wNum,
-        weekStart: new Date(cur),
-        weekEnd,
-        // Default active days: Mon-Fri for all weeks except maybe first/last
-        activeDays: [0, 1, 2, 3, 4], // Mon, Tue, Wed, Thu, Fri
-        school: SCHOOL_PRESETS[0],
-      });
-    }
-
-    cur = addDays(cur, 7);
-    wNum++;
-  }
-
-  return result;
-}
-
-// Convert our 0=Mon index to a real date for a given week
-function dayOfWeek(weekMonday: Date, dayIndex: number): Date {
-  return addDays(weekMonday, dayIndex);
-}
-
-export default function CampScheduleBuilder({
-  show,
-  onHide,
-  onGenerate,
-  existingSchools = [],
-}: Props) {
-  const [step, setStep] = useState(0);
-  const [saving, setSaving] = useState(false);
-  const [customSchoolInput, setCustomSchoolInput] = useState<
+  const [playerHealthConditions, setPlayerHealthConditions] = useState<
+    Record<number, any[]>
+  >({});
+  const [playerCustomConditions, setPlayerCustomConditions] = useState<
     Record<number, string>
   >({});
+  const [playerShowCustomInput, setPlayerShowCustomInput] = useState<
+    Record<number, boolean>
+  >({});
 
-  // Step 0 – basics
-  const [progName, setProgName] = useState('Summer Basketball Camp 2026');
-  const [caption, setCaption] = useState('');
-  const [category, setCategory] = useState('camp');
-  const [description, setDescription] = useState('');
-  const [genderBoys, setGenderBoys] = useState(true);
-  const [genderGirls, setGenderGirls] = useState(true);
-  const [startDate, setStartDate] = useState('2026-06-29');
-  const [endDate, setEndDate] = useState('2026-08-21');
+  const isSubmittingRef = useRef(false);
+  const hasSavedPlayersRef = useRef(false);
+  const lastSubmitTimestampRef = useRef(0);
+  const isValidatingRef = useRef(false);
+  const validationTimeoutRef = useRef<NodeJS.Timeout>();
+  const prevValidationKeyRef = useRef<string>('');
 
-  // Step 1 – weeks
-  const [weeks, setWeeks] = useState<WeekConfig[]>([]);
+  const {
+    getVisibleFields,
+    validateField,
+    processFieldValue,
+    loading: fieldsLoading,
+  } = useDynamicFormFields('player', { registrationYear });
 
-  // Step 2 – time slots
-  const [slots, setSlots] = useState<TimeSlot[]>(defaultSlots);
+  // ── Player helpers ────────────────────────────────────────────────────────────
 
-  const allSchools = Array.from(
-    new Set([...SCHOOL_PRESETS, ...existingSchools]),
+  const unpaidExistingPlayers = useCallback(
+    () =>
+      existingPlayers.filter(
+        (p) => !paidPlayers.some((pp) => pp._id === p._id),
+      ),
+    [existingPlayers, paidPlayers],
   );
 
-  // ── Step navigation ──────────────────────────────────────────────────────────
+  const hasUnpaidPlayers = useCallback(
+    () => unpaidExistingPlayers().length > 0,
+    [unpaidExistingPlayers],
+  );
 
-  const goToStep = (n: number) => {
-    if (n === 1) {
-      const newWeeks = buildWeeks(startDate, endDate);
-      setWeeks(newWeeks);
-      // Initialize custom school inputs
-      const customs: Record<number, string> = {};
-      newWeeks.forEach((w, i) => {
-        if (!allSchools.includes(w.school)) {
-          customs[i] = w.school;
-        }
-      });
-      setCustomSchoolInput(customs);
+  const hasPaidPlayers = useCallback(
+    () => paidPlayers.length > 0,
+    [paidPlayers],
+  );
+
+  // ── Validation ────────────────────────────────────────────────────────────────
+
+  const validateAllPlayers = useCallback((): boolean => {
+    const errors: Record<string, string> = {};
+    const hasSelectedUnpaid = selectedPlayerIds.length > 0;
+    const hasNew = players.some((p) => !p._id && p.fullName?.trim());
+    const hasAny = hasSelectedUnpaid || hasNew;
+
+    if (!hasAny) {
+      errors.general =
+        'Please select at least one player or add a new player to continue.';
+      setValidationErrors(errors);
+      onValidationChange?.(false);
+      return false;
     }
-    setStep(n);
-  };
 
-  // ── Week helpers ─────────────────────────────────────────────────────────────
-
-  const toggleDay = (wi: number, di: number) => {
-    setWeeks((prev) =>
-      prev.map((w, i) => {
-        if (i !== wi) return w;
-        const has = w.activeDays.includes(di);
-        return {
-          ...w,
-          activeDays: has
-            ? w.activeDays.filter((d) => d !== di)
-            : [...w.activeDays, di].sort((a, b) => a - b),
-        };
-      }),
-    );
-  };
-
-  const setSchool = (wi: number, val: string) => {
-    setWeeks((prev) =>
-      prev.map((w, i) => {
-        if (i !== wi) return w;
-        const newSchool = val;
-        if (!allSchools.includes(newSchool) && newSchool !== '__custom__') {
-          setCustomSchoolInput((prevCustom) => ({
-            ...prevCustom,
-            [wi]: newSchool,
-          }));
-        }
-        return { ...w, school: newSchool };
-      }),
-    );
-  };
-
-  const handleSchoolSelect = (wi: number, value: string) => {
-    if (value === '__custom__') {
-      // User wants to enter custom school
-      setWeeks((prev) =>
-        prev.map((w, i) => (i === wi ? { ...w, school: '' } : w)),
-      );
-    } else {
-      setSchool(wi, value);
+    if (isSubmittingRef.current || isSubmitting) {
+      return true;
     }
-  };
 
-  const handleCustomSchoolChange = (wi: number, value: string) => {
-    setCustomSchoolInput((prev) => ({ ...prev, [wi]: value }));
-    setSchool(wi, value);
-  };
+    let newPlayersValid = true;
+    players.forEach((player, index) => {
+      if (!player._id) {
+        const visibleFields = getVisibleFields(player);
 
-  const applySchoolToAll = (school: string) => {
-    setWeeks((prev) =>
-      prev.map((w, i) => {
-        if (!allSchools.includes(school)) {
-          setCustomSchoolInput((prevCustom) => ({
-            ...prevCustom,
-            [i]: school,
-          }));
-        }
-        return { ...w, school };
-      }),
-    );
-  };
+        visibleFields.forEach((field) => {
+          if (!field.isEnabled) return;
+          if (!field.isRequired) {
+            const value = player[field.fieldName as keyof Player];
+            if (!value || (typeof value === 'string' && !value.trim())) return;
+          }
 
-  const applyDaysToAll = (days: number[]) => {
-    setWeeks((prev) => prev.map((w) => ({ ...w, activeDays: [...days] })));
-  };
-
-  // ── Slot helpers ─────────────────────────────────────────────────────────────
-
-  const updateSlot = (id: number, field: keyof TimeSlot, val: string) => {
-    setSlots((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, [field]: val } : s)),
-    );
-  };
-
-  const addSlot = () => {
-    setSlots((prev) => [
-      ...prev,
-      {
-        id: slotCounter++,
-        startTime: '09:00',
-        endTime: '10:00',
-        gradeLabel: '',
-      },
-    ]);
-  };
-
-  const removeSlot = (id: number) => {
-    setSlots((prev) => prev.filter((s) => s.id !== id));
-  };
-
-  // ── Event generation ──────────────────────────────────────────────────────────
-
-  const buildEvents = useCallback((): GeneratedEvent[] => {
-    const genderLabel = [genderBoys ? 'Boys' : '', genderGirls ? 'Girls' : '']
-      .filter(Boolean)
-      .join(' & ');
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
-
-    const events: GeneratedEvent[] = [];
-
-    weeks.forEach((wk) => {
-      wk.activeDays.forEach((di) => {
-        const date = dayOfWeek(wk.weekStart, di);
-        // Skip if date is outside our range
-        if (date < start || date > end) return;
-
-        slots.forEach((slot) => {
-          const [sh, sm] = slot.startTime.split(':').map(Number);
-          const [eh, em] = slot.endTime.split(':').map(Number);
-          const startDt = new Date(date);
-          startDt.setHours(sh, sm, 0, 0);
-          const endDt = new Date(date);
-          endDt.setHours(eh, em, 0, 0);
-
-          const titleParts = [progName];
-          if (genderLabel) titleParts.push(genderLabel);
-          if (slot.gradeLabel) titleParts.push(slot.gradeLabel);
-
-          events.push({
-            title: titleParts.join(' – '),
-            caption,
-            description:
-              description ||
-              `Week ${wk.weekNum} · ${DAYS[di]} · ${fmt12(slot.startTime)}–${fmt12(slot.endTime)}`,
-            start: startDt.toISOString(),
-            end: endDt.toISOString(),
-            category,
-            backgroundColor: COLOR_MAP[category] || '#adb5bd',
-            school: wk.school
-              ? { name: wk.school, address: '', website: '' }
-              : undefined,
-            allDay: false,
-          });
+          const value = player[field.fieldName as keyof Player];
+          const error = validateField(field, value);
+          if (error) {
+            errors[`player${index}_${field.fieldName}`] = error;
+            newPlayersValid = false;
+          }
         });
-      });
+
+        const hasGradeValue = player.grade && player.grade.trim();
+        if (hasGradeValue && !gradeConfirmed[index]) {
+          errors[`player${index}_grade`] =
+            'Please confirm the grade is correct';
+          newPlayersValid = false;
+        }
+      }
     });
 
-    return events.sort(
-      (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
-    );
+    if (hasNew && !newPlayersValid) {
+      errors.general =
+        'Please complete all required information for new players.';
+    }
+
+    setValidationErrors((prev) => {
+      if (JSON.stringify(prev) === JSON.stringify(errors)) return prev;
+      return errors;
+    });
+
+    const valid = hasAny && (!hasNew || newPlayersValid);
+    onValidationChange?.(valid);
+    return valid;
   }, [
-    weeks,
-    slots,
-    progName,
-    caption,
-    description,
-    category,
-    genderBoys,
-    genderGirls,
-    startDate,
-    endDate,
+    players,
+    selectedPlayerIds,
+    gradeConfirmed,
+    onValidationChange,
+    getVisibleFields,
+    validateField,
+    isSubmitting,
   ]);
 
-  const preview = step === 3 ? buildEvents() : [];
-  const totalDays = new Set(preview.map((e) => e.start.slice(0, 10))).size;
+  const validationKey = useMemo(() => {
+    return JSON.stringify({
+      playersLength: players.length,
+      newPlayersCount: players.filter((p) => !p._id).length,
+      selectedCount: selectedPlayerIds.length,
+      gradeConfirmedKeys: Object.keys(gradeConfirmed).length,
+      playerGrades: players.map((p) => ({
+        id: p._id,
+        grade: p.grade,
+        dob: p.dob,
+      })),
+    });
+  }, [players, selectedPlayerIds, gradeConfirmed]);
 
-  const handleGenerate = async () => {
-    setSaving(true);
-    try {
-      await onGenerate(buildEvents());
-      onHide();
-      setStep(0);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSaving(false);
+  // ── Health conditions ─────────────────────────────────────────────────────────
+
+  const updatePlayerHealthConcerns = useCallback(
+    (index: number, conditions: any[], custom: string, showCustom: boolean) => {
+      const labels = conditions
+        .filter((c) => c.value !== 'custom')
+        .map((c) => c.label);
+      let healthConcerns = labels.join(', ');
+      if (custom.trim() && showCustom) {
+        healthConcerns = healthConcerns
+          ? `${healthConcerns}, ${custom.trim()}`
+          : custom.trim();
+      }
+      const updated = [...players];
+      updated[index] = { ...updated[index], healthConcerns };
+      onPlayersChange(updated);
+    },
+    [players, onPlayersChange],
+  );
+
+  const handleConditionsChange = (index: number, selected: any) => {
+    const arr = selected ? [...selected] : [];
+    const hasCustom = arr.some((c: any) => c.value === 'custom');
+    setPlayerHealthConditions((prev) => ({ ...prev, [index]: arr }));
+    setPlayerShowCustomInput((prev) => ({ ...prev, [index]: hasCustom }));
+    updatePlayerHealthConcerns(
+      index,
+      arr,
+      playerCustomConditions[index] || '',
+      hasCustom,
+    );
+  };
+
+  const handleCustomConditionChange = (index: number, value: string) => {
+    setPlayerCustomConditions((prev) => ({ ...prev, [index]: value }));
+    updatePlayerHealthConcerns(
+      index,
+      playerHealthConditions[index] || [],
+      value,
+      playerShowCustomInput[index] || false,
+    );
+  };
+
+  useEffect(() => {
+    players.forEach((player, index) => {
+      if (!player._id && playerHealthConditions[index] === undefined) {
+        const { selected, custom, hasCustom } = parseHealthConcerns(
+          player.healthConcerns,
+        );
+        setPlayerHealthConditions((prev) => ({ ...prev, [index]: selected }));
+        setPlayerCustomConditions((prev) => ({ ...prev, [index]: custom }));
+        setPlayerShowCustomInput((prev) => ({ ...prev, [index]: hasCustom }));
+      }
+    });
+  }, [players.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    return () => {
+      isSubmittingRef.current = false;
+      hasSavedPlayersRef.current = false;
+      if (validationTimeoutRef.current) {
+        clearTimeout(validationTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // ── KEY FIX: Only run background validation after first submit attempt ────────
+  useEffect(() => {
+    // Don't run validation on mount — wait until user tries to submit
+    if (!hasAttemptedSubmitRef.current) return;
+    if (isSubmittingRef.current || isSubmitting) return;
+
+    if (validationTimeoutRef.current) {
+      clearTimeout(validationTimeoutRef.current);
+    }
+
+    validationTimeoutRef.current = setTimeout(() => {
+      if (
+        !isValidatingRef.current &&
+        validationKey !== prevValidationKeyRef.current
+      ) {
+        isValidatingRef.current = true;
+        validateAllPlayers();
+        prevValidationKeyRef.current = validationKey;
+        isValidatingRef.current = false;
+      }
+    }, 300);
+
+    return () => {
+      if (validationTimeoutRef.current) {
+        clearTimeout(validationTimeoutRef.current);
+      }
+    };
+  }, [validationKey, validateAllPlayers, isSubmitting]);
+
+  // ── Field change ──────────────────────────────────────────────────────────────
+
+  const handlePlayerChange = (
+    index: number,
+    field: keyof Player,
+    value: string,
+  ) => {
+    const updated = [...players];
+    const currentPlayer = updated[index];
+    const updatedPlayer = { ...currentPlayer, [field]: value };
+
+    if (field === 'dob' && value) {
+      const tempFormData = { ...updatedPlayer, dob: value };
+      const visibleFields = getVisibleFields(tempFormData);
+
+      visibleFields.forEach((f) => {
+        if (f.fieldName === 'grade' || f.fieldName === 'age') {
+          const calculatedValue = processFieldValue(f, tempFormData, {
+            registrationYear,
+          });
+          if (calculatedValue !== undefined) {
+            const fieldName = f.fieldName as keyof Player;
+            if (fieldName === 'age') {
+              updatedPlayer.age = calculatedValue as number;
+            } else if (fieldName === 'grade') {
+              updatedPlayer.grade = calculatedValue as string;
+              setGradeConfirmed((prev) => ({ ...prev, [index]: true }));
+            }
+          }
+        }
+      });
+    }
+
+    if (field === 'grade' && value) {
+      updatedPlayer.isGradeOverridden = true;
+      setGradeConfirmed((prev) => ({ ...prev, [index]: true }));
+    }
+
+    updated[index] = updatedPlayer;
+
+    if (validationErrors[`player${index}_${field}`]) {
+      setValidationErrors((prev) => {
+        const n = { ...prev };
+        delete n[`player${index}_${field}`];
+        return n;
+      });
+    }
+
+    onPlayersChange(updated);
+  };
+
+  const handleGradeOverride = (index: number) => {
+    const updated = [...players];
+    updated[index] = { ...updated[index], isGradeOverridden: true };
+    onPlayersChange(updated);
+    setGradeConfirmed((prev) => ({ ...prev, [index]: true }));
+  };
+
+  // ── Add / remove ──────────────────────────────────────────────────────────────
+
+  const addPlayer = () => {
+    if (players.filter((p) => !p._id).length >= maxPlayers) return;
+    const newPlayer: Player = {
+      fullName: '',
+      gender: '',
+      dob: '',
+      schoolName: '',
+      healthConcerns: '',
+      aauNumber: '',
+      registrationYear,
+      season,
+      grade: '',
+    };
+    const updated = [...players, newPlayer];
+    onPlayersChange(updated);
+    onPaymentCalculation?.(
+      updated.filter((p) => !p._id || selectedPlayerIds.includes(p._id!))
+        .length,
+    );
+    setShowNewPlayerForm(true);
+  };
+
+  const removePlayer = (index: number) => {
+    const updated = [...players];
+    const removed = updated.splice(index, 1)[0];
+    onPlayersChange(updated);
+    setPlayerHealthConditions((prev) => {
+      const n = { ...prev };
+      delete n[index];
+      return n;
+    });
+    setPlayerCustomConditions((prev) => {
+      const n = { ...prev };
+      delete n[index];
+      return n;
+    });
+    setPlayerShowCustomInput((prev) => {
+      const n = { ...prev };
+      delete n[index];
+      return n;
+    });
+    setGradeConfirmed((prev) => {
+      const n = { ...prev };
+      delete n[index];
+      return n;
+    });
+    if (removed._id && onPlayerSelection) onPlayerSelection(removed._id);
+    onPaymentCalculation?.(
+      updated.filter((p) => !p._id || selectedPlayerIds.includes(p._id!))
+        .length,
+    );
+    if (updated.every((p) => p._id)) setShowNewPlayerForm(false);
+  };
+
+  // ── Existing player selection ─────────────────────────────────────────────────
+
+  const handlePlayerSelection = (playerId: string) => {
+    if (!requiresPayment || !onPlayerSelection) return;
+    onPlayerSelection(playerId);
+    const isSelected = selectedPlayerIds.includes(playerId);
+    const player = unpaidExistingPlayers().find((p) => p._id === playerId);
+    if (!player) return;
+    if (isSelected) {
+      const updated = players.filter((p) => p._id !== playerId);
+      onPlayersChange(updated);
+      onPaymentCalculation?.(
+        updated.filter(
+          (p) =>
+            !p._id ||
+            selectedPlayerIds.filter((id) => id !== playerId).includes(p._id!),
+        ).length,
+      );
+    } else {
+      if (!players.some((p) => p._id === playerId))
+        onPlayersChange([...players, { ...player, registrationYear, season }]);
+      onPaymentCalculation?.(
+        players.filter(
+          (p) => !p._id || [...selectedPlayerIds, playerId].includes(p._id!),
+        ).length,
+      );
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  // ── Backend save ──────────────────────────────────────────────────────────────
 
-  const stepLabels = ['Basics', 'Weeks', 'Time Slots', 'Preview'];
+  const savePlayersToBackend = async (
+    playersToSave: Player[],
+  ): Promise<boolean> => {
+    if (!parentId || !authToken) {
+      setValidationErrors({
+        general: 'Authentication required. Please try again.',
+      });
+      return false;
+    }
 
-  return (
-    <Modal show={show} onHide={onHide} size='lg' backdrop='static'>
-      <Modal.Header closeButton>
-        <Modal.Title>
-          <i className='ti ti-calendar-plus me-2' />
-          Camp / Program Schedule Builder
-        </Modal.Title>
-      </Modal.Header>
+    const axios = (await import('axios')).default;
+    const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-      <Modal.Body
-        style={{ maxHeight: '72vh', overflowY: 'auto', padding: '1.25rem' }}
+    try {
+      const uniquePlayerMap = new Map<string, Player>();
+
+      const newPlayersToSave = playersToSave.filter((p) => {
+        if (p._id) return false;
+
+        const alreadyExists = [...existingPlayers, ...paidPlayers].some((e) =>
+          isSamePlayer(e, p),
+        );
+        if (alreadyExists) return false;
+
+        const uniqueKey = `${p.fullName?.trim().toLowerCase()}|${p.dob}|${p.gender}`;
+        if (uniquePlayerMap.has(uniqueKey)) return false;
+        uniquePlayerMap.set(uniqueKey, p);
+        return true;
+      });
+
+      if (newPlayersToSave.length === 0) return true;
+
+      const savedPlayers: Player[] = [];
+
+      for (const player of newPlayersToSave) {
+        const isValid = getVisibleFields(player).every(
+          (f) => !validateField(f, player[f.fieldName as keyof Player]),
+        );
+        if (!isValid) continue;
+
+        try {
+          const response = await axios.post(
+            `${API_BASE_URL}/players/register`,
+            {
+              fullName: player.fullName.trim(),
+              gender: player.gender,
+              dob: player.dob,
+              schoolName: player.schoolName?.trim() || '',
+              healthConcerns: player.healthConcerns || '',
+              aauNumber: player.aauNumber || '',
+              registrationYear,
+              season,
+              parentId,
+              grade: player.grade || '',
+              isGradeOverridden: player.isGradeOverridden || false,
+              skipSeasonRegistration: !requiresPayment,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+                'Content-Type': 'application/json',
+              },
+            },
+          );
+
+          if (response.data.error?.includes('already exists')) {
+            if (response.data.duplicatePlayerId) {
+              savedPlayers.push({
+                ...player,
+                _id: response.data.duplicatePlayerId,
+              });
+            }
+          } else {
+            savedPlayers.push(response.data.player || response.data);
+          }
+        } catch (err: any) {
+          if (
+            err.response?.data?.error?.includes('already exists') ||
+            err.response?.data?.error?.includes('duplicate')
+          ) {
+            const duplicateId = err.response.data.duplicatePlayerId;
+            if (duplicateId) {
+              savedPlayers.push({ ...player, _id: duplicateId });
+            }
+          }
+        }
+      }
+
+      if (savedPlayers.length > 0) {
+        const updatedPlayers = players.map((orig) => {
+          if (orig._id) return orig;
+          const saved = savedPlayers.find((s) => isSamePlayer(s, orig));
+          return saved || orig;
+        });
+        if (JSON.stringify(updatedPlayers) !== JSON.stringify(players)) {
+          onPlayersChange(updatedPlayers);
+        }
+        onSaveComplete?.();
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error('Save players error:', error);
+      if (
+        error.response?.data?.error?.includes('already exists') ||
+        error.response?.data?.error?.includes('duplicate')
+      ) {
+        return true;
+      }
+      setValidationErrors({
+        general:
+          error.response?.data?.error ||
+          'Failed to save players. Please try again.',
+      });
+      return false;
+    }
+  };
+
+  // ── Submit ────────────────────────────────────────────────────────────────────
+
+  const handleSubmit = async () => {
+    const now = Date.now();
+    if (now - lastSubmitTimestampRef.current < 2000) return;
+    if (isSubmittingRef.current) return;
+
+    hasAttemptedSubmitRef.current = true;
+    lastSubmitTimestampRef.current = now;
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    setValidationErrors({});
+
+    if (!validateAllPlayers()) {
+      setIsSubmitting(false);
+      isSubmittingRef.current = false;
+      window.scrollTo(0, 0);
+      return;
+    }
+    setTimeout(() => onComplete?.(players), 100);
+    setIsSubmitting(false);
+    isSubmittingRef.current = false;
+  };
+
+  // ── Player form item renderer ─────────────────────────────────────────────────
+
+  const renderPlayerFormItem = (
+    player: Player,
+    actualIndex: number,
+    displayIndex: number,
+    totalNew: number,
+  ) => {
+    const visibleFields = getVisibleFields(player);
+    return (
+      <div
+        key={`new-${actualIndex}`}
+        className={
+          hideUI ? 'mb-4' : 'player-form-section mb-4 border-bottom pb-4'
+        }
       >
-        {/* Step indicator */}
-        <div
-          className='d-flex mb-4'
-          style={{
-            gap: 0,
-            borderRadius: 8,
-            overflow: 'hidden',
-            border: '1px solid #dee2e6',
-          }}
-        >
-          {stepLabels.map((label, i) => (
+        {totalNew > 1 && (
+          <div className='d-flex justify-content-between align-items-center mb-3'>
+            <h6 className='text-primary'>Player {displayIndex + 1}</h6>
             <button
-              key={i}
               type='button'
-              onClick={() => (i < step ? setStep(i) : undefined)}
-              style={{
-                flex: 1,
-                padding: '8px 4px',
-                border: 'none',
-                borderRight: i < 3 ? '1px solid #dee2e6' : 'none',
-                background:
-                  i === step ? '#0d6efd' : i < step ? '#d1e7dd' : '#f8f9fa',
-                color: i === step ? '#fff' : i < step ? '#0a3622' : '#6c757d',
-                cursor: i < step ? 'pointer' : 'default',
-                fontSize: 13,
-                fontWeight: i === step ? 600 : 400,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
+              className='btn btn-sm btn-outline-danger'
+              onClick={() => removePlayer(actualIndex)}
+            >
+              Remove Player
+            </button>
+          </div>
+        )}
+
+        <PlayerFormFields
+          player={player}
+          onChange={(field, value) =>
+            handlePlayerChange(actualIndex, field, value)
+          }
+          visibleFields={visibleFields}
+          errors={Object.fromEntries(
+            Object.entries(validationErrors)
+              .filter(([k]) => k.startsWith(`player${actualIndex}_`))
+              .map(([k, v]) => [k.replace(`player${actualIndex}_`, ''), v]),
+          )}
+          selectedConditions={playerHealthConditions[actualIndex] || []}
+          onConditionsChange={(selected) =>
+            handleConditionsChange(actualIndex, selected)
+          }
+          showCustomConditionInput={playerShowCustomInput[actualIndex] || false}
+          customCondition={playerCustomConditions[actualIndex] || ''}
+          onCustomConditionChange={(value) =>
+            handleCustomConditionChange(actualIndex, value)
+          }
+          currentYear={registrationYear}
+          isGradeOverridden={player.isGradeOverridden}
+          onGradeOverride={(overridden) => {
+            const updated = [...players];
+            updated[actualIndex] = {
+              ...updated[actualIndex],
+              isGradeOverridden: overridden,
+            };
+            onPlayersChange(updated);
+          }}
+          gradeSlot={
+            <div className='mb-3'>
+              <GradeConfirmationBanner
+                playerIndex={actualIndex}
+                player={player}
+                gradeConfirmed={gradeConfirmed[actualIndex] ?? false}
+                onConfirm={() =>
+                  setGradeConfirmed((prev) => ({
+                    ...prev,
+                    [actualIndex]: true,
+                  }))
+                }
+                onAdjust={() => handleGradeOverride(actualIndex)}
+                onChange={(val) =>
+                  handlePlayerChange(actualIndex, 'grade', val)
+                }
+                validationError={validationErrors[`player${actualIndex}_grade`]}
+              />
+            </div>
+          }
+        />
+      </div>
+    );
+  };
+
+  // ── Render: existing player list ──────────────────────────────────────────────
+  // KEY FIX: Always render this when isExistingUser=true and there are any
+  // players (paid or unpaid). Previously it hid itself when all were paid
+  // and nothing was selected, making paid players invisible.
+
+  const renderPlayerList = () => {
+    if (hideUI) return null;
+    if (!isExistingUser) return null;
+    // Show the list if there are any paid OR unpaid players
+    if (paidPlayers.length === 0 && existingPlayers.length === 0) return null;
+
+    return (
+      <div className='card mb-4'>
+        <div className='card-header bg-light'>
+          <div className='d-flex align-items-center'>
+            <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
+              <i className='ti ti-users fs-16' />
+            </span>
+            <h4 className='text-dark'>Your Players</h4>
+          </div>
+        </div>
+        <div className='card-body'>
+          {/* ── Paid players ── */}
+          {hasPaidPlayers() && requiresPayment && (
+            <div className='mb-4'>
+              <h6 className='text-success mb-3'>
+                <i className='ti ti-circle-check me-2'></i>Already Registered &
+                Paid
+              </h6>
+              {paidPlayers.map((player) => (
+                <div
+                  key={player._id}
+                  className='d-flex justify-content-between align-items-center p-3 border rounded mb-2 bg-light'
+                >
+                  <div>
+                    <strong>{player.fullName}</strong>
+                    <span className='text-muted ms-2'>
+                      — {player.grade} Grade
+                    </span>
+                  </div>
+                  <span className='badge bg-success'>
+                    <i className='ti ti-check me-1'></i>Paid
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── Unpaid / selectable players ── */}
+          {hasUnpaidPlayers() && (
+            <div className='mb-4'>
+              <h6 className='text-warning mb-3'>
+                <i className='ti ti-alert-circle me-2'></i>
+                {requiresPayment
+                  ? 'Select Players to Register'
+                  : 'Your Registered Players'}
+              </h6>
+              {unpaidExistingPlayers().map((player) => {
+                if (requiresPayment) {
+                  const isSelected = selectedPlayerIds.includes(player._id!);
+                  return (
+                    <div
+                      key={player._id}
+                      className={`d-flex justify-content-between align-items-center p-3 border rounded mb-2 mobile ${
+                        isSelected ? 'border-primary bg-light' : ''
+                      }`}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => handlePlayerSelection(player._id!)}
+                    >
+                      <div className='d-flex align-items-center mobile'>
+                        <input
+                          type='checkbox'
+                          className='form-check-input me-3'
+                          checked={isSelected}
+                          onChange={() => {}}
+                          style={{ transform: 'scale(1.2)' }}
+                        />
+                        <div>
+                          <strong>{player.fullName}</strong>
+                          <span className='text-muted ms-2'>
+                            — {player.grade} Grade
+                          </span>
+                        </div>
+                      </div>
+                      <span className='badge bg-warning text-dark'>
+                        <i className='ti ti-clock me-1'></i>Payment Pending
+                      </span>
+                    </div>
+                  );
+                }
+                return (
+                  <div
+                    key={player._id}
+                    className='d-flex justify-content-between align-items-center p-3 border rounded mb-2'
+                  >
+                    <div>
+                      <strong>{player.fullName}</strong>
+                      <span className='text-muted ms-2'>
+                        — {player.grade} Grade
+                      </span>
+                    </div>
+                    <span className='badge bg-info'>
+                      <i className='ti ti-user me-1'></i>Registered
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ── Render: new player forms ──────────────────────────────────────────────────
+
+  const renderNewPlayerForms = () => {
+    const newPlayers = players.filter((p) => !p._id);
+
+    if (isExistingUser && !showNewPlayerForm && newPlayers.length === 0) {
+      return null;
+    }
+
+    if (newPlayers.length === 0) return null;
+
+    if (hideUI) {
+      return (
+        <>
+          {newPlayers.map((player, index) => {
+            const actualIndex = players.findIndex((p) => p === player);
+            return renderPlayerFormItem(
+              player,
+              actualIndex,
+              index,
+              newPlayers.length,
+            );
+          })}
+          {allowMultiple && newPlayers.length < maxPlayers && (
+            <div className='text-center mt-4'>
+              <button
+                type='button'
+                className='btn btn-outline-primary'
+                onClick={addPlayer}
+              >
+                <i className='ti ti-plus me-2'></i>Add Another Player
+              </button>
+            </div>
+          )}
+        </>
+      );
+    }
+
+    return (
+      <div className='card mb-4'>
+        <div className='card-header bg-light d-flex justify-content-between align-items-center'>
+          <div className='d-flex align-items-center'>
+            <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
+              <i className='ti ti-users fs-16' />
+            </span>
+            <h4 className='text-dark mb-0'>
+              {isExistingUser ? 'Add New Player' : 'Player Information'}
+            </h4>
+          </div>
+          {isExistingUser && (
+            <button
+              type='button'
+              className='btn btn-sm btn-outline-secondary'
+              onClick={() => {
+                setShowNewPlayerForm(false);
+                onPlayersChange(players.filter((p) => p._id));
+                onPaymentCalculation?.(selectedPlayerIds.length);
               }}
             >
-              <span
-                style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 11,
-                  background:
-                    i === step
-                      ? 'rgba(255,255,255,0.3)'
-                      : i < step
-                        ? '#0a3622'
-                        : '#dee2e6',
-                  color: i < step ? '#fff' : 'inherit',
-                }}
-              >
-                {i < step ? '✓' : i + 1}
-              </span>
-              {label}
+              Cancel
             </button>
-          ))}
+          )}
         </div>
-
-        {/* ── STEP 0: Basics ── */}
-        {step === 0 && (
-          <div>
-            <div className='row g-3'>
-              <div className='col-md-8'>
-                <label className='form-label fw-semibold'>Program name</label>
-                <input
-                  className='form-control'
-                  value={progName}
-                  onChange={(e) => setProgName(e.target.value)}
-                  placeholder='Summer Basketball Camp 2026'
-                />
-              </div>
-              <div className='col-md-4'>
-                <label className='form-label fw-semibold'>Category</label>
-                <select
-                  className='form-select'
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                >
-                  <option value='camp'>Camp</option>
-                  <option value='training'>Training</option>
-                  <option value='tryout'>Tryout</option>
-                  <option value='game'>Game</option>
-                  <option value='celebration'>Celebration</option>
-                </select>
-              </div>
-              <div className='col-md-6'>
-                <label className='form-label fw-semibold'>Start date</label>
-                <input
-                  type='date'
-                  className='form-control'
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-              </div>
-              <div className='col-md-6'>
-                <label className='form-label fw-semibold'>End date</label>
-                <input
-                  type='date'
-                  className='form-control'
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
-              </div>
-              <div className='col-md-12'>
-                <label className='form-label fw-semibold'>
-                  Caption{' '}
-                  <span className='text-muted fw-normal'>(optional)</span>
-                </label>
-                <input
-                  className='form-control'
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  placeholder='Open to all skill levels'
-                />
-              </div>
-              <div className='col-md-8'>
-                <label className='form-label fw-semibold'>Gender</label>
-                <div className='d-flex gap-3 mt-1'>
-                  {[
-                    ['Boys', genderBoys, setGenderBoys],
-                    ['Girls', genderGirls, setGenderGirls],
-                  ].map(([label, val, setter]) => (
-                    <div key={label as string} className='form-check'>
-                      <input
-                        className='form-check-input'
-                        type='checkbox'
-                        id={`g-${label}`}
-                        checked={val as boolean}
-                        onChange={(e) =>
-                          (setter as (v: boolean) => void)(e.target.checked)
-                        }
-                      />
-                      <label
-                        className='form-check-label'
-                        htmlFor={`g-${label}`}
-                      >
-                        {label as string}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className='col-md-12'>
-                <label className='form-label fw-semibold'>
-                  Description{' '}
-                  <span className='text-muted fw-normal'>(optional)</span>
-                </label>
-                <textarea
-                  className='form-control'
-                  rows={2}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
+        <div className='card-body'>
+          {!isExistingUser && (
+            <div className='mb-4'>
+              <h5>Register Players for {season}</h5>
+              <p className='text-muted'>
+                Add information for each player you'd like to register.
+              </p>
             </div>
-          </div>
-        )}
+          )}
+          {isExistingUser && (
+            <p className='text-muted mb-4'>
+              Add information for each new player you'd like to register.
+            </p>
+          )}
 
-        {/* ── STEP 1: Weeks ── */}
-        {step === 1 && (
-          <div>
-            <div
-              className='alert alert-info d-flex align-items-start gap-2 py-2 mb-3'
-              style={{ fontSize: 13 }}
-            >
-              <i className='ti ti-info-circle mt-1' />
-              <div>
-                Toggle which days are active each week, then pick the school.
-                Use the bulk actions to set all weeks at once.
-              </div>
-            </div>
+          {newPlayers.map((player, index) => {
+            const actualIndex = players.findIndex((p) => p === player);
+            return renderPlayerFormItem(
+              player,
+              actualIndex,
+              index,
+              newPlayers.length,
+            );
+          })}
 
-            {/* Bulk actions */}
-            <div className='d-flex gap-2 flex-wrap mb-3 p-3 bg-light rounded'>
-              <span
-                className='text-muted'
-                style={{ fontSize: 13, alignSelf: 'center' }}
-              >
-                Apply to all weeks:
-              </span>
+          {allowMultiple && newPlayers.length < maxPlayers && (
+            <div className='text-center mt-4'>
               <button
                 type='button'
-                className='btn btn-sm btn-outline-secondary'
-                onClick={() => applyDaysToAll([0, 1, 2])}
+                className='btn btn-outline-primary'
+                onClick={addPlayer}
               >
-                Mon–Wed
+                <i className='ti ti-plus me-2'></i>Add Another Player
               </button>
-              <button
-                type='button'
-                className='btn btn-sm btn-outline-secondary'
-                onClick={() => applyDaysToAll([0, 1, 2, 3, 4])}
-              >
-                Mon–Fri
-              </button>
-              <button
-                type='button'
-                className='btn btn-sm btn-outline-secondary'
-                onClick={() => applyDaysToAll([0, 1, 2, 3, 4, 5])}
-              >
-                Mon–Sat
-              </button>
-              {SCHOOL_PRESETS.slice(0, 3).map((s) => (
-                <button
-                  key={s}
-                  type='button'
-                  className='btn btn-sm btn-outline-primary'
-                  onClick={() => applySchoolToAll(s)}
-                >
-                  All →{' '}
-                  {s.replace(' Middle School', '').replace(' High School', '')}
-                </button>
-              ))}
             </div>
+          )}
 
-            {weeks.map((wk, wi) => {
-              const isCustomSchool =
-                !allSchools.includes(wk.school) && wk.school !== '';
-              const displaySchool = isCustomSchool ? '__custom__' : wk.school;
-
-              return (
-                <div key={wk.weekNum} className='card mb-2 border'>
-                  <div className='card-body py-3 px-3'>
-                    <div className='d-flex align-items-center justify-content-between mb-2'>
-                      <span className='fw-semibold' style={{ fontSize: 14 }}>
-                        Week {wk.weekNum}
-                      </span>
-                      <span className='text-muted' style={{ fontSize: 12 }}>
-                        {dayjs(wk.weekStart).format('MMM D')} –{' '}
-                        {dayjs(wk.weekEnd).format('MMM D')}
-                      </span>
-                    </div>
-
-                    {/* Day toggles */}
-                    <div className='d-flex gap-2 mb-3 flex-wrap'>
-                      {DAYS.map((d, di) => (
-                        <button
-                          key={di}
-                          type='button'
-                          onClick={() => toggleDay(wi, di)}
-                          style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: '50%',
-                            border: '1px solid',
-                            borderColor: wk.activeDays.includes(di)
-                              ? '#0d6efd'
-                              : '#dee2e6',
-                            background: wk.activeDays.includes(di)
-                              ? '#0d6efd'
-                              : 'white',
-                            color: wk.activeDays.includes(di)
-                              ? 'white'
-                              : '#6c757d',
-                            fontWeight: 600,
-                            fontSize: 11,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {d[0]}
-                        </button>
-                      ))}
-                      <span
-                        className='text-muted ms-2'
-                        style={{ fontSize: 12, alignSelf: 'center' }}
-                      >
-                        {wk.activeDays.length === 0
-                          ? 'No days – week skipped'
-                          : `${wk.activeDays.length} day${wk.activeDays.length > 1 ? 's' : ''}`}
-                      </span>
-                    </div>
-
-                    {/* School selection - like the registration module */}
-                    <div className='d-flex gap-2 align-items-center flex-wrap'>
-                      <i className='ti ti-building-community text-muted' />
-                      <select
-                        className='form-select form-select-sm'
-                        style={{ width: 'auto', minWidth: 200 }}
-                        value={displaySchool}
-                        onChange={(e) => handleSchoolSelect(wi, e.target.value)}
-                      >
-                        <option value=''>Select a school</option>
-                        {allSchools.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                        <option value='__custom__'>+ Add custom school</option>
-                      </select>
-
-                      {/* Custom school input */}
-                      {(displaySchool === '__custom__' || isCustomSchool) && (
-                        <input
-                          type='text'
-                          className='form-control form-control-sm'
-                          style={{ width: 250 }}
-                          placeholder='Enter school name'
-                          value={customSchoolInput[wi] || wk.school || ''}
-                          onChange={(e) =>
-                            handleCustomSchoolChange(wi, e.target.value)
-                          }
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* ── STEP 2: Time slots ── */}
-        {step === 2 && (
-          <div>
-            <div
-              className='alert alert-info d-flex align-items-start gap-2 py-2 mb-3'
-              style={{ fontSize: 13 }}
-            >
-              <i className='ti ti-info-circle mt-1' />
-              Each slot is created on every active day across all weeks.
-            </div>
-
-            {slots.map((slot, si) => (
-              <div key={slot.id} className='card mb-2 border'>
-                <div className='card-body py-2 px-3'>
-                  <div className='row g-2 align-items-center'>
-                    <div className='col-auto'>
-                      <span
-                        className='badge bg-secondary rounded-pill'
-                        style={{
-                          width: 24,
-                          height: 24,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        {si + 1}
-                      </span>
-                    </div>
-                    <div className='col-md-2'>
-                      <label className='form-label form-label-sm mb-1'>
-                        Start
-                      </label>
-                      <input
-                        type='time'
-                        className='form-control form-control-sm'
-                        value={slot.startTime}
-                        onChange={(e) =>
-                          updateSlot(slot.id, 'startTime', e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className='col-md-2'>
-                      <label className='form-label form-label-sm mb-1'>
-                        End
-                      </label>
-                      <input
-                        type='time'
-                        className='form-control form-control-sm'
-                        value={slot.endTime}
-                        onChange={(e) =>
-                          updateSlot(slot.id, 'endTime', e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className='col'>
-                      <label className='form-label form-label-sm mb-1'>
-                        Grade group / label
-                      </label>
-                      <input
-                        className='form-control form-control-sm'
-                        value={slot.gradeLabel}
-                        placeholder='e.g. 3rd / 4th / 5th grade'
-                        onChange={(e) =>
-                          updateSlot(slot.id, 'gradeLabel', e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className='col-auto pt-3'>
-                      <button
-                        type='button'
-                        className='btn btn-sm btn-outline-danger'
-                        onClick={() => removeSlot(slot.id)}
-                      >
-                        <i className='ti ti-trash' />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+          {/* Only show field-level warnings after submit attempt */}
+          {hasAttemptedSubmitRef.current &&
+            Object.keys(validationErrors).some((k) => k !== 'general') && (
+              <div className='alert alert-warning mt-3'>
+                <i className='ti ti-alert-triangle me-2'></i>
+                Please complete all required player information to continue.
               </div>
-            ))}
+            )}
+        </div>
+      </div>
+    );
+  };
 
+  // ── Render: CTA card ──────────────────────────────────────────────────────────
+
+  const renderUniversalCTA = () => {
+    if (hideUI) return null;
+
+    const hasSelectedUnpaid = selectedPlayerIds.length > 0;
+    const hasNewFilled = players.some((p) => !p._id && p.fullName?.trim());
+    const hasNewForm = showNewPlayerForm || players.some((p) => !p._id);
+    const hasAny = hasSelectedUnpaid || hasNewFilled;
+
+    const newPlayerCount = players.filter((p) => !p._id).length;
+
+    const areNewValid = players
+      .filter((p) => !p._id)
+      .every((player) => {
+        const actualIndex = players.findIndex((p) => p === player);
+        const fieldsValid = getVisibleFields(player).every(
+          (f) => !validateField(f, player[f.fieldName as keyof Player]),
+        );
+        return fieldsValid && player.grade && gradeConfirmed[actualIndex];
+      });
+
+    const isFormValid = hasAny && (hasNewFilled ? areNewValid : true);
+
+    let buttonText = requiresPayment
+      ? 'Continue to Payment'
+      : existingPlayers.length > 0 || paidPlayers.length > 0
+        ? 'Add Players to Account'
+        : 'Complete Registration';
+
+    const total = selectedPlayerIds.length + newPlayerCount;
+
+    return (
+      <div className='card mt-4'>
+        <div className='card-body'>
+          <div className='d-flex justify-content-between align-items-center'>
+            <div className='make-a-payment-mobile'>
+              <h5 className='mb-1'>
+                {requiresPayment
+                  ? 'Ready to Make Payment'
+                  : 'Ready to Register'}
+              </h5>
+              <p className='text-muted mb-0'>
+                {total > 0
+                  ? `${total} player${total !== 1 ? 's' : ''} ready`
+                  : 'Select or add players to continue'}
+              </p>
+              {hasNewForm && !areNewValid && hasNewFilled && (
+                <p className='text-warning small mb-0 mt-1'>
+                  <i className='ti ti-alert-triangle me-1'></i>
+                  Complete all required information for new players
+                </p>
+              )}
+            </div>
             <button
               type='button'
-              className='btn btn-outline-secondary w-100 mt-1'
-              onClick={addSlot}
+              className={`btn btn-lg ${isFormValid ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={handleSubmit}
+              disabled={isSubmitting || isSubmittingRef.current || !isFormValid}
             >
-              <i className='ti ti-plus me-1' /> Add time slot
+              {isSubmitting ? (
+                <>
+                  <span className='spinner-border spinner-border-sm me-2'></span>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <i
+                    className={`${requiresPayment ? 'ti ti-credit-card' : 'ti ti-check'} me-2`}
+                  ></i>
+                  {buttonText}
+                </>
+              )}
             </button>
           </div>
-        )}
+        </div>
+      </div>
+    );
+  };
 
-        {/* ── STEP 3: Preview ── */}
-        {step === 3 && (
-          <div>
-            {/* Summary stats */}
-            <div className='row g-2 mb-3'>
-              {[
-                { label: 'Total events', value: preview.length },
-                { label: 'Weeks', value: weeks.length },
-                { label: 'Active days', value: totalDays },
-                { label: 'Daily slots', value: slots.length },
-              ].map((s) => (
-                <div key={s.label} className='col-3'>
-                  <div
-                    className='text-center p-2 rounded'
-                    style={{
-                      background: '#f8f9fa',
-                      border: '1px solid #dee2e6',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 24,
-                        fontWeight: 700,
-                        color: '#0d6efd',
-                      }}
-                    >
-                      {s.value}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#6c757d' }}>
-                      {s.label}
-                    </div>
-                  </div>
-                </div>
-              ))}
+  // ── New user path ─────────────────────────────────────────────────────────────
+
+  if (!isExistingUser && !hideUI) {
+    const newPlayers = players.filter((p) => !p._id);
+
+    const allValid =
+      newPlayers.length > 0 &&
+      newPlayers.every((p) => {
+        const idx = players.findIndex((pl) => pl === p);
+        const fieldsValid = getVisibleFields(p).every(
+          (f) => !validateField(f, p[f.fieldName as keyof Player]),
+        );
+        return fieldsValid && p.grade && gradeConfirmed[idx];
+      });
+
+    return (
+      <div>
+        <div className='card'>
+          <div className='card-header bg-light'>
+            <div className='d-flex align-items-center'>
+              <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
+                <i className='ti ti-shirt-sport fs-16' />
+              </span>
+              <h4 className='text-dark'>Player Information</h4>
+            </div>
+          </div>
+          <div className='card-body'>
+            <div className='mb-4'>
+              <h5>Register Players for {season}</h5>
+              <p className='text-muted'>
+                Add information for each player you'd like to register.
+              </p>
             </div>
 
-            {preview.length === 0 ? (
-              <div className='text-center py-4 text-muted'>
-                <i className='ti ti-calendar-off fs-3 d-block mb-2' />
-                No events generated — check your date range and week settings.
-              </div>
-            ) : (
-              <div style={{ maxHeight: 380, overflowY: 'auto' }}>
-                <table
-                  className='table table-sm table-hover mb-0'
-                  style={{ fontSize: 13 }}
-                >
-                  <thead className='table-light sticky-top'>
-                    <tr>
-                      <th>Date</th>
-                      <th>Time</th>
-                      <th>Grade group</th>
-                      <th>Location</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {preview.map((ev, i) => {
-                      const start = new Date(ev.start);
-                      const end = new Date(ev.end);
-                      const fmt = (d: Date) =>
-                        d.toLocaleTimeString('en-US', {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                        });
-                      const parts = ev.title.split(' – ');
-                      const gradeLabel = parts[parts.length - 1];
-                      return (
-                        <tr key={i}>
-                          <td style={{ whiteSpace: 'nowrap' }}>
-                            {dayjs(ev.start).format('ddd, MMM D')}
-                          </td>
-                          <td style={{ whiteSpace: 'nowrap' }}>
-                            {fmt(start)} – {fmt(end)}
-                          </td>
-                          <td>{gradeLabel}</td>
-                          <td
-                            className='text-truncate'
-                            style={{ maxWidth: 160 }}
-                          >
-                            {ev.school?.name}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal.Body>
+            {newPlayers.map((player, index) => {
+              const actualIndex = players.findIndex((p) => p === player);
+              return renderPlayerFormItem(
+                player,
+                actualIndex,
+                index,
+                newPlayers.length,
+              );
+            })}
 
-      <Modal.Footer>
-        {step > 0 && (
-          <button
-            type='button'
-            className='btn btn-light me-auto'
-            onClick={() => setStep(step - 1)}
-          >
-            <i className='ti ti-arrow-left me-1' /> Back
-          </button>
-        )}
-        <button type='button' className='btn btn-light me-3' onClick={onHide}>
-          Cancel
-        </button>
-        {step < 3 && (
-          <button
-            type='button'
-            className='btn btn-primary'
-            onClick={() => goToStep(step + 1)}
-          >
-            Next <i className='ti ti-arrow-right ms-1' />
-          </button>
-        )}
-        {step === 3 && (
-          <button
-            type='button'
-            className='btn btn-success'
-            onClick={handleGenerate}
-            disabled={saving || preview.length === 0}
-          >
-            {saving ? (
-              <>
-                <span className='spinner-border spinner-border-sm me-2' />
-                Saving…
-              </>
-            ) : (
-              <>
-                <i className='ti ti-calendar-plus me-1' />
-                Create {preview.length} events
-              </>
+            <div className='text-center mt-4'>
+              <button
+                type='button'
+                className='btn btn-outline-primary'
+                onClick={addPlayer}
+                disabled={newPlayers.length >= maxPlayers}
+              >
+                <i className='ti ti-plus me-2'></i>
+                {newPlayers.length === 0 ? 'Add Player' : 'Add Another Player'}
+              </button>
+            </div>
+
+            {hasAttemptedSubmitRef.current &&
+              Object.keys(validationErrors).length > 0 &&
+              newPlayers.length > 0 && (
+                <div className='alert alert-warning mt-3'>
+                  <i className='ti ti-alert-triangle me-2'></i>
+                  Please complete all required player information to continue.
+                </div>
+              )}
+          </div>
+        </div>
+
+        <div className='card mt-4'>
+          <div className='card-body'>
+            <div className='d-flex justify-content-between align-items-center'>
+              <div className='make-a-payment-mobile'>
+                <h5 className='mb-1'>
+                  {requiresPayment
+                    ? 'Ready to Make Payment'
+                    : 'Ready to Complete Registration'}
+                </h5>
+                <p className='text-muted mb-0'>
+                  {newPlayers.length > 0
+                    ? `${newPlayers.length} player${newPlayers.length !== 1 ? 's' : ''} added`
+                    : 'No players added yet — click "Add Player" above'}
+                </p>
+                {newPlayers.length > 0 && !allValid && (
+                  <p className='text-warning small mb-0 mt-1'>
+                    <i className='ti ti-alert-triangle me-1'></i>
+                    Complete all required information for each player
+                  </p>
+                )}
+              </div>
+              <button
+                type='button'
+                className={`btn btn-lg ${allValid ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={handleSubmit}
+                disabled={isSubmitting || isSubmittingRef.current || !allValid}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className='spinner-border spinner-border-sm me-2'></span>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <i
+                      className={`${requiresPayment ? 'ti ti-credit-card' : 'ti ti-check'} me-2`}
+                    ></i>
+                    {requiresPayment
+                      ? 'Continue to Payment'
+                      : 'Complete Registration'}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Existing user path ────────────────────────────────────────────────────────
+
+  if (fieldsLoading && !hideUI) {
+    return (
+      <div className='text-center py-4'>
+        <div className='spinner-border text-primary' role='status'>
+          <span className='visually-hidden'>Loading form fields...</span>
+        </div>
+        <p className='mt-2'>Loading form configuration...</p>
+      </div>
+    );
+  }
+
+  if (hideUI) {
+    return <>{renderNewPlayerForms()}</>;
+  }
+
+  const newPlayers = players.filter((p) => !p._id);
+  const hasSelectedAny = selectedPlayerIds.length > 0;
+  const shouldShowCTA =
+    showNewPlayerForm || newPlayers.length > 0 || hasSelectedAny;
+
+  // "Initial state" for existing users = no new form open, nothing selected
+  // KEY FIX: This no longer hides renderPlayerList — paid players always show
+  const isInInitialState =
+    !showNewPlayerForm && newPlayers.length === 0 && !hasSelectedAny;
+
+  return (
+    <div>
+      {/* Only show the general validation error after a submit attempt */}
+      {hasAttemptedSubmitRef.current && validationErrors.general && (
+        <div className='alert alert-danger mb-4'>
+          <i className='ti ti-alert-circle me-2'></i>
+          {validationErrors.general}
+        </div>
+      )}
+
+      {/* Always render paid/unpaid player list for existing users */}
+      {renderPlayerList()}
+
+      {/* "Add New Player" prompt — shown in initial state (nothing selected/added yet) */}
+      {isInInitialState && (
+        <div className='card mb-4'>
+          <div className='card-header bg-light'>
+            <div className='d-flex align-items-center'>
+              <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
+                <i className='ti ti-user-plus fs-16' />
+              </span>
+              <h4 className='text-dark'>
+                {hasPaidPlayers()
+                  ? 'Register Another Player'
+                  : 'Add Players to Account'}
+              </h4>
+            </div>
+          </div>
+          <div className='card-body text-center py-5'>
+            <i className='ti ti-users fs-1 text-muted mb-3 d-block'></i>
+            <h5 className='mb-2'>
+              {hasPaidPlayers()
+                ? 'Register an Additional Player'
+                : 'Ready to Add Players'}
+            </h5>
+            <p className='text-muted mb-4'>
+              {hasPaidPlayers()
+                ? 'Would you like to register another player for this event?'
+                : 'Add a new player to your account for this registration.'}
+            </p>
+            {hasUnpaidPlayers() && (
+              <p className='text-warning mb-3'>
+                <i className='ti ti-arrow-up me-1'></i>
+                You also have players above with pending payment — select them
+                to register.
+              </p>
             )}
-          </button>
-        )}
-      </Modal.Footer>
-    </Modal>
+            <button
+              type='button'
+              className='btn btn-primary btn-lg'
+              onClick={() => {
+                addPlayer();
+                setShowNewPlayerForm(true);
+              }}
+            >
+              <i className='ti ti-plus me-2'></i>
+              Add New Player
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* New player form(s) */}
+      {!isInInitialState && renderNewPlayerForms()}
+
+      {/* CTA submit card */}
+      {shouldShowCTA && renderUniversalCTA()}
+    </div>
   );
-}
+};
+
+export default DynamicPlayerRegistrationModule;
