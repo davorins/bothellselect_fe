@@ -113,7 +113,7 @@ const AboutUsPage = () => {
               <div className='hero-img-glass'>
                 <div className='hero-glow' />
                 <ImageWithBasePath
-                  src='assets/img/aboutus.png'
+                  src='assets/img/aboutus.jpg'
                   alt='Bothell Select Basketball'
                   className='hero-img'
                 />

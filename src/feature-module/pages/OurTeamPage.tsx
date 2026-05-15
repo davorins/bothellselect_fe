@@ -97,7 +97,7 @@ const OurTeamPage = () => {
               <div className='hero-img-glass'>
                 <div className='hero-glow' />
                 <ImageWithBasePath
-                  src='assets/img/ourteam.png'
+                  src='assets/img/our-team.jpg'
                   alt='Our Team and Coaches'
                   className='hero-img'
                 />

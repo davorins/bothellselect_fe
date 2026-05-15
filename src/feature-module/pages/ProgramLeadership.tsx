@@ -72,7 +72,7 @@ const ProgramLeadership = () => {
               <div className='hero-img-glass'>
                 <div className='hero-glow' />
                 <ImageWithBasePath
-                  src='assets/img/watermark-logo-dark.png'
+                  src='assets/img/program-leadership.jpg'
                   alt='Program Leadership'
                   className='hero-img'
                 />
