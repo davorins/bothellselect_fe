@@ -60,6 +60,8 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const [videoError, setVideoError] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [showBackgroundImage, setShowBackgroundImage] = useState(true);
+  const [showVideoElement, setShowVideoElement] = useState(false);
 
   const [videoControls, setVideoControls] = useState<VideoControls>({
     isPlaying: false,
@@ -84,6 +86,18 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const timeUpdateThrottle = useRef<number>(0);
   const videoFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Preload background image
+  const preloadBackgroundImage = useCallback(() => {
+    const img = new Image();
+    img.src = '/assets/img/bg/main.png';
+    img.onload = () => {
+      console.log('Background image loaded');
+    };
+    img.onerror = () => {
+      console.log('Background image failed to load');
+    };
+  }, []);
+
   // ── Fetch promo video URL ───────────────────────────────────────────────
   useEffect(() => {
     const fetchPromoVideo = async () => {
@@ -94,13 +108,35 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         if (data.videoUrl) {
           const urlWithCache = `${data.videoUrl}?t=${Date.now()}`;
           setPromoVideoUrl(urlWithCache);
+
+          // Preload video in background
+          const video = document.createElement('video');
+          video.preload = 'auto';
+          video.src = urlWithCache;
+          video.oncanplaythrough = () => {
+            console.log('Video preloaded, ready to show');
+            setShowVideoElement(true);
+            setTimeout(() => {
+              setShowBackgroundImage(false);
+            }, 500);
+          };
+          video.onerror = () => {
+            console.log('Video failed to preload, showing background image');
+            setShowVideoElement(false);
+            setShowBackgroundImage(true);
+          };
+        } else {
+          setShowVideoElement(false);
         }
       } catch (err) {
         console.error('Could not fetch promo video URL:', err);
+        setShowVideoElement(false);
       }
     };
+
+    preloadBackgroundImage();
     fetchPromoVideo();
-  }, []);
+  }, [preloadBackgroundImage]);
 
   // ── Admin video upload ─────────────────────────────────────────────────
   const uploadVideo = useCallback(
@@ -179,6 +215,17 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           setPromoVideoUrl(urlWithCache);
           setUploadSuccess(true);
           setTimeout(() => setUploadSuccess(false), 3000);
+
+          // Preload new video
+          const video = document.createElement('video');
+          video.preload = 'auto';
+          video.src = urlWithCache;
+          video.oncanplaythrough = () => {
+            setShowVideoElement(true);
+            setTimeout(() => {
+              setShowBackgroundImage(false);
+            }, 500);
+          };
         } else throw new Error('No video URL returned from server');
       } catch (err: any) {
         setUploadError(err.message || 'Failed to upload video');
@@ -239,6 +286,8 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       setPromoVideoUrl('');
       setShowAdminPanel(false);
       setUploadSuccess(true);
+      setShowVideoElement(false);
+      setShowBackgroundImage(true);
       setTimeout(() => setUploadSuccess(false), 3000);
     } catch (err: any) {
       setUploadError(`Failed to remove video: ${err.message}`);
@@ -417,6 +466,8 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const handleVideoError = useCallback(() => {
     console.error('Video failed to load');
     setVideoError(true);
+    setShowVideoElement(false);
+    setShowBackgroundImage(true);
   }, []);
 
   const openControlsPanel = useCallback(() => {
@@ -508,173 +559,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
 
   return (
     <div className='hp-root'>
-      {!isMobile && promoVideoUrl && !videoError && (
-        <>
-          {!showControlsPanel && (
-            <button
-              className='hp-controls-open'
-              onClick={openControlsPanel}
-              aria-label='Open Video Controls'
-              title='Video Controls'
-            >
-              <svg
-                width='20'
-                height='20'
-                viewBox='0 0 24 24'
-                fill='currentColor'
-              >
-                <path d='M8 5v14l11-7z' />
-              </svg>
-            </button>
-          )}
-
-          <div
-            className={`hp-controls ${showControlsPanel ? 'hp-controls--visible' : ''}`}
-          >
-            <div className='hp-controls__panel'>
-              <div className='hp-controls__progress'>
-                <input
-                  type='range'
-                  min='0'
-                  max='100'
-                  value={stableVideoProgress}
-                  onChange={handleProgressChange}
-                  className='hp-controls__slider'
-                  style={{
-                    background: `linear-gradient(to right, rgba(255,255,255,0.95) ${stableVideoProgress}%, rgba(255,255,255,0.2) ${stableVideoProgress}%)`,
-                  }}
-                />
-              </div>
-              <div className='hp-controls__row'>
-                <div className='hp-controls__left'>
-                  <button
-                    className='hp-ctrl-btn'
-                    onClick={togglePlayPause}
-                    aria-label={videoControls.isPlaying ? 'Pause' : 'Play'}
-                  >
-                    {videoControls.isPlaying ? (
-                      <svg
-                        width='16'
-                        height='16'
-                        viewBox='0 0 24 24'
-                        fill='currentColor'
-                      >
-                        <rect x='6' y='5' width='4' height='14' rx='1' />
-                        <rect x='14' y='5' width='4' height='14' rx='1' />
-                      </svg>
-                    ) : (
-                      <svg
-                        width='16'
-                        height='16'
-                        viewBox='0 0 24 24'
-                        fill='currentColor'
-                      >
-                        <path d='M8 5v14l11-7z' />
-                      </svg>
-                    )}
-                  </button>
-                  <button
-                    className='hp-ctrl-btn'
-                    onClick={toggleMute}
-                    aria-label={videoControls.isMuted ? 'Unmute' : 'Mute'}
-                  >
-                    {videoControls.isMuted ? (
-                      <svg
-                        width='16'
-                        height='16'
-                        viewBox='0 0 24 24'
-                        fill='currentColor'
-                      >
-                        <path d='M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zM3 9v6h4l5 5V4L7 9H3z' />
-                      </svg>
-                    ) : (
-                      <svg
-                        width='16'
-                        height='16'
-                        viewBox='0 0 24 24'
-                        fill='currentColor'
-                      >
-                        <path d='M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z' />
-                      </svg>
-                    )}
-                  </button>
-                  <span className='hp-controls__time'>
-                    {formatTime((stableVideoProgress / 100) * videoDuration)}
-                    <span className='hp-controls__sep'>/</span>
-                    {formatTime(videoDuration)}
-                  </span>
-                </div>
-                <div className='hp-controls__right'>
-                  <button
-                    className='hp-ctrl-btn'
-                    onClick={openVideoPopup}
-                    aria-label='Open in popup'
-                    title='Expand'
-                  >
-                    <svg
-                      width='16'
-                      height='16'
-                      viewBox='0 0 24 24'
-                      fill='currentColor'
-                    >
-                      <path d='M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z' />
-                    </svg>
-                  </button>
-                  <button
-                    className='hp-ctrl-btn'
-                    onClick={toggleFullscreen}
-                    aria-label={
-                      videoControls.isFullscreen
-                        ? 'Exit fullscreen'
-                        : 'Fullscreen'
-                    }
-                    title={
-                      videoControls.isFullscreen
-                        ? 'Exit Fullscreen'
-                        : 'Fullscreen'
-                    }
-                  >
-                    {videoControls.isFullscreen ? (
-                      <svg
-                        width='16'
-                        height='16'
-                        viewBox='0 0 24 24'
-                        fill='currentColor'
-                      >
-                        <path d='M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z' />
-                      </svg>
-                    ) : (
-                      <svg
-                        width='16'
-                        height='16'
-                        viewBox='0 0 24 24'
-                        fill='currentColor'
-                      >
-                        <path d='M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z' />
-                      </svg>
-                    )}
-                  </button>
-                  <button
-                    className='hp-ctrl-btn hp-ctrl-btn--close'
-                    onClick={closeControlsPanel}
-                    aria-label='Close controls'
-                    title='Close'
-                  >
-                    <svg
-                      width='16'
-                      height='16'
-                      viewBox='0 0 24 24'
-                      fill='currentColor'
-                    >
-                      <path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z' />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
       <div
         className='hp-stage'
         onDragEnter={isAdmin ? handleDrag : undefined}
@@ -682,51 +566,201 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         onDragOver={isAdmin ? handleDrag : undefined}
         onDrop={isAdmin ? handleDrop : undefined}
       >
-        {/* Video - Only on Desktop (hidden on mobile) */}
-        {!isMobile && promoVideoUrl && !videoError ? (
+        {/* Background Image - shows first, fades out when video loads */}
+        {showBackgroundImage && <div className='hp-stage__background-image' />}
+
+        {/* Video - loads after background image, fades in */}
+        {!isMobile && promoVideoUrl && !videoError && showVideoElement && (
           <video
             ref={videoRef}
-            className='hp-stage__video'
+            className={`hp-stage__video ${showBackgroundImage ? 'fade-in' : ''}`}
             src={promoVideoUrl}
             autoPlay
             muted={videoControls.isMuted}
             loop
             playsInline
-            preload='metadata'
+            preload='auto'
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
             onError={handleVideoError}
+            style={{
+              opacity: showBackgroundImage ? 0 : 1,
+              transition: 'opacity 0.5s ease',
+            }}
           />
-        ) : (
-          <div
-            className={`hp-stage__placeholder ${dragActive ? 'is-drag-active' : ''}`}
-          >
-            {/* {isAdmin && (
-              <div className='hp-stage__placeholder-msg'>
-                <i className='ti ti-video-off' />
-                <span>
-                  {dragActive
-                    ? 'Drop video here'
-                    : videoError
-                      ? 'Video failed to load — use admin panel to re-upload'
-                      : 'No promo video — use admin panel to upload'}
-                </span>
-              </div>
-            )} */}
-          </div>
         )}
 
         <div className='hp-overlay'>
           <HomeTileRenderer pageSlug='home' />
         </div>
 
-        {/* <div className='hp-stage__logo'>
-          <ImageWithBasePath
-            src='assets/img/watermark-logo.png'
-            alt='Bothell Select AAU Basketball'
-            className='hp-stage__logo-img'
-          />
-        </div> */}
+        {!isMobile && promoVideoUrl && !videoError && (
+          <>
+            {!showControlsPanel && (
+              <button
+                className='hp-controls-open'
+                onClick={openControlsPanel}
+                aria-label='Open Video Controls'
+                title='Video Controls'
+              >
+                <svg
+                  width='20'
+                  height='20'
+                  viewBox='0 0 24 24'
+                  fill='currentColor'
+                >
+                  <path d='M8 5v14l11-7z' />
+                </svg>
+              </button>
+            )}
+
+            <div
+              className={`hp-controls ${showControlsPanel ? 'hp-controls--visible' : ''}`}
+            >
+              <div className='hp-controls__panel'>
+                <div className='hp-controls__progress'>
+                  <input
+                    type='range'
+                    min='0'
+                    max='100'
+                    value={stableVideoProgress}
+                    onChange={handleProgressChange}
+                    className='hp-controls__slider'
+                    style={{
+                      background: `linear-gradient(to right, rgba(255,255,255,0.95) ${stableVideoProgress}%, rgba(255,255,255,0.2) ${stableVideoProgress}%)`,
+                    }}
+                  />
+                </div>
+                <div className='hp-controls__row'>
+                  <div className='hp-controls__left'>
+                    <button
+                      className='hp-ctrl-btn'
+                      onClick={togglePlayPause}
+                      aria-label={videoControls.isPlaying ? 'Pause' : 'Play'}
+                    >
+                      {videoControls.isPlaying ? (
+                        <svg
+                          width='16'
+                          height='16'
+                          viewBox='0 0 24 24'
+                          fill='currentColor'
+                        >
+                          <rect x='6' y='5' width='4' height='14' rx='1' />
+                          <rect x='14' y='5' width='4' height='14' rx='1' />
+                        </svg>
+                      ) : (
+                        <svg
+                          width='16'
+                          height='16'
+                          viewBox='0 0 24 24'
+                          fill='currentColor'
+                        >
+                          <path d='M8 5v14l11-7z' />
+                        </svg>
+                      )}
+                    </button>
+                    <button
+                      className='hp-ctrl-btn'
+                      onClick={toggleMute}
+                      aria-label={videoControls.isMuted ? 'Unmute' : 'Mute'}
+                    >
+                      {videoControls.isMuted ? (
+                        <svg
+                          width='16'
+                          height='16'
+                          viewBox='0 0 24 24'
+                          fill='currentColor'
+                        >
+                          <path d='M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zM3 9v6h4l5 5V4L7 9H3z' />
+                        </svg>
+                      ) : (
+                        <svg
+                          width='16'
+                          height='16'
+                          viewBox='0 0 24 24'
+                          fill='currentColor'
+                        >
+                          <path d='M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z' />
+                        </svg>
+                      )}
+                    </button>
+                    <span className='hp-controls__time'>
+                      {formatTime((stableVideoProgress / 100) * videoDuration)}
+                      <span className='hp-controls__sep'>/</span>
+                      {formatTime(videoDuration)}
+                    </span>
+                  </div>
+                  <div className='hp-controls__right'>
+                    <button
+                      className='hp-ctrl-btn'
+                      onClick={openVideoPopup}
+                      aria-label='Open in popup'
+                      title='Expand'
+                    >
+                      <svg
+                        width='16'
+                        height='16'
+                        viewBox='0 0 24 24'
+                        fill='currentColor'
+                      >
+                        <path d='M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z' />
+                      </svg>
+                    </button>
+                    <button
+                      className='hp-ctrl-btn'
+                      onClick={toggleFullscreen}
+                      aria-label={
+                        videoControls.isFullscreen
+                          ? 'Exit fullscreen'
+                          : 'Fullscreen'
+                      }
+                      title={
+                        videoControls.isFullscreen
+                          ? 'Exit Fullscreen'
+                          : 'Fullscreen'
+                      }
+                    >
+                      {videoControls.isFullscreen ? (
+                        <svg
+                          width='16'
+                          height='16'
+                          viewBox='0 0 24 24'
+                          fill='currentColor'
+                        >
+                          <path d='M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z' />
+                        </svg>
+                      ) : (
+                        <svg
+                          width='16'
+                          height='16'
+                          viewBox='0 0 24 24'
+                          fill='currentColor'
+                        >
+                          <path d='M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z' />
+                        </svg>
+                      )}
+                    </button>
+                    <button
+                      className='hp-ctrl-btn hp-ctrl-btn--close'
+                      onClick={closeControlsPanel}
+                      aria-label='Close controls'
+                      title='Close'
+                    >
+                      <svg
+                        width='16'
+                        height='16'
+                        viewBox='0 0 24 24'
+                        fill='currentColor'
+                      >
+                        <path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z' />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
 
         {isAdmin && (
           <>
