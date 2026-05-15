@@ -92,7 +92,10 @@ const ProgramLeadership = () => {
               <div className='leader-image-placeholder'>
                 {/* Image container - replace with actual image later */}
                 <div className='leader-image-inner'>
-                  <i className='ti ti-user-circle' />
+                  <ImageWithBasePath
+                    src='assets/img/zo.png'
+                    alt='Zlatko (Zo) Savovic'
+                  />
                 </div>
               </div>
               <div className='leader-title-section'>
@@ -210,7 +213,10 @@ const ProgramLeadership = () => {
               <div className='leader-image-placeholder'>
                 {/* Image container - replace with actual image later */}
                 <div className='leader-image-inner'>
-                  <i className='ti ti-user-circle' />
+                  <ImageWithBasePath
+                    src='assets/img/ak.png'
+                    alt='Armend Kahrimanovic'
+                  />
                 </div>
               </div>
               <div className='leader-title-section'>
