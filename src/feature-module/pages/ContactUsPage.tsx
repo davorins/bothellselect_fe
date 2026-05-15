@@ -489,6 +489,7 @@ const ContactPage = () => {
           border-color: #506ee4;
           background: rgba(255, 255, 255, 0.12);
           box-shadow: 0 0 0 3px rgba(80, 110, 228, 0.1);
+          color: rgba(255, 255, 255, 0.9);
         }
 
         .glass-input::placeholder,
