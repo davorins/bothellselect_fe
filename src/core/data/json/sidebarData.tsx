@@ -99,6 +99,14 @@ export const SidebarData = [
         link: routes.tournamentAdminPage,
         roles: ['admin'],
       },
+      {
+        label: 'Tournament',
+        icon: 'ti ti-tournament',
+        submenu: false,
+        showSubRoute: false,
+        link: routes.adminTournaments,
+        roles: ['admin', 'coach'],
+      },
     ],
   },
   {
@@ -113,14 +121,6 @@ export const SidebarData = [
         submenu: false,
         showSubRoute: false,
         link: routes.teams,
-        roles: ['admin', 'coach'],
-      },
-      {
-        label: 'Tournament',
-        icon: 'ti ti-tournament',
-        submenu: false,
-        showSubRoute: false,
-        link: routes.adminTournaments,
         roles: ['admin', 'coach'],
       },
       {

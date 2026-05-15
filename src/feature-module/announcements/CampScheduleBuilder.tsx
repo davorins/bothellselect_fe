@@ -1,15 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Modal } from 'react-bootstrap';
 import dayjs from 'dayjs';
+import axios from 'axios';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-// Day index 0=Mon … 6=Sun
-
-const SCHOOL_PRESETS = [
-  'Kenmore Middle School',
-  'Leota Middle School',
-  'Skyview Middle School',
-];
 
 const COLOR_MAP: Record<string, string> = {
   camp: '#ff00d2',
@@ -34,17 +28,17 @@ export interface GeneratedEvent {
 
 interface TimeSlot {
   id: number;
-  startTime: string; // "09:00"
-  endTime: string; // "11:00"
+  startTime: string;
+  endTime: string;
   gradeLabel: string;
 }
 
 interface WeekConfig {
   weekNum: number;
-  weekStart: Date; // Monday of that week
+  weekStart: Date;
   weekEnd: Date;
-  activeDays: number[]; // 0=Mon … 6=Sun
-  school: string;
+  activeDays: number[];
+  school: string | null;
 }
 
 interface Props {
@@ -77,19 +71,8 @@ const defaultSlots: TimeSlot[] = [
   },
 ];
 
-// Get Monday of the week for a given date
 function getMondayOf(d: Date): Date {
   const dt = new Date(d);
-  const day = dt.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-  const diff = day === 0 ? -6 : 1 - day; // If Sunday, go back 6 days to Monday
-  dt.setDate(dt.getDate() + diff);
-  dt.setHours(0, 0, 0, 0);
-  return dt;
-}
-
-// Get the Monday that starts the week containing the given date
-function getWeekStart(date: Date): Date {
-  const dt = new Date(date);
   const day = dt.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   dt.setDate(dt.getDate() + diff);
@@ -110,56 +93,190 @@ function fmt12(t: string): string {
   return `${h12}${m ? ':' + String(m).padStart(2, '0') : ''}${ampm}`;
 }
 
-function getWeekNumber(date: Date, startDate: Date): number {
-  const startWeekStart = getWeekStart(startDate);
-  const currentWeekStart = getWeekStart(date);
-  const diffDays = Math.floor(
-    (currentWeekStart.getTime() - startWeekStart.getTime()) /
-      (1000 * 60 * 60 * 24),
-  );
-  return Math.floor(diffDays / 7) + 1;
-}
-
-function buildWeeks(startDateStr: string, endDateStr: string): WeekConfig[] {
-  if (!startDateStr || !endDateStr) return [];
+function buildWeeks(startDateStr: string, numberOfWeeks: number): WeekConfig[] {
+  if (!startDateStr) return [];
 
   const start = new Date(startDateStr);
-  const end = new Date(endDateStr);
-  end.setHours(23, 59, 59, 999);
-
-  // Get the Monday of the week containing the start date
   const firstMonday = getMondayOf(start);
 
   const result: WeekConfig[] = [];
-  let cur = new Date(firstMonday);
-  let wNum = 1;
 
-  while (cur <= end) {
-    const weekEnd = addDays(cur, 6);
+  for (let w = 0; w < numberOfWeeks; w++) {
+    const weekStart = addDays(firstMonday, w * 7);
+    const weekEnd = addDays(weekStart, 6);
 
-    // Only add if the week overlaps with our date range
-    if (weekEnd >= start || cur <= end) {
-      result.push({
-        weekNum: wNum,
-        weekStart: new Date(cur),
-        weekEnd,
-        // Default active days: Mon-Fri for all weeks except maybe first/last
-        activeDays: [0, 1, 2, 3, 4], // Mon, Tue, Wed, Thu, Fri
-        school: SCHOOL_PRESETS[0],
-      });
-    }
-
-    cur = addDays(cur, 7);
-    wNum++;
+    result.push({
+      weekNum: w + 1,
+      weekStart: new Date(weekStart),
+      weekEnd,
+      activeDays: [0, 1, 2, 3, 4],
+      school: null,
+    });
   }
 
   return result;
 }
 
-// Convert our 0=Mon index to a real date for a given week
-function dayOfWeek(weekMonday: Date, dayIndex: number): Date {
-  return addDays(weekMonday, dayIndex);
+// School search component with "add new" option
+interface SchoolSearchProps {
+  value: string | null;
+  onChange: (schoolName: string | null) => void;
+  placeholder?: string;
 }
+
+const SchoolSearch: React.FC<SchoolSearchProps> = ({
+  value,
+  onChange,
+  placeholder = 'Search for a school...',
+}) => {
+  const [searchTerm, setSearchTerm] = useState(value || '');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+  useEffect(() => {
+    if (value) {
+      setSearchTerm(value);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const searchSchools = async (query: string) => {
+    if (!query.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `${API_BASE_URL}/schools?search=${encodeURIComponent(query)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (response.data && Array.isArray(response.data)) {
+        const schoolNames = response.data.map((s: any) => s.name);
+        setSuggestions(schoolNames);
+        setShowSuggestions(schoolNames.length > 0);
+      }
+    } catch (error) {
+      console.error('Error searching schools:', error);
+      setSuggestions([]);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      searchSchools(value);
+    }, 300);
+  };
+
+  const handleSelectSchool = (schoolName: string) => {
+    setSearchTerm(schoolName);
+    onChange(schoolName);
+    setShowSuggestions(false);
+  };
+
+  const handleAddNew = async () => {
+    if (searchTerm.trim() && !suggestions.includes(searchTerm)) {
+      // Save to database
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post(
+          `${API_BASE_URL}/schools/addIfMissing`,
+          { schoolName: searchTerm },
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        onChange(searchTerm);
+        setShowSuggestions(false);
+      } catch (error) {
+        console.error('Error adding school:', error);
+        alert('Failed to add school. Please try again.');
+      }
+    }
+  };
+
+  const handleClear = () => {
+    setSearchTerm('');
+    onChange(null);
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  return (
+    <div ref={wrapperRef} style={{ position: 'relative' }}>
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <input
+          type='text'
+          className='form-control form-control-sm'
+          placeholder={placeholder}
+          value={searchTerm}
+          onChange={handleInputChange}
+          onFocus={() =>
+            searchTerm && suggestions.length > 0 && setShowSuggestions(true)
+          }
+        />
+        {value && (
+          <button
+            type='button'
+            className='btn btn-sm btn-outline-secondary'
+            onClick={handleClear}
+            title='Clear'
+          >
+            <i className='ti ti-x' />
+          </button>
+        )}
+      </div>
+
+      {showSuggestions && suggestions.length > 0 && (
+        <div className='school-suggestions'>
+          {suggestions.map((school) => (
+            <div
+              key={school}
+              className='school-suggestion-item'
+              onClick={() => handleSelectSchool(school)}
+            >
+              <i className='ti ti-building-community me-2' />
+              {school}
+            </div>
+          ))}
+          {searchTerm.trim() && !suggestions.includes(searchTerm) && (
+            <div
+              className='school-suggestion-item add-new'
+              onClick={handleAddNew}
+            >
+              <i className='ti ti-plus me-2' />
+              Add "{searchTerm}"
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function CampScheduleBuilder({
   show,
@@ -169,9 +286,7 @@ export default function CampScheduleBuilder({
 }: Props) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [customSchoolInput, setCustomSchoolInput] = useState<
-    Record<number, string>
-  >({});
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   // Step 0 – basics
   const [progName, setProgName] = useState('Summer Basketball Camp 2026');
@@ -180,8 +295,8 @@ export default function CampScheduleBuilder({
   const [description, setDescription] = useState('');
   const [genderBoys, setGenderBoys] = useState(true);
   const [genderGirls, setGenderGirls] = useState(true);
+  const [numberOfWeeks, setNumberOfWeeks] = useState(6);
   const [startDate, setStartDate] = useState('2026-06-29');
-  const [endDate, setEndDate] = useState('2026-08-21');
 
   // Step 1 – weeks
   const [weeks, setWeeks] = useState<WeekConfig[]>([]);
@@ -189,24 +304,12 @@ export default function CampScheduleBuilder({
   // Step 2 – time slots
   const [slots, setSlots] = useState<TimeSlot[]>(defaultSlots);
 
-  const allSchools = Array.from(
-    new Set([...SCHOOL_PRESETS, ...existingSchools]),
-  );
-
   // ── Step navigation ──────────────────────────────────────────────────────────
 
   const goToStep = (n: number) => {
     if (n === 1) {
-      const newWeeks = buildWeeks(startDate, endDate);
+      const newWeeks = buildWeeks(startDate, numberOfWeeks);
       setWeeks(newWeeks);
-      // Initialize custom school inputs
-      const customs: Record<number, string> = {};
-      newWeeks.forEach((w, i) => {
-        if (!allSchools.includes(w.school)) {
-          customs[i] = w.school;
-        }
-      });
-      setCustomSchoolInput(customs);
     }
     setStep(n);
   };
@@ -228,50 +331,14 @@ export default function CampScheduleBuilder({
     );
   };
 
-  const setSchool = (wi: number, val: string) => {
+  const setWeekSchool = (wi: number, schoolName: string | null) => {
     setWeeks((prev) =>
-      prev.map((w, i) => {
-        if (i !== wi) return w;
-        const newSchool = val;
-        if (!allSchools.includes(newSchool) && newSchool !== '__custom__') {
-          setCustomSchoolInput((prevCustom) => ({
-            ...prevCustom,
-            [wi]: newSchool,
-          }));
-        }
-        return { ...w, school: newSchool };
-      }),
+      prev.map((w, i) => (i === wi ? { ...w, school: schoolName } : w)),
     );
   };
 
-  const handleSchoolSelect = (wi: number, value: string) => {
-    if (value === '__custom__') {
-      // User wants to enter custom school
-      setWeeks((prev) =>
-        prev.map((w, i) => (i === wi ? { ...w, school: '' } : w)),
-      );
-    } else {
-      setSchool(wi, value);
-    }
-  };
-
-  const handleCustomSchoolChange = (wi: number, value: string) => {
-    setCustomSchoolInput((prev) => ({ ...prev, [wi]: value }));
-    setSchool(wi, value);
-  };
-
-  const applySchoolToAll = (school: string) => {
-    setWeeks((prev) =>
-      prev.map((w, i) => {
-        if (!allSchools.includes(school)) {
-          setCustomSchoolInput((prevCustom) => ({
-            ...prevCustom,
-            [i]: school,
-          }));
-        }
-        return { ...w, school };
-      }),
-    );
+  const applySchoolToAll = (schoolName: string | null) => {
+    setWeeks((prev) => prev.map((w) => ({ ...w, school: schoolName })));
   };
 
   const applyDaysToAll = (days: number[]) => {
@@ -309,21 +376,15 @@ export default function CampScheduleBuilder({
       .filter(Boolean)
       .join(' & ');
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
-
     const events: GeneratedEvent[] = [];
 
     weeks.forEach((wk) => {
       wk.activeDays.forEach((di) => {
-        const date = dayOfWeek(wk.weekStart, di);
-        // Skip if date is outside our range
-        if (date < start || date > end) return;
-
         slots.forEach((slot) => {
+          const date = addDays(wk.weekStart, di);
           const [sh, sm] = slot.startTime.split(':').map(Number);
           const [eh, em] = slot.endTime.split(':').map(Number);
+
           const startDt = new Date(date);
           startDt.setHours(sh, sm, 0, 0);
           const endDt = new Date(date);
@@ -364,8 +425,6 @@ export default function CampScheduleBuilder({
     category,
     genderBoys,
     genderGirls,
-    startDate,
-    endDate,
   ]);
 
   const preview = step === 3 ? buildEvents() : [];
@@ -383,8 +442,6 @@ export default function CampScheduleBuilder({
       setSaving(false);
     }
   };
-
-  // ── Render ────────────────────────────────────────────────────────────────────
 
   const stepLabels = ['Basics', 'Weeks', 'Time Slots', 'Preview'];
 
@@ -467,7 +524,6 @@ export default function CampScheduleBuilder({
                   className='form-control'
                   value={progName}
                   onChange={(e) => setProgName(e.target.value)}
-                  placeholder='Summer Basketball Camp 2026'
                 />
               </div>
               <div className='col-md-4'>
@@ -485,7 +541,9 @@ export default function CampScheduleBuilder({
                 </select>
               </div>
               <div className='col-md-6'>
-                <label className='form-label fw-semibold'>Start date</label>
+                <label className='form-label fw-semibold'>
+                  Start date (Monday)
+                </label>
                 <input
                   type='date'
                   className='form-control'
@@ -494,12 +552,18 @@ export default function CampScheduleBuilder({
                 />
               </div>
               <div className='col-md-6'>
-                <label className='form-label fw-semibold'>End date</label>
+                <label className='form-label fw-semibold'>
+                  Number of weeks
+                </label>
                 <input
-                  type='date'
+                  type='number'
                   className='form-control'
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  value={numberOfWeeks}
+                  onChange={(e) =>
+                    setNumberOfWeeks(parseInt(e.target.value) || 6)
+                  }
+                  min={1}
+                  max={12}
                 />
               </div>
               <div className='col-md-12'>
@@ -511,34 +575,35 @@ export default function CampScheduleBuilder({
                   className='form-control'
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
-                  placeholder='Open to all skill levels'
                 />
               </div>
               <div className='col-md-8'>
                 <label className='form-label fw-semibold'>Gender</label>
                 <div className='d-flex gap-3 mt-1'>
-                  {[
-                    ['Boys', genderBoys, setGenderBoys],
-                    ['Girls', genderGirls, setGenderGirls],
-                  ].map(([label, val, setter]) => (
-                    <div key={label as string} className='form-check'>
-                      <input
-                        className='form-check-input'
-                        type='checkbox'
-                        id={`g-${label}`}
-                        checked={val as boolean}
-                        onChange={(e) =>
-                          (setter as (v: boolean) => void)(e.target.checked)
-                        }
-                      />
-                      <label
-                        className='form-check-label'
-                        htmlFor={`g-${label}`}
-                      >
-                        {label as string}
-                      </label>
-                    </div>
-                  ))}
+                  <div className='form-check'>
+                    <input
+                      className='form-check-input'
+                      type='checkbox'
+                      id='g-boys'
+                      checked={genderBoys}
+                      onChange={(e) => setGenderBoys(e.target.checked)}
+                    />
+                    <label className='form-check-label' htmlFor='g-boys'>
+                      Boys
+                    </label>
+                  </div>
+                  <div className='form-check'>
+                    <input
+                      className='form-check-input'
+                      type='checkbox'
+                      id='g-girls'
+                      checked={genderGirls}
+                      onChange={(e) => setGenderGirls(e.target.checked)}
+                    />
+                    <label className='form-check-label' htmlFor='g-girls'>
+                      Girls
+                    </label>
+                  </div>
                 </div>
               </div>
               <div className='col-md-12'>
@@ -566,8 +631,8 @@ export default function CampScheduleBuilder({
             >
               <i className='ti ti-info-circle mt-1' />
               <div>
-                Toggle which days are active each week, then pick the school.
-                Use the bulk actions to set all weeks at once.
+                Toggle which days are active each week, then search for a
+                school.
               </div>
             </div>
 
@@ -600,112 +665,80 @@ export default function CampScheduleBuilder({
               >
                 Mon–Sat
               </button>
-              {SCHOOL_PRESETS.slice(0, 3).map((s) => (
+
+              {weeks[0]?.school && (
                 <button
-                  key={s}
                   type='button'
                   className='btn btn-sm btn-outline-primary'
-                  onClick={() => applySchoolToAll(s)}
+                  onClick={() => applySchoolToAll(weeks[0]?.school || null)}
                 >
                   All →{' '}
-                  {s.replace(' Middle School', '').replace(' High School', '')}
+                  {weeks[0]?.school
+                    ?.replace(' Middle School', '')
+                    .replace(' High School', '')}
                 </button>
-              ))}
+              )}
             </div>
 
-            {weeks.map((wk, wi) => {
-              const isCustomSchool =
-                !allSchools.includes(wk.school) && wk.school !== '';
-              const displaySchool = isCustomSchool ? '__custom__' : wk.school;
+            {weeks.map((wk, wi) => (
+              <div key={wi} className='card mb-2 border'>
+                <div className='card-body py-3 px-3'>
+                  <div className='d-flex align-items-center justify-content-between mb-2'>
+                    <span className='fw-semibold'>Week {wk.weekNum}</span>
+                    <span className='text-muted' style={{ fontSize: 12 }}>
+                      {dayjs(wk.weekStart).format('MMM D')} –{' '}
+                      {dayjs(wk.weekEnd).format('MMM D')}
+                    </span>
+                  </div>
 
-              return (
-                <div key={wk.weekNum} className='card mb-2 border'>
-                  <div className='card-body py-3 px-3'>
-                    <div className='d-flex align-items-center justify-content-between mb-2'>
-                      <span className='fw-semibold' style={{ fontSize: 14 }}>
-                        Week {wk.weekNum}
-                      </span>
-                      <span className='text-muted' style={{ fontSize: 12 }}>
-                        {dayjs(wk.weekStart).format('MMM D')} –{' '}
-                        {dayjs(wk.weekEnd).format('MMM D')}
-                      </span>
-                    </div>
-
-                    {/* Day toggles */}
-                    <div className='d-flex gap-2 mb-3 flex-wrap'>
-                      {DAYS.map((d, di) => (
-                        <button
-                          key={di}
-                          type='button'
-                          onClick={() => toggleDay(wi, di)}
-                          style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: '50%',
-                            border: '1px solid',
-                            borderColor: wk.activeDays.includes(di)
-                              ? '#0d6efd'
-                              : '#dee2e6',
-                            background: wk.activeDays.includes(di)
-                              ? '#0d6efd'
-                              : 'white',
-                            color: wk.activeDays.includes(di)
-                              ? 'white'
-                              : '#6c757d',
-                            fontWeight: 600,
-                            fontSize: 11,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {d[0]}
-                        </button>
-                      ))}
-                      <span
-                        className='text-muted ms-2'
-                        style={{ fontSize: 12, alignSelf: 'center' }}
+                  {/* Day toggles */}
+                  <div className='d-flex gap-2 mb-3 flex-wrap'>
+                    {DAYS.map((d, di) => (
+                      <button
+                        key={di}
+                        type='button'
+                        onClick={() => toggleDay(wi, di)}
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: '50%',
+                          border: '1px solid',
+                          borderColor: wk.activeDays.includes(di)
+                            ? '#0d6efd'
+                            : '#dee2e6',
+                          background: wk.activeDays.includes(di)
+                            ? '#0d6efd'
+                            : 'white',
+                          color: wk.activeDays.includes(di)
+                            ? 'white'
+                            : '#6c757d',
+                          fontWeight: 600,
+                          fontSize: 11,
+                          cursor: 'pointer',
+                        }}
                       >
-                        {wk.activeDays.length === 0
-                          ? 'No days – week skipped'
-                          : `${wk.activeDays.length} day${wk.activeDays.length > 1 ? 's' : ''}`}
-                      </span>
-                    </div>
+                        {d[0]}
+                      </button>
+                    ))}
+                  </div>
 
-                    {/* School selection - like the registration module */}
-                    <div className='d-flex gap-2 align-items-center flex-wrap'>
-                      <i className='ti ti-building-community text-muted' />
-                      <select
-                        className='form-select form-select-sm'
-                        style={{ width: 'auto', minWidth: 200 }}
-                        value={displaySchool}
-                        onChange={(e) => handleSchoolSelect(wi, e.target.value)}
-                      >
-                        <option value=''>Select a school</option>
-                        {allSchools.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                        <option value='__custom__'>+ Add custom school</option>
-                      </select>
-
-                      {/* Custom school input */}
-                      {(displaySchool === '__custom__' || isCustomSchool) && (
-                        <input
-                          type='text'
-                          className='form-control form-control-sm'
-                          style={{ width: 250 }}
-                          placeholder='Enter school name'
-                          value={customSchoolInput[wi] || wk.school || ''}
-                          onChange={(e) =>
-                            handleCustomSchoolChange(wi, e.target.value)
-                          }
-                        />
-                      )}
-                    </div>
+                  {/* School search */}
+                  <div className='mb-2'>
+                    <label
+                      className='form-label fw-semibold mb-1'
+                      style={{ fontSize: 12 }}
+                    >
+                      School / Location
+                    </label>
+                    <SchoolSearch
+                      value={wk.school}
+                      onChange={(schoolName) => setWeekSchool(wi, schoolName)}
+                      placeholder='Search for a school...'
+                    />
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
 
@@ -771,7 +804,6 @@ export default function CampScheduleBuilder({
                       <input
                         className='form-control form-control-sm'
                         value={slot.gradeLabel}
-                        placeholder='e.g. 3rd / 4th / 5th grade'
                         onChange={(e) =>
                           updateSlot(slot.id, 'gradeLabel', e.target.value)
                         }
@@ -804,7 +836,6 @@ export default function CampScheduleBuilder({
         {/* ── STEP 3: Preview ── */}
         {step === 3 && (
           <div>
-            {/* Summary stats */}
             <div className='row g-2 mb-3'>
               {[
                 { label: 'Total events', value: preview.length },
@@ -868,21 +899,16 @@ export default function CampScheduleBuilder({
                       const parts = ev.title.split(' – ');
                       const gradeLabel = parts[parts.length - 1];
                       return (
-                        <tr key={i}>
-                          <td style={{ whiteSpace: 'nowrap' }}>
-                            {dayjs(ev.start).format('ddd, MMM D')}
-                          </td>
-                          <td style={{ whiteSpace: 'nowrap' }}>
-                            {fmt(start)} – {fmt(end)}
-                          </td>
-                          <td>{gradeLabel}</td>
-                          <td
-                            className='text-truncate'
-                            style={{ maxWidth: 160 }}
-                          >
-                            {ev.school?.name}
-                          </td>
-                        </tr>
+                        <table>
+                          <tr key={i}>
+                            <td>{dayjs(ev.start).format('ddd, MMM D')}</td>
+                            <td>
+                              {fmt(start)} – {fmt(end)}
+                            </td>
+                            <td>{gradeLabel}</td>
+                            <td>{ev.school?.name}</td>
+                          </tr>
+                        </table>
                       );
                     })}
                   </tbody>
@@ -936,6 +962,41 @@ export default function CampScheduleBuilder({
           </button>
         )}
       </Modal.Footer>
+
+      <style>{`
+        .school-suggestions {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          max-height: 250px;
+          overflow-y: auto;
+          background: white;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          z-index: 1000;
+        }
+        
+        .school-suggestion-item {
+          padding: 8px 12px;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        
+        .school-suggestion-item:hover {
+          background: #f0f0f0;
+        }
+        
+        .school-suggestion-item.add-new {
+          border-top: 1px solid #eee;
+          color: #0d6efd;
+        }
+        
+        .school-suggestion-item.add-new:hover {
+          background: #e7f1ff;
+        }
+      `}</style>
     </Modal>
   );
 }

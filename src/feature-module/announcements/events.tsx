@@ -25,6 +25,7 @@ import HelpModal from '../../core/common/HelpModal';
 import FormTemplateSelector from '../settings/systemSettings/form/FormTemplateSelector';
 import EventRegistrationForm from '../settings/systemSettings/form/EventRegistrationForm';
 import { Form, PaymentFormField } from '../../types/form';
+import CampScheduleBuilder, { GeneratedEvent } from './CampScheduleBuilder';
 
 const categoryColorMap: Record<string, string> = {
   training: 'success',
@@ -48,6 +49,7 @@ const Events = () => {
   const routes = all_routes;
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [showEventDetailsModal, setShowEventDetailsModal] = useState(false);
+  const [showCampBuilder, setShowCampBuilder] = useState(false);
   const [events, setEvents] = useState<EventDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -71,23 +73,15 @@ const Events = () => {
     useState<EventDetails>(defaultEventDetails);
 
   const api = useMemo(() => {
-    const instance = axios.create({
-      baseURL: API_BASE_URL,
-    });
-
+    const instance = axios.create({ baseURL: API_BASE_URL });
     instance.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem('token');
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
+        if (token) config.headers.Authorization = `Bearer ${token}`;
         return config;
       },
-      (error) => {
-        return Promise.reject(error);
-      }
+      (error) => Promise.reject(error),
     );
-
     return instance;
   }, [API_BASE_URL]);
 
@@ -99,9 +93,7 @@ const Events = () => {
     } catch (error) {
       console.error('Error fetching events:', error);
       setIsLoading(false);
-
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.error('Please login again');
         localStorage.removeItem('token');
       }
     }
@@ -112,34 +104,49 @@ const Events = () => {
   }, [fetchEvents]);
 
   useEffect(() => {
-    const observer = new MutationObserver((mutations) => {
+    const observer = new MutationObserver(() => {
       const infoButton = document.querySelector('.fc-helpbtn-button');
       if (infoButton) {
         infoButton.innerHTML = '<span class="ti ti-info-circle fs-4"></span>';
         observer.disconnect();
       }
     });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-
+    observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, []);
 
-  const filteredEvents = useMemo(() => {
-    const filtered = events.filter((event) => {
-      if (selectedCategory === 'all') return true;
-      if (!event.category) return false;
-      return event.category.toLowerCase() === selectedCategory.toLowerCase();
-    });
+  // ── Filtered + sorted event lists ────────────────────────────────────────────
 
-    // Sort events by start date (ascending)
-    return filtered.sort((a, b) => {
-      return new Date(a.start).getTime() - new Date(b.start).getTime();
-    });
+  const filteredEvents = useMemo(() => {
+    return events
+      .filter((event) => {
+        if (selectedCategory === 'all') return true;
+        if (!event.category) return false;
+        return event.category.toLowerCase() === selectedCategory.toLowerCase();
+      })
+      .sort(
+        (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
+      );
   }, [events, selectedCategory]);
+
+  // Upcoming: events from today onward, sorted ascending, max 5 shown
+  const upcomingEvents = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return filteredEvents.filter((e) => new Date(e.start) >= now).slice(0, 5);
+  }, [filteredEvents]);
+
+  // Recent: events before today, sorted descending (most recent first), max 5
+  const recentEvents = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return filteredEvents
+      .filter((e) => new Date(e.start) < now)
+      .sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime())
+      .slice(0, 5);
+  }, [filteredEvents]);
+
+  // ── Event handlers ────────────────────────────────────────────────────────────
 
   const handleDateClick = () => {
     const now = new Date();
@@ -196,7 +203,6 @@ const Events = () => {
       await fetchEvents();
       await loadSchools();
     };
-
     loadInitialData();
   }, [api, fetchEvents, loadSchools]);
 
@@ -227,8 +233,8 @@ const Events = () => {
     try {
       const category = eventDetails.category || 'training';
       const isGame = category === 'game';
-      const isGameOrTraining = isGame || category === 'training';
-
+      const isGameOrTraining =
+        isGame || category === 'training' || category === 'camp';
       const price = isGame
         ? typeof eventDetails.price === 'number'
           ? eventDetails.price
@@ -236,10 +242,10 @@ const Events = () => {
         : 0;
 
       const selectedForm = availableForms.find(
-        (f) => f._id === eventDetails.formId
+        (f) => f._id === eventDetails.formId,
       );
       const paymentField = selectedForm?.fields.find(
-        (f) => f.type === 'payment'
+        (f) => f.type === 'payment',
       ) as PaymentFormField | undefined;
 
       const eventToSave = {
@@ -249,7 +255,7 @@ const Events = () => {
         description: eventDetails.description,
         start: eventDetails.start,
         end: eventDetails.end,
-        category: category,
+        category,
         backgroundColor: calendarCategoryColorMap[category] || '#adb5bd',
         school:
           isGameOrTraining && eventDetails.school?.name
@@ -260,7 +266,6 @@ const Events = () => {
         paymentConfig: paymentField?.paymentConfig,
       };
 
-      // Save new school if it doesn't exist
       if (
         isGame &&
         eventDetails.school?.name &&
@@ -280,10 +285,18 @@ const Events = () => {
     } catch (error) {
       console.error('Error saving event:', error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.error('Please login again');
         localStorage.removeItem('token');
       }
     }
+  };
+
+  // ── Camp schedule builder handler ─────────────────────────────────────────────
+
+  const handleCampGenerate = async (generatedEvents: GeneratedEvent[]) => {
+    for (const ev of generatedEvents) {
+      await api.post('/events', { ...ev, createdBy: undefined });
+    }
+    await fetchEvents();
   };
 
   const handleDeleteEvent = async () => {
@@ -294,35 +307,25 @@ const Events = () => {
       setShowEventDetailsModal(false);
     } catch (error) {
       console.error('Error deleting event:', error);
-
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.error('Please login again');
         localStorage.removeItem('token');
       }
     }
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
-    setEventDetails((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setEventDetails((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleDateChange = (date: Dayjs | null, field: 'start' | 'end') => {
     if (date) {
-      // Get current date value or use now if undefined
-      const currentValue =
-        field === 'start' || eventDetails[field]
-          ? new Date(eventDetails[field]!)
-          : new Date();
-
+      const currentValue = eventDetails[field]
+        ? new Date(eventDetails[field]!)
+        : new Date();
       const newDate = date.toDate();
-
-      // Combine new date with existing time
       const updatedDate = new Date(
         newDate.getFullYear(),
         newDate.getMonth(),
@@ -330,9 +333,8 @@ const Events = () => {
         currentValue.getHours(),
         currentValue.getMinutes(),
         0,
-        0
+        0,
       );
-
       setEventDetails((prev) => ({
         ...prev,
         [field]: updatedDate.toISOString(),
@@ -342,13 +344,9 @@ const Events = () => {
 
   const handleTimeChange = (time: Dayjs | null, field: 'start' | 'end') => {
     if (time) {
-      // Get current date value or use now if undefined
-      const currentValue =
-        field === 'start' || eventDetails[field]
-          ? new Date(eventDetails[field]!)
-          : new Date();
-
-      // Combine existing date with new time
+      const currentValue = eventDetails[field]
+        ? new Date(eventDetails[field]!)
+        : new Date();
       const updatedDate = new Date(
         currentValue.getFullYear(),
         currentValue.getMonth(),
@@ -356,9 +354,8 @@ const Events = () => {
         time.hour(),
         time.minute(),
         0,
-        0
+        0,
       );
-
       setEventDetails((prev) => ({
         ...prev,
         [field]: updatedDate.toISOString(),
@@ -390,15 +387,13 @@ const Events = () => {
 
   const handleEventUpdate = async (calendarEvent: CalendarEvent) => {
     try {
-      const eventToUpdate = {
+      await api.put(`/events/${calendarEvent.id}`, {
         _id: calendarEvent.id,
         title: calendarEvent.title,
         start: calendarEvent.startStr,
         end: calendarEvent.endStr,
         ...calendarEvent.extendedProps,
-      };
-
-      await api.put(`/events/${calendarEvent.id}`, eventToUpdate);
+      });
       await fetchEvents();
     } catch (error) {
       console.error('Error updating event:', error);
@@ -415,10 +410,8 @@ const Events = () => {
     const loadFormData = async () => {
       if (showEventDetailsModal && eventDetails.formId) {
         try {
-          console.log('eventDetails.formId:', eventDetails.formId);
           const response = await api.get(`/forms/${eventDetails.formId}`);
           const formData = response.data;
-
           setAvailableForms((prevForms) => {
             const existing = prevForms.find((f) => f._id === formData._id);
             return existing ? prevForms : [...prevForms, formData];
@@ -428,9 +421,28 @@ const Events = () => {
         }
       }
     };
-
     loadFormData();
   }, [showEventDetailsModal, eventDetails.formId, api]);
+
+  const openEventDetails = (event: EventDetails) => {
+    setEventDetails({
+      _id: event._id,
+      title: event.title,
+      caption: event.caption,
+      price: event.price,
+      start: event.start,
+      end: event.end,
+      backgroundColor:
+        event.backgroundColor ||
+        (event.category ? calendarCategoryColorMap[event.category] : '#adb5bd'),
+      description: event.description,
+      category: event.category,
+      school: event.school,
+      attendees: event.attendees,
+      attachment: event.attachment,
+    });
+    setShowEventDetailsModal(true);
+  };
 
   if (isLoading) {
     return (
@@ -444,6 +456,52 @@ const Events = () => {
       </div>
     );
   }
+
+  // ── Render ────────────────────────────────────────────────────────────────────
+
+  const EventCard = ({ event }: { event: EventDetails }) => {
+    const categoryColor = getCategoryColor(event.category);
+    return (
+      <div
+        className={`border-start border-${categoryColor} border-3 shadow-sm p-3 mb-2 bg-white`}
+        onClick={() => openEventDetails(event)}
+        style={{ cursor: 'pointer', borderRadius: '0 6px 6px 0' }}
+      >
+        <div className='d-flex align-items-center mb-2'>
+          <span
+            className={`avatar p-1 me-2 bg-${categoryColor}-transparent flex-shrink-0`}
+            style={{ width: 32, height: 32 }}
+          >
+            <i className={`ti ti-calendar-event text-${categoryColor} fs-6`} />
+          </span>
+          <div className='flex-fill overflow-hidden'>
+            <h6 className='mb-0 text-truncate' style={{ fontSize: 13 }}>
+              {event.title}
+            </h6>
+            <p className='mb-0 text-muted' style={{ fontSize: 11 }}>
+              {dayjs(event.start).format('ddd, MMM D')}
+              {' · '}
+              {dayjs(event.start).format('h:mm A')}
+            </p>
+          </div>
+          {event.category && (
+            <span
+              className={`badge bg-${categoryColor}-transparent text-${categoryColor} ms-1`}
+              style={{ fontSize: 10, whiteSpace: 'nowrap' }}
+            >
+              {event.category}
+            </span>
+          )}
+        </div>
+        {event.school?.name && (
+          <p className='mb-0 text-muted' style={{ fontSize: 11 }}>
+            <i className='ti ti-building-community me-1' />
+            {event.school.name}
+          </p>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className='page-wrapper'>
@@ -464,39 +522,40 @@ const Events = () => {
               </ol>
             </nav>
           </div>
-          <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
-            <div className='pe-1 mb-2'>
-              <button
-                type='button'
-                className='btn btn-outline-light bg-white btn-icon me-1'
-                onClick={() => window.location.reload()}
-                title='Refresh'
-              >
-                <i className='ti ti-refresh' />
-              </button>
-            </div>
-            <div className='pe-1 mb-2'>
-              <button
-                type='button'
-                className='btn btn-outline-light bg-white btn-icon me-1'
-                onClick={() => window.print()}
-                title='Print'
-              >
-                <i className='ti ti-printer' />
-              </button>
-            </div>
-            <div className='mb-2'>
-              <button className='btn btn-light d-flex align-items-center'>
-                <i className='ti ti-calendar-up me-2' />
-                Sync with Google Calendar
-              </button>
-            </div>
+          <div className='d-flex my-xl-auto right-content align-items-center flex-wrap gap-2'>
+            <button
+              type='button'
+              className='btn btn-outline-light bg-white btn-icon'
+              onClick={() => window.location.reload()}
+              title='Refresh'
+            >
+              <i className='ti ti-refresh' />
+            </button>
+            <button
+              type='button'
+              className='btn btn-outline-light bg-white btn-icon'
+              onClick={() => window.print()}
+              title='Print'
+            >
+              <i className='ti ti-printer' />
+            </button>
+            {/* Camp builder button */}
+            <button
+              className='btn btn-outline-primary d-flex align-items-center'
+              onClick={() => setShowCampBuilder(true)}
+            >
+              <i className='ti ti-calendar-repeat me-2' />
+              Schedule Builder
+            </button>
+            <button className='btn btn-light d-flex align-items-center'>
+              <i className='ti ti-calendar-up me-2' />
+              Sync with Google Calendar
+            </button>
           </div>
         </div>
-        {/* /Page Header */}
 
         <div className='row'>
-          {/* Event Calendar */}
+          {/* Calendar */}
           <div className='col-xl-8 col-xxl-9 theiaStickySidebar'>
             <div className='stickybar'>
               <div className='card'>
@@ -507,21 +566,20 @@ const Events = () => {
                     events={formatEventsForCalendar(filteredEvents)}
                     allDaySlot={true}
                     allDayText='All Day'
-                    slotMinTime='06:00:00' // Start showing events from 6 AM
-                    slotMaxTime='22:00:00' // End showing events at 10 PM
-                    displayEventTime={true} // Show time for events that have it
-                    eventDisplay='block' // Use 'block' for colored blocks
+                    slotMinTime='06:00:00'
+                    slotMaxTime='22:00:00'
+                    displayEventTime={true}
+                    eventDisplay='block'
                     eventTimeFormat={{
-                      // Time format
                       hour: 'numeric',
                       minute: '2-digit',
                       omitZeroMinute: true,
                       meridiem: 'short',
                     }}
                     headerToolbar={{
-                      start: 'title',
-                      center: 'dayGridMonth,timeGridWeek,timeGridDay',
-                      end: 'custombtn helpbtn',
+                      start: 'prev,next today',
+                      center: 'title',
+                      end: 'dayGridMonth,timeGridWeek,timeGridDay custombtn helpbtn',
                     }}
                     customButtons={{
                       custombtn: {
@@ -541,12 +599,8 @@ const Events = () => {
                     aspectRatio={1.7}
                     dayMaxEventRows={3}
                     views={{
-                      dayGridMonth: {
-                        dayMaxEventRows: 3,
-                      },
-                      timeGridWeek: {
-                        dayMaxEventRows: 6,
-                      },
+                      dayGridMonth: { dayMaxEventRows: 3 },
+                      timeGridWeek: { dayMaxEventRows: 6 },
                     }}
                     editable={true}
                     selectable={true}
@@ -569,7 +623,7 @@ const Events = () => {
                       };
                       info.el.setAttribute(
                         'data-original-event',
-                        JSON.stringify(originalEvent)
+                        JSON.stringify(originalEvent),
                       );
                       info.el.style.cursor = 'grabbing';
                     }}
@@ -580,26 +634,22 @@ const Events = () => {
                       const isCopy =
                         info.jsEvent.ctrlKey || info.jsEvent.metaKey;
                       const originalEventStr = info.el.getAttribute(
-                        'data-original-event'
+                        'data-original-event',
                       );
-
                       if (isCopy && originalEventStr) {
                         const originalEvent = JSON.parse(originalEventStr);
-
-                        const newEvent = {
+                        setEventDetails(defaultEventDetails);
+                        setEventDetails({
                           ...originalEvent,
                           start: info.event.startStr,
                           end: info.event.endStr,
                           _id: undefined,
-                        };
-
-                        setEventDetails(defaultEventDetails);
-                        setEventDetails(newEvent);
+                        });
                         setShowAddEventModal(true);
                         info.revert();
                       } else {
                         handleEventUpdate(
-                          info.event as unknown as CalendarEvent
+                          info.event as unknown as CalendarEvent,
                         );
                       }
                     }}
@@ -612,43 +662,42 @@ const Events = () => {
             </div>
           </div>
 
-          {/* Event List */}
+          {/* Side panel */}
           <div className='col-xl-4 col-xxl-3 theiaStickySidebar'>
             <div className='stickybar'>
-              <div className='d-flex align-items-center justify-content-between'>
-                <h5 className='mb-3'>Upcoming Events</h5>
-                <div className='dropdown mb-3'>
+              {/* Category filter */}
+              <div className='d-flex align-items-center justify-content-between mb-3'>
+                <h5 className='mb-0'>Events</h5>
+                <div className='dropdown'>
                   <button
-                    className='btn btn-outline-light dropdown-toggle'
+                    className='btn btn-sm btn-outline-light dropdown-toggle'
                     data-bs-toggle='dropdown'
                   >
                     {selectedCategory === 'all'
-                      ? 'All Categories'
+                      ? 'All'
                       : eventCategory.find((c) => c.value === selectedCategory)
-                          ?.label || 'Selected Category'}
+                          ?.label || 'Filtered'}
                   </button>
-                  <ul className='dropdown-menu p-3'>
+                  <ul className='dropdown-menu p-2'>
                     <li>
                       <button
                         className='dropdown-item rounded-1 d-flex align-items-center'
                         onClick={() => setSelectedCategory('all')}
                       >
-                        <i className='ti ti-circle-filled fs-8 text-teal me-2' />
+                        <i className='ti ti-circle-filled fs-8 text-teal me-2' />{' '}
                         All Categories
                       </button>
                     </li>
-                    {eventCategory.map((category) => (
-                      <li key={category.value}>
+                    {eventCategory.map((cat) => (
+                      <li key={cat.value}>
                         <button
                           className='dropdown-item rounded-1 d-flex align-items-center'
-                          onClick={() => handleCategorySelect(category.value)}
+                          onClick={() => handleCategorySelect(cat.value)}
                         >
                           <i
-                            className={`ti ti-circle-filled fs-8 text-${getCategoryColor(
-                              category.value
-                            )} me-2`}
+                            className={`ti ti-circle-filled fs-8 text-${getCategoryColor(cat.value)} me-2`}
                           />
-                          {category.label}
+                          {cat.label}
                         </button>
                       </li>
                     ))}
@@ -656,100 +705,76 @@ const Events = () => {
                 </div>
               </div>
 
-              {filteredEvents.length === 0 ? (
-                <div className='text-center py-4'>
-                  <i className='ti ti-calendar-off fs-20 text-muted mb-2' />
-                  <p className='text-muted'>
-                    {selectedCategory === 'all'
-                      ? 'No upcoming events found'
-                      : `No ${selectedCategory} events found`}
+              {/* Upcoming */}
+              <p
+                className='text-muted mb-2'
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}
+              >
+                Upcoming
+              </p>
+              {upcomingEvents.length === 0 ? (
+                <div className='text-center py-3 mb-3'>
+                  <i className='ti ti-calendar-off fs-4 text-muted d-block mb-1' />
+                  <p className='text-muted mb-2' style={{ fontSize: 13 }}>
+                    No upcoming events
                   </p>
                   <button
                     className='btn btn-primary btn-sm'
                     onClick={handleDateClick}
                   >
-                    <i className='ti ti-plus me-1' />
-                    Add New Event
+                    <i className='ti ti-plus me-1' /> Add event
                   </button>
                 </div>
               ) : (
-                filteredEvents.slice(0, 5).map((event, index) => {
-                  const categoryColor = getCategoryColor(event.category);
-                  return (
-                    <div
-                      key={index}
-                      className={`border-start border-${categoryColor} border-3 shadow-sm p-3 mb-3 bg-white cursor-pointer`}
-                      onClick={() => {
-                        setEventDetails({
-                          _id: event._id,
-                          title: event.title,
-                          caption: event.caption,
-                          price: event.price,
-                          start: event.start,
-                          end: event.end,
-                          backgroundColor:
-                            event.backgroundColor ||
-                            (event.category
-                              ? calendarCategoryColorMap[event.category]
-                              : '#adb5bd'),
-                          description: event.description,
-                          category: event.category,
-                          school: event.school,
-                          attendees: event.attendees,
-                          attachment: event.attachment,
-                        });
-                        setShowEventDetailsModal(true);
-                      }}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <div className='d-flex align-items-center mb-3 pb-3 border-bottom'>
-                        <span
-                          className={`avatar p-1 me-3 bg-${categoryColor}-transparent flex-shrink-0`}
-                        >
-                          <i
-                            className={`ti ti-calendar-event text-${categoryColor} fs-20`}
-                          />
-                        </span>
-                        <div className='flex-fill'>
-                          <h6 className='mb-1'>{event.title}</h6>
-                          <p className='fs-12'>
-                            <i className='ti ti-calendar me-1' />
-                            {dayjs(event.start).format('DD MMM YYYY')}
-                            {event.end &&
-                              ` - ${dayjs(event.end).format('DD MMM YYYY')}`}
-                          </p>
-                        </div>
-                      </div>
-                      <div className='d-flex align-items-center justify-content-between'>
-                        <p className='fs-12 mb-0'>
-                          <i className='ti ti-clock me-1' />
-                          {dayjs(event.start).format('hh:mm A')} -{' '}
-                          {dayjs(event.end || event.start).format('hh:mm A')}
-                        </p>
-                        {event.attendees && event.attendees.length > 0 && (
-                          <div className='avatar-list-stacked avatar-group-sm'>
-                            {event.attendees.slice(0, 3).map((attendee, i) => (
-                              <span key={i} className='avatar border-0'>
-                                <ImageWithBasePath
-                                  src={`assets/img/${attendee}`}
-                                  className='rounded'
-                                  alt='img'
-                                />
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
+                upcomingEvents.map((event, i) => (
+                  <EventCard key={event._id || i} event={event} />
+                ))
               )}
+
+              {/* Recent */}
+              {recentEvents.length > 0 && (
+                <>
+                  <p
+                    className='text-muted mb-2 mt-3'
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    Recent
+                  </p>
+                  {recentEvents.map((event, i) => (
+                    <EventCard key={event._id || i} event={event} />
+                  ))}
+                </>
+              )}
+
+              {/* Add event shortcut */}
+              <button
+                className='btn btn-outline-primary w-100 mt-3'
+                onClick={handleDateClick}
+              >
+                <i className='ti ti-plus me-1' /> Add single event
+              </button>
+              <button
+                className='btn btn-outline-secondary w-100 mt-2'
+                onClick={() => setShowCampBuilder(true)}
+              >
+                <i className='ti ti-calendar-repeat me-1' /> Schedule Builder
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Add Event Modal */}
+      {/* ── Add / Edit Event Modal ── */}
       <Modal show={showAddEventModal} onHide={handleAddEventClose} size='lg'>
         <Modal.Header closeButton>
           <Modal.Title>
@@ -781,7 +806,6 @@ const Events = () => {
                   name='caption'
                   value={eventDetails.caption || ''}
                   onChange={handleInputChange}
-                  style={{ pointerEvents: 'auto' }}
                 />
               </div>
 
@@ -792,18 +816,19 @@ const Events = () => {
                   options={eventCategory}
                   defaultValue={
                     eventCategory.find(
-                      (opt) => opt.value.toLowerCase() === eventDetails.category
+                      (opt) =>
+                        opt.value.toLowerCase() === eventDetails.category,
                     ) || eventCategory[0]
                   }
                   onChange={(selectedOption) => {
                     if (!selectedOption || Array.isArray(selectedOption))
                       return;
-
                     const singleOption = selectedOption as Option;
                     const category = singleOption.value.toLowerCase();
                     const showFields =
-                      category === 'game' || category === 'training';
-
+                      category === 'game' ||
+                      category === 'training' ||
+                      category === 'camp';
                     setEventDetails((prev) => ({
                       ...prev,
                       category: category as EventDetails['category'],
@@ -811,17 +836,14 @@ const Events = () => {
                         ? prev.school || { name: '', address: '', website: '' }
                         : undefined,
                     }));
-
                     setShowSchoolFields(showFields);
                     if (showFields) loadSchools();
                   }}
                 />
               </div>
 
-              {/* Show school fields only for game events */}
               {showSchoolFields && (
                 <>
-                  {/* Show price field only for game category */}
                   {eventDetails.category === 'game' && (
                     <div className='mb-3'>
                       <label className='form-label'>Price ($)</label>
@@ -854,7 +876,7 @@ const Events = () => {
                           }));
                         } else {
                           const selectedSchool = schools.find(
-                            (s) => s.name === e.target.value
+                            (s) => s.name === e.target.value,
                           );
                           setEventDetails((prev) => ({
                             ...prev,
@@ -877,9 +899,7 @@ const Events = () => {
                     </select>
                   </div>
 
-                  {/* Show these fields when a school is selected or new school is being added */}
-                  {(eventDetails.school?.name ||
-                    eventDetails.school?.name === '') && (
+                  {eventDetails.school?.name !== undefined && (
                     <>
                       <div className='col-md-12 mb-3'>
                         <label className='form-label'>School Name</label>
@@ -903,7 +923,6 @@ const Events = () => {
                           }
                         />
                       </div>
-
                       <div className='col-md-12 mb-3'>
                         <label className='form-label'>School Address</label>
                         <input
@@ -926,7 +945,6 @@ const Events = () => {
                           }
                         />
                       </div>
-
                       <div className='col-md-12 mb-3'>
                         <label className='form-label'>School Website</label>
                         <input
@@ -973,7 +991,6 @@ const Events = () => {
                   </div>
                 </div>
               </div>
-
               <div className='col-md-6'>
                 <div className='mb-3'>
                   <label className='form-label'>End Date</label>
@@ -991,7 +1008,6 @@ const Events = () => {
                   </div>
                 </div>
               </div>
-
               <div className='col-md-6'>
                 <div className='mb-3'>
                   <label className='form-label'>Start Time</label>
@@ -1013,7 +1029,6 @@ const Events = () => {
                   </div>
                 </div>
               </div>
-
               <div className='col-md-6'>
                 <div className='mb-3'>
                   <label className='form-label'>End Time</label>
@@ -1043,8 +1058,7 @@ const Events = () => {
                     </div>
                     <div className='d-flex align-items-center flex-wrap'>
                       <div className='btn btn-primary drag-upload-btn mb-2 me-2'>
-                        <i className='ti ti-file-upload me-1' />
-                        Upload
+                        <i className='ti ti-file-upload me-1' /> Upload
                         <input
                           type='file'
                           className='form-control image_sign'
@@ -1065,7 +1079,6 @@ const Events = () => {
                     </div>
                   </div>
                 </div>
-
                 <div className='mb-3'>
                   <label className='form-label'>Description</label>
                   <textarea
@@ -1076,7 +1089,6 @@ const Events = () => {
                     onChange={handleInputChange}
                   />
                 </div>
-
                 <FormTemplateSelector
                   forms={availableForms}
                   selectedFormId={eventDetails.formId}
@@ -1102,15 +1114,13 @@ const Events = () => {
         </form>
       </Modal>
 
-      {/* Event Details Modal */}
+      {/* ── Event Details Modal ── */}
       <Modal show={showEventDetailsModal} onHide={handleEventDetailsClose}>
         <Modal.Header closeButton>
           <div className='d-flex justify-content-between w-100'>
             <span className='d-inline-flex align-items-center'>
               <i
-                className={`ti ti-circle-filled fs-8 me-1 text-${getCategoryColor(
-                  eventDetails.category
-                )}`}
+                className={`ti ti-circle-filled fs-8 me-1 text-${getCategoryColor(eventDetails.category)}`}
               />
               {eventDetails.category || 'Event'}
             </span>
@@ -1138,9 +1148,7 @@ const Events = () => {
         <Modal.Body>
           <div className='d-flex align-items-center mb-3'>
             <span
-              className={`avatar avatar-xl bg-${getCategoryColor(
-                eventDetails.category
-              )}-transparent me-3 flex-shrink-0`}
+              className={`avatar avatar-xl bg-${getCategoryColor(eventDetails.category)}-transparent me-3 flex-shrink-0`}
             >
               <i className='ti ti ti-calendar-event fs-30' />
             </span>
@@ -1158,9 +1166,9 @@ const Events = () => {
                 </p>
                 <p>
                   <i className='ti ti-clock me-1' />
-                  {dayjs(eventDetails.start).format('hh:mm A')} -{' '}
+                  {dayjs(eventDetails.start).format('hh:mm A')} –{' '}
                   {dayjs(eventDetails.end || eventDetails.start).format(
-                    'hh:mm A'
+                    'hh:mm A',
                   )}
                 </p>
               </div>
@@ -1169,16 +1177,17 @@ const Events = () => {
 
           {eventDetails.price > 0 && (
             <div className='d-flex align-items-center flex-wrap mb-4'>
-              <span className='fw-bold me-1'>Price:</span>{' '}
+              <span className='fw-bold me-1'>Price:</span>
               <span className='text-primary me-1'>
                 ${eventDetails.price.toFixed(2)}
-              </span>{' '}
+              </span>
               <span className='text-muted'>per person</span>
             </div>
           )}
 
           {(eventDetails.category === 'game' ||
-            eventDetails.category === 'training') &&
+            eventDetails.category === 'training' ||
+            eventDetails.category === 'camp') &&
             eventDetails.school && (
               <div className='mb-3'>
                 <h6 className='mb-2'>
@@ -1239,22 +1248,20 @@ const Events = () => {
             <div className='mt-4'>
               {(() => {
                 const selectedForm = availableForms.find(
-                  (f) => f._id === eventDetails.formId
+                  (f) => f._id === eventDetails.formId,
                 );
-                if (!selectedForm) {
+                if (!selectedForm)
                   return (
                     <div className='alert alert-warning'>
                       Form template not found. Please refresh the page.
                     </div>
                   );
-                }
-                if (!selectedForm.fields || selectedForm.fields.length === 0) {
+                if (!selectedForm.fields || selectedForm.fields.length === 0)
                   return (
                     <div className='alert alert-warning'>
                       This form has no fields configured.
                     </div>
                   );
-                }
                 return (
                   <EventRegistrationForm
                     formFields={selectedForm.fields}
@@ -1280,6 +1287,15 @@ const Events = () => {
           )}
         </Modal.Body>
       </Modal>
+
+      {/* ── Camp Schedule Builder ── */}
+      <CampScheduleBuilder
+        show={showCampBuilder}
+        onHide={() => setShowCampBuilder(false)}
+        onGenerate={handleCampGenerate}
+        existingSchools={schools.map((s) => s.name)}
+      />
+
       <HelpModal show={showHelpModal} onHide={() => setShowHelpModal(false)} />
     </div>
   );
