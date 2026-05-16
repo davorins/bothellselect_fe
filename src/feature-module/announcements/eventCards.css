@@ -182,7 +182,7 @@
     transform: translateY(0);
   }
 }
-.dropdown-item {
+.category-dropdown-menu .dropdown-item {
   width: 100%;
   padding: 10px 12px;
   background: transparent;
@@ -197,7 +197,7 @@
   transition: all 0.15s ease;
   text-align: left;
 }
-.dropdown-item:hover {
+.category-dropdown-menu .dropdown-item:hover {
   background: rgba(80, 110, 228, 0.2);
   color: #fff;
 }

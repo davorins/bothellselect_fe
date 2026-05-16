@@ -12,6 +12,9 @@ import { useDynamicFormFields } from '../../hooks/useDynamicFormFields';
 import GradeConfirmationBanner from './GradeConfirmationBanner';
 import PlayerFormFields from '../../../components/forms/PlayerFormFields';
 import { commonHealthConditions } from '../../constants/healthConditions';
+import DuplicatePlayerModal, {
+  MatchedPlayerInfo,
+} from './DuplicatePlayerModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,6 +34,7 @@ interface DynamicPlayerRegistrationModuleProps {
   onComplete?: (players: Player[]) => void;
   onBack?: () => void;
   parentId?: string;
+  parentEmail?: string; // ← NEW: needed for abandon confirmation text
   authToken?: string;
   maxPlayers?: number;
   allowMultiple?: boolean;
@@ -86,6 +90,7 @@ const DynamicPlayerRegistrationModule: React.FC<
   onComplete,
   onBack,
   parentId,
+  parentEmail = '', // ← NEW prop
   authToken,
   maxPlayers = 10,
   allowMultiple = true,
@@ -93,6 +98,8 @@ const DynamicPlayerRegistrationModule: React.FC<
   hideUI = false,
   onSaveComplete,
 }) => {
+  // ── State ─────────────────────────────────────────────────────────────────────
+
   const [showNewPlayerForm, setShowNewPlayerForm] = useState(false);
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
@@ -102,7 +109,13 @@ const DynamicPlayerRegistrationModule: React.FC<
     {},
   );
 
-  // ── KEY FIX: Only show validation errors after first submit attempt ─────────
+  // Duplicate modal state
+  const [duplicateModalData, setDuplicateModalData] =
+    useState<MatchedPlayerInfo | null>(null);
+  const [pendingPlayerForSave, setPendingPlayerForSave] =
+    useState<Player | null>(null);
+
+  // Only show validation errors after first submit attempt
   const hasAttemptedSubmitRef = useRef(false);
 
   const [playerHealthConditions, setPlayerHealthConditions] = useState<
@@ -128,6 +141,38 @@ const DynamicPlayerRegistrationModule: React.FC<
     processFieldValue,
     loading: fieldsLoading,
   } = useDynamicFormFields('player', { registrationYear });
+
+  // ── Cross-account duplicate check ─────────────────────────────────────────────
+  // Wrapped in useCallback so it captures stable references to authToken / parentId
+
+  const checkCrossAccountDuplicate = useCallback(
+    async (player: Player): Promise<MatchedPlayerInfo | null> => {
+      if (!player.fullName || !player.dob || !authToken) return null;
+      try {
+        const axios = (await import('axios')).default;
+        const res = await axios.post(
+          `${process.env.REACT_APP_API_BASE_URL}/players/check-duplicate`,
+          {
+            fullName: player.fullName.trim(),
+            dob: player.dob,
+            grade: player.grade || undefined,
+            currentParentId: parentId,
+          },
+          { headers: { Authorization: `Bearer ${authToken}` } },
+        );
+        if (res.data.isDuplicate) {
+          return res.data.matchedPlayer as MatchedPlayerInfo;
+        }
+        return null;
+      } catch {
+        // Non-blocking — if the check fails we allow the save to proceed.
+        // The backend /players/register endpoint is still protected by its
+        // own same-parent duplicate guard.
+        return null;
+      }
+    },
+    [authToken, parentId],
+  );
 
   // ── Player helpers ────────────────────────────────────────────────────────────
 
@@ -301,9 +346,8 @@ const DynamicPlayerRegistrationModule: React.FC<
     };
   }, []);
 
-  // ── KEY FIX: Only run background validation after first submit attempt ────────
+  // Only run background validation after the first submit attempt
   useEffect(() => {
-    // Don't run validation on mount — wait until user tries to submit
     if (!hasAttemptedSubmitRef.current) return;
     if (isSubmittingRef.current || isSubmitting) return;
 
@@ -513,6 +557,17 @@ const DynamicPlayerRegistrationModule: React.FC<
         const isValid = getVisibleFields(player).every(
           (f) => !validateField(f, player[f.fieldName as keyof Player]),
         );
+
+        // ── Cross-account duplicate check ─────────────────────────────────────
+        const match = await checkCrossAccountDuplicate(player);
+        if (match) {
+          // Surface the modal and pause — the modal callbacks resume or abort
+          setPendingPlayerForSave(player);
+          setDuplicateModalData(match);
+          return false;
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         if (!isValid) continue;
 
         try {
@@ -617,6 +672,53 @@ const DynamicPlayerRegistrationModule: React.FC<
     isSubmittingRef.current = false;
   };
 
+  // ── Duplicate modal (rendered in both return paths) ───────────────────────────
+
+  const renderDuplicateModal = () => {
+    if (!duplicateModalData) return null;
+    return (
+      <DuplicatePlayerModal
+        matchedPlayer={duplicateModalData}
+        newParentId={parentId!}
+        newParentEmail={parentEmail}
+        authToken={authToken!}
+        onLink={async (_playerId: string) => {
+          setDuplicateModalData(null);
+          // Save any remaining new players that weren't the duplicate
+          const remaining = players.filter(
+            (p) => !p._id && p !== pendingPlayerForSave,
+          );
+          setPendingPlayerForSave(null);
+          if (remaining.length > 0) {
+            await savePlayersToBackend(remaining);
+          } else {
+            onSaveComplete?.();
+          }
+        }}
+        onMergeSent={() => {
+          // Merge request sent — close modal and let the user proceed with
+          // their account; the linked player won't appear until merge accepted
+          setDuplicateModalData(null);
+          setPendingPlayerForSave(null);
+        }}
+        onAbandon={async () => {
+          if (!parentId || !authToken) return;
+          const axios = (await import('axios')).default;
+          await axios.delete(
+            `${process.env.REACT_APP_API_BASE_URL}/parent/${parentId}`,
+            { headers: { Authorization: `Bearer ${authToken}` } },
+          );
+          // Modal shows done-abandon screen; redirect handled by modal's
+          // "Return to home" button (window.location.href = '/')
+        }}
+        onClose={() => {
+          setDuplicateModalData(null);
+          setPendingPlayerForSave(null);
+        }}
+      />
+    );
+  };
+
   // ── Player form item renderer ─────────────────────────────────────────────────
 
   const renderPlayerFormItem = (
@@ -702,14 +804,10 @@ const DynamicPlayerRegistrationModule: React.FC<
   };
 
   // ── Render: existing player list ──────────────────────────────────────────────
-  // KEY FIX: Always render this when isExistingUser=true and there are any
-  // players (paid or unpaid). Previously it hid itself when all were paid
-  // and nothing was selected, making paid players invisible.
 
   const renderPlayerList = () => {
     if (hideUI) return null;
     if (!isExistingUser) return null;
-    // Show the list if there are any paid OR unpaid players
     if (paidPlayers.length === 0 && existingPlayers.length === 0) return null;
 
     return (
@@ -723,12 +821,11 @@ const DynamicPlayerRegistrationModule: React.FC<
           </div>
         </div>
         <div className='card-body'>
-          {/* ── Paid players ── */}
           {hasPaidPlayers() && requiresPayment && (
             <div className='mb-4'>
               <h6 className='text-success mb-3'>
-                <i className='ti ti-circle-check me-2'></i>Already Registered &
-                Paid
+                <i className='ti ti-circle-check me-2'></i>Already Registered
+                &amp; Paid
               </h6>
               {paidPlayers.map((player) => (
                 <div
@@ -749,7 +846,6 @@ const DynamicPlayerRegistrationModule: React.FC<
             </div>
           )}
 
-          {/* ── Unpaid / selectable players ── */}
           {hasUnpaidPlayers() && (
             <div className='mb-4'>
               <h6 className='text-warning mb-3'>
@@ -915,7 +1011,6 @@ const DynamicPlayerRegistrationModule: React.FC<
             </div>
           )}
 
-          {/* Only show field-level warnings after submit attempt */}
           {hasAttemptedSubmitRef.current &&
             Object.keys(validationErrors).some((k) => k !== 'general') && (
               <div className='alert alert-warning mt-3'>
@@ -952,7 +1047,7 @@ const DynamicPlayerRegistrationModule: React.FC<
 
     const isFormValid = hasAny && (hasNewFilled ? areNewValid : true);
 
-    let buttonText = requiresPayment
+    const buttonText = requiresPayment
       ? 'Continue to Payment'
       : existingPlayers.length > 0 || paidPlayers.length > 0
         ? 'Add Players to Account'
@@ -1009,6 +1104,8 @@ const DynamicPlayerRegistrationModule: React.FC<
   };
 
   // ── New user path ─────────────────────────────────────────────────────────────
+  // FIX: renderDuplicateModal() is now included in this early-return path so
+  // the modal can appear when a new user triggers a cross-account duplicate.
 
   if (!isExistingUser && !hideUI) {
     const newPlayers = players.filter((p) => !p._id);
@@ -1121,6 +1218,9 @@ const DynamicPlayerRegistrationModule: React.FC<
             </div>
           </div>
         </div>
+
+        {/* Modal rendered here so it shows for the new-user path too */}
+        {renderDuplicateModal()}
       </div>
     );
   }
@@ -1147,14 +1247,11 @@ const DynamicPlayerRegistrationModule: React.FC<
   const shouldShowCTA =
     showNewPlayerForm || newPlayers.length > 0 || hasSelectedAny;
 
-  // "Initial state" for existing users = no new form open, nothing selected
-  // KEY FIX: This no longer hides renderPlayerList — paid players always show
   const isInInitialState =
     !showNewPlayerForm && newPlayers.length === 0 && !hasSelectedAny;
 
   return (
     <div>
-      {/* Only show the general validation error after a submit attempt */}
       {hasAttemptedSubmitRef.current && validationErrors.general && (
         <div className='alert alert-danger mb-4'>
           <i className='ti ti-alert-circle me-2'></i>
@@ -1162,10 +1259,8 @@ const DynamicPlayerRegistrationModule: React.FC<
         </div>
       )}
 
-      {/* Always render paid/unpaid player list for existing users */}
       {renderPlayerList()}
 
-      {/* "Add New Player" prompt — shown in initial state (nothing selected/added yet) */}
       {isInInitialState && (
         <div className='card mb-4'>
           <div className='card-header bg-light'>
@@ -1214,11 +1309,12 @@ const DynamicPlayerRegistrationModule: React.FC<
         </div>
       )}
 
-      {/* New player form(s) */}
       {!isInInitialState && renderNewPlayerForms()}
 
-      {/* CTA submit card */}
       {shouldShowCTA && renderUniversalCTA()}
+
+      {/* Modal rendered here for the existing-user path */}
+      {renderDuplicateModal()}
     </div>
   );
 };

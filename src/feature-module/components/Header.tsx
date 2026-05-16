@@ -940,6 +940,10 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
           )}
         </div>
       )}
+      <style>{`.header .nav .nav-item a.nav-link {
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+}`}</style>
     </>
   );
 };
