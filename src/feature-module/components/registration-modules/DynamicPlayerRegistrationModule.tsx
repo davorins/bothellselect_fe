@@ -136,7 +136,7 @@ const DynamicPlayerRegistrationModule: React.FC<
   const isValidatingRef = useRef(false);
   const validationTimeoutRef = useRef<NodeJS.Timeout>();
   const prevValidationKeyRef = useRef<string>('');
-  const { refreshParentData } = useAuth();
+  const { refreshParentData, refreshPlayers } = useAuth();
   const pendingDuplicatesRef = useRef<{ player: Player; duplicateInfo: any }[]>(
     [],
   );

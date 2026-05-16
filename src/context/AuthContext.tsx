@@ -499,19 +499,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const parentId = localStorage.getItem('parentId');
     if (token && parentId) {
       try {
-        const response = await axios.get(`${API_BASE_URL}/parent/${parentId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setParent(response.data);
-        localStorage.setItem('parent', JSON.stringify(response.data));
-        return response.data;
+        const [parentResponse, playersData] = await Promise.all([
+          axios.get(`${API_BASE_URL}/parent/${parentId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetchParentPlayers(parentId), // ← ADD THIS
+        ]);
+        setParent(parentResponse.data);
+        setPlayers(playersData || []); // ← ADD THIS
+        localStorage.setItem('parent', JSON.stringify(parentResponse.data));
+        return parentResponse.data;
       } catch (error) {
         console.error('Failed to refresh parent data:', error);
         return null;
       }
     }
     return null;
-  }, []);
+  }, [fetchParentPlayers]);
 
   const fetchAllGuardians = useCallback(async (queryParams = '') => {
     try {
