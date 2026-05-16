@@ -494,6 +494,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setPlayers(playersData);
   }, [fetchParentPlayers]);
 
+  const refreshParentData = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    const parentId = localStorage.getItem('parentId');
+    if (token && parentId) {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/parent/${parentId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setParent(response.data);
+        localStorage.setItem('parent', JSON.stringify(response.data));
+        return response.data;
+      } catch (error) {
+        console.error('Failed to refresh parent data:', error);
+        return null;
+      }
+    }
+    return null;
+  }, []);
+
   const fetchAllGuardians = useCallback(async (queryParams = '') => {
     try {
       const token = localStorage.getItem('token');
@@ -1285,6 +1304,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         currentUser: parent,
         refreshAuthData,
         refreshPlayers,
+        refreshParentData,
         registrationStatus,
         setRegistrationStatus,
         updateParent,

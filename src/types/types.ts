@@ -314,6 +314,7 @@ export interface AuthContextType {
   allGuardians: Guardian[];
   refreshAuthData: () => Promise<void>;
   refreshPlayers: () => Promise<void>;
+  refreshParentData: () => Promise<Parent | null>;
   registrationStatus: RegistrationStatus;
   setRegistrationStatus?: React.Dispatch<
     React.SetStateAction<RegistrationStatus>

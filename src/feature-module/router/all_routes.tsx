@@ -25,6 +25,7 @@ export const all_routes = {
   lockScreen: '/lock-screen',
   resetPassword: '/reset-password',
   resetPasswordSuccess: '/reset-password-success',
+  mergeAccount: '/merge-account',
 
   //ui routes
   alert: '/ui-alert',

@@ -12,7 +12,9 @@ import { useDynamicFormFields } from '../../hooks/useDynamicFormFields';
 import GradeConfirmationBanner from './GradeConfirmationBanner';
 import PlayerFormFields from '../../../components/forms/PlayerFormFields';
 import { commonHealthConditions } from '../../constants/healthConditions';
+import { useAuth } from '../../../context/AuthContext';
 import DuplicatePlayerModal, {
+  BulkDuplicateInfo,
   MatchedPlayerInfo,
 } from './DuplicatePlayerModal';
 
@@ -34,7 +36,7 @@ interface DynamicPlayerRegistrationModuleProps {
   onComplete?: (players: Player[]) => void;
   onBack?: () => void;
   parentId?: string;
-  parentEmail?: string; // ← NEW: needed for abandon confirmation text
+  parentEmail?: string;
   authToken?: string;
   maxPlayers?: number;
   allowMultiple?: boolean;
@@ -90,7 +92,7 @@ const DynamicPlayerRegistrationModule: React.FC<
   onComplete,
   onBack,
   parentId,
-  parentEmail = '', // ← NEW prop
+  parentEmail = '',
   authToken,
   maxPlayers = 10,
   allowMultiple = true,
@@ -134,6 +136,16 @@ const DynamicPlayerRegistrationModule: React.FC<
   const isValidatingRef = useRef(false);
   const validationTimeoutRef = useRef<NodeJS.Timeout>();
   const prevValidationKeyRef = useRef<string>('');
+  const { refreshParentData } = useAuth();
+  const pendingDuplicatesRef = useRef<{ player: Player; duplicateInfo: any }[]>(
+    [],
+  );
+  const [isProcessingDuplicate, setIsProcessingDuplicate] = useState(false);
+  const [bulkDuplicateModalData, setBulkDuplicateModalData] =
+    useState<BulkDuplicateInfo | null>(null);
+  const [pendingPlayersForSave, setPendingPlayersForSave] = useState<Player[]>(
+    [],
+  );
 
   const {
     getVisibleFields,
@@ -141,38 +153,6 @@ const DynamicPlayerRegistrationModule: React.FC<
     processFieldValue,
     loading: fieldsLoading,
   } = useDynamicFormFields('player', { registrationYear });
-
-  // ── Cross-account duplicate check ─────────────────────────────────────────────
-  // Wrapped in useCallback so it captures stable references to authToken / parentId
-
-  const checkCrossAccountDuplicate = useCallback(
-    async (player: Player): Promise<MatchedPlayerInfo | null> => {
-      if (!player.fullName || !player.dob || !authToken) return null;
-      try {
-        const axios = (await import('axios')).default;
-        const res = await axios.post(
-          `${process.env.REACT_APP_API_BASE_URL}/players/check-duplicate`,
-          {
-            fullName: player.fullName.trim(),
-            dob: player.dob,
-            grade: player.grade || undefined,
-            currentParentId: parentId,
-          },
-          { headers: { Authorization: `Bearer ${authToken}` } },
-        );
-        if (res.data.isDuplicate) {
-          return res.data.matchedPlayer as MatchedPlayerInfo;
-        }
-        return null;
-      } catch {
-        // Non-blocking — if the check fails we allow the save to proceed.
-        // The backend /players/register endpoint is still protected by its
-        // own same-parent duplicate guard.
-        return null;
-      }
-    },
-    [authToken, parentId],
-  );
 
   // ── Player helpers ────────────────────────────────────────────────────────────
 
@@ -518,7 +498,6 @@ const DynamicPlayerRegistrationModule: React.FC<
   };
 
   // ── Backend save ──────────────────────────────────────────────────────────────
-
   const savePlayersToBackend = async (
     playersToSave: Player[],
   ): Promise<boolean> => {
@@ -533,44 +512,49 @@ const DynamicPlayerRegistrationModule: React.FC<
     const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
     try {
-      const uniquePlayerMap = new Map<string, Player>();
-
+      // Separate players into those with IDs (already saved) and those without
+      const playersWithIds = playersToSave.filter((p) => p._id);
       const newPlayersToSave = playersToSave.filter((p) => {
         if (p._id) return false;
+        if (!p.fullName?.trim()) return false;
 
+        // Check if already exists in existing players
         const alreadyExists = [...existingPlayers, ...paidPlayers].some((e) =>
           isSamePlayer(e, p),
         );
         if (alreadyExists) return false;
 
-        const uniqueKey = `${p.fullName?.trim().toLowerCase()}|${p.dob}|${p.gender}`;
-        if (uniquePlayerMap.has(uniqueKey)) return false;
-        uniquePlayerMap.set(uniqueKey, p);
         return true;
       });
 
+      console.log('📊 Players breakdown:', {
+        total: playersToSave.length,
+        withIds: playersWithIds.length,
+        newPlayers: newPlayersToSave.length,
+        newPlayerNames: newPlayersToSave.map((p) => p.fullName),
+      });
+
+      // If no new players to save, just return success
       if (newPlayersToSave.length === 0) return true;
 
-      const savedPlayers: Player[] = [];
+      // ✅ COLLECT ALL duplicates and unique players
+      const duplicatePlayersList: { player: Player; duplicateInfo: any }[] = [];
+      const uniquePlayers: Player[] = [];
 
-      for (const player of newPlayersToSave) {
+      for (let i = 0; i < newPlayersToSave.length; i++) {
+        const player = newPlayersToSave[i];
+
+        // Validate required fields
         const isValid = getVisibleFields(player).every(
           (f) => !validateField(f, player[f.fieldName as keyof Player]),
         );
-
-        // ── Cross-account duplicate check ─────────────────────────────────────
-        const match = await checkCrossAccountDuplicate(player);
-        if (match) {
-          // Surface the modal and pause — the modal callbacks resume or abort
-          setPendingPlayerForSave(player);
-          setDuplicateModalData(match);
-          return false;
+        if (!isValid) {
+          console.log(`Player ${player.fullName} is invalid, skipping`);
+          continue;
         }
-        // ─────────────────────────────────────────────────────────────────────
-
-        if (!isValid) continue;
 
         try {
+          // Try to save the player - this will throw 409 if duplicate
           const response = await axios.post(
             `${API_BASE_URL}/players/register`,
             {
@@ -586,6 +570,7 @@ const DynamicPlayerRegistrationModule: React.FC<
               grade: player.grade || '',
               isGradeOverridden: player.isGradeOverridden || false,
               skipSeasonRegistration: !requiresPayment,
+              forceCreate: false,
             },
             {
               headers: {
@@ -595,50 +580,94 @@ const DynamicPlayerRegistrationModule: React.FC<
             },
           );
 
-          if (response.data.error?.includes('already exists')) {
-            if (response.data.duplicatePlayerId) {
-              savedPlayers.push({
-                ...player,
-                _id: response.data.duplicatePlayerId,
-              });
-            }
-          } else {
-            savedPlayers.push(response.data.player || response.data);
-          }
+          // No duplicate - add to unique players
+          const savedPlayer = response.data.player || response.data;
+          uniquePlayers.push(savedPlayer);
+          console.log(
+            `✅ Player ${player.fullName} is unique, saved successfully`,
+          );
         } catch (err: any) {
+          // Handle duplicate (409)
           if (
-            err.response?.data?.error?.includes('already exists') ||
-            err.response?.data?.error?.includes('duplicate')
+            err.response?.status === 409 &&
+            err.response?.data?.duplicateInfo
           ) {
-            const duplicateId = err.response.data.duplicatePlayerId;
-            if (duplicateId) {
-              savedPlayers.push({ ...player, _id: duplicateId });
-            }
+            console.log(`🎯 Duplicate detected for player: ${player.fullName}`);
+            duplicatePlayersList.push({
+              player: player,
+              duplicateInfo: err.response.data.duplicateInfo,
+            });
+          } else {
+            // Handle other errors
+            console.error(`Error saving player ${player.fullName}:`, err);
+            setValidationErrors({
+              general: `Failed to save player "${player.fullName}". Please try again.`,
+            });
+            return false;
           }
         }
       }
 
-      if (savedPlayers.length > 0) {
+      // ✅ Save all unique players first
+      if (uniquePlayers.length > 0) {
         const updatedPlayers = players.map((orig) => {
           if (orig._id) return orig;
-          const saved = savedPlayers.find((s) => isSamePlayer(s, orig));
+          const saved = uniquePlayers.find((s) => isSamePlayer(s, orig));
           return saved || orig;
         });
-        if (JSON.stringify(updatedPlayers) !== JSON.stringify(players)) {
-          onPlayersChange(updatedPlayers);
-        }
+        onPlayersChange(updatedPlayers);
         onSaveComplete?.();
+        console.log(`✅ Saved ${uniquePlayers.length} unique players`);
+      }
+
+      // ✅ If there are duplicates, show ONE modal with ALL duplicates
+      if (duplicatePlayersList.length > 0) {
+        console.log(
+          `📢 Showing ONE modal for ${duplicatePlayersList.length} duplicate players`,
+        );
+
+        // Check if all duplicates belong to the same parent
+        const allSameParent = duplicatePlayersList.every(
+          (dup) =>
+            dup.duplicateInfo.existingParentId ===
+            duplicatePlayersList[0].duplicateInfo.existingParentId,
+        );
+
+        // Create bulk duplicate info with ALL players
+        const bulkInfo: BulkDuplicateInfo = {
+          players: duplicatePlayersList.map((dup) => ({
+            playerId: dup.duplicateInfo.playerId,
+            playerName: dup.duplicateInfo.playerName,
+            grade: dup.duplicateInfo.grade || dup.player.grade || '',
+            dob: dup.duplicateInfo.dob || dup.player.dob,
+            existingParentId: dup.duplicateInfo.existingParentId,
+            existingParentName: dup.duplicateInfo.existingParentName,
+            existingParentEmail: dup.duplicateInfo.existingParentEmail,
+            confidenceScore: dup.duplicateInfo.confidenceScore,
+            isExactMatch: dup.duplicateInfo.isExactMatch,
+          })),
+          allSameParent,
+          parentName: allSameParent
+            ? duplicatePlayersList[0].duplicateInfo.existingParentName
+            : undefined,
+          parentEmail: allSameParent
+            ? duplicatePlayersList[0].duplicateInfo.existingParentEmail
+            : undefined,
+        };
+
+        setBulkDuplicateModalData(bulkInfo);
+        setPendingPlayersForSave(duplicatePlayersList.map((dup) => dup.player));
+        return false;
+      }
+
+      // No duplicates at all - all players saved successfully
+      if (uniquePlayers.length > 0 && onComplete) {
+        onComplete(players);
       }
 
       return true;
     } catch (error: any) {
       console.error('Save players error:', error);
-      if (
-        error.response?.data?.error?.includes('already exists') ||
-        error.response?.data?.error?.includes('duplicate')
-      ) {
-        return true;
-      }
       setValidationErrors({
         general:
           error.response?.data?.error ||
@@ -649,7 +678,6 @@ const DynamicPlayerRegistrationModule: React.FC<
   };
 
   // ── Submit ────────────────────────────────────────────────────────────────────
-
   const handleSubmit = async () => {
     const now = Date.now();
     if (now - lastSubmitTimestampRef.current < 2000) return;
@@ -667,13 +695,124 @@ const DynamicPlayerRegistrationModule: React.FC<
       window.scrollTo(0, 0);
       return;
     }
-    setTimeout(() => onComplete?.(players), 100);
+
+    // ✅ Wait for save to complete before calling onComplete
+    const saveSuccess = await savePlayersToBackend(players);
+
+    if (saveSuccess) {
+      // Only proceed to next step if save was successful
+      onComplete?.(players);
+    }
+
     setIsSubmitting(false);
     isSubmittingRef.current = false;
   };
 
-  // ── Duplicate modal (rendered in both return paths) ───────────────────────────
+  // In DynamicPlayerRegistrationModule.tsx, move this function up
+  const savePlayerIgnoringDuplicate = async (
+    player: Player,
+  ): Promise<{ success: boolean; savedPlayer: Player | null }> => {
+    if (!parentId || !authToken) return { success: false, savedPlayer: null };
 
+    const axios = (await import('axios')).default;
+    const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+    try {
+      console.log('🚀 Force creating player:', player.fullName);
+
+      const response = await axios.post(
+        `${API_BASE_URL}/players/register`,
+        {
+          fullName: player.fullName.trim(),
+          gender: player.gender,
+          dob: player.dob,
+          schoolName: player.schoolName?.trim() || '',
+          healthConcerns: player.healthConcerns || '',
+          aauNumber: player.aauNumber || '',
+          registrationYear,
+          season,
+          parentId,
+          grade: player.grade || '',
+          isGradeOverridden: player.isGradeOverridden || false,
+          skipSeasonRegistration: !requiresPayment,
+          forceCreate: true,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      const savedPlayer = response.data.player || response.data;
+      console.log('✅ Force create successful:', savedPlayer);
+
+      return { success: true, savedPlayer };
+    } catch (error: any) {
+      console.error('Force save error:', error);
+
+      if (error.response?.status === 409) {
+        const duplicateInfo = error.response.data.duplicateInfo;
+        if (duplicateInfo) {
+          console.log('🎯 Duplicate detected in force save, showing modal');
+          setDuplicateModalData({
+            playerId: duplicateInfo.playerId,
+            playerName: duplicateInfo.playerName,
+            grade: duplicateInfo.grade || player.grade || '',
+            dob: duplicateInfo.dob || player.dob,
+            existingParentId: duplicateInfo.existingParentId,
+            existingParentName: duplicateInfo.existingParentName,
+            existingParentEmail: duplicateInfo.existingParentEmail,
+            confidenceScore: duplicateInfo.confidenceScore,
+            isExactMatch: duplicateInfo.isExactMatch,
+          });
+          setPendingPlayerForSave(player);
+          return { success: false, savedPlayer: null };
+        }
+      }
+      return { success: false, savedPlayer: null };
+    }
+  };
+
+  const checkForDuplicate = async (
+    player: Player,
+  ): Promise<MatchedPlayerInfo | null> => {
+    if (!parentId || !authToken) return null;
+
+    const axios = (await import('axios')).default;
+    const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/players/check-duplicate`,
+        {
+          fullName: player.fullName.trim(),
+          dob: player.dob,
+          grade: player.grade,
+          currentParentId: parentId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (response.data.isDuplicate) {
+        return response.data.matchedPlayer;
+      }
+      return null;
+    } catch (err: any) {
+      if (err.response?.status === 409 && err.response?.data?.duplicateInfo) {
+        return err.response.data.duplicateInfo;
+      }
+      return null;
+    }
+  };
+
+  // Then the renderDuplicateModal function after it
   const renderDuplicateModal = () => {
     if (!duplicateModalData) return null;
     return (
@@ -682,23 +821,113 @@ const DynamicPlayerRegistrationModule: React.FC<
         newParentId={parentId!}
         newParentEmail={parentEmail}
         authToken={authToken!}
-        onLink={async (_playerId: string) => {
+        confidenceScore={duplicateModalData.confidenceScore}
+        isExactMatch={duplicateModalData.isExactMatch}
+        onLink={async (playerId: string) => {
           setDuplicateModalData(null);
-          // Save any remaining new players that weren't the duplicate
-          const remaining = players.filter(
-            (p) => !p._id && p !== pendingPlayerForSave,
+
+          const linkedPlayer: Player = {
+            ...pendingPlayerForSave!,
+            _id: playerId,
+          };
+
+          // Remove pending player and add linked player
+          const remainingPlayers = players.filter(
+            (p) => p !== pendingPlayerForSave,
           );
+          const updatedPlayers = [...remainingPlayers, linkedPlayer];
+
+          onPlayersChange(updatedPlayers);
           setPendingPlayerForSave(null);
-          if (remaining.length > 0) {
-            await savePlayersToBackend(remaining);
+
+          // Refresh parent data
+          if (refreshParentData) {
+            await refreshParentData();
+          }
+
+          // ✅ Process remaining duplicates if any
+          const remainingDuplicates = pendingDuplicatesRef.current;
+
+          if (remainingDuplicates.length > 0) {
+            console.log(
+              `📌 Processing next duplicate: ${remainingDuplicates[0].player.fullName}`,
+            );
+
+            // Get the next duplicate
+            const nextDuplicate = remainingDuplicates[0];
+            const nextRemaining = remainingDuplicates.slice(1);
+            pendingDuplicatesRef.current = nextRemaining;
+
+            // Show modal for the next duplicate
+            setDuplicateModalData({
+              playerId: nextDuplicate.duplicateInfo.playerId,
+              playerName: nextDuplicate.duplicateInfo.playerName,
+              grade:
+                nextDuplicate.duplicateInfo.grade ||
+                nextDuplicate.player.grade ||
+                '',
+              dob: nextDuplicate.duplicateInfo.dob || nextDuplicate.player.dob,
+              existingParentId: nextDuplicate.duplicateInfo.existingParentId,
+              existingParentName:
+                nextDuplicate.duplicateInfo.existingParentName,
+              existingParentEmail:
+                nextDuplicate.duplicateInfo.existingParentEmail,
+              confidenceScore: nextDuplicate.duplicateInfo.confidenceScore,
+              isExactMatch: nextDuplicate.duplicateInfo.isExactMatch,
+            });
+            setPendingPlayerForSave(nextDuplicate.player);
           } else {
-            onSaveComplete?.();
+            // ✅ NO MORE DUPLICATES - PROCEED TO PAYMENT IMMEDIATELY
+            console.log('✅ No more duplicates, proceeding to payment');
+
+            if (onComplete) {
+              onComplete(updatedPlayers);
+            } else if (onSaveComplete) {
+              onSaveComplete();
+            }
           }
         }}
         onMergeSent={() => {
-          // Merge request sent — close modal and let the user proceed with
-          // their account; the linked player won't appear until merge accepted
           setDuplicateModalData(null);
+          setPendingPlayerForSave(null);
+
+          // ✅ Kick user out of registration and go to dashboard
+          // The modal will show "done-merge" screen first, then close
+          // After modal closes, navigate to dashboard
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 2000);
+        }}
+        onProceedAsNew={async () => {
+          setDuplicateModalData(null);
+
+          if (pendingPlayerForSave) {
+            const result =
+              await savePlayerIgnoringDuplicate(pendingPlayerForSave);
+
+            if (result.success && result.savedPlayer) {
+              // TypeScript now knows savedPlayer exists
+              const savedPlayer = result.savedPlayer;
+
+              // Update the players array with the saved player (now has ID)
+              const updatedPlayers = players.map((p) =>
+                p === pendingPlayerForSave ? savedPlayer : p,
+              );
+              onPlayersChange(updatedPlayers);
+              setPendingPlayerForSave(null);
+
+              if (refreshParentData) {
+                await refreshParentData();
+              }
+
+              // Now call onComplete with the updated players (which have IDs)
+              if (onComplete) {
+                onComplete(updatedPlayers);
+              } else if (onSaveComplete) {
+                onSaveComplete();
+              }
+            }
+          }
           setPendingPlayerForSave(null);
         }}
         onAbandon={async () => {
@@ -708,12 +937,124 @@ const DynamicPlayerRegistrationModule: React.FC<
             `${process.env.REACT_APP_API_BASE_URL}/parent/${parentId}`,
             { headers: { Authorization: `Bearer ${authToken}` } },
           );
-          // Modal shows done-abandon screen; redirect handled by modal's
-          // "Return to home" button (window.location.href = '/')
         }}
         onClose={() => {
           setDuplicateModalData(null);
           setPendingPlayerForSave(null);
+        }}
+      />
+    );
+  };
+
+  const renderBulkDuplicateModal = () => {
+    if (!bulkDuplicateModalData || bulkDuplicateModalData.players.length === 0)
+      return null;
+
+    return (
+      <DuplicatePlayerModal
+        duplicateInfo={bulkDuplicateModalData}
+        newParentId={parentId!}
+        newParentEmail={parentEmail}
+        authToken={authToken!}
+        onLinkAll={async (playerIds: string[]) => {
+          setBulkDuplicateModalData(null);
+
+          // Link all players
+          const linkedPlayers = pendingPlayersForSave.map((player, idx) => ({
+            ...player,
+            _id: playerIds[idx],
+          }));
+
+          const updatedPlayers = players
+            .filter((p) => !pendingPlayersForSave.includes(p))
+            .concat(linkedPlayers);
+
+          onPlayersChange(updatedPlayers);
+          setPendingPlayersForSave([]);
+
+          if (refreshParentData) {
+            await refreshParentData();
+          }
+
+          // Proceed to payment after linking all
+          if (onComplete) {
+            onComplete(updatedPlayers);
+          } else if (onSaveComplete) {
+            onSaveComplete();
+          }
+        }}
+        onMergeAll={async () => {
+          setBulkDuplicateModalData(null);
+          setPendingPlayersForSave([]);
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 2000);
+        }}
+        onProceedAsNewAll={async () => {
+          setBulkDuplicateModalData(null);
+
+          // Save all players with forceCreate and collect saved players
+          let allSuccess = true;
+          const savedPlayersList: Player[] = [];
+
+          // Make a copy of the current players to work with
+          let currentPlayers = [...players];
+
+          for (const player of pendingPlayersForSave) {
+            const result = await savePlayerIgnoringDuplicate(player);
+            if (result.success && result.savedPlayer) {
+              savedPlayersList.push(result.savedPlayer);
+              // Update currentPlayers with the saved player
+              currentPlayers = currentPlayers.map((p) =>
+                p === player ? result.savedPlayer! : p,
+              );
+            } else {
+              allSuccess = false;
+              break;
+            }
+          }
+
+          setPendingPlayersForSave([]);
+
+          if (allSuccess) {
+            // Update the state with all saved players that have IDs
+            const finalPlayers = currentPlayers.map((p) => {
+              const saved = savedPlayersList.find(
+                (s) => s.fullName === p.fullName,
+              );
+              return saved || p;
+            });
+
+            onPlayersChange(finalPlayers);
+
+            // Refresh parent data to ensure all players are saved in the backend
+            if (refreshParentData) {
+              await refreshParentData();
+            }
+
+            // ✅ Now call onComplete with the updated players (which now have IDs)
+            if (onComplete) {
+              onComplete(finalPlayers);
+            } else if (onSaveComplete) {
+              onSaveComplete();
+            }
+          } else {
+            setValidationErrors({
+              general: 'Failed to create some players. Please try again.',
+            });
+          }
+        }}
+        onAbandon={async () => {
+          if (!parentId || !authToken) return;
+          const axios = (await import('axios')).default;
+          await axios.delete(
+            `${process.env.REACT_APP_API_BASE_URL}/parent/${parentId}`,
+            { headers: { Authorization: `Bearer ${authToken}` } },
+          );
+        }}
+        onClose={() => {
+          setBulkDuplicateModalData(null);
+          setPendingPlayersForSave([]);
         }}
       />
     );
@@ -1218,9 +1559,8 @@ const DynamicPlayerRegistrationModule: React.FC<
             </div>
           </div>
         </div>
-
-        {/* Modal rendered here so it shows for the new-user path too */}
         {renderDuplicateModal()}
+        {renderBulkDuplicateModal()}
       </div>
     );
   }
@@ -1313,7 +1653,10 @@ const DynamicPlayerRegistrationModule: React.FC<
 
       {shouldShowCTA && renderUniversalCTA()}
 
-      {/* Modal rendered here for the existing-user path */}
+      {/* Show bulk modal if there are multiple duplicates */}
+      {renderBulkDuplicateModal()}
+
+      {/* Show single modal for backward compatibility */}
       {renderDuplicateModal()}
     </div>
   );

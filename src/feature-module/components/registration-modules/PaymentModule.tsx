@@ -329,30 +329,7 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
     }
 
     if (registrationType === 'training') {
-      const unpaidTrainingPlayers = effectivePlayers.filter(
-        (player: Player) => {
-          if (!player.seasons || player.seasons.length === 0) {
-            return true;
-          }
-
-          const hasPaidForTraining = player.seasons.some(
-            (s: SeasonRegistration) => {
-              const isTrainingSeason =
-                s.season?.toLowerCase().includes('training') ||
-                s.season === 'Basketball Training';
-              const isSameYear = s.year === effectiveEventData?.year;
-              const isPaid =
-                s.paymentStatus === 'paid' || s.paymentComplete === true;
-
-              return isTrainingSeason && isSameYear && isPaid;
-            },
-          );
-
-          return !hasPaidForTraining;
-        },
-      );
-
-      return unpaidTrainingPlayers.length;
+      return effectivePlayers.length;
     }
 
     if (registrationType === 'tryout') {

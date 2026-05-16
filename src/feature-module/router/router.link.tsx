@@ -32,6 +32,7 @@ import Permission from '../userManagement/permission';
 import Manageusers from '../userManagement/manageusers';
 import Profilesettings from '../settings/generalSettings/profile';
 import Securitysettings from '../settings/generalSettings/security';
+import AcceptMerge from '../settings/generalSettings/ApproveMerge';
 import Notificationssettings from '../settings/generalSettings/notifications';
 import ConnectedApps from '../settings/generalSettings/connectedApps';
 import CompanySettings from '../settings/websiteSettings/companySettings';
@@ -506,6 +507,11 @@ export const authRoutes = [
   {
     path: routes.resetPasswordSuccess,
     element: <ResetPasswordSuccess />,
+  },
+  {
+    path: routes.mergeAccount,
+    element: <AcceptMerge />,
+    route: Route,
   },
   {
     path: all_routes.dynamicPage, // '/page/:slug'

@@ -64,6 +64,7 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
     createTempAccount,
     checkAuth,
     players: userPlayers,
+    refreshParentData,
   } = useAuth();
 
   // ─── Derived Data ──────────────────────────────────────────────────────────
@@ -487,9 +488,13 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
         throw new Error('Authentication required. Please log in again.');
       }
 
-      const playersWithoutId = playersToSave.filter((p) => !p._id);
+      // Only save players WITHOUT an _id
+      const playersWithoutId = playersToSave.filter(
+        (p) => !p._id && p.fullName?.trim(),
+      );
       if (playersWithoutId.length === 0) {
-        return playersToSave;
+        console.log('No new players to save, returning empty array');
+        return [];
       }
 
       const savedPlayers: Player[] = [];
@@ -522,45 +527,26 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
               },
             },
           );
-
-          if (response.data.error?.includes('already exists')) {
-            if (response.data.duplicatePlayerId) {
-              savedPlayers.push({
-                ...player,
-                _id: response.data.duplicatePlayerId,
-              });
-            }
-          } else {
-            savedPlayers.push(response.data.player || response.data);
-          }
+          savedPlayers.push(response.data.player || response.data);
         } catch (error: any) {
-          if (error.response?.data?.error?.includes('already exists')) {
-            const duplicateId = error.response.data.duplicatePlayerId;
-            if (duplicateId) {
-              savedPlayers.push({ ...player, _id: duplicateId });
-              continue;
-            }
+          console.error('Error saving player:', error.response?.data);
+
+          // If it's a duplicate (409), we shouldn't be here because the modal handles it
+          // But just in case, we'll skip it
+          if (error.response?.status === 409) {
+            console.log(
+              'Duplicate player detected, skipping save - modal should handle this',
+            );
+            continue;
           }
           throw error;
         }
       }
 
-      const existingPlayers = playersToSave.filter((p) => p._id);
-      const allPlayers = [...existingPlayers, ...savedPlayers];
-
-      setPlayers(allPlayers);
-      updateFormData({ players: allPlayers });
-
-      return allPlayers;
+      return savedPlayers;
     } catch (error: any) {
       console.error('Error in savePlayerData:', error);
-      let errorMessage = 'Failed to save player information';
-      if (error.response?.data?.error) errorMessage = error.response.data.error;
-      else if (error.response?.data?.message)
-        errorMessage = error.response.data.message;
-      else if (error.message) errorMessage = error.message;
-      setFormError(errorMessage);
-      throw new Error(errorMessage);
+      throw error;
     }
   };
 
@@ -609,45 +595,41 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
           name: p.fullName,
           hasId: !!p._id,
         })),
-        selectedPlayerIds,
-        userPlayersLength: userPlayers?.length || 0,
       });
 
-      // Save players to database
-      const savedPlayers = await savePlayerData(playersData);
+      // Separate players into new (no ID) and existing (have ID)
+      const newPlayersToCreate = playersData.filter(
+        (p) => !p._id && p.fullName?.trim(),
+      );
+      const existingPlayers = playersData.filter((p) => p._id);
+
+      console.log('🔍 newPlayersToCreate:', newPlayersToCreate.length);
       console.log(
-        '🔍 savedPlayers after save:',
-        savedPlayers.map((p) => ({ id: p._id, name: p.fullName })),
+        '🔍 existingPlayers (linked or already in account):',
+        existingPlayers.length,
       );
 
-      // Get paid players
-      const paidPlayers = getPaidPlayersForTraining();
-      const paidPlayerIds = new Set(paidPlayers.map((p) => p._id));
-      console.log('🔍 paidPlayerIds:', Array.from(paidPlayerIds));
+      let createdPlayers: Player[] = [];
 
-      // Get selected existing players
-      const selectedUnpaidPlayers = (userPlayers || []).filter(
-        (p) => selectedPlayerIds.includes(p._id!) && !paidPlayerIds.has(p._id!),
-      );
-      console.log(
-        '🔍 selectedUnpaidPlayers:',
-        selectedUnpaidPlayers.map((p) => ({ id: p._id, name: p.fullName })),
-      );
+      // Only create new players (those without IDs)
+      if (newPlayersToCreate.length > 0) {
+        createdPlayers = await savePlayerData(newPlayersToCreate);
+        console.log(
+          '🔍 createdPlayers:',
+          createdPlayers.map((p) => ({ id: p._id, name: p.fullName })),
+        );
+      }
 
-      // Get newly created players
-      const newPlayers = savedPlayers.filter(
-        (p) => p._id && p.fullName?.trim(),
-      );
-      console.log(
-        '🔍 newPlayers:',
-        newPlayers.map((p) => ({ id: p._id, name: p.fullName })),
-      );
+      // Combine existing players (linked) with newly created ones
+      const allPlayersForPayment = [...existingPlayers, ...createdPlayers];
 
-      // Combine
-      const allPlayersForPayment = [...selectedUnpaidPlayers, ...newPlayers];
       console.log(
         '🔍 allPlayersForPayment FINAL:',
-        allPlayersForPayment.map((p) => ({ id: p._id, name: p.fullName })),
+        allPlayersForPayment.map((p) => ({
+          id: p._id,
+          name: p.fullName,
+          isLinked: !!p._id,
+        })),
       );
 
       if (allPlayersForPayment.length === 0) {
@@ -687,9 +669,15 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
     }
   };
 
-  const handlePaymentComplete = (successData: any) => {
+  const handlePaymentComplete = async (successData: any) => {
     setPaymentSuccessData(successData);
     setRegistrationTimestamp(new Date().toLocaleString());
+
+    // Refresh parent data to show updated player list
+    if (refreshParentData) {
+      await refreshParentData();
+    }
+
     setCurrentStep('success');
   };
 
@@ -1077,7 +1065,7 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
                 onComplete={handlePaymentComplete}
                 onBack={handleBack}
                 formConfig={defaultFormConfig}
-                playerCount={getEffectivePlayerCount()}
+                playerCount={playersForTraining.length}
                 selectedPackage={selectedPackage}
                 players={playersForTraining}
                 eventData={formData.eventData}
