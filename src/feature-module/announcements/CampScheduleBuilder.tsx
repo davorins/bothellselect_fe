@@ -72,12 +72,22 @@ const defaultSlots: TimeSlot[] = [
 ];
 
 function getMondayOf(d: Date): Date {
+  // Create a copy to avoid mutating the original
   const dt = new Date(d);
-  const day = dt.getDay();
+
+  // Fix: Ensure we're working with local date, not UTC
+  const year = dt.getFullYear();
+  const month = dt.getMonth();
+  const date = dt.getDate();
+
+  const localDate = new Date(year, month, date);
+  const day = localDate.getDay();
   const diff = day === 0 ? -6 : 1 - day;
-  dt.setDate(dt.getDate() + diff);
-  dt.setHours(0, 0, 0, 0);
-  return dt;
+
+  const monday = new Date(year, month, date + diff);
+  monday.setHours(0, 0, 0, 0);
+
+  return monday;
 }
 
 function addDays(d: Date, n: number): Date {
@@ -96,14 +106,30 @@ function fmt12(t: string): string {
 function buildWeeks(startDateStr: string, numberOfWeeks: number): WeekConfig[] {
   if (!startDateStr) return [];
 
-  const start = new Date(startDateStr);
-  const firstMonday = getMondayOf(start);
+  // Parse the date parts to avoid timezone issues
+  const [year, month, day] = startDateStr.split('-').map(Number);
+  const startDate = new Date(year, month - 1, day);
+
+  console.log('Start date (local):', startDate);
+  console.log('Day of week (0=Sun,1=Mon):', startDate.getDay());
+
+  // Check if the start date is a Monday (getDay() returns 1 for Monday)
+  let firstMonday = startDate;
+  if (startDate.getDay() !== 1) {
+    // If not Monday, find the Monday of that week
+    const dayOfWeek = startDate.getDay();
+    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    firstMonday = new Date(year, month - 1, day + diff);
+  }
 
   const result: WeekConfig[] = [];
 
   for (let w = 0; w < numberOfWeeks; w++) {
-    const weekStart = addDays(firstMonday, w * 7);
-    const weekEnd = addDays(weekStart, 6);
+    const weekStart = new Date(firstMonday);
+    weekStart.setDate(firstMonday.getDate() + w * 7);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
 
     result.push({
       weekNum: w + 1,
@@ -113,6 +139,16 @@ function buildWeeks(startDateStr: string, numberOfWeeks: number): WeekConfig[] {
       school: null,
     });
   }
+
+  // Log the result
+  console.log(
+    'Built weeks:',
+    result.map((w) => ({
+      week: w.weekNum,
+      start: w.weekStart.toISOString().split('T')[0],
+      end: w.weekEnd.toISOString().split('T')[0],
+    })),
+  );
 
   return result;
 }
