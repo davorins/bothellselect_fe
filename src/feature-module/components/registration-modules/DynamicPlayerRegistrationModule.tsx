@@ -146,6 +146,7 @@ const DynamicPlayerRegistrationModule: React.FC<
   const [pendingPlayersForSave, setPendingPlayersForSave] = useState<Player[]>(
     [],
   );
+  const hasCalledOnCompleteRef = useRef(false);
 
   const {
     getVisibleFields,
@@ -354,6 +355,10 @@ const DynamicPlayerRegistrationModule: React.FC<
     };
   }, [validationKey, validateAllPlayers, isSubmitting]);
 
+  useEffect(() => {
+    hasCalledOnCompleteRef.current = false;
+  }, [players]);
+
   // ── Field change ──────────────────────────────────────────────────────────────
 
   const handlePlayerChange = (
@@ -553,8 +558,64 @@ const DynamicPlayerRegistrationModule: React.FC<
           continue;
         }
 
+        // ✅ FIRST check for duplicate BEFORE attempting to save
+        // This prevents the race condition where we try to save first
+        let isDuplicate = false;
+        let duplicateInfo = null;
+
         try {
-          // Try to save the player - this will throw 409 if duplicate
+          // Check for duplicate first
+          const checkResponse = await axios.post(
+            `${API_BASE_URL}/players/check-duplicate`,
+            {
+              fullName: player.fullName.trim(),
+              dob: player.dob,
+              grade: player.grade,
+              currentParentId: parentId,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+                'Content-Type': 'application/json',
+              },
+            },
+          );
+
+          if (checkResponse.data.isDuplicate) {
+            isDuplicate = true;
+            duplicateInfo = checkResponse.data.matchedPlayer;
+            console.log(
+              `🎯 Duplicate detected for player: ${player.fullName}`,
+              duplicateInfo,
+            );
+          }
+        } catch (checkErr: any) {
+          // If check fails, we'll proceed with save and handle duplicate there
+          console.log(
+            `Duplicate check failed for ${player.fullName}, proceeding with save`,
+          );
+        }
+
+        if (isDuplicate && duplicateInfo) {
+          duplicatePlayersList.push({
+            player: player,
+            duplicateInfo: {
+              playerId: duplicateInfo.playerId,
+              playerName: duplicateInfo.playerName,
+              grade: duplicateInfo.grade,
+              dob: duplicateInfo.dob,
+              existingParentId: duplicateInfo.existingParentId,
+              existingParentName: duplicateInfo.existingParentName,
+              existingParentEmail: duplicateInfo.existingParentEmail,
+              confidenceScore: duplicateInfo.confidenceScore || 1.0,
+              isExactMatch: duplicateInfo.isExactMatch || true,
+            },
+          });
+          continue; // Skip saving this player, move to next
+        }
+
+        // No duplicate found, proceed with save
+        try {
           const response = await axios.post(
             `${API_BASE_URL}/players/register`,
             {
@@ -587,12 +648,14 @@ const DynamicPlayerRegistrationModule: React.FC<
             `✅ Player ${player.fullName} is unique, saved successfully`,
           );
         } catch (err: any) {
-          // Handle duplicate (409)
+          // Handle duplicate (409) - this should be rare since we checked first
           if (
             err.response?.status === 409 &&
             err.response?.data?.duplicateInfo
           ) {
-            console.log(`🎯 Duplicate detected for player: ${player.fullName}`);
+            console.log(
+              `🎯 Duplicate detected during save for player: ${player.fullName}`,
+            );
             duplicatePlayersList.push({
               player: player,
               duplicateInfo: err.response.data.duplicateInfo,
@@ -609,8 +672,9 @@ const DynamicPlayerRegistrationModule: React.FC<
       }
 
       // ✅ Save all unique players first
+      let updatedPlayers = players; // Declare outside
       if (uniquePlayers.length > 0) {
-        const updatedPlayers = players.map((orig) => {
+        updatedPlayers = players.map((orig) => {
           if (orig._id) return orig;
           const saved = uniquePlayers.find((s) => isSamePlayer(s, orig));
           return saved || orig;
@@ -661,8 +725,14 @@ const DynamicPlayerRegistrationModule: React.FC<
       }
 
       // No duplicates at all - all players saved successfully
-      if (uniquePlayers.length > 0 && onComplete) {
-        onComplete(players);
+      if (
+        uniquePlayers.length > 0 &&
+        onComplete &&
+        !hasCalledOnCompleteRef.current
+      ) {
+        console.log('✅ Calling onComplete from savePlayersToBackend');
+        hasCalledOnCompleteRef.current = true;
+        onComplete(updatedPlayers);
       }
 
       return true;
@@ -680,8 +750,21 @@ const DynamicPlayerRegistrationModule: React.FC<
   // ── Submit ────────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     const now = Date.now();
-    if (now - lastSubmitTimestampRef.current < 2000) return;
-    if (isSubmittingRef.current) return;
+    // Increase debounce time to 3 seconds and add additional checks
+    if (now - lastSubmitTimestampRef.current < 3000) {
+      console.log('⏸️ Submission debounced - too soon');
+      return;
+    }
+    if (isSubmittingRef.current) {
+      console.log('⏸️ Already submitting');
+      return;
+    }
+
+    // Additional check: prevent submission if we're already processing
+    if (isProcessingDuplicate) {
+      console.log('⏸️ Already processing duplicate resolution');
+      return;
+    }
 
     hasAttemptedSubmitRef.current = true;
     lastSubmitTimestampRef.current = now;
@@ -880,7 +963,9 @@ const DynamicPlayerRegistrationModule: React.FC<
             // ✅ NO MORE DUPLICATES - PROCEED TO PAYMENT IMMEDIATELY
             console.log('✅ No more duplicates, proceeding to payment');
 
-            if (onComplete) {
+            if (onComplete && !hasCalledOnCompleteRef.current) {
+              console.log('✅ Calling onComplete from onLink');
+              hasCalledOnCompleteRef.current = true;
               onComplete(updatedPlayers);
             } else if (onSaveComplete) {
               onSaveComplete();
@@ -921,7 +1006,9 @@ const DynamicPlayerRegistrationModule: React.FC<
               }
 
               // Now call onComplete with the updated players (which have IDs)
-              if (onComplete) {
+              if (onComplete && !hasCalledOnCompleteRef.current) {
+                console.log('✅ Calling onComplete from onLinkAll');
+                hasCalledOnCompleteRef.current = true;
                 onComplete(updatedPlayers);
               } else if (onSaveComplete) {
                 onSaveComplete();

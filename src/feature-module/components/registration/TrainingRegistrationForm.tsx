@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import UserRegistrationModule from '../registration-modules/UserRegistrationModule';
 import PaymentModule from '../registration-modules/PaymentModule';
@@ -177,6 +183,7 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
     useState(isAuthenticated || !!savedUserData);
   const [registrationTimestamp, setRegistrationTimestamp] =
     useState<string>('');
+  const hasCalledPlayerCompleteRef = useRef(false);
 
   // Player selection state
   const [players, setPlayers] = useState<Player[]>(() => {
@@ -342,6 +349,19 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
     dynamicSeasonEvent.season,
     isExistingUser,
   ]);
+
+  useEffect(() => {
+    return () => {
+      // Reset the flag when component unmounts or step changes
+      hasCalledPlayerCompleteRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (currentStep !== 'playerSelect') {
+      hasCalledPlayerCompleteRef.current = false;
+    }
+  }, [currentStep]);
 
   const updateFormData = (newData: Partial<FormData>) => {
     setFormData((prev) => ({ ...prev, ...newData }));
@@ -584,6 +604,14 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
 
   // ─── Player Completion - This saves players AND moves to payment ───────────
   const handlePlayerComplete = async (playersData: Player[]) => {
+    // ✅ Prevent double execution
+    if (hasCalledPlayerCompleteRef.current) {
+      console.log(
+        '⚠️ handlePlayerComplete already called, skipping duplicate call',
+      );
+      return;
+    }
+
     setIsSubmitting(true);
     setFormError(null);
 
@@ -597,30 +625,42 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
         })),
       });
 
-      // Separate players into new (no ID) and existing (have ID)
+      // Set flag immediately to prevent duplicate calls
+      hasCalledPlayerCompleteRef.current = true;
+
+      // ✅ CRITICAL FIX: Only players WITHOUT _id need to be saved
+      // Players with _id have already been saved by DynamicPlayerRegistrationModule
       const newPlayersToCreate = playersData.filter(
         (p) => !p._id && p.fullName?.trim(),
       );
       const existingPlayers = playersData.filter((p) => p._id);
 
-      console.log('🔍 newPlayersToCreate:', newPlayersToCreate.length);
       console.log(
-        '🔍 existingPlayers (linked or already in account):',
+        '🔍 newPlayersToCreate (need backend save):',
+        newPlayersToCreate.length,
+      );
+      console.log(
+        '🔍 existingPlayers (already have IDs):',
         existingPlayers.length,
       );
 
       let createdPlayers: Player[] = [];
 
-      // Only create new players (those without IDs)
+      // ✅ Only create NEW players (those without IDs)
+      // The DynamicPlayerRegistrationModule already saved players with IDs
       if (newPlayersToCreate.length > 0) {
         createdPlayers = await savePlayerData(newPlayersToCreate);
         console.log(
           '🔍 createdPlayers:',
           createdPlayers.map((p) => ({ id: p._id, name: p.fullName })),
         );
+      } else {
+        console.log(
+          '✅ No new players to create, using existing players with IDs',
+        );
       }
 
-      // Combine existing players (linked) with newly created ones
+      // Combine existing players (already have IDs) with newly created ones
       const allPlayersForPayment = [...existingPlayers, ...createdPlayers];
 
       console.log(
@@ -637,6 +677,7 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
         setFormError(
           'No players selected for training. Please add at least one player.',
         );
+        hasCalledPlayerCompleteRef.current = false;
         return;
       }
 
@@ -650,6 +691,7 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
     } catch (error: any) {
       console.error('❌ Error in handlePlayerComplete:', error);
       setFormError(error.message || 'Failed to save player information');
+      hasCalledPlayerCompleteRef.current = false;
     } finally {
       setIsSubmitting(false);
     }
