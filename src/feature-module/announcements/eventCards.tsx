@@ -42,7 +42,10 @@ const EventCards: React.FC<EventCardsProps> = ({
   const [selectedEvent, setSelectedEvent] = useState<EventDetails | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
-  const [initialized, setInitialized] = useState(false);
+  const [currentSeasonStart, setCurrentSeasonStart] = useState<Date | null>(
+    null,
+  );
+  const [seasonWeekOffset, setSeasonWeekOffset] = useState(0);
 
   const api = useMemo(() => {
     const instance = axios.create({ baseURL: API_BASE_URL });
@@ -76,34 +79,30 @@ const EventCards: React.FC<EventCardsProps> = ({
     return categoryColorMap[category.toLowerCase()] || '#6c757d';
   };
 
-  // Filter events based on selected category - show ALL future events
-  const filteredEvents = useMemo(() => {
-    const now = dayjs().startOf('day');
+  // ✅ Get the first upcoming season start date from events
+  const getFirstUpcomingSeasonStart = useCallback(
+    (primaryEventsList: EventDetails[]) => {
+      if (primaryEventsList.length === 0) return null;
 
-    return events
-      .filter((event) => {
-        if (
-          selectedCategory !== 'all' &&
-          event.category?.toLowerCase() !== selectedCategory.toLowerCase()
-        ) {
-          return false;
-        }
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-        const eventDay = dayjs(event.start).startOf('day');
-        // Show all future events (today and beyond)
-        return eventDay.isSame(now, 'day') || eventDay.isAfter(now, 'day');
-      })
-      .sort((a, b) => {
-        return new Date(a.start).getTime() - new Date(b.start).getTime();
+      // Find the first event that is today or in the future
+      const firstUpcomingEvent = primaryEventsList.find((event) => {
+        const eventDate = new Date(event.start);
+        eventDate.setHours(0, 0, 0, 0);
+        return eventDate >= today;
       });
-  }, [events, selectedCategory]);
 
-  // Primary events (major: camp, training, tryout, game)
-  const primaryEvents = useMemo(() => {
-    return filteredEvents.filter((event) =>
-      PRIMARY_CATEGORIES.includes(event.category?.toLowerCase() || ''),
-    );
-  }, [filteredEvents]);
+      if (firstUpcomingEvent) {
+        return new Date(firstUpcomingEvent.start);
+      }
+
+      // If no upcoming events, return the last event (past season ended)
+      return new Date(primaryEventsList[primaryEventsList.length - 1].start);
+    },
+    [],
+  );
 
   // Get the Monday of a given date
   const getMondayOfDate = useCallback((date: Date) => {
@@ -115,48 +114,112 @@ const EventCards: React.FC<EventCardsProps> = ({
     return d;
   }, []);
 
-  // Calculate the week offset for the first event in the list
-  const calculateInitialWeekOffset = useCallback(() => {
-    if (primaryEvents.length === 0) return 0;
-
-    const firstEventDate = new Date(primaryEvents[0].start);
-    const firstEventMonday = getMondayOfDate(firstEventDate);
-
+  // Calculate which week we should be showing based on current date and season start
+  const calculateSeasonWeekOffset = useCallback((seasonStartMonday: Date) => {
     const today = new Date();
-    const todayMonday = getMondayOfDate(today);
+    today.setHours(0, 0, 0, 0);
 
-    const diffWeeks = Math.round(
-      (firstEventMonday.getTime() - todayMonday.getTime()) /
-        (7 * 24 * 60 * 60 * 1000),
-    );
+    // If today is before season start, show week 0 (first week of season)
+    if (today < seasonStartMonday) {
+      return 0;
+    }
+
+    // Calculate how many weeks have passed since season started
+    const diffTime = today.getTime() - seasonStartMonday.getTime();
+    const diffWeeks = Math.floor(diffTime / (7 * 24 * 60 * 60 * 1000));
 
     return diffWeeks;
-  }, [primaryEvents, getMondayOfDate]);
+  }, []);
 
-  // Initialize weekOffset to the week of the first event
-  useEffect(() => {
-    if (primaryEvents.length > 0 && !initialized) {
-      const initialOffset = calculateInitialWeekOffset();
-      setWeekOffset(initialOffset);
-      setInitialized(true);
+  // Get the current week's Monday based on season start and offset
+  const getCurrentWeekMonday = useCallback(
+    (seasonStartMonday: Date, offset: number) => {
+      const targetMonday = new Date(seasonStartMonday);
+      targetMonday.setDate(seasonStartMonday.getDate() + offset * 7);
+      targetMonday.setHours(0, 0, 0, 0);
+      return targetMonday;
+    },
+    [],
+  );
+
+  // ALL events (no filtering) for the left side weekly view
+  const allEvents = useMemo(() => {
+    return [...events].sort((a, b) => {
+      return new Date(a.start).getTime() - new Date(b.start).getTime();
+    });
+  }, [events]);
+
+  // Filtered events for the calendar (right side) based on category
+  const calendarFilteredEvents = useMemo(() => {
+    if (selectedCategory === 'all') {
+      return allEvents;
     }
-  }, [primaryEvents, calculateInitialWeekOffset, initialized]);
+    return allEvents.filter(
+      (event) =>
+        event.category?.toLowerCase() === selectedCategory.toLowerCase(),
+    );
+  }, [allEvents, selectedCategory]);
 
-  // Reset initialized when category changes
+  // Primary events for the left side (all PRIMARY categories)
+  const primaryEvents = useMemo(() => {
+    return allEvents.filter((event) =>
+      PRIMARY_CATEGORIES.includes(event.category?.toLowerCase() || ''),
+    );
+  }, [allEvents]);
+
+  // Initialize season tracking when primary events load
   useEffect(() => {
-    setInitialized(false);
-    setWeekOffset(0);
-  }, [selectedCategory]);
+    if (primaryEvents.length > 0) {
+      const firstUpcomingEventDate = getFirstUpcomingSeasonStart(primaryEvents);
+      if (firstUpcomingEventDate) {
+        const seasonStartMonday = getMondayOfDate(firstUpcomingEventDate);
+        setCurrentSeasonStart(seasonStartMonday);
 
+        // Calculate which week we should be showing
+        const calculatedOffset = calculateSeasonWeekOffset(seasonStartMonday);
+        setSeasonWeekOffset(calculatedOffset);
+        setWeekOffset(calculatedOffset);
+      }
+    }
+  }, [
+    primaryEvents,
+    getFirstUpcomingSeasonStart,
+    getMondayOfDate,
+    calculateSeasonWeekOffset,
+  ]);
+
+  // Update week offset when user navigates (temporary override)
+  const goToPreviousWeek = () => {
+    setWeekOffset((prev) => prev - 1);
+  };
+
+  const goToNextWeek = () => {
+    setWeekOffset((prev) => prev + 1);
+  };
+
+  const goToCurrentSeasonWeek = () => {
+    if (currentSeasonStart) {
+      const calculatedOffset = calculateSeasonWeekOffset(currentSeasonStart);
+      setSeasonWeekOffset(calculatedOffset);
+      setWeekOffset(calculatedOffset);
+    }
+  };
+
+  // Get the Monday of the current week to display
   const getCurrentWeekStart = useCallback(() => {
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + mondayOffset + weekOffset * 7);
-    monday.setHours(0, 0, 0, 0);
-    return monday;
-  }, [weekOffset]);
+    if (!currentSeasonStart) {
+      // Fallback: use today's week
+      const today = new Date();
+      const dayOfWeek = today.getDay();
+      const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - daysFromMonday);
+      monday.setHours(0, 0, 0, 0);
+      return monday;
+    }
+
+    return getCurrentWeekMonday(currentSeasonStart, weekOffset);
+  }, [currentSeasonStart, weekOffset, getCurrentWeekMonday]);
 
   const currentWeekStart = getCurrentWeekStart();
   const currentWeekEnd = new Date(currentWeekStart);
@@ -195,19 +258,10 @@ const EventCards: React.FC<EventCardsProps> = ({
   }, [eventsForCurrentWeek]);
 
   const totalEventsInWeek = eventsForCurrentWeek.length;
+  const isCurrentWeek = weekOffset === seasonWeekOffset;
 
-  const goToPreviousWeek = () => setWeekOffset((prev) => prev - 1);
-  const goToNextWeek = () => setWeekOffset((prev) => prev + 1);
-  const goToCurrentWeek = () => setWeekOffset(0);
-
+  // Calendar events use the filtered events (respects category filter)
   const calendarEvents = useMemo(() => {
-    let calendarFilteredEvents = events;
-    if (selectedCategory !== 'all') {
-      calendarFilteredEvents = calendarFilteredEvents.filter(
-        (event) =>
-          event.category?.toLowerCase() === selectedCategory.toLowerCase(),
-      );
-    }
     return calendarFilteredEvents.map((event) => ({
       id: event._id,
       title: event.title,
@@ -217,7 +271,7 @@ const EventCards: React.FC<EventCardsProps> = ({
       borderColor: getCategoryColor(event.category),
       textColor: '#fff',
     }));
-  }, [events, selectedCategory]);
+  }, [calendarFilteredEvents]);
 
   const formatTime = (dateString: string) => dayjs(dateString).format('h:mm A');
   const handleEventClick = (event: EventDetails) => {
@@ -246,6 +300,10 @@ const EventCards: React.FC<EventCardsProps> = ({
     );
   }
 
+  const weekNumber = weekOffset + 1;
+  const totalWeeks =
+    primaryEvents.length > 0 ? Math.ceil(primaryEvents.length / 7) : 0;
+
   return (
     <div className='events-glass-container'>
       <div className='events-bg-gradient' />
@@ -267,7 +325,6 @@ const EventCards: React.FC<EventCardsProps> = ({
           </div>
 
           <div className='events-filters'>
-            {/* Category Filter Only - Removed time filter buttons */}
             <div className='dropdown-wrapper'>
               <button
                 className='category-dropdown-btn'
@@ -319,10 +376,10 @@ const EventCards: React.FC<EventCardsProps> = ({
           </div>
 
           <div className='two-column-layout'>
-            {/* LEFT COLUMN - Weekly Schedule */}
+            {/* LEFT COLUMN - Season-Aware Weekly Schedule */}
             <div className='primary-events-column'>
               <div className='column-header'>
-                <h3>Weekly Schedule</h3>
+                <h3>Season Schedule</h3>
               </div>
 
               {/* Week Navigation */}
@@ -346,12 +403,12 @@ const EventCards: React.FC<EventCardsProps> = ({
                 <div className='empty-state-small'>
                   <i className='ti ti-calendar-off' />
                   <p>No events scheduled for this week</p>
-                  {weekOffset !== 0 && (
+                  {!isCurrentWeek && (
                     <button
                       className='current-week-btn'
-                      onClick={goToCurrentWeek}
+                      onClick={goToCurrentSeasonWeek}
                     >
-                      Go to Current Week
+                      <i className='ti ti-calendar' /> Go to Current Week
                     </button>
                   )}
                 </div>
@@ -367,18 +424,12 @@ const EventCards: React.FC<EventCardsProps> = ({
                           className={`day-group ${!hasEvents ? 'no-events' : ''}`}
                         >
                           <div className='day-header'>
-                            <div className='day-name'>{day}</div>
+                            <div className='day-name'>{day.slice(0, 3)}</div>
                             <div className='day-date'>
                               {hasEvents
                                 ? dayjs(dayEvents[0].start).format('MMM D')
                                 : ''}
                             </div>
-                            {hasEvents && (
-                              <span className='day-count'>
-                                {dayEvents.length} event
-                                {dayEvents.length > 1 ? 's' : ''}
-                              </span>
-                            )}
                           </div>
                           {hasEvents ? (
                             <div className='day-events'>
@@ -424,31 +475,25 @@ const EventCards: React.FC<EventCardsProps> = ({
                           ) : (
                             <div className='no-events-message'>
                               <i className='ti ti-calendar' />
-                              <span>No events</span>
                             </div>
                           )}
                         </div>
                       );
                     })}
                   </div>
-                  {weekOffset !== 0 && (
-                    <div className='current-week-footer'>
-                      <button
-                        className='current-week-btn'
-                        onClick={goToCurrentWeek}
-                      >
-                        <i className='ti ti-calendar' /> Go to Current Week
-                      </button>
-                    </div>
-                  )}
                 </>
               )}
             </div>
 
-            {/* RIGHT COLUMN - Mini Calendar */}
+            {/* RIGHT COLUMN - Mini Calendar (RESPECTS category filter, independent navigation) */}
             <div className='secondary-events-column'>
               <div className='column-header secondary'>
-                <h3>Calendar</h3>
+                <h3>Calendar View</h3>
+                {selectedCategory !== 'all' && (
+                  <div className='active-filter-badge'>
+                    <i className='ti ti-filter' /> {selectedCategory}
+                  </div>
+                )}
               </div>
               <div className='mini-calendar-wrapper'>
                 <FullCalendar
