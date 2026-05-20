@@ -647,7 +647,7 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
             ))}
 
             {/* About Dropdown */}
-            <li ref={aboutRef} style={{ position: 'relative' }}>
+            {/* <li ref={aboutRef} style={{ position: 'relative' }}>
               <button
                 style={{
                   ...S.dropdownTrigger(
@@ -681,7 +681,7 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
                   </DropdownLink>
                 ))}
               </div>
-            </li>
+            </li> */}
 
             {/* Team Dropdown */}
             <li ref={teamRef} style={{ position: 'relative' }}>
