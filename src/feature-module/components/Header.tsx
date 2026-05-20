@@ -556,6 +556,7 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
     { path: '/events', label: 'Schedule' },
     { path: '/contact-us', label: 'Contact' },
     { path: '/faq', label: 'FAQ' },
+    { path: '/about-us', label: 'About Us' },
   ];
 
   const mobilePublicItems = [
@@ -564,19 +565,20 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
     { path: '/events', icon: 'ti ti-calendar-event', label: 'Schedule/Events' },
     { path: '/contact-us', icon: 'ti ti-mail', label: 'Contact Us' },
     { path: '/faq', icon: 'ti ti-question-mark', label: 'FAQ' },
+    { path: '/about-us', icon: 'ti ti-ball-basketball', label: 'About Us' },
   ];
 
   const dropdownItems = [
-    {
-      name: 'about',
-      icon: 'ti ti-chess-knight',
-      label: 'About Us',
-      paths: ['/about-us', '/program-leadership'],
-      items: [
-        { path: '/about-us', label: 'Our Mission' },
-        { path: '/program-leadership', label: 'Program Leadership' },
-      ],
-    },
+    // {
+    //   name: 'about',
+    //   icon: 'ti ti-chess-knight',
+    //   label: 'About Us',
+    //   paths: ['/about-us', '/program-leadership'],
+    //   items: [
+    //     { path: '/about-us', label: 'Our Mission' },
+    //     { path: '/program-leadership', label: 'Program Leadership' },
+    //   ],
+    // },
     {
       name: 'team',
       icon: 'ti ti-ball-basketball',
