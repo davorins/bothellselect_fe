@@ -1,0 +1,25 @@
+.admin-ad-manager {
+  padding: 24px;
+}
+
+.stat-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.image-preview {
+  margin-top: 12px;
+}
+
+.image-preview img {
+  max-width: 100%;
+  max-height: 100px;
+  border-radius: 8px;
+  object-fit: cover;
+}

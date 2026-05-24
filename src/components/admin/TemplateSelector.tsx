@@ -44,7 +44,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               category: template.category || 'Custom',
               sections: template.sections || template.layout?.sections || [],
               thumbnail: template.thumbnail,
-            }))
+            })),
           );
           return;
         }

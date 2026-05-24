@@ -197,8 +197,16 @@
 
 .htr-tile-subtitle {
   font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 300;
+  padding: 0 4rem;
+}
+
+.htr-tile-cta {
+  font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.6);
   font-weight: 500;
+  padding: 0 1rem;
 }
 
 .htr-tile-arrow {

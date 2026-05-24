@@ -80,6 +80,7 @@ import PageRenderer from '../../components/page-builder/PageRenderer';
 import PaymentConfiguration from '../../components/admin/paymentSettings/PaymentConfiguration';
 import FormFieldConfigPage from '../settings/systemSettings/formFieldConfig/FormFieldConfig';
 import CloverReceiptPage from '../peoples/parent/receipts/CloverReceiptPage';
+import AdminAdManager from '../components/ads/AdminAdManager';
 
 const routes = all_routes;
 
@@ -585,6 +586,15 @@ export const protectedRoutes = [
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
         <FormFieldConfigPage />
+      </ProtectedRoute>
+    ),
+    route: Route,
+  },
+  {
+    path: '/admin/advertisements',
+    element: (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <AdminAdManager />
       </ProtectedRoute>
     ),
     route: Route,

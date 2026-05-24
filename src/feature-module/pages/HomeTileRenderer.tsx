@@ -148,7 +148,8 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
             id: 'default-registration-section',
             type: 'registration',
             title: 'Registration',
-            content: '',
+            content:
+              'Our 2026 Summer Training Program is now available for registration',
             position: 1,
             isActive: true,
             config: { showTitle: true, showViewAll: false },
@@ -782,9 +783,8 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
                   </div>
                   <div className='htr-tile-content'>
                     <span className='htr-tile-title'>{meta.label}</span>
-                    <span className='htr-tile-subtitle'>
-                      {meta.sublabel || 'Click to open'}
-                    </span>
+                    <span className='htr-tile-subtitle'>{meta.sublabel}</span>
+                    <span className='htr-tile-cta'>Click to open</span>
                   </div>
                 </button>
               );

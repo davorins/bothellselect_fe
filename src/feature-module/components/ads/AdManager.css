@@ -1,0 +1,33 @@
+.ad-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ad-manager-sidebar {
+  gap: 24px;
+}
+
+.ad-manager-header {
+  margin-bottom: 0;
+}
+
+.ad-manager-footer {
+  margin-top: 0;
+}
+
+/* Animation for ads */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ad-banner {
+  animation: slideIn 0.3s ease;
+}

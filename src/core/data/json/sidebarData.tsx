@@ -270,6 +270,22 @@ export const SidebarData = [
     ],
   },
   {
+    label: 'Marketing',
+    submenuOpen: true,
+    showSubRoute: false,
+    submenuHdr: 'Marketing',
+    submenuItems: [
+      {
+        label: 'Advertisements',
+        icon: 'ti ti-ad',
+        submenu: false,
+        showSubRoute: false,
+        link: '/admin/advertisements',
+        roles: ['admin'],
+      },
+    ],
+  },
+  {
     label: 'FAQ',
     submenu: true,
     showSubRoute: false,
