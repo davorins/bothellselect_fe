@@ -7,6 +7,7 @@ interface AdBannerProps {
   onClose?: () => void;
   minimized?: boolean;
   className?: string;
+  authToken?: string;
 }
 
 const AdBanner: React.FC<AdBannerProps> = ({
@@ -14,75 +15,127 @@ const AdBanner: React.FC<AdBannerProps> = ({
   onClose,
   minimized = false,
   className = '',
+  authToken,
 }) => {
   const [isMobile, setIsMobile] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const [isMinimized, setIsMinimized] = useState(minimized);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
+    // Entrance animation
+    const timer = setTimeout(() => setIsVisible(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
 
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Sync minimized prop if parent changes it
+  useEffect(() => {
+    setIsMinimized(minimized);
+  }, [minimized]);
+
   const handleClick = async () => {
+    const destination = ad.clickUrl || ad.website;
+    if (!destination) return;
+
     try {
-      // Record click
       await fetch(`${process.env.REACT_APP_API_BASE_URL}/ads/click/${ad._id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
       });
-
-      // Redirect
-      if (ad.clickUrl) {
-        window.open(ad.clickUrl, '_blank');
-      } else if (ad.website) {
-        window.open(ad.website, '_blank');
-      }
     } catch (error) {
       console.error('Error recording ad click:', error);
-      // Still redirect even if tracking fails
-      if (ad.clickUrl) window.open(ad.clickUrl, '_blank');
-      else if (ad.website) window.open(ad.website, '_blank');
+      // Non-fatal: continue to redirect
     }
+
+    window.open(destination, '_blank', 'noopener,noreferrer');
   };
 
-  const getImageUrl = () => {
-    if (isMobile && ad.mobileImage?.url) {
-      return ad.mobileImage.url;
-    }
-    return ad.desktopImage?.url || ad.mobileImage?.url;
+  const getImageUrl = (): string | null => {
+    if (isMobile && ad.mobileImage?.url) return ad.mobileImage.url;
+    return ad.desktopImage?.url || ad.mobileImage?.url || null;
   };
 
   const imageUrl = getImageUrl();
-  const altText = ad.desktopImage?.alt || ad.mobileImage?.alt || ad.title;
+  const altText =
+    ad.desktopImage?.alt || ad.mobileImage?.alt || ad.title || ad.businessName;
+  const hasImage = imageUrl && !imageError;
+  const hasContent = ad.title || ad.businessName || ad.description;
+
+  // Don't render if there's nothing to show
+  if (!hasImage && !hasContent) return null;
 
   if (isMinimized) {
     return (
-      <div className={`ad-banner-minimized ${className}`}>
+      <div
+        className={`ad-banner ad-banner--minimized ${isVisible ? 'ad-banner--visible' : ''} ${className}`}
+      >
         <button
-          className='ad-expand-btn'
+          className='ad-btn ad-btn--icon'
           onClick={() => setIsMinimized(false)}
-          aria-label='Expand ad'
+          aria-label='Expand advertisement'
+          title='Expand'
         >
-          <i className='ti ti-arrows-maximize' />
+          <svg
+            width='14'
+            height='14'
+            viewBox='0 0 24 24'
+            fill='none'
+            stroke='currentColor'
+            strokeWidth='2'
+          >
+            <polyline points='15 3 21 3 21 9' />
+            <polyline points='9 21 3 21 3 15' />
+            <line x1='21' y1='3' x2='14' y2='10' />
+            <line x1='3' y1='21' x2='10' y2='14' />
+          </svg>
         </button>
-        <div className='ad-minimized-content' onClick={handleClick}>
-          {imageUrl && (
-            <img src={imageUrl} alt={altText} className='ad-minimized-image' />
+
+        <div
+          className='ad-banner__minimized-body'
+          onClick={handleClick}
+          role='button'
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+        >
+          {hasImage && (
+            <img
+              src={imageUrl!}
+              alt={altText}
+              className='ad-banner__minimized-img'
+              onError={() => setImageError(true)}
+            />
           )}
-          <span className='ad-minimized-text'>{ad.businessName}</span>
+          <span className='ad-banner__minimized-label'>{ad.businessName}</span>
+          <span className='ad-label'>Ad</span>
         </div>
+
         {onClose && (
-          <button className='ad-close-btn' onClick={onClose} aria-label='Close'>
-            <i className='ti ti-x' />
+          <button
+            className='ad-btn ad-btn--icon ad-btn--close'
+            onClick={onClose}
+            aria-label='Close advertisement'
+          >
+            <svg
+              width='14'
+              height='14'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+            >
+              <line x1='18' y1='6' x2='6' y2='18' />
+              <line x1='6' y1='6' x2='18' y2='18' />
+            </svg>
           </button>
         )}
       </div>
@@ -90,48 +143,104 @@ const AdBanner: React.FC<AdBannerProps> = ({
   }
 
   return (
-    <div className={`ad-banner ${className}`}>
-      {!imageLoaded && (
-        <div className='ad-banner-placeholder'>
-          <i className='ti ti-ad' />
-          <span>Loading advertisement...</span>
-        </div>
-      )}
+    <div
+      className={`ad-banner ${isVisible ? 'ad-banner--visible' : ''} ${className}`}
+      role='complementary'
+      aria-label={`Advertisement: ${ad.businessName}`}
+    >
+      {/* Ad label */}
+      <span className='ad-label'>Sponsored</span>
 
-      <div className='ad-banner-content' onClick={handleClick}>
-        {imageUrl && (
-          <img
-            src={imageUrl}
-            alt={altText}
-            className='ad-banner-image'
-            onLoad={() => setImageLoaded(true)}
-            style={{ display: imageLoaded ? 'block' : 'none' }}
-          />
-        )}
-
-        <div className='ad-banner-info'>
-          <h3 className='ad-title'>{ad.title || ad.businessName}</h3>
-          {ad.description && <p className='ad-description'>{ad.description}</p>}
-          <button className='ad-cta-btn'>
-            {ad.ctaText}
-            <i className='ti ti-arrow-right' />
-          </button>
-        </div>
-      </div>
-
-      <div className='ad-banner-footer'>
+      {/* Controls */}
+      <div className='ad-banner__controls'>
         <button
-          className='ad-minimize-btn'
+          className='ad-btn ad-btn--icon'
           onClick={() => setIsMinimized(true)}
-          aria-label='Minimize'
+          aria-label='Minimize advertisement'
+          title='Minimize'
         >
-          <i className='ti ti-minus' />
+          <svg
+            width='14'
+            height='14'
+            viewBox='0 0 24 24'
+            fill='none'
+            stroke='currentColor'
+            strokeWidth='2'
+          >
+            <line x1='5' y1='12' x2='19' y2='12' />
+          </svg>
         </button>
         {onClose && (
-          <button className='ad-close-btn' onClick={onClose} aria-label='Close'>
-            <i className='ti ti-x' />
+          <button
+            className='ad-btn ad-btn--icon ad-btn--close'
+            onClick={onClose}
+            aria-label='Close advertisement'
+            title='Close'
+          >
+            <svg
+              width='14'
+              height='14'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+            >
+              <line x1='18' y1='6' x2='6' y2='18' />
+              <line x1='6' y1='6' x2='18' y2='18' />
+            </svg>
           </button>
         )}
+      </div>
+
+      {/* Clickable content area */}
+      <div
+        className='ad-banner__body'
+        onClick={handleClick}
+        role='button'
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+        aria-label={`Visit ${ad.businessName}`}
+      >
+        {hasImage && (
+          <div className='ad-banner__image-wrap'>
+            <img
+              src={imageUrl!}
+              alt={altText}
+              className='ad-banner__image'
+              onError={() => setImageError(true)}
+              loading='lazy'
+            />
+          </div>
+        )}
+
+        {/* Text content — always shown, even without image */}
+        <div
+          className={`ad-banner__info ${hasImage ? '' : 'ad-banner__info--full'}`}
+        >
+          <p className='ad-banner__business'>{ad.businessName}</p>
+          {ad.title && ad.title !== ad.businessName && (
+            <h3 className='ad-banner__title'>{ad.title}</h3>
+          )}
+          {ad.description && (
+            <p className='ad-banner__description'>{ad.description}</p>
+          )}
+          {(ad.clickUrl || ad.website) && (
+            <span className='ad-banner__cta'>
+              {ad.ctaText || 'Learn More'}
+              <svg
+                width='12'
+                height='12'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2.5'
+              >
+                <line x1='5' y1='12' x2='19' y2='12' />
+                <polyline points='12 5 19 12 12 19' />
+              </svg>
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

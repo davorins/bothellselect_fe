@@ -63,6 +63,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         className='footer-ad-container'
       />
 
+      {/* Popup ad banner - appears as modal overlay */}
+      <AdManager
+        placement='popup'
+        pageSlug={pageSlug}
+        showMinimized={false}
+        className='popup-ad-container'
+      />
+
       <FloatingAd />
     </div>
   );

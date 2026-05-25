@@ -65,6 +65,8 @@ const AdminAdManager: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         setAds(data.ads || []);
+      } else {
+        message.error('Failed to load advertisements');
       }
     } catch (error) {
       console.error('Error fetching ads:', error);
@@ -130,8 +132,12 @@ const AdminAdManager: React.FC = () => {
       // Add form fields
       Object.keys(values).forEach((key) => {
         if (key === 'dateRange' && values.dateRange) {
-          formData.append('startDate', values.dateRange[0].toISOString());
-          formData.append('endDate', values.dateRange[1].toISOString());
+          if (values.dateRange[0]) {
+            formData.append('startDate', values.dateRange[0].toISOString());
+          }
+          if (values.dateRange[1]) {
+            formData.append('endDate', values.dateRange[1].toISOString());
+          }
         } else if (key === 'targetRoles' || key === 'targetPages') {
           formData.append(key, JSON.stringify(values[key]));
         } else if (values[key] !== undefined && values[key] !== null) {
@@ -139,7 +145,7 @@ const AdminAdManager: React.FC = () => {
         }
       });
 
-      // Add images
+      // Add images (only if new files are selected)
       if (desktopFile) formData.append('desktopImage', desktopFile);
       if (mobileFile) formData.append('mobileImage', mobileFile);
 
@@ -155,6 +161,7 @@ const AdminAdManager: React.FC = () => {
       });
 
       if (response.ok) {
+        const result = await response.json();
         message.success(
           editingAd ? 'Ad updated successfully' : 'Ad created successfully',
         );
@@ -205,43 +212,78 @@ const AdminAdManager: React.FC = () => {
   };
 
   const openEditModal = (ad: Advertisement) => {
+    console.log('Editing ad:', ad); // Debug log
+
     setEditingAd(ad);
+
+    // Set form values
     form.setFieldsValue({
-      ...ad,
+      businessName: ad.businessName,
+      title: ad.title,
+      description: ad.description,
+      clickUrl: ad.clickUrl,
+      ctaText: ad.ctaText,
+      contactEmail: ad.contactEmail,
+      contactPhone: ad.contactPhone,
+      website: ad.website,
+      placement: ad.placement,
+      displayOrder: ad.displayOrder,
+      isActive: ad.isActive,
+      targetRoles: ad.targetRoles || [],
+      targetPages: ad.targetPages || ['all'],
+      showOnceOnly: ad.showOnceOnly,
+      cooldownDays: ad.cooldownDays,
       dateRange:
         ad.startDate && ad.endDate
           ? [dayjs(ad.startDate), dayjs(ad.endDate)]
           : null,
     });
+
+    // Set image previews
     setDesktopPreview(ad.desktopImage?.url || '');
     setMobilePreview(ad.mobileImage?.url || '');
+
     setModalVisible(true);
   };
 
   const columns = [
-    { title: 'Business', dataIndex: 'businessName', key: 'businessName' },
-    { title: 'Title', dataIndex: 'title', key: 'title' },
+    {
+      title: 'Business',
+      dataIndex: 'businessName',
+      key: 'businessName',
+      width: 200,
+    },
+    {
+      title: 'Title',
+      dataIndex: 'title',
+      key: 'title',
+      width: 200,
+    },
     {
       title: 'Placement',
       dataIndex: 'placement',
       key: 'placement',
-      render: (v: string) => <Tag>{v}</Tag>,
+      width: 100,
+      render: (v: string) => <Tag color='blue'>{v}</Tag>,
     },
     {
       title: 'Impressions',
       dataIndex: 'impressions',
       key: 'impressions',
+      width: 120,
       render: (v: number) => v.toLocaleString(),
     },
     {
       title: 'Clicks',
       dataIndex: 'clicks',
       key: 'clicks',
+      width: 100,
       render: (v: number) => v.toLocaleString(),
     },
     {
       title: 'CTR',
       key: 'ctr',
+      width: 80,
       render: (_: any, record: Advertisement) => {
         const ctr =
           record.impressions > 0
@@ -254,6 +296,7 @@ const AdminAdManager: React.FC = () => {
       title: 'Status',
       dataIndex: 'isActive',
       key: 'isActive',
+      width: 100,
       render: (v: boolean) => (
         <Tag color={v ? 'green' : 'red'}>{v ? 'Active' : 'Inactive'}</Tag>
       ),
@@ -261,19 +304,22 @@ const AdminAdManager: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
+      width: 120,
       render: (_: any, record: Advertisement) => (
         <Space>
           <Button
             icon={<EditOutlined />}
             onClick={() => openEditModal(record)}
+            title='Edit Ad'
           />
           <Popconfirm
             title='Delete this ad?'
+            description='This action cannot be undone'
             onConfirm={() => handleDelete(record._id)}
             okText='Yes'
             cancelText='No'
           >
-            <Button icon={<DeleteOutlined />} danger />
+            <Button icon={<DeleteOutlined />} danger title='Delete Ad' />
           </Popconfirm>
         </Space>
       ),
@@ -288,9 +334,9 @@ const AdminAdManager: React.FC = () => {
           <Col xs={24} sm={12} lg={6}>
             <Card className='stat-card'>
               <Statistic
-                title='Total Revenue'
+                title='Total Impressions'
                 value={stats?.totalImpressions || 0}
-                prefix={<DollarOutlined />}
+                prefix={<EyeOutlined />}
                 valueStyle={{ color: '#3f87f5' }}
               />
             </Card>
@@ -335,7 +381,10 @@ const AdminAdManager: React.FC = () => {
             <Button
               type='primary'
               icon={<PlusOutlined />}
-              onClick={() => setModalVisible(true)}
+              onClick={() => {
+                resetForm();
+                setModalVisible(true);
+              }}
             >
               Create Ad
             </Button>
@@ -347,6 +396,7 @@ const AdminAdManager: React.FC = () => {
             rowKey='_id'
             loading={loading}
             pagination={{ pageSize: 10 }}
+            scroll={{ x: 1000 }}
           />
         </Card>
 
@@ -361,6 +411,8 @@ const AdminAdManager: React.FC = () => {
           onOk={handleSubmit}
           confirmLoading={uploading}
           width={800}
+          okText={editingAd ? 'Update' : 'Create'}
+          cancelText='Cancel'
         >
           <Form form={form} layout='vertical'>
             <Row gutter={16}>
@@ -368,14 +420,16 @@ const AdminAdManager: React.FC = () => {
                 <Form.Item
                   name='businessName'
                   label='Business Name'
-                  rules={[{ required: true, message: 'Required' }]}
+                  rules={[
+                    { required: true, message: 'Business name is required' },
+                  ]}
                 >
                   <Input placeholder='Enter business name' />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item name='title' label='Ad Title'>
-                  <Input placeholder='Enter ad title' />
+                  <Input placeholder='Enter ad title (optional, defaults to business name)' />
                 </Form.Item>
               </Col>
             </Row>
@@ -400,18 +454,18 @@ const AdminAdManager: React.FC = () => {
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name='contactEmail' label='Contact Email'>
-                  <Input type='email' />
+                  <Input type='email' placeholder='contact@business.com' />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item name='contactPhone' label='Contact Phone'>
-                  <Input />
+                  <Input placeholder='(555) 123-4567' />
                 </Form.Item>
               </Col>
             </Row>
 
             <Form.Item name='website' label='Website'>
-              <Input placeholder='Business website' />
+              <Input placeholder='https://business.com' />
             </Form.Item>
 
             <Row gutter={16}>
@@ -499,7 +553,11 @@ const AdminAdManager: React.FC = () => {
                   </Upload>
                   {desktopPreview && (
                     <div className='image-preview mt-2'>
-                      <img src={desktopPreview} alt='Desktop preview' />
+                      <img
+                        src={desktopPreview}
+                        alt='Desktop preview'
+                        style={{ maxWidth: '100%', maxHeight: '100px' }}
+                      />
                     </div>
                   )}
                 </Form.Item>
@@ -517,7 +575,11 @@ const AdminAdManager: React.FC = () => {
                   </Upload>
                   {mobilePreview && (
                     <div className='image-preview mt-2'>
-                      <img src={mobilePreview} alt='Mobile preview' />
+                      <img
+                        src={mobilePreview}
+                        alt='Mobile preview'
+                        style={{ maxWidth: '100%', maxHeight: '100px' }}
+                      />
                     </div>
                   )}
                 </Form.Item>

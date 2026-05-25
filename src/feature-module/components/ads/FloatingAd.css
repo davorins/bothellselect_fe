@@ -1,0 +1,34 @@
+/* FloatingAd — slides in from bottom-right after scroll */
+.floating-ad {
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  z-index: 1000;
+  animation: floatIn 0.3s ease forwards;
+  max-width: 280px;
+  width: calc(100vw - 40px);
+}
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.floating-ad__manager {
+  max-width: 100%;
+}
+
+/* On very small screens, anchor to bottom center */
+@media (max-width: 400px) {
+  .floating-ad {
+    right: 50%;
+    transform: translateX(50%);
+    bottom: 16px;
+  }
+}

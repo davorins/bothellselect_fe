@@ -1,33 +1,98 @@
+/* ============================================================
+   AdManager — layout wrapper for each placement type
+   ============================================================ */
+
 .ad-manager {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
-.ad-manager-sidebar {
-  gap: 24px;
+/* --- Sidebar --------------------------------------------- */
+.ad-manager--sidebar {
+  width: 100%;
+  max-width: 300px;
 }
 
-.ad-manager-header {
-  margin-bottom: 0;
+/* --- Header ---------------------------------------------- */
+.ad-manager--header {
+  flex-direction: row;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #efefef;
+}
+.ad-manager--header .ad-banner {
+  max-width: 480px;
+  flex: 1 1 320px;
 }
 
-.ad-manager-footer {
-  margin-top: 0;
+/* --- Footer ---------------------------------------------- */
+.ad-manager--footer {
+  flex-direction: row;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 16px;
+  background: #fafafa;
+  border-top: 1px solid #efefef;
+}
+.ad-manager--footer .ad-banner {
+  max-width: 480px;
+  flex: 1 1 300px;
 }
 
-/* Animation for ads */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
+/* --- Inline ---------------------------------------------- */
+.ad-manager--inline {
+  align-items: center;
+  margin: 16px 0;
+}
+.ad-manager--inline .ad-banner {
+  max-width: 100%;
+}
+
+/* --- Popup (modal overlay) -------------------------------- */
+.ad-manager--popup {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* background: rgba(0, 0, 0, 0.5); */
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  padding: 16px;
+}
+.ad-manager--popup .ad-banner {
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Mobile ---------------------------------------- */
+@media (max-width: 768px) {
+  .ad-manager--sidebar {
+    max-width: 100%;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .ad-manager--header,
+  .ad-manager--footer {
+    padding: 6px 10px;
+  }
+  .ad-manager--header .ad-banner,
+  .ad-manager--footer .ad-banner {
+    flex: 1 1 100%;
+    max-width: 100%;
   }
 }
 
-.ad-banner {
-  animation: slideIn 0.3s ease;
+/* --- Dark mode -------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  .ad-manager--header,
+  .ad-manager--footer {
+    background: #161616;
+    border-color: #2a2a2a;
+  }
 }
