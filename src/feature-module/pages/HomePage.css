@@ -54,7 +54,7 @@
     pointer-events: none;
     z-index: 2;
     opacity: 1;
-    mix-blend-mode: overlay;
+    mix-blend-mode: color-dodge;
   }
 }
 
@@ -122,7 +122,7 @@
     object-fit: cover;
     z-index: 1;
     cursor: pointer;
-    filter: brightness(0.55);
+    filter: brightness(0.65);
   }
 }
 
