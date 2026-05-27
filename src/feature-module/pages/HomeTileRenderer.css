@@ -649,6 +649,7 @@
     overflow-x: hidden;
     overflow-y: auto;
     max-height: calc(100vh - 60px);
+    position: relative;
     bottom: 0;
   }
 
