@@ -29,7 +29,7 @@
   scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
   cursor: grab;
   -webkit-overflow-scrolling: touch;
-  position: relative;
+  position: fixed;
   display: flex;
   justify-content: center;
   bottom: 100px;
