@@ -191,17 +191,15 @@ const AdManager: React.FC<AdManagerProps> = ({
   };
 
   const handleMinimize = (adId: string, minimized: boolean) => {
-    if (previewMode) {
-      console.log(
-        `Preview mode: Ad ${adId} would be ${minimized ? 'minimized' : 'expanded'} in production`,
-      );
-      return;
-    }
-
+    // Always update state so the UI responds
     const updated = new Set(minimizedAds);
     if (minimized) updated.add(adId);
     else updated.delete(adId);
     setMinimizedAds(updated);
+
+    // Skip localStorage persistence in preview mode
+    if (previewMode) return;
+
     try {
       localStorage.setItem(
         getStorageKey(placement, 'minimized'),
@@ -212,6 +210,30 @@ const AdManager: React.FC<AdManagerProps> = ({
 
   // Filter out permanently closed ads
   const displayAds = previewMode ? ads : ads.filter((ad) => !closedAds[ad._id]);
+
+  const adCount = displayAds.length;
+  const countClass =
+    adCount === 1
+      ? 'ads-count-1'
+      : adCount === 2
+        ? 'ads-count-2'
+        : adCount === 3
+          ? 'ads-count-3'
+          : 'ads-count-many';
+
+  // Compute per-ad size hint for AdBanner based on count + placement
+  const adSize: 'normal' | 'small' | 'mini' =
+    placement === 'sidebar' && adCount >= 3
+      ? 'mini'
+      : placement === 'sidebar' && adCount === 2
+        ? 'small'
+        : 'normal';
+
+  // Check if all sidebar ads are minimized (to add is-minimized class)
+  const allMinimized =
+    placement === 'sidebar' &&
+    adCount > 0 &&
+    displayAds.every((ad) => minimizedAds.has(ad._id));
 
   console.log(
     `🎨 Rendering - placement: ${placement}, displayAds: ${displayAds.length}, showPopup: ${showPopup}`,
@@ -245,7 +267,7 @@ const AdManager: React.FC<AdManagerProps> = ({
   // Regular placement rendering
   return (
     <div
-      className={`ad-manager ad-manager--${placement} ${className}`}
+      className={`ad-manager ad-manager--${placement} ${countClass} ${allMinimized ? 'is-minimized' : ''} ${className}`}
       aria-label='Advertisements'
     >
       {displayAds.map((ad) => (
@@ -253,6 +275,7 @@ const AdManager: React.FC<AdManagerProps> = ({
           key={ad._id}
           ad={ad}
           authToken={authToken}
+          size={adSize}
           minimized={showMinimized && minimizedAds.has(ad._id)}
           onClose={() => handleClose(ad._id)}
           onMinimize={(minimized) => handleMinimize(ad._id, minimized)}

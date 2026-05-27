@@ -76,6 +76,8 @@
   transition:
     background 0.15s,
     color 0.15s;
+  position: absolute;
+  right: 0;
 }
 .ad-btn--icon:hover {
   background: rgba(0, 0, 0, 0.12);
@@ -170,11 +172,14 @@
 .ad-banner--minimized {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  max-width: 260px;
+  width: 200px;
+  max-width: 200px;
+  height: 44px;
+  padding: 0;
   border-radius: 8px;
+  overflow: hidden;
   cursor: default;
+  gap: 0;
 }
 .ad-banner--minimized .ad-label {
   position: static;
@@ -185,15 +190,16 @@
 .ad-banner__minimized-body {
   display: flex;
   align-items: center;
-  gap: 7px;
   flex: 1;
   min-width: 0;
+  height: 100%;
   cursor: pointer;
+  gap: 8px;
 }
 .ad-banner__minimized-img {
-  width: 30px;
-  height: 30px;
-  border-radius: 5px;
+  width: 44px;
+  height: 44px;
+  border-radius: 0;
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -204,12 +210,47 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 1;
+}
+
+/* Size variants for grid layouts */
+.ad-banner--small img,
+.ad-banner--small .ad-image-wrapper {
+  max-height: 120px;
+}
+.ad-banner--small .ad-banner__body {
+  padding: 8px;
+}
+.ad-banner--small .ad-banner__title {
+  font-size: 0.8rem;
+}
+.ad-banner--small .ad-banner__desc {
+  display: none; /* hide description in small mode */
+}
+
+.ad-banner--mini img,
+.ad-banner--mini .ad-image-wrapper {
+  max-height: 90px;
+}
+.ad-banner--mini .ad-banner__body {
+  padding: 6px;
+}
+.ad-banner--mini .ad-banner__title {
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ad-banner--mini .ad-banner__desc,
+.ad-banner--mini .ad-banner__cta {
+  display: none;
 }
 
 /* --- Mobile adjustments ----------------------------------- */
 @media (max-width: 480px) {
   .ad-banner {
     max-width: 100%;
+    width: 260px;
     border-radius: 8px;
   }
   .ad-banner__image-wrap {
@@ -217,6 +258,10 @@
   }
   .ad-banner__title {
     font-size: 13px;
+  }
+  /* hide the ad badge in minimized */
+  .ad-banner--minimized .ad-label {
+    display: none;
   }
 }
 

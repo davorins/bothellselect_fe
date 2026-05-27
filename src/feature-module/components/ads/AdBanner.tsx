@@ -9,6 +9,7 @@ interface AdBannerProps {
   minimized?: boolean;
   className?: string;
   authToken?: string;
+  size?: 'normal' | 'small' | 'mini';
 }
 
 const AdBanner: React.FC<AdBannerProps> = ({
@@ -18,6 +19,7 @@ const AdBanner: React.FC<AdBannerProps> = ({
   minimized = false,
   className = '',
   authToken,
+  size = 'normal',
 }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -93,7 +95,9 @@ const AdBanner: React.FC<AdBannerProps> = ({
   if (isMinimized) {
     return (
       <div
-        className={`ad-banner ad-banner--minimized ${isVisible ? 'ad-banner--visible' : ''} ${className}`}
+        className={`ad-banner ad-banner--${size} ${isVisible ? 'ad-banner--visible' : ''} ${className}`}
+        role='complementary'
+        aria-label={`Advertisement: ${ad.businessName}`}
       >
         <button
           className='ad-btn ad-btn--icon'
@@ -134,26 +138,6 @@ const AdBanner: React.FC<AdBannerProps> = ({
           <span className='ad-banner__minimized-label'>{ad.businessName}</span>
           <span className='ad-label'>Ad</span>
         </div>
-
-        {onClose && (
-          <button
-            className='ad-btn ad-btn--icon ad-btn--close'
-            onClick={handleClose}
-            aria-label='Close advertisement'
-          >
-            <svg
-              width='14'
-              height='14'
-              viewBox='0 0 24 24'
-              fill='none'
-              stroke='currentColor'
-              strokeWidth='2'
-            >
-              <line x1='18' y1='6' x2='6' y2='18' />
-              <line x1='6' y1='6' x2='18' y2='18' />
-            </svg>
-          </button>
-        )}
       </div>
     );
   }
@@ -186,26 +170,6 @@ const AdBanner: React.FC<AdBannerProps> = ({
             <line x1='5' y1='12' x2='19' y2='12' />
           </svg>
         </button>
-        {onClose && (
-          <button
-            className='ad-btn ad-btn--icon ad-btn--close'
-            onClick={handleClose}
-            aria-label='Close advertisement'
-            title='Close'
-          >
-            <svg
-              width='14'
-              height='14'
-              viewBox='0 0 24 24'
-              fill='none'
-              stroke='currentColor'
-              strokeWidth='2'
-            >
-              <line x1='18' y1='6' x2='6' y2='18' />
-              <line x1='6' y1='6' x2='18' y2='18' />
-            </svg>
-          </button>
-        )}
       </div>
 
       {/* Clickable content area */}

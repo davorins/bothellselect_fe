@@ -31,14 +31,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
       <div className='main-content-wrapper'>
         {/* Left sidebar ad */}
-        <aside className='sidebar-left'>
+        {/* <aside className='sidebar-left'>
           <AdManager
             placement='sidebar'
             pageSlug={pageSlug}
             showMinimized={true}
             className='sidebar-ad'
           />
-        </aside>
+        </aside> */}
 
         {/* Main content */}
         <main className='main-content'>{children}</main>
