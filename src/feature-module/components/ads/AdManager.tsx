@@ -9,10 +9,9 @@ interface AdManagerProps {
   pageSlug?: string;
   showMinimized?: boolean;
   className?: string;
-  maxAds?: number; // cap ads rendered per placement
+  maxAds?: number;
 }
 
-// How long (ms) a "closed" ad stays suppressed before showing again (default 7 days)
 const CLOSED_AD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 type ClosedEntry = { closedAt: number };
@@ -25,7 +24,6 @@ const loadClosedAds = (placement: string): Record<string, ClosedEntry> => {
     const raw = localStorage.getItem(getStorageKey(placement, 'closed'));
     if (!raw) return {};
     const parsed: Record<string, ClosedEntry> = JSON.parse(raw);
-    // Purge expired entries
     const now = Date.now();
     const active: Record<string, ClosedEntry> = {};
     for (const [id, entry] of Object.entries(parsed)) {
@@ -62,7 +60,19 @@ const AdManager: React.FC<AdManagerProps> = ({
   const [closedAds, setClosedAds] = useState<Record<string, ClosedEntry>>({});
   const [minimizedAds, setMinimizedAds] = useState<Set<string>>(new Set());
   const [authToken, setAuthToken] = useState<string | undefined>();
+  const [showPopup, setShowPopup] = useState(false);
   const fetchedRef = useRef(false);
+  const popupTimerRef = useRef<NodeJS.Timeout>();
+
+  // FORCE preview mode ON in local development
+  const isLocalDev =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1';
+  const previewMode = isLocalDev; // Always true in development!
+
+  console.log(
+    `🔍 AdManager - placement: ${placement}, previewMode: ${previewMode}, isLocalDev: ${isLocalDev}`,
+  );
 
   // Resolve token once on mount
   useEffect(() => {
@@ -79,56 +89,95 @@ const AdManager: React.FC<AdManagerProps> = ({
     setMinimizedAds(loadMinimizedAds(placement));
   }, [placement]);
 
-  const fetchAds = useCallback(async () => {
-    // Guard: don't double-fetch on StrictMode double-invoke
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
+  const fetchAds = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      setError(false);
 
-    setLoading(true);
-    setError(false);
+      try {
+        const userRole = user?.role || 'guest';
+        const params = new URLSearchParams({
+          placement,
+          role: userRole,
+          pageSlug,
+        });
 
-    try {
-      const userRole = user?.role || 'guest';
-      const params = new URLSearchParams({
-        placement,
-        role: userRole,
-        pageSlug,
-      });
+        if (isLocalDev || userRole === 'admin') {
+          params.append('preview', 'true');
+        }
 
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
-      const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL}/ads/active?${params}`,
-        { headers },
-      );
+        const url = `${process.env.REACT_APP_API_BASE_URL}/ads/active?${params}`;
+        const response = await fetch(url, { headers, signal });
 
-      if (!response.ok) {
-        console.error(`Ad fetch failed: ${response.status}`);
-        setError(true);
-        return;
+        if (!response.ok) {
+          setError(true);
+          return;
+        }
+
+        const data = await response.json();
+        const fetched: Advertisement[] = data.ads || [];
+        setAds(fetched.slice(0, maxAds));
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          setError(true);
+        }
+      } finally {
+        setLoading(false);
       }
+    },
+    [placement, pageSlug, user?.role, authToken, maxAds, isLocalDev],
+  );
 
-      const data = await response.json();
-      const fetched: Advertisement[] = data.ads || [];
-      setAds(fetched.slice(0, maxAds));
-    } catch (err) {
-      console.error('Error fetching ads:', err);
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [placement, pageSlug, user?.role, authToken, maxAds]);
-
-  // Re-fetch when auth token resolves (isAuthenticated changes)
   useEffect(() => {
-    fetchedRef.current = false;
-    fetchAds();
+    const controller = new AbortController();
+    fetchAds(controller.signal);
+    return () => controller.abort();
   }, [fetchAds]);
 
+  // Handle popup display logic
+  useEffect(() => {
+    if (placement === 'popup') {
+      const displayAdsList = previewMode
+        ? ads
+        : ads.filter((ad) => !closedAds[ad._id]);
+
+      console.log(
+        `🎬 Popup check - ads: ${ads.length}, displayAdsList: ${displayAdsList.length}, loading: ${loading}, showPopup: ${showPopup}`,
+      );
+
+      if (displayAdsList.length > 0 && !loading && !showPopup) {
+        // Show popup after 2 seconds
+        popupTimerRef.current = setTimeout(() => {
+          console.log('🎯 Showing popup ad with', displayAdsList.length, 'ads');
+          setShowPopup(true);
+        }, 2000);
+      }
+
+      return () => {
+        if (popupTimerRef.current) {
+          clearTimeout(popupTimerRef.current);
+        }
+      };
+    }
+  }, [placement, ads, closedAds, loading, previewMode, showPopup]);
+
   const handleClose = (adId: string) => {
+    console.log(`Closing ad: ${adId} for placement: ${placement}`);
+
+    if (placement === 'popup') {
+      setShowPopup(false);
+    }
+
+    if (previewMode) {
+      console.log(`Preview mode: Ad ${adId} would be closed in production`);
+      return;
+    }
+
     const updated = { ...closedAds, [adId]: { closedAt: Date.now() } };
     setClosedAds(updated);
     try {
@@ -137,11 +186,18 @@ const AdManager: React.FC<AdManagerProps> = ({
         JSON.stringify(updated),
       );
     } catch {
-      // localStorage unavailable (private browsing, etc.)
+      // localStorage unavailable
     }
   };
 
   const handleMinimize = (adId: string, minimized: boolean) => {
+    if (previewMode) {
+      console.log(
+        `Preview mode: Ad ${adId} would be ${minimized ? 'minimized' : 'expanded'} in production`,
+      );
+      return;
+    }
+
     const updated = new Set(minimizedAds);
     if (minimized) updated.add(adId);
     else updated.delete(adId);
@@ -155,22 +211,38 @@ const AdManager: React.FC<AdManagerProps> = ({
   };
 
   // Filter out permanently closed ads
-  const displayAds = ads.filter((ad) => !closedAds[ad._id]);
+  const displayAds = previewMode ? ads : ads.filter((ad) => !closedAds[ad._id]);
 
-  // Popup: lock body scroll while visible
-  useEffect(() => {
-    if (placement !== 'popup') return;
-    if (displayAds.length > 0 && !loading) {
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = '';
-      };
-    }
-  }, [placement, displayAds.length, loading]);
+  console.log(
+    `🎨 Rendering - placement: ${placement}, displayAds: ${displayAds.length}, showPopup: ${showPopup}`,
+  );
 
-  // Don't render placeholder space while loading or if nothing to show
-  if (loading || error || displayAds.length === 0) return null;
+  // Don't render anything if no ads
+  if (loading || error || displayAds.length === 0) {
+    return null;
+  }
 
+  // For popup placement
+  if (placement === 'popup') {
+    if (!showPopup) return null;
+
+    return (
+      <div className={`ad-manager ad-manager--popup ${className}`}>
+        {displayAds.slice(0, 1).map((ad) => (
+          <AdBanner
+            key={ad._id}
+            ad={ad}
+            authToken={authToken}
+            minimized={false}
+            onClose={() => handleClose(ad._id)}
+            onMinimize={(minimized) => handleMinimize(ad._id, minimized)}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  // Regular placement rendering
   return (
     <div
       className={`ad-manager ad-manager--${placement} ${className}`}
@@ -183,6 +255,7 @@ const AdManager: React.FC<AdManagerProps> = ({
           authToken={authToken}
           minimized={showMinimized && minimizedAds.has(ad._id)}
           onClose={() => handleClose(ad._id)}
+          onMinimize={(minimized) => handleMinimize(ad._id, minimized)}
         />
       ))}
     </div>

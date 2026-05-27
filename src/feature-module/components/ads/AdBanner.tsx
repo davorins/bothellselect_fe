@@ -5,6 +5,7 @@ import './AdBanner.css';
 interface AdBannerProps {
   ad: Advertisement;
   onClose?: () => void;
+  onMinimize?: (minimized: boolean) => void;
   minimized?: boolean;
   className?: string;
   authToken?: string;
@@ -13,6 +14,7 @@ interface AdBannerProps {
 const AdBanner: React.FC<AdBannerProps> = ({
   ad,
   onClose,
+  onMinimize,
   minimized = false,
   className = '',
   authToken,
@@ -60,6 +62,20 @@ const AdBanner: React.FC<AdBannerProps> = ({
     window.open(destination, '_blank', 'noopener,noreferrer');
   };
 
+  const handleMinimizeToggle = () => {
+    const newMinimizedState = !isMinimized;
+    setIsMinimized(newMinimizedState);
+    if (onMinimize) {
+      onMinimize(newMinimizedState);
+    }
+  };
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    }
+  };
+
   const getImageUrl = (): string | null => {
     if (isMobile && ad.mobileImage?.url) return ad.mobileImage.url;
     return ad.desktopImage?.url || ad.mobileImage?.url || null;
@@ -81,7 +97,7 @@ const AdBanner: React.FC<AdBannerProps> = ({
       >
         <button
           className='ad-btn ad-btn--icon'
-          onClick={() => setIsMinimized(false)}
+          onClick={handleMinimizeToggle}
           aria-label='Expand advertisement'
           title='Expand'
         >
@@ -122,7 +138,7 @@ const AdBanner: React.FC<AdBannerProps> = ({
         {onClose && (
           <button
             className='ad-btn ad-btn--icon ad-btn--close'
-            onClick={onClose}
+            onClick={handleClose}
             aria-label='Close advertisement'
           >
             <svg
@@ -155,7 +171,7 @@ const AdBanner: React.FC<AdBannerProps> = ({
       <div className='ad-banner__controls'>
         <button
           className='ad-btn ad-btn--icon'
-          onClick={() => setIsMinimized(true)}
+          onClick={handleMinimizeToggle}
           aria-label='Minimize advertisement'
           title='Minimize'
         >
@@ -173,7 +189,7 @@ const AdBanner: React.FC<AdBannerProps> = ({
         {onClose && (
           <button
             className='ad-btn ad-btn--icon ad-btn--close'
-            onClick={onClose}
+            onClick={handleClose}
             aria-label='Close advertisement'
             title='Close'
           >

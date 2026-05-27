@@ -18,6 +18,7 @@ import {
   Tag,
   message,
   Popconfirm,
+  Alert,
 } from 'antd';
 import {
   PlusOutlined,
@@ -27,6 +28,8 @@ import {
   EyeOutlined,
   BarChartOutlined,
   DollarOutlined,
+  EnvironmentOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../../context/AuthContext';
 import { Advertisement, AdStats } from '../../../types/advertisement-types';
@@ -45,6 +48,7 @@ const AdminAdManager: React.FC = () => {
   const [editingAd, setEditingAd] = useState<Advertisement | null>(null);
   const [stats, setStats] = useState<AdStats | null>(null);
   const [form] = Form.useForm();
+  const [previewMode, setPreviewMode] = useState(false);
 
   // File states
   const [desktopFile, setDesktopFile] = useState<File | null>(null);
@@ -52,6 +56,12 @@ const AdminAdManager: React.FC = () => {
   const [desktopPreview, setDesktopPreview] = useState<string>('');
   const [mobilePreview, setMobilePreview] = useState<string>('');
   const [uploading, setUploading] = useState(false);
+
+  // Check if we're in local development
+  const isLocalDev =
+    process.env.NODE_ENV === 'development' ||
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1';
 
   const fetchAds = useCallback(async () => {
     setLoading(true);
@@ -93,10 +103,77 @@ const AdminAdManager: React.FC = () => {
     }
   }, [getAuthToken]);
 
+  // Toggle preview mode for local development
+  const togglePreviewMode = async () => {
+    const newPreviewMode = !previewMode;
+    setPreviewMode(newPreviewMode);
+
+    // Store preference in localStorage
+    localStorage.setItem('ad_preview_mode', String(newPreviewMode));
+
+    if (newPreviewMode) {
+      message.success(
+        'Preview mode enabled. Ads will be visible on the frontend.',
+      );
+    } else {
+      message.info(
+        'Preview mode disabled. Only published ads will be visible.',
+      );
+    }
+  };
+
+  // Load preview mode preference on mount
   useEffect(() => {
-    fetchAds();
+    const savedPreviewMode = localStorage.getItem('ad_preview_mode');
+    if (savedPreviewMode === 'true') {
+      setPreviewMode(true);
+    }
+  }, []);
+
+  // If in preview mode, show all ads regardless of status/date
+  const getDisplayAds = () => {
+    if (previewMode && isLocalDev) {
+      return ads; // Show all ads in preview mode
+    }
+    return ads; // Normal behavior in production
+  };
+
+  // Override the fetch to include preview parameter
+  const fetchAdsWithPreview = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = await getAuthToken();
+      const url =
+        previewMode && isLocalDev
+          ? `${process.env.REACT_APP_API_BASE_URL}/ads/admin?preview=true`
+          : `${process.env.REACT_APP_API_BASE_URL}/ads/admin`;
+
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAds(data.ads || []);
+      } else {
+        message.error('Failed to load advertisements');
+      }
+    } catch (error) {
+      console.error('Error fetching ads:', error);
+      message.error('Failed to load advertisements');
+    } finally {
+      setLoading(false);
+    }
+  }, [getAuthToken, previewMode, isLocalDev]);
+
+  useEffect(() => {
+    if (previewMode && isLocalDev) {
+      fetchAdsWithPreview();
+    } else {
+      fetchAds();
+    }
     fetchStats();
-  }, [fetchAds, fetchStats]);
+  }, [fetchAds, fetchAdsWithPreview, previewMode, isLocalDev]);
 
   const handleImageUpload = (file: File, type: 'desktop' | 'mobile') => {
     const isImage = file.type.startsWith('image/');
@@ -145,6 +222,11 @@ const AdminAdManager: React.FC = () => {
         }
       });
 
+      // Add preview flag if in preview mode
+      if (previewMode && isLocalDev) {
+        formData.append('isPreview', 'true');
+      }
+
       // Add images (only if new files are selected)
       if (desktopFile) formData.append('desktopImage', desktopFile);
       if (mobileFile) formData.append('mobileImage', mobileFile);
@@ -167,7 +249,7 @@ const AdminAdManager: React.FC = () => {
         );
         setModalVisible(false);
         resetForm();
-        fetchAds();
+        fetchAdsWithPreview();
         fetchStats();
       } else {
         const error = await response.json();
@@ -191,7 +273,7 @@ const AdminAdManager: React.FC = () => {
 
       if (response.ok) {
         message.success('Ad deleted successfully');
-        fetchAds();
+        fetchAdsWithPreview();
         fetchStats();
       } else {
         message.error('Failed to delete ad');
@@ -212,7 +294,7 @@ const AdminAdManager: React.FC = () => {
   };
 
   const openEditModal = (ad: Advertisement) => {
-    console.log('Editing ad:', ad); // Debug log
+    console.log('Editing ad:', ad);
 
     setEditingAd(ad);
 
@@ -244,6 +326,29 @@ const AdminAdManager: React.FC = () => {
     setMobilePreview(ad.mobileImage?.url || '');
 
     setModalVisible(true);
+  };
+
+  // Helper function to test ad visibility
+  const testAdVisibility = (ad: Advertisement) => {
+    const now = new Date();
+    const startDate = ad.startDate ? new Date(ad.startDate) : null;
+    const endDate = ad.endDate ? new Date(ad.endDate) : null;
+
+    const isDateValid =
+      (!startDate || now >= startDate) && (!endDate || now <= endDate);
+    const isActive = ad.isActive;
+    const isPreview = previewMode && isLocalDev;
+
+    return {
+      visible: isPreview || (isActive && isDateValid),
+      reasons: {
+        isPreview,
+        isActive,
+        isDateValid,
+        startDate: startDate ? startDate.toLocaleDateString() : 'No start date',
+        endDate: endDate ? endDate.toLocaleDateString() : 'No end date',
+      },
+    };
   };
 
   const columns = [
@@ -297,9 +402,22 @@ const AdminAdManager: React.FC = () => {
       dataIndex: 'isActive',
       key: 'isActive',
       width: 100,
-      render: (v: boolean) => (
-        <Tag color={v ? 'green' : 'red'}>{v ? 'Active' : 'Inactive'}</Tag>
-      ),
+      render: (v: boolean, record: Advertisement) => {
+        const { visible, reasons } = testAdVisibility(record);
+        return (
+          <Space direction='vertical' size={0}>
+            <Tag color={v ? 'green' : 'red'}>{v ? 'Active' : 'Inactive'}</Tag>
+            {previewMode && isLocalDev && (
+              <Tag
+                color={visible ? 'success' : 'warning'}
+                style={{ fontSize: '10px', marginTop: '4px' }}
+              >
+                {visible ? 'Preview: Visible' : 'Preview: Hidden'}
+              </Tag>
+            )}
+          </Space>
+        );
+      },
     },
     {
       title: 'Actions',
@@ -329,6 +447,46 @@ const AdminAdManager: React.FC = () => {
   return (
     <div className='page-wrapper'>
       <div className='admin-ad-manager'>
+        {/* Preview Mode Banner for Local Development */}
+        {isLocalDev && (
+          <Alert
+            message={
+              <Space>
+                <EnvironmentOutlined />
+                <span>Local Development Environment</span>
+                {previewMode && (
+                  <Tag color='orange' icon={<PlayCircleOutlined />}>
+                    Preview Mode Active
+                  </Tag>
+                )}
+              </Space>
+            }
+            description={
+              <div>
+                <p>
+                  {previewMode
+                    ? 'Preview mode is ON. All ads (including inactive and out-of-date) will be visible on the frontend for testing purposes.'
+                    : 'Preview mode is OFF. Only published ads within their date ranges will appear on the frontend.'}
+                </p>
+                <Button
+                  type={previewMode ? 'default' : 'primary'}
+                  size='small'
+                  onClick={togglePreviewMode}
+                  icon={<EyeOutlined />}
+                >
+                  {previewMode
+                    ? 'Disable Preview Mode'
+                    : 'Enable Preview Mode (Test Ads)'}
+                </Button>
+              </div>
+            }
+            type={previewMode ? 'warning' : 'info'}
+            showIcon
+            closable={false}
+            style={{ marginBottom: 16 }}
+          />
+        )}
+
         {/* Statistics Cards */}
         <Row gutter={[16, 16]} className='mb-4'>
           <Col xs={24} sm={12} lg={6}>
@@ -392,7 +550,7 @@ const AdminAdManager: React.FC = () => {
         >
           <Table
             columns={columns}
-            dataSource={ads}
+            dataSource={getDisplayAds()}
             rowKey='_id'
             loading={loading}
             pagination={{ pageSize: 10 }}
@@ -414,6 +572,16 @@ const AdminAdManager: React.FC = () => {
           okText={editingAd ? 'Update' : 'Create'}
           cancelText='Cancel'
         >
+          {previewMode && isLocalDev && (
+            <Alert
+              message='Preview Mode Active'
+              description='This ad will be immediately visible on the frontend for testing, regardless of its active status or date range.'
+              type='warning'
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
           <Form form={form} layout='vertical'>
             <Row gutter={16}>
               <Col span={12}>

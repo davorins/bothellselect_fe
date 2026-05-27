@@ -23,3 +23,13 @@
   border-radius: 8px;
   object-fit: cover;
 }
+
+/* Preview mode banner styles */
+.ant-alert {
+  border-radius: 8px;
+}
+
+/* Status badge improvements */
+.ant-space-vertical {
+  gap: 4px !important;
+}
