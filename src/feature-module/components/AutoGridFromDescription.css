@@ -485,6 +485,55 @@
   gap: 5px;
 }
 
+/* FAQ Section Styles */
+.agd-tile--faq {
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.1) 0%,
+    rgba(147, 51, 234, 0.1) 100%
+  );
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  text-align: center;
+}
+
+.agd-faq-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.agd-faq-text {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.agd-faq-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(59, 130, 246, 0.2);
+  border-radius: 20px;
+  color: #60a5fa;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.agd-faq-link:hover {
+  background: rgba(59, 130, 246, 0.3);
+  transform: translateX(4px);
+  color: #93c5fd;
+}
+
+.agd-faq-link i {
+  font-size: 1rem;
+}
+
 /* Bottom Orange CTA Button */
 .agd-tile--cta-bottom {
   text-align: center;
