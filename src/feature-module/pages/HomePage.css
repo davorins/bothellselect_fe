@@ -20,6 +20,7 @@
   z-index: 1;
   opacity: 1;
   transition: opacity 0.5s ease;
+  background-color: #000;
 }
 
 /* Video fade in animation */
@@ -204,7 +205,7 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  position: absolute;
+  position: fixed;
   right: 24px;
   bottom: 74px;
   z-index: 5;
@@ -216,7 +217,7 @@
 
 /* ─── Video controls panel ───────────────────────────── */
 .hp-controls {
-  position: absolute;
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
