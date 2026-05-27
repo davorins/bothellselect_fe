@@ -1,4 +1,4 @@
-// AutoGridFromDescription.tsx - Complete working solution with pricing as separate section in grid layout
+// AutoGridFromDescription.tsx - Complete working solution with pricing as separate section in grid layout and bottom orange CTA
 import React from 'react';
 import './AutoGridFromDescription.css';
 
@@ -446,6 +446,7 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             )}
           </div>
 
+          {/* Top CTA Button */}
           <div className='agd-tile agd-tile--cta'>
             <button
               className='agd-cta'
@@ -643,12 +644,20 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
               </ul>
             </div>
           )}
+
+          {/* Bottom Orange CTA Button */}
+          <div className='agd-tile agd-tile--cta-bottom'>
+            <button className='agd-cta-bottom' onClick={handleRegister}>
+              <i className='ti ti-user-plus' /> Register Now{' '}
+              <i className='ti ti-arrow-right' />
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  // TRYOUT VIEW (similar changes for tryout view)
+  // TRYOUT VIEW
   if (isTryout && tryoutDetails) {
     const tryoutLocations = getTryoutLocations();
     const hasValidTryoutDetails =
@@ -764,6 +773,7 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             )}
           </div>
 
+          {/* Top CTA Button */}
           <div className='agd-tile agd-tile--cta'>
             <button
               className='agd-cta'
@@ -957,6 +967,14 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
               </ul>
             </div>
           )}
+
+          {/* Bottom Orange CTA Button */}
+          <div className='agd-tile agd-tile--cta-bottom'>
+            <button className='agd-cta-bottom' onClick={handleRegister}>
+              <i className='ti ti-user-plus' /> Register for Tryout{' '}
+              <i className='ti ti-arrow-right' />
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -998,6 +1016,13 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             style={{ background: '#3b82f6', boxShadow: `0 6px 20px #3b82f644` }}
             onClick={() => onRegister?.()}
           >
+            <i className='ti ti-user-plus' /> Register Now{' '}
+            <i className='ti ti-arrow-right' />
+          </button>
+        </div>
+        {/* Bottom Orange CTA Button for fallback */}
+        <div className='agd-tile agd-tile--cta-bottom'>
+          <button className='agd-cta-bottom' onClick={() => onRegister?.()}>
             <i className='ti ti-user-plus' /> Register Now{' '}
             <i className='ti ti-arrow-right' />
           </button>
