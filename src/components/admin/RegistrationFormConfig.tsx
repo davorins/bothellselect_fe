@@ -77,7 +77,7 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
     description: '',
   });
 
-  // Updated new session state with date and location
+  // Updated new session state with date and location - made fields optional
   const [newSession, setNewSession] = useState<{
     date: string;
     startTime: string;
@@ -179,26 +179,25 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
     setHasUnsavedChanges(true);
   };
 
-  // Updated handleAddSession with date and location
+  // Updated handleAddSession - removed validation for startTime, endTime, grades
   const handleAddSession = () => {
-    if (newSession.startTime && newSession.endTime && newSession.grades) {
-      const sessions = config.trainingDetails?.trainingSessions || [];
-      const newSessionWithId: TrainingSession = {
-        ...newSession,
-        id: Date.now().toString(),
-        number: sessions.length + 1,
-      };
-      updateTrainingDetails({
-        trainingSessions: [...sessions, newSessionWithId],
-      });
-      setNewSession({
-        date: '',
-        startTime: '',
-        endTime: '',
-        grades: '',
-        location: defaultLocation,
-      });
-    }
+    // Allow adding session even if startTime, endTime, or grades are empty
+    const sessions = config.trainingDetails?.trainingSessions || [];
+    const newSessionWithId: TrainingSession = {
+      ...newSession,
+      id: Date.now().toString(),
+      number: sessions.length + 1,
+    };
+    updateTrainingDetails({
+      trainingSessions: [...sessions, newSessionWithId],
+    });
+    setNewSession({
+      date: '',
+      startTime: '',
+      endTime: '',
+      grades: '',
+      location: defaultLocation,
+    });
   };
 
   const handleRemoveSession = (sessionId: string) => {
@@ -321,7 +320,14 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
       details.trainingSessions.forEach((session) => {
         desc += `${session.number}) `;
         if (session.date) desc += `${session.date} `;
-        desc += `${session.startTime} - ${session.endTime} (${session.grades})`;
+        if (session.startTime && session.endTime) {
+          desc += `${session.startTime} - ${session.endTime}`;
+        } else if (session.startTime) {
+          desc += `${session.startTime}`;
+        } else if (session.endTime) {
+          desc += `Until ${session.endTime}`;
+        }
+        if (session.grades) desc += ` (${session.grades})`;
         if (session.location?.name) desc += ` @ ${session.location.name}`;
         desc += `\n`;
       });
@@ -591,12 +597,20 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
                             <div className='col-md-3 mb-2'>
                               <strong>Time:</strong>
                               <p className='mb-0'>
-                                {session.startTime} - {session.endTime}
+                                {session.startTime && session.endTime
+                                  ? `${session.startTime} - ${session.endTime}`
+                                  : session.startTime
+                                    ? session.startTime
+                                    : session.endTime
+                                      ? `Until ${session.endTime}`
+                                      : 'Not specified'}
                               </p>
                             </div>
                             <div className='col-md-3 mb-2'>
                               <strong>Grades:</strong>
-                              <p className='mb-0'>{session.grades}</p>
+                              <p className='mb-0'>
+                                {session.grades || 'Not specified'}
+                              </p>
                             </div>
                             <div className='col-md-3 mb-2'>
                               <strong>Location:</strong>
@@ -642,7 +656,7 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
                     ),
                   )}
 
-                  {/* Add New Session Form */}
+                  {/* Add New Session Form - Removed required field validation */}
                   <div className='border-top pt-4'>
                     <h6 className='mb-3'>Add New Session</h6>
                     <div className='row'>
@@ -664,7 +678,7 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
                         <input
                           type='text'
                           className='form-control'
-                          placeholder='Start time'
+                          placeholder='Start time (optional)'
                           value={newSession.startTime}
                           onChange={(e) =>
                             setNewSession({
@@ -678,7 +692,7 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
                         <input
                           type='text'
                           className='form-control'
-                          placeholder='End time'
+                          placeholder='End time (optional)'
                           value={newSession.endTime}
                           onChange={(e) =>
                             setNewSession({
@@ -692,7 +706,7 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
                         <input
                           type='text'
                           className='form-control'
-                          placeholder='Grades (e.g., 3rd-5th)'
+                          placeholder='Grades (optional)'
                           value={newSession.grades}
                           onChange={(e) =>
                             setNewSession({
@@ -706,7 +720,7 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
                         <input
                           type='text'
                           className='form-control'
-                          placeholder='Location name'
+                          placeholder='Location name (optional)'
                           value={newSession.location.name}
                           onChange={(e) =>
                             setNewSession({
@@ -794,11 +808,6 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
                           type='button'
                           className='btn btn-primary w-100'
                           onClick={handleAddSession}
-                          // disabled={
-                          //   !newSession.startTime ||
-                          //   !newSession.endTime ||
-                          //   !newSession.grades
-                          // }
                         >
                           <i className='ti ti-plus'></i> Add Session
                         </button>
@@ -896,7 +905,7 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
             </div>
           </div>
 
-          {/* Additional Details Tab - Removed separate location tab since location is now per session */}
+          {/* Additional Details Tab */}
           <div
             className={`tab-pane ${activeTab === 'details' ? 'active' : ''}`}
           >

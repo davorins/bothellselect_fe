@@ -211,6 +211,70 @@
   gap: 12px;
 }
 
+/* Simple Session Styles (date + location only) */
+.agd-sessions-simple-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.agd-session-simple {
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s ease;
+}
+
+.agd-session-simple:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.agd-session-simple-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.agd-session-simple-date,
+.agd-session-simple-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.agd-session-simple-date i,
+.agd-session-simple-location i {
+  color: rgba(255, 140, 0, 0.7);
+  font-size: 1rem;
+}
+
+.agd-session-simple-date {
+  font-weight: 600;
+}
+
+.agd-session-simple-location {
+  font-weight: 500;
+}
+
+.agd-session-simple-separator {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+/* Detailed Session Styles (with time/grades) */
+.agd-sessions-detailed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .agd-session-card {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -457,6 +521,22 @@
     align-items: flex-start;
     gap: 6px;
   }
+
+  .agd-session-simple-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .agd-session-simple-separator {
+    display: none;
+  }
+
+  .agd-session-simple-date::after {
+    content: '→';
+    margin-left: 8px;
+    color: rgba(255, 255, 255, 0.3);
+  }
 }
 
 @media (max-width: 480px) {
@@ -489,5 +569,10 @@
   .agd-srow-main {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .agd-session-simple-date,
+  .agd-session-simple-location {
+    font-size: 0.85rem;
   }
 }

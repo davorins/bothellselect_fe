@@ -198,6 +198,116 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
     return [];
   };
 
+  // Helper function to check if a session is "simple" (only date and location name)
+  const isSimpleSession = (
+    session: TrainingSession | TryoutSession,
+  ): boolean => {
+    const hasOnlyDateAndLocation =
+      !!session.date &&
+      !!session.location?.name &&
+      !session.startTime &&
+      !session.endTime &&
+      !session.grades;
+    return hasOnlyDateAndLocation;
+  };
+
+  // Helper function to check if a session has any meaningful data
+  const hasSessionData = (
+    session: TrainingSession | TryoutSession,
+  ): boolean => {
+    return !!(
+      session.date ||
+      session.startTime ||
+      session.endTime ||
+      session.grades ||
+      session.location?.name
+    );
+  };
+
+  // Filter sessions to only show those with data
+  const getValidSessions = (
+    sessions: (TrainingSession | TryoutSession)[],
+  ): (TrainingSession | TryoutSession)[] => {
+    return sessions.filter(hasSessionData);
+  };
+
+  // Component for simple session (date and location only)
+  const SimpleSessionItem: React.FC<{
+    session: TrainingSession | TryoutSession;
+  }> = ({ session }) => (
+    <div className='agd-session-simple'>
+      <div className='agd-session-simple-content'>
+        <span className='agd-session-simple-date'>
+          <i className='ti ti-calendar' />
+          {session.date}
+        </span>
+        <span className='agd-session-simple-separator'>→</span>
+        <span className='agd-session-simple-location'>
+          <i className='ti ti-map-pin' />
+          {session.location?.name}
+        </span>
+      </div>
+    </div>
+  );
+
+  // Component for detailed session (with time/grades)
+  const DetailedSessionItem: React.FC<{
+    session: TrainingSession | TryoutSession;
+  }> = ({ session }) => (
+    <div className='agd-session-card'>
+      <div className='agd-session-header'>
+        <div className='agd-session-time'>
+          {session.date && (
+            <span className='agd-session-date'>
+              <i className='ti ti-calendar' />
+              {session.date}
+            </span>
+          )}
+          {(session.startTime || session.endTime) && (
+            <span className='agd-session-time-range'>
+              <i className='ti ti-clock' />
+              {session.startTime && session.endTime
+                ? formatTimeRange(session.startTime, session.endTime)
+                : session.startTime || session.endTime}
+            </span>
+          )}
+        </div>
+        {session.grades && (
+          <span className='agd-session-grades'>
+            <i className='ti ti-users' />
+            Grades {session.grades}
+          </span>
+        )}
+      </div>
+
+      {session.location?.name && (
+        <div className='agd-session-location'>
+          <i className='ti ti-map-pin agd-session-location-icon' />
+          <div className='agd-session-location-details'>
+            <span className='agd-session-location-name'>
+              {session.location.name}
+            </span>
+            {getFullAddress(session.location) && (
+              <span className='agd-session-location-address'>
+                {getFullAddress(session.location)}
+              </span>
+            )}
+            {getFullAddress(session.location) && (
+              <a
+                className='agd-session-map-link'
+                href={`https://www.google.com/maps/search/${encodeURIComponent([session.location.name, getFullAddress(session.location)].filter(Boolean).join(' '))}`}
+                target='_blank'
+                rel='noopener noreferrer'
+              >
+                <i className='ti ti-external-link' /> Open in Google Maps
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   // TRAINING VIEW
   if (!isTryout && trainingDetails) {
     const hasValidTrainingDetails =
@@ -259,6 +369,17 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
       ? trainingDetails.ageGroups.join(', ')
       : '';
     const handleRegister = () => onRegister?.();
+
+    // Get valid sessions for display
+    const validSessions = getValidSessions(
+      trainingDetails.trainingSessions || [],
+    );
+
+    // Separate sessions into simple and detailed
+    const simpleSessions = validSessions.filter(isSimpleSession);
+    const detailedSessions = validSessions.filter(
+      (session) => !isSimpleSession(session),
+    );
 
     return (
       <div className='agd-root'>
@@ -403,59 +524,28 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             </div>
           )}
 
-          {(trainingDetails.trainingSessions?.length || 0) > 0 && (
+          {/* Training Schedule - Only show if there are valid sessions */}
+          {validSessions.length > 0 && (
             <div className='agd-tile'>
               <TileHead icon='ti-calendar-event' label='Training Schedule' />
               <div className='agd-sessions-container'>
-                {trainingDetails.trainingSessions.map((session) => (
-                  <div key={session.id} className='agd-session-card'>
-                    <div className='agd-session-header'>
-                      <div className='agd-session-time'>
-                        {session.date && (
-                          <span className='agd-session-date'>
-                            <i className='ti ti-calendar' />
-                            {session.date}
-                          </span>
-                        )}
-                        <span className='agd-session-time-range'>
-                          <i className='ti ti-clock' />
-                          {formatTimeRange(session.startTime, session.endTime)}
-                        </span>
-                      </div>
-                      <span className='agd-session-grades'>
-                        <i className='ti ti-users' />
-                        Grades {session.grades}
-                      </span>
-                    </div>
-
-                    {session.location?.name && (
-                      <div className='agd-session-location'>
-                        <i className='ti ti-map-pin agd-session-location-icon' />
-                        <div className='agd-session-location-details'>
-                          <span className='agd-session-location-name'>
-                            {session.location.name}
-                          </span>
-                          {getFullAddress(session.location) && (
-                            <span className='agd-session-location-address'>
-                              {getFullAddress(session.location)}
-                            </span>
-                          )}
-                          {getFullAddress(session.location) && (
-                            <a
-                              className='agd-session-map-link'
-                              href={`https://www.google.com/maps/search/${encodeURIComponent([session.location.name, getFullAddress(session.location)].filter(Boolean).join(' '))}`}
-                              target='_blank'
-                              rel='noopener noreferrer'
-                            >
-                              <i className='ti ti-external-link' /> Open in
-                              Google Maps
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                {/* Simple sessions (date + location only) - shown in compact list */}
+                {simpleSessions.length > 0 && (
+                  <div className='agd-sessions-simple-list'>
+                    {simpleSessions.map((session) => (
+                      <SimpleSessionItem key={session.id} session={session} />
+                    ))}
                   </div>
-                ))}
+                )}
+
+                {/* Detailed sessions (with time/grades) - shown in card layout */}
+                {detailedSessions.length > 0 && (
+                  <div className='agd-sessions-detailed-list'>
+                    {detailedSessions.map((session) => (
+                      <DetailedSessionItem key={session.id} session={session} />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -573,6 +663,14 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
       ? tryoutDetails.ageGroups.join(', ')
       : '';
     const handleRegister = () => onRegister?.();
+
+    const validTryoutSessions = getValidSessions(
+      tryoutDetails.tryoutSessions || [],
+    );
+    const simpleTryoutSessions = validTryoutSessions.filter(isSimpleSession);
+    const detailedTryoutSessions = validTryoutSessions.filter(
+      (session) => !isSimpleSession(session),
+    );
 
     return (
       <div className='agd-root'>
@@ -725,59 +823,28 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             </div>
           )}
 
-          {(tryoutDetails.tryoutSessions?.length || 0) > 0 && (
+          {/* Tryout Schedule - Only show if there are valid sessions */}
+          {validTryoutSessions.length > 0 && (
             <div className='agd-tile'>
               <TileHead icon='ti-calendar-event' label='Tryout Schedule' />
               <div className='agd-sessions-container'>
-                {tryoutDetails.tryoutSessions.map((session) => (
-                  <div key={session.id} className='agd-session-card'>
-                    <div className='agd-session-header'>
-                      <div className='agd-session-time'>
-                        {session.date && (
-                          <span className='agd-session-date'>
-                            <i className='ti ti-calendar' />
-                            {session.date}
-                          </span>
-                        )}
-                        <span className='agd-session-time-range'>
-                          <i className='ti ti-clock' />
-                          {formatTimeRange(session.startTime, session.endTime)}
-                        </span>
-                      </div>
-                      <span className='agd-session-grades'>
-                        <i className='ti ti-users' />
-                        Grades {session.grades}
-                      </span>
-                    </div>
-
-                    {session.location?.name && (
-                      <div className='agd-session-location'>
-                        <i className='ti ti-map-pin agd-session-location-icon' />
-                        <div className='agd-session-location-details'>
-                          <span className='agd-session-location-name'>
-                            {session.location.name}
-                          </span>
-                          {getFullAddress(session.location) && (
-                            <span className='agd-session-location-address'>
-                              {getFullAddress(session.location)}
-                            </span>
-                          )}
-                          {getFullAddress(session.location) && (
-                            <a
-                              className='agd-session-map-link'
-                              href={`https://www.google.com/maps/search/${encodeURIComponent([session.location.name, getFullAddress(session.location)].filter(Boolean).join(' '))}`}
-                              target='_blank'
-                              rel='noopener noreferrer'
-                            >
-                              <i className='ti ti-external-link' /> Open in
-                              Google Maps
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                {/* Simple sessions (date + location only) - shown in compact list */}
+                {simpleTryoutSessions.length > 0 && (
+                  <div className='agd-sessions-simple-list'>
+                    {simpleTryoutSessions.map((session) => (
+                      <SimpleSessionItem key={session.id} session={session} />
+                    ))}
                   </div>
-                ))}
+                )}
+
+                {/* Detailed sessions (with time/grades) - shown in card layout */}
+                {detailedTryoutSessions.length > 0 && (
+                  <div className='agd-sessions-detailed-list'>
+                    {detailedTryoutSessions.map((session) => (
+                      <DetailedSessionItem key={session.id} session={session} />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
