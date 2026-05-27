@@ -134,8 +134,8 @@
   inset: 0;
   background: linear-gradient(
     135deg,
-    rgba(0, 0, 0, 0.3) 0%,
-    rgba(0, 0, 0, 0.6) 100%
+    rgba(0, 0, 0, 0.1) 0%,
+    rgba(0, 0, 0, 0.3) 100%
   );
   z-index: 0;
   border-radius: 44px;
