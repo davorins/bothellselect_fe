@@ -493,26 +493,29 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
               <div className='col-12 mb-3'>
                 <label className='form-label'>Age Groups / Grades</label>
                 <div className='d-flex gap-3 flex-wrap'>
-                  {['3rd-5th', '6th-8th', '9th-12th'].map((group) => (
-                    <div key={group} className='form-check'>
-                      <input
-                        type='checkbox'
-                        className='form-check-input'
-                        id={`age-group-${group}`}
-                        checked={
-                          config.trainingDetails?.ageGroups?.includes(group) ||
-                          false
-                        }
-                        onChange={() => handleAgeGroupToggle(group)}
-                      />
-                      <label
-                        className='form-check-label'
-                        htmlFor={`age-group-${group}`}
-                      >
-                        {group}
-                      </label>
-                    </div>
-                  ))}
+                  {['3rd-5th', '6th-8th', '9th-12th', 'College'].map(
+                    (group) => (
+                      <div key={group} className='form-check'>
+                        <input
+                          type='checkbox'
+                          className='form-check-input'
+                          id={`age-group-${group}`}
+                          checked={
+                            config.trainingDetails?.ageGroups?.includes(
+                              group,
+                            ) || false
+                          }
+                          onChange={() => handleAgeGroupToggle(group)}
+                        />
+                        <label
+                          className='form-check-label'
+                          htmlFor={`age-group-${group}`}
+                        >
+                          {group}
+                        </label>
+                      </div>
+                    ),
+                  )}
                 </div>
                 <small className='text-muted'>
                   Select all applicable age groups

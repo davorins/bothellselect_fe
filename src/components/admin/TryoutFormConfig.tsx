@@ -622,17 +622,19 @@ const TryoutFormConfig: React.FC<TryoutFormConfigProps> = ({
                 <div className='col-12 mb-3'>
                   <label>Age Groups</label>
                   <div className='d-flex gap-3'>
-                    {['3rd-5th', '6th-8th', '9th-12th'].map((group) => (
-                      <div key={group} className='form-check'>
-                        <input
-                          type='checkbox'
-                          className='form-check-input'
-                          checked={ageGroups.includes(group)}
-                          onChange={() => handleAgeGroupToggle(group)}
-                        />
-                        <label className='form-check-label'>{group}</label>
-                      </div>
-                    ))}
+                    {['3rd-5th', '6th-8th', '9th-12th', 'College'].map(
+                      (group) => (
+                        <div key={group} className='form-check'>
+                          <input
+                            type='checkbox'
+                            className='form-check-input'
+                            checked={ageGroups.includes(group)}
+                            onChange={() => handleAgeGroupToggle(group)}
+                          />
+                          <label className='form-check-label'>{group}</label>
+                        </div>
+                      ),
+                    )}
                   </div>
                 </div>
                 <div className='col-12 mb-3'>
