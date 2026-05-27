@@ -61,25 +61,25 @@
 /* Glass Card */
 .spotlight-glass-card {
   position: relative;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(22px) saturate(160%);
   -webkit-backdrop-filter: blur(22px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 32px;
   overflow: hidden;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow:
+  /* box-shadow:
     0 4px 24px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.1); */
 }
 
 .spotlight-glass-card:hover {
   transform: translateY(-4px);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.5);
   border-color: rgba(255, 255, 255, 0.25);
-  box-shadow:
+  /* box-shadow:
     0 12px 36px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    inset 0 1px 0 rgba(255, 255, 255, 0.15); */
 }
 
 .spotlight-glass-overlay {
