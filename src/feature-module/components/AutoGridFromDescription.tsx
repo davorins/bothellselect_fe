@@ -1,4 +1,4 @@
-// AutoGridFromDescription.tsx - Complete working solution
+// AutoGridFromDescription.tsx - Complete working solution with pricing as separate section in grid layout
 import React from 'react';
 import './AutoGridFromDescription.css';
 
@@ -74,6 +74,13 @@ interface TryoutDetails {
   whatToBring: string[];
 }
 
+interface PricingPackage {
+  id?: string;
+  name: string;
+  price: number;
+  description: string;
+}
+
 interface RegistrationFormConfig {
   _id?: any;
   eventId?: string;
@@ -84,7 +91,7 @@ interface RegistrationFormConfig {
   requiresQualification: boolean;
   pricing: {
     basePrice: number;
-    packages: any[];
+    packages: PricingPackage[];
   };
   description?: string;
   trainingDetails?: TrainingDetails;
@@ -145,6 +152,14 @@ const getFullAddress = (location: any): string => {
     location.zipCode,
   ].filter(Boolean);
   return parts.join(', ');
+};
+
+// Helper function to check if description has meaningful content
+const hasValidDescription = (description?: string): boolean => {
+  if (!description) return false;
+  // Remove HTML tags and check if there's any non-whitespace content
+  const strippedText = description.replace(/<[^>]*>/g, '').trim();
+  return strippedText.length > 0;
 };
 
 const TileHead: React.FC<{ icon: string; label: string }> = ({
@@ -338,10 +353,10 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
                 {config?.season} {config?.year} Training
               </h2>
             </div>
-            {config?.description && (
+            {hasValidDescription(config?.description) && (
               <div className='agd-tile'>
                 <div
-                  dangerouslySetInnerHTML={{ __html: config.description }}
+                  dangerouslySetInnerHTML={{ __html: config.description! }}
                   style={{ lineHeight: 1.6 }}
                 />
               </div>
@@ -380,6 +395,13 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
     const detailedSessions = validSessions.filter(
       (session) => !isSimpleSession(session),
     );
+
+    // Check if there are any pricing packages
+    const hasPricingPackages =
+      config.pricing?.packages && config.pricing.packages.length > 0;
+    const hasBasePrice =
+      typeof config.pricing?.basePrice === 'number' &&
+      config.pricing.basePrice > 0;
 
     return (
       <div className='agd-root'>
@@ -438,22 +460,25 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             </button>
           </div>
 
-          {config?.description && (
+          {/* About the Program - Only show if description has valid content */}
+          {hasValidDescription(config?.description) && (
             <div className='agd-tile'>
               <TileHead icon='ti-article' label='About the Program' />
               <div
                 className='agd-desc'
-                dangerouslySetInnerHTML={{ __html: config.description }}
+                dangerouslySetInnerHTML={{ __html: config.description! }}
               />
             </div>
           )}
 
+          {/* Program Details Section */}
           {(ageGroupsDisplay ||
             trainingDetails.gender ||
             trainingDetails.duration ||
             (trainingDetails.days?.length || 0) > 0 ||
             trainingDetails.dropOffTime ||
-            trainingDetails.pickUpTime) && (
+            trainingDetails.pickUpTime ||
+            trainingDetails.maxParticipants) && (
             <div className='agd-tile'>
               <TileHead icon='ti-info-circle' label='Program Details' />
               <ul className='agd-list'>
@@ -497,6 +522,44 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             </div>
           )}
 
+          {/* Pricing Section - Separate section with grid layout */}
+          {(hasBasePrice || hasPricingPackages) && (
+            <div className='agd-tile'>
+              <TileHead icon='ti-currency-dollar' label='Pricing' />
+
+              {/* Base Price */}
+              {hasBasePrice && (
+                <div className='agd-base-price'>
+                  <span className='agd-base-price-amount'>
+                    ${config.pricing.basePrice}
+                  </span>
+                  <span className='agd-base-price-label'>per child</span>
+                </div>
+              )}
+
+              {/* Pricing Packages Grid */}
+              {hasPricingPackages && (
+                <div
+                  className='agd-packages-grid'
+                  data-count={config.pricing.packages.length}
+                >
+                  {config.pricing.packages.map((pkg, idx) => (
+                    <div key={pkg.id || idx} className='agd-package-card'>
+                      <div className='agd-package-name'>{pkg.name}</div>
+                      <div className='agd-package-price'>${pkg.price}</div>
+                      {pkg.description && (
+                        <div className='agd-package-description'>
+                          {pkg.description}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Location Section */}
           {(trainingDetails.location?.name ||
             getFullAddress(trainingDetails.location)) && (
             <div className='agd-tile'>
@@ -550,6 +613,7 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             </div>
           )}
 
+          {/* Important Notes Section */}
           {(trainingDetails.notes?.length || 0) > 0 && (
             <div className='agd-tile'>
               <TileHead icon='ti-notes' label='Important Notes' />
@@ -563,6 +627,7 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             </div>
           )}
 
+          {/* Contact Section */}
           {trainingDetails.contactEmail && (
             <div className='agd-tile'>
               <TileHead icon='ti-mail' label='Contact' />
@@ -578,29 +643,12 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
               </ul>
             </div>
           )}
-
-          {typeof config?.pricing?.basePrice === 'number' &&
-            config.pricing.basePrice > 0 && (
-              <button
-                className='agd-tile agd-tile--price agd-tile--clickable'
-                onClick={handleRegister}
-                style={{ cursor: 'pointer', width: '100%', textAlign: 'left' }}
-              >
-                <TileHead icon='ti-currency-dollar' label='Investment' />
-                <div className='agd-price'>
-                  <span className='agd-pamount' style={{ color: '#ffffff' }}>
-                    ${config.pricing.basePrice}
-                  </span>
-                  <span className='agd-pper'>per child</span>
-                </div>
-              </button>
-            )}
         </div>
       </div>
     );
   }
 
-  // TRYOUT VIEW
+  // TRYOUT VIEW (similar changes for tryout view)
   if (isTryout && tryoutDetails) {
     const tryoutLocations = getTryoutLocations();
     const hasValidTryoutDetails =
@@ -632,10 +680,10 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
                 {config.tryoutYear || ''}
               </h2>
             </div>
-            {config?.description && (
+            {hasValidDescription(config?.description) && (
               <div className='agd-tile'>
                 <div
-                  dangerouslySetInnerHTML={{ __html: config.description }}
+                  dangerouslySetInnerHTML={{ __html: config.description! }}
                   style={{ lineHeight: 1.6 }}
                 />
               </div>
@@ -730,22 +778,25 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             </button>
           </div>
 
-          {config?.description && (
+          {/* About Tryouts - Only show if description has valid content */}
+          {hasValidDescription(config?.description) && (
             <div className='agd-tile'>
               <TileHead icon='ti-article' label='About Tryouts' />
               <div
                 className='agd-desc'
-                dangerouslySetInnerHTML={{ __html: config.description }}
+                dangerouslySetInnerHTML={{ __html: config.description! }}
               />
             </div>
           )}
 
+          {/* Tryout Details Section */}
           {(ageGroupsDisplay ||
             tryoutDetails.gender ||
             tryoutDetails.duration ||
             (tryoutDetails.days?.length || 0) > 0 ||
             tryoutDetails.dropOffTime ||
-            tryoutDetails.pickUpTime) && (
+            tryoutDetails.pickUpTime ||
+            tryoutDetails.maxParticipants) && (
             <div className='agd-tile'>
               <TileHead icon='ti-info-circle' label='Tryout Details' />
               <ul className='agd-list'>
@@ -786,6 +837,19 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
                   </InfoRow>
                 )}
               </ul>
+            </div>
+          )}
+
+          {/* Pricing Section for Tryouts */}
+          {typeof config.tryoutFee === 'number' && config.tryoutFee > 0 && (
+            <div className='agd-tile'>
+              <TileHead icon='ti-currency-dollar' label='Pricing' />
+              <div className='agd-base-price'>
+                <span className='agd-base-price-amount'>
+                  ${config.tryoutFee}
+                </span>
+                <span className='agd-base-price-label'>per player</span>
+              </div>
             </div>
           )}
 
@@ -849,6 +913,7 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             </div>
           )}
 
+          {/* What to Bring Section */}
           {(tryoutDetails.whatToBring?.length || 0) > 0 && (
             <div className='agd-tile'>
               <TileHead icon='ti-backpack' label='What to Bring' />
@@ -862,6 +927,7 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             </div>
           )}
 
+          {/* Important Notes Section */}
           {(tryoutDetails.notes?.length || 0) > 0 && (
             <div className='agd-tile'>
               <TileHead icon='ti-notes' label='Important Notes' />
@@ -875,6 +941,7 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             </div>
           )}
 
+          {/* Contact Section */}
           {tryoutDetails.contactEmail && (
             <div className='agd-tile'>
               <TileHead icon='ti-mail' label='Contact' />
@@ -889,22 +956,6 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
                 </InfoRow>
               </ul>
             </div>
-          )}
-
-          {typeof config.tryoutFee === 'number' && config.tryoutFee > 0 && (
-            <button
-              className='agd-tile agd-tile--price agd-tile--clickable'
-              onClick={handleRegister}
-              style={{ cursor: 'pointer', width: '100%', textAlign: 'left' }}
-            >
-              <TileHead icon='ti-currency-dollar' label='Investment' />
-              <div className='agd-price'>
-                <span className='agd-pamount' style={{ color: '#ffffff' }}>
-                  ${config.tryoutFee}
-                </span>
-                <span className='agd-pper'>per player</span>
-              </div>
-            </button>
           )}
         </div>
       </div>
@@ -933,10 +984,10 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
             {config?.season || 'Registration'} {config?.year || ''}
           </h2>
         </div>
-        {config?.description && (
+        {hasValidDescription(config?.description) && (
           <div className='agd-tile'>
             <div
-              dangerouslySetInnerHTML={{ __html: config.description }}
+              dangerouslySetInnerHTML={{ __html: config.description! }}
               style={{ lineHeight: 1.6 }}
             />
           </div>

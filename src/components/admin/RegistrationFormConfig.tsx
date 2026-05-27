@@ -276,13 +276,9 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
     try {
       setIsSaving(true);
 
-      const generatedDescription = generateDescriptionFromTrainingDetails(
-        config.trainingDetails!,
-      );
-
       const configToSave: RegistrationFormConfigType = {
         ...config,
-        description: config.description || generatedDescription,
+        description: config.description || '',
         pricing: {
           basePrice: config.pricing.basePrice || 0,
           packages: config.pricing.packages.map((pkg) => ({

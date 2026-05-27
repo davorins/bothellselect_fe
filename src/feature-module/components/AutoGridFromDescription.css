@@ -504,6 +504,121 @@
   display: inline-block;
 }
 
+.agd-base-price {
+  text-align: center;
+  padding: 16px;
+  background: rgba(80, 100, 220, 0.15);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(80, 100, 220, 0.3);
+}
+
+.agd-base-price-amount {
+  font-size: 2rem;
+  font-weight: 900;
+  display: block;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.agd-base-price-label {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Pricing Packages Grid - Custom layout based on number of items */
+.agd-packages-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+/* 1 item - single column, centered */
+.agd-packages-grid[data-count='1'] {
+  grid-template-columns: 1fr;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* 2 items - 1 row, 2 columns */
+.agd-packages-grid[data-count='2'] {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* 3 items - 1 row, 3 columns */
+.agd-packages-grid[data-count='3'] {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* 4 items - 2 rows, 2 columns */
+.agd-packages-grid[data-count='4'] {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* 5 items - 2 rows: first row 3 columns, second row 2 columns */
+.agd-packages-grid[data-count='5'] {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* 6 items - 2 rows, 3 columns */
+.agd-packages-grid[data-count='6'] {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Default fallback for any other count */
+.agd-packages-grid:not([data-count]) {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.agd-package-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.agd-package-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(80, 100, 220, 0.4);
+  transform: translateY(-2px);
+}
+
+.agd-package-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.agd-package-price {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #60a5fa;
+  margin-bottom: 8px;
+}
+
+.agd-package-description {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.4;
+}
+
+/* Special styling for the 5th item in a 5-item grid to make it span correctly */
+.agd-packages-grid[data-count='5'] .agd-package-card:nth-child(4),
+.agd-packages-grid[data-count='5'] .agd-package-card:nth-child(5) {
+  grid-column: span 1;
+}
+
+/* For 5 items, center the last two items */
+.agd-packages-grid[data-count='5'] {
+  justify-content: center;
+}
+
 /* responsive */
 @media (max-width: 768px) {
   .agd-root {
@@ -536,6 +651,19 @@
     content: '→';
     margin-left: 8px;
     color: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Mobile: all grids become 1 column */
+  .agd-packages-grid[data-count='2'],
+  .agd-packages-grid[data-count='3'],
+  .agd-packages-grid[data-count='4'],
+  .agd-packages-grid[data-count='5'],
+  .agd-packages-grid[data-count='6'] {
+    grid-template-columns: 1fr;
+  }
+
+  .agd-base-price-amount {
+    font-size: 1.75rem;
   }
 }
 
@@ -574,5 +702,13 @@
   .agd-session-simple-date,
   .agd-session-simple-location {
     font-size: 0.85rem;
+  }
+
+  .agd-package-price {
+    font-size: 1.25rem;
+  }
+
+  .agd-package-name {
+    font-size: 0.9rem;
   }
 }
