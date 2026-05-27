@@ -794,11 +794,11 @@ const RegistrationFormConfig: React.FC<RegistrationFormConfigProps> = ({
                           type='button'
                           className='btn btn-primary w-100'
                           onClick={handleAddSession}
-                          disabled={
-                            !newSession.startTime ||
-                            !newSession.endTime ||
-                            !newSession.grades
-                          }
+                          // disabled={
+                          //   !newSession.startTime ||
+                          //   !newSession.endTime ||
+                          //   !newSession.grades
+                          // }
                         >
                           <i className='ti ti-plus'></i> Add Session
                         </button>
