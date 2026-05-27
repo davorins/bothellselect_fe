@@ -53,8 +53,8 @@
     background-position: center bottom;
     pointer-events: none;
     z-index: 2;
-    opacity: 1;
-    mix-blend-mode: overlay;
+    opacity: 0.75;
+    mix-blend-mode: color-burn;
   }
 }
 
