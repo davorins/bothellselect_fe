@@ -1316,6 +1316,7 @@
     padding: 16px !important;
     -webkit-overflow-scrolling: touch !important;
     overflow-y: auto !important;
+    background: #000;
   }
 
   /* FORM WRAPPER */
