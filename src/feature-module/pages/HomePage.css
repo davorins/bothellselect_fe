@@ -40,7 +40,7 @@
 }
 
 /* Background image overlay - Desktop only (visible over video) */
-@media (min-width: 769px) {
+@media (min-width: 769px) and (orientation: landscape) {
   .hp-root::before {
     content: '';
     position: absolute;
@@ -48,7 +48,7 @@
     right: 0;
     width: 100%;
     height: 100%;
-    background-image: none !important;
+    background-image: url('../../../public/assets/img/bg/main.png');
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center bottom;
