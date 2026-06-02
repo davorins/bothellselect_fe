@@ -686,6 +686,10 @@
   .hp-stage__placeholder-msg {
     display: none;
   }
+
+  .hp-stage__background-image {
+    background-image: url('../../../public/assets/img/theme/main.png');
+  }
 }
 
 /* Extra small devices */
