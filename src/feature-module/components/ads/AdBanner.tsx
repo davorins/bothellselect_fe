@@ -21,25 +21,23 @@ const AdBanner: React.FC<AdBannerProps> = ({
   authToken,
   size = 'normal',
 }) => {
-  const [isMobile, setIsMobile] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isMinimized, setIsMinimized] = useState(minimized);
   const [isVisible, setIsVisible] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    // Entrance animation
     const timer = setTimeout(() => setIsVisible(true), 50);
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Sync minimized prop if parent changes it
   useEffect(() => {
     setIsMinimized(minimized);
   }, [minimized]);
@@ -47,7 +45,6 @@ const AdBanner: React.FC<AdBannerProps> = ({
   const handleClick = async () => {
     const destination = ad.clickUrl || ad.website;
     if (!destination) return;
-
     try {
       await fetch(`${process.env.REACT_APP_API_BASE_URL}/ads/click/${ad._id}`, {
         method: 'POST',
@@ -57,25 +54,15 @@ const AdBanner: React.FC<AdBannerProps> = ({
         },
       });
     } catch (error) {
-      console.error('Error recording ad click:', error);
-      // Non-fatal: continue to redirect
+      // Non-fatal
     }
-
     window.open(destination, '_blank', 'noopener,noreferrer');
   };
 
   const handleMinimizeToggle = () => {
-    const newMinimizedState = !isMinimized;
-    setIsMinimized(newMinimizedState);
-    if (onMinimize) {
-      onMinimize(newMinimizedState);
-    }
-  };
-
-  const handleClose = () => {
-    if (onClose) {
-      onClose();
-    }
+    const next = !isMinimized;
+    setIsMinimized(next);
+    onMinimize?.(next);
   };
 
   const getImageUrl = (): string | null => {
@@ -89,43 +76,23 @@ const AdBanner: React.FC<AdBannerProps> = ({
   const hasImage = imageUrl && !imageError;
   const hasContent = ad.title || ad.businessName || ad.description;
 
-  // Don't render if there's nothing to show
   if (!hasImage && !hasContent) return null;
 
+  // ── Minimized pill ──────────────────────────────────────────────
   if (isMinimized) {
     return (
       <div
-        className={`ad-banner ad-banner--${size} ${isVisible ? 'ad-banner--visible' : ''} ${className}`}
+        className={`ad-banner is-minimized-pill ${isVisible ? 'ad-banner--visible' : ''} ${className}`}
         role='complementary'
         aria-label={`Advertisement: ${ad.businessName}`}
       >
-        <button
-          className='ad-btn ad-btn--icon'
-          onClick={handleMinimizeToggle}
-          aria-label='Expand advertisement'
-          title='Expand'
-        >
-          <svg
-            width='14'
-            height='14'
-            viewBox='0 0 24 24'
-            fill='none'
-            stroke='currentColor'
-            strokeWidth='2'
-          >
-            <polyline points='15 3 21 3 21 9' />
-            <polyline points='9 21 3 21 3 15' />
-            <line x1='21' y1='3' x2='14' y2='10' />
-            <line x1='3' y1='21' x2='10' y2='14' />
-          </svg>
-        </button>
-
         <div
           className='ad-banner__minimized-body'
           onClick={handleClick}
           role='button'
           tabIndex={0}
           onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+          aria-label={`Visit ${ad.businessName}`}
         >
           {hasImage && (
             <img
@@ -138,20 +105,42 @@ const AdBanner: React.FC<AdBannerProps> = ({
           <span className='ad-banner__minimized-label'>{ad.businessName}</span>
           <span className='ad-label'>Ad</span>
         </div>
+
+        <div className='ad-banner__controls'>
+          <button
+            className='ad-btn ad-btn--icon'
+            onClick={handleMinimizeToggle}
+            aria-label='Expand advertisement'
+            title='Expand'
+          >
+            <svg
+              width='13'
+              height='13'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+            >
+              <polyline points='15 3 21 3 21 9' />
+              <polyline points='9 21 3 21 3 15' />
+              <line x1='21' y1='3' x2='14' y2='10' />
+              <line x1='3' y1='21' x2='10' y2='14' />
+            </svg>
+          </button>
+        </div>
       </div>
     );
   }
 
+  // ── Full card ───────────────────────────────────────────────────
   return (
     <div
-      className={`ad-banner ${isVisible ? 'ad-banner--visible' : ''} ${className}`}
+      className={`ad-banner ad-banner--${size} ${isVisible ? 'ad-banner--visible' : ''} ${className}`}
       role='complementary'
       aria-label={`Advertisement: ${ad.businessName}`}
     >
-      {/* Ad label */}
       <span className='ad-label'>Sponsored</span>
 
-      {/* Controls */}
       <div className='ad-banner__controls'>
         <button
           className='ad-btn ad-btn--icon'
@@ -160,19 +149,18 @@ const AdBanner: React.FC<AdBannerProps> = ({
           title='Minimize'
         >
           <svg
-            width='14'
-            height='14'
+            width='13'
+            height='13'
             viewBox='0 0 24 24'
             fill='none'
             stroke='currentColor'
-            strokeWidth='2'
+            strokeWidth='2.5'
           >
             <line x1='5' y1='12' x2='19' y2='12' />
           </svg>
         </button>
       </div>
 
-      {/* Clickable content area */}
       <div
         className='ad-banner__body'
         onClick={handleClick}
@@ -193,7 +181,6 @@ const AdBanner: React.FC<AdBannerProps> = ({
           </div>
         )}
 
-        {/* Text content — always shown, even without image */}
         <div
           className={`ad-banner__info ${hasImage ? '' : 'ad-banner__info--full'}`}
         >
@@ -208,8 +195,8 @@ const AdBanner: React.FC<AdBannerProps> = ({
             <span className='ad-banner__cta'>
               {ad.ctaText || 'Learn More'}
               <svg
-                width='12'
-                height='12'
+                width='11'
+                height='11'
                 viewBox='0 0 24 24'
                 fill='none'
                 stroke='currentColor'

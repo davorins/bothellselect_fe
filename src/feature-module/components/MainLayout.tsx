@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import AdManager from './ads/AdManager';
-import FloatingAd from './ads/FloatingAd';
 import './MainLayout.css';
 
 interface MainLayoutProps {
@@ -30,28 +29,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       <Header showSponsorLogo={showSponsorLogo || false} />
 
       <div className='main-content-wrapper'>
-        {/* Left sidebar ad */}
-        {/* <aside className='sidebar-left'>
-          <AdManager
-            placement='sidebar'
-            pageSlug={pageSlug}
-            showMinimized={true}
-            className='sidebar-ad'
-          />
-        </aside> */}
-
-        {/* Main content */}
+        {/* Main content — full width, sidebar ad is fixed-positioned so no aside needed */}
         <main className='main-content'>{children}</main>
-
-        {/* Right sidebar ad */}
-        <aside className='sidebar-right'>
-          <AdManager
-            placement='sidebar'
-            pageSlug={pageSlug}
-            showMinimized={true}
-            className='sidebar-ad'
-          />
-        </aside>
       </div>
 
       <Footer />
@@ -63,15 +42,27 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         className='footer-ad-container'
       />
 
-      {/* Popup ad banner - appears as modal overlay */}
+      {/*
+        Sidebar ad — fixed-positioned via CSS.
+        On desktop (>1100px): floats on the right edge.
+        On mobile (≤768px): becomes a horizontal bottom dock.
+        FloatingAd removed — it was duplicating this placement.
+      */}
+      <AdManager
+        placement='sidebar'
+        pageSlug={pageSlug}
+        showMinimized={true}
+        maxAds={2}
+      />
+
+      {/* Popup ad — modal overlay, appears after 2s */}
       <AdManager
         placement='popup'
         pageSlug={pageSlug}
         showMinimized={false}
+        maxAds={1}
         className='popup-ad-container'
       />
-
-      <FloatingAd />
     </div>
   );
 };
