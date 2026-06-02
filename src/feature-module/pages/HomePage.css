@@ -24,8 +24,8 @@
   opacity: 1;
 }
 
-/* Background image overlay - Desktop only (visible over video) */
-@media (min-width: 769px) and (orientation: landscape) {
+/* Background image overlay - DESKTOP ONLY (min-width: 1024px) */
+@media (min-width: 1024px) {
   .hp-root::before {
     content: '';
     position: absolute;
@@ -99,7 +99,7 @@
 }
 
 /* Background video - Desktop only */
-@media (min-width: 769px) {
+@media (min-width: 1024px) {
   .hp-stage__video {
     position: absolute;
     inset: 0;
@@ -608,33 +608,37 @@
 }
 
 /* ============================================
-   MOBILE STYLES - Video hidden, Background Image Visible
+   MOBILE STYLES - COMPLETE SOLUTION
    ============================================ */
-@media (max-width: 768px) {
-  /* Hide video and controls on mobile */
+
+/* ALL MOBILE DEVICES (max-width: 1023px) */
+@media (max-width: 1023px) {
+  /* Hide video completely on all mobile devices */
   .hp-stage__video {
     display: none !important;
   }
+
+  /* Hide video controls on mobile */
   .hp-controls-open,
   .hp-controls {
     display: none !important;
   }
 
-  /* Background image on mobile */
-  .hp-stage {
-    background-image: none !important;
-    background-size: cover !important;
-    background-position: left bottom !important;
-    background-repeat: no-repeat !important;
-    background-color: #000;
-  }
-
-  /* Hide desktop pseudo-element background */
+  /* CRITICAL: Hide the desktop background image pseudo-element */
   .hp-root::before {
     display: none !important;
   }
 
-  /* Dark overlay for text readability */
+  /* Apply background image directly to .hp-stage for mobile */
+  .hp-stage {
+    background-image: url('../../../public/assets/img/bg/main.png') !important;
+    background-size: cover !important;
+    background-position: center bottom !important;
+    background-repeat: no-repeat !important;
+    background-color: #000;
+  }
+
+  /* Dark overlay for text readability on mobile */
   .hp-stage::after {
     content: '';
     position: absolute;
@@ -642,46 +646,84 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6);
     z-index: 0;
     pointer-events: none;
   }
 
   /* Ensure content is above overlay */
   .hp-overlay,
-  .hp-stage__logo,
-  .hp-stage__top-stripe-enhanced,
-  .hp-stage__bottom-stripe-enhanced {
+  .hp-stage__logo {
     position: relative;
     z-index: 2;
   }
 
-  /* Adjust logo position */
+  /* Adjust logo position for mobile */
   .hp-stage__logo {
     top: 20px;
   }
+
   .hp-stage__logo-img {
     max-width: 110px;
     max-height: 60px;
   }
 
-  .hp-admin-toggle,
+  /* Hide admin toggle on mobile */
+  .hp-admin-toggle {
+    display: none;
+  }
+
+  /* Hide placeholder message on mobile */
   .hp-stage__placeholder-msg {
     display: none;
   }
 }
 
-/* Extra small devices */
+/* Extra small devices (phones under 480px) */
 @media (max-width: 480px) {
   .hp-stage {
     background-position: center 70% !important;
   }
 }
 
-/* Landscape mode on mobile */
-@media (max-width: 768px) and (orientation: landscape) {
+/* Landscape mode on mobile - adjust background position */
+@media (max-width: 1023px) and (orientation: landscape) {
   .hp-stage {
-    background-size: cover !important;
     background-position: center !important;
+  }
+}
+
+/* TABLET DEVICES (768px to 1023px) - Optional adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hp-stage__logo-img {
+    max-width: 130px;
+    max-height: 70px;
+  }
+
+  .hp-stage {
+    background-position: center bottom !important;
+  }
+}
+
+/* DESKTOP DEVICES ONLY (min-width: 1024px) */
+@media (min-width: 1024px) {
+  /* Ensure background image pseudo-element works on desktop */
+  .hp-root::before {
+    display: block;
+  }
+
+  /* Ensure video works on desktop */
+  .hp-stage__video {
+    display: block;
+  }
+
+  /* Remove mobile background image from desktop */
+  .hp-stage {
+    background-image: none !important;
+  }
+
+  /* Remove mobile overlay from desktop */
+  .hp-stage::after {
+    background: none;
   }
 }
