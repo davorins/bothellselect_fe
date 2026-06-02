@@ -637,7 +637,7 @@
 
   /* Background image on mobile */
   .hp-stage {
-    background-image: url('../../../public/assets/img/theme/main.png') !important;
+    background-image: none !important;
     background-size: cover !important;
     background-position: left bottom !important;
     background-repeat: no-repeat !important;
