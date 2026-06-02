@@ -639,7 +639,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
             {!showControlsPanel && (
               <>
                 <span className='hp-controls-open__label'>
-                  Click to watch the video uninterupted
+                  Click to enjoy the full video uninterrupted
                 </span>
                 <button
                   className='hp-controls-open'
