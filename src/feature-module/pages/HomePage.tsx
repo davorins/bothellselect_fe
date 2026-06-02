@@ -60,8 +60,10 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const [videoError, setVideoError] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
-  const [showBackgroundImage, setShowBackgroundImage] = useState(true);
-  const [showVideoElement, setShowVideoElement] = useState(false);
+
+  // FIX: Combined state for background visibility - on mobile, always show background, never video
+  const [isDesktop, setIsDesktop] = useState(true);
+  const [videoReady, setVideoReady] = useState(false);
 
   const [videoControls, setVideoControls] = useState<VideoControls>({
     isPlaying: false,
@@ -72,7 +74,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const [videoProgress, setVideoProgress] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const [showVideoPopup, setShowVideoPopup] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
   // Track if background video should be paused
   const [isBackgroundVideoPaused, setIsBackgroundVideoPaused] = useState(false);
@@ -85,6 +86,17 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const lastRoundedProgress = useRef<number>(0);
   const timeUpdateThrottle = useRef<number>(0);
   const videoFileInputRef = useRef<HTMLInputElement>(null);
+
+  // FIX: Check if device is desktop (not mobile)
+  const checkIsDesktop = useCallback(() => {
+    const isMobileDevice = window.innerWidth <= 1023; // Use 1023 to match CSS
+    setIsDesktop(!isMobileDevice);
+
+    // Force background to be visible on mobile
+    if (isMobileDevice) {
+      setVideoReady(false);
+    }
+  }, []);
 
   // Preload background image
   const preloadBackgroundImage = useCallback(() => {
@@ -109,34 +121,33 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           const urlWithCache = `${data.videoUrl}?t=${Date.now()}`;
           setPromoVideoUrl(urlWithCache);
 
-          // Preload video in background
-          const video = document.createElement('video');
-          video.preload = 'auto';
-          video.src = urlWithCache;
-          video.oncanplaythrough = () => {
-            console.log('Video preloaded, ready to show');
-            setShowVideoElement(true);
-            setTimeout(() => {
-              setShowBackgroundImage(false);
-            }, 500);
-          };
-          video.onerror = () => {
-            console.log('Video failed to preload, showing background image');
-            setShowVideoElement(false);
-            setShowBackgroundImage(true);
-          };
+          // Only preload video on desktop
+          if (isDesktop) {
+            const video = document.createElement('video');
+            video.preload = 'auto';
+            video.src = urlWithCache;
+            video.oncanplaythrough = () => {
+              console.log('Video preloaded, ready to show');
+              setVideoReady(true);
+            };
+            video.onerror = () => {
+              console.log('Video failed to preload, showing background image');
+              setVideoReady(false);
+            };
+          }
         } else {
-          setShowVideoElement(false);
+          setVideoReady(false);
         }
       } catch (err) {
         console.error('Could not fetch promo video URL:', err);
-        setShowVideoElement(false);
+        setVideoReady(false);
       }
     };
 
     preloadBackgroundImage();
+    checkIsDesktop();
     fetchPromoVideo();
-  }, [preloadBackgroundImage]);
+  }, [preloadBackgroundImage, isDesktop, checkIsDesktop]);
 
   // ── Admin video upload ─────────────────────────────────────────────────
   const uploadVideo = useCallback(
@@ -216,16 +227,15 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           setUploadSuccess(true);
           setTimeout(() => setUploadSuccess(false), 3000);
 
-          // Preload new video
-          const video = document.createElement('video');
-          video.preload = 'auto';
-          video.src = urlWithCache;
-          video.oncanplaythrough = () => {
-            setShowVideoElement(true);
-            setTimeout(() => {
-              setShowBackgroundImage(false);
-            }, 500);
-          };
+          // Only preload on desktop
+          if (isDesktop) {
+            const video = document.createElement('video');
+            video.preload = 'auto';
+            video.src = urlWithCache;
+            video.oncanplaythrough = () => {
+              setVideoReady(true);
+            };
+          }
         } else throw new Error('No video URL returned from server');
       } catch (err: any) {
         setUploadError(err.message || 'Failed to upload video');
@@ -235,7 +245,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         if (videoFileInputRef.current) videoFileInputRef.current.value = '';
       }
     },
-    [token, videoControls.isPlaying],
+    [token, videoControls.isPlaying, isDesktop],
   );
 
   const handleVideoFileChange = useCallback(
@@ -286,8 +296,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       setPromoVideoUrl('');
       setShowAdminPanel(false);
       setUploadSuccess(true);
-      setShowVideoElement(false);
-      setShowBackgroundImage(true);
+      setVideoReady(false);
       setTimeout(() => setUploadSuccess(false), 3000);
     } catch (err: any) {
       setUploadError(`Failed to remove video: ${err.message}`);
@@ -296,10 +305,20 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     }
   }, [token]);
 
-  // Check mobile
-  const checkIfMobile = useCallback(() => {
-    setIsMobile(window.innerWidth <= 768);
-  }, []);
+  // FIX: Listen for resize events to handle orientation changes
+  useEffect(() => {
+    const handleResize = () => {
+      checkIsDesktop();
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, [checkIsDesktop]);
 
   // Handle fullscreen change events - PAUSE BACKGROUND VIDEO
   useEffect(() => {
@@ -401,7 +420,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
 
   // Video handlers
   const togglePlayPause = useCallback(() => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || !isDesktop) return;
     if (videoRef.current.paused) {
       videoRef.current
         .play()
@@ -411,17 +430,18 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       videoRef.current.pause();
       setVideoControls((prev) => ({ ...prev, isPlaying: false }));
     }
-  }, []);
+  }, [isDesktop]);
 
   const toggleMute = useCallback(() => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || !isDesktop) return;
     const newMuted = !videoControls.isMuted;
     videoRef.current.muted = newMuted;
     setVideoControls((prev) => ({ ...prev, isMuted: newMuted }));
-  }, [videoControls.isMuted]);
+  }, [videoControls.isMuted, isDesktop]);
 
   const handleProgressChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (!isDesktop) return;
       const progress = parseFloat(e.target.value);
       const rounded = Math.round(progress);
       setVideoProgress(rounded);
@@ -430,11 +450,11 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         lastRoundedProgress.current = rounded;
       }
     },
-    [videoDuration],
+    [videoDuration, isDesktop],
   );
 
   const handleTimeUpdate = useCallback(() => {
-    if (!videoRef.current || !videoDuration) return;
+    if (!videoRef.current || !videoDuration || !isDesktop) return;
 
     const now = Date.now();
     if (now - timeUpdateThrottle.current < 250) return;
@@ -453,26 +473,26 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         lastRoundedProgress.current = rounded;
       }
     });
-  }, [videoDuration]);
+  }, [videoDuration, isDesktop]);
 
   const handleLoadedMetadata = useCallback(() => {
-    if (videoRef.current) {
+    if (videoRef.current && isDesktop) {
       setVideoDuration(videoRef.current.duration);
       setVideoLoaded(true);
       setVideoError(false);
     }
-  }, []);
+  }, [isDesktop]);
 
   const handleVideoError = useCallback(() => {
     console.error('Video failed to load');
     setVideoError(true);
-    setShowVideoElement(false);
-    setShowBackgroundImage(true);
+    setVideoReady(false);
   }, []);
 
   const openControlsPanel = useCallback(() => {
+    if (!isDesktop) return;
     setShowControlsPanel(true);
-  }, []);
+  }, [isDesktop]);
 
   const closeControlsPanel = useCallback(() => {
     setShowControlsPanel(false);
@@ -491,7 +511,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   }, []);
 
   const toggleFullscreen = useCallback(() => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || !isDesktop) return;
     const container = videoRef.current.parentElement;
     if (!container) return;
     if (!videoControls.isFullscreen) {
@@ -501,7 +521,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       document.exitFullscreen?.();
       setVideoControls((prev) => ({ ...prev, isFullscreen: false }));
     }
-  }, [videoControls.isFullscreen]);
+  }, [videoControls.isFullscreen, isDesktop]);
 
   const handleKeyPress = useCallback(
     (event: KeyboardEvent) => {
@@ -536,17 +556,14 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyPress);
-    window.addEventListener('resize', checkIfMobile);
     return () => {
       document.removeEventListener('keydown', handleKeyPress);
-      window.removeEventListener('resize', checkIfMobile);
     };
-  }, [handleKeyPress, checkIfMobile]);
+  }, [handleKeyPress]);
 
   useEffect(() => {
-    checkIfMobile();
     document.body.style.overflow = showVideoPopup ? 'hidden' : '';
-  }, [checkIfMobile, showVideoPopup]);
+  }, [showVideoPopup]);
 
   if (isLoading) {
     return (
@@ -566,14 +583,16 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         onDragOver={isAdmin ? handleDrag : undefined}
         onDrop={isAdmin ? handleDrop : undefined}
       >
-        {/* Background Image - shows first, fades out when video loads */}
-        {showBackgroundImage && <div className='hp-stage__background-image' />}
+        {/* FIX: Background image always visible on mobile, only visible on desktop before video loads */}
+        {(!isDesktop || !videoReady) && (
+          <div className='hp-stage__background-image' />
+        )}
 
-        {/* Video - loads after background image, fades in */}
-        {!isMobile && promoVideoUrl && !videoError && showVideoElement && (
+        {/* FIX: Video ONLY renders on desktop and when ready */}
+        {isDesktop && promoVideoUrl && !videoError && videoReady && (
           <video
             ref={videoRef}
-            className={`hp-stage__video ${showBackgroundImage ? 'fade-in' : ''}`}
+            className={`hp-stage__video ${!videoReady ? 'fade-in' : ''}`}
             src={promoVideoUrl}
             autoPlay
             muted={videoControls.isMuted}
@@ -584,7 +603,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
             onLoadedMetadata={handleLoadedMetadata}
             onError={handleVideoError}
             style={{
-              opacity: showBackgroundImage ? 0 : 1,
+              opacity: videoReady ? 1 : 0,
               transition: 'opacity 0.5s ease',
             }}
           />
@@ -594,7 +613,8 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           <HomeTileRenderer pageSlug='home' />
         </div>
 
-        {!isMobile && promoVideoUrl && !videoError && (
+        {/* FIX: Video controls only show on desktop and when video exists */}
+        {isDesktop && promoVideoUrl && !videoError && videoReady && (
           <>
             {!showControlsPanel && (
               <button
