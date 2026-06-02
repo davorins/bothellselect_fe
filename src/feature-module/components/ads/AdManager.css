@@ -14,255 +14,6 @@
   right: 16px;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 10;
-  width: 300px;
-  max-width: 300px;
-  max-height: 80vh;
-  overflow-y: auto;
-  overflow-x: visible;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 4px 2px;
-  scrollbar-width: none;
-  /* Don't eat clicks in the gap between cards */
-  pointer-events: none;
-}
-.ad-manager--sidebar > * {
-  pointer-events: all;
-}
-.ad-manager--sidebar::-webkit-scrollbar {
-  display: none;
-}
-
-/* Count-based width adjustments */
-.ad-manager--sidebar.ads-count-1 {
-  width: 300px;
-}
-.ad-manager--sidebar.ads-count-2 {
-  width: 300px;
-}
-.ad-manager--sidebar.ads-count-3,
-.ad-manager--sidebar.ads-count-many {
-  width: 300px;
-}
-
-/* Fully minimized sidebar: compact pill column */
-.ad-manager--sidebar.is-minimized {
-  width: auto;
-  gap: 6px;
-  padding: 4px;
-}
-
-/* ─── Header ──────────────────────────────────────────────────── */
-.ad-manager--header {
-  flex-direction: row;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  width: 100%;
-  padding: 6px 16px;
-  background: #fafafa;
-  border-bottom: 1px solid #efefef;
-}
-.ad-manager--header .ad-banner {
-  max-width: 480px;
-  flex: 1 1 320px;
-}
-
-/* ─── Footer ──────────────────────────────────────────────────── */
-.ad-manager--footer {
-  flex-direction: row;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  width: 100%;
-  padding: 6px 16px;
-  background: #fafafa;
-  border-top: 1px solid #efefef;
-}
-.ad-manager--footer .ad-banner {
-  max-width: 480px;
-  flex: 1 1 300px;
-}
-
-/* ─── Inline ──────────────────────────────────────────────────── */
-.ad-manager--inline {
-  align-items: center;
-  margin: 16px 0;
-}
-.ad-manager--inline .ad-banner {
-  max-width: 100%;
-}
-
-/* ─── Popup (modal overlay) ───────────────────────────────────── */
-.ad-manager--popup {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 9999;
-  padding: 16px;
-  animation: adFadeIn 0.25s ease-out;
-}
-.ad-manager--popup .ad-banner {
-  width: 100%;
-  max-width: 440px;
-  box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.35),
-    0 4px 16px rgba(0, 0, 0, 0.2);
-  animation: adSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-}
-
-/* ─── Tablet: sidebar shifts left slightly ───────────────────── */
-@media (max-width: 1280px) {
-  .ad-manager--sidebar {
-    right: 10px;
-    width: 260px;
-    max-width: 260px;
-  }
-}
-
-/* ─── Narrow desktop / large tablet: hide sidebar ────────────── */
-/* Only show sidebar when there's genuinely room next to content  */
-@media (max-width: 1100px) {
-  .ad-manager--sidebar {
-    display: none;
-  }
-}
-
-/* ─── Mobile ──────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  /* Sidebar becomes a slim bottom dock */
-  .ad-manager--sidebar {
-    display: flex;
-    position: fixed;
-    right: unset;
-    top: unset;
-    bottom: 0;
-    left: 0;
-    transform: none;
-    width: 100%;
-    max-width: 100%;
-    max-height: none;
-    height: auto;
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 8px 12px 10px;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.97);
-    border-top: 1px solid rgba(0, 0, 0, 0.08);
-    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
-    z-index: 200;
-    pointer-events: all;
-    /* Safe area for iPhone home bar */
-    padding-bottom: calc(10px + env(safe-area-inset-bottom));
-  }
-  .ad-manager--sidebar > * {
-    flex-shrink: 0;
-  }
-  /* Reset count classes on mobile */
-  .ad-manager--sidebar.ads-count-1,
-  .ad-manager--sidebar.ads-count-2,
-  .ad-manager--sidebar.ads-count-3,
-  .ad-manager--sidebar.ads-count-many,
-  .ad-manager--sidebar.is-minimized {
-    width: 100%;
-    display: flex;
-    flex-direction: row;
-  }
-
-  .ad-manager--header,
-  .ad-manager--footer {
-    padding: 6px 10px;
-  }
-  .ad-manager--header .ad-banner,
-  .ad-manager--footer .ad-banner {
-    flex: 1 1 100%;
-    max-width: 100%;
-  }
-
-  /* Popup stays centered on mobile, just smaller */
-  .ad-manager--popup {
-    align-items: flex-end;
-    padding: 0;
-  }
-  .ad-manager--popup .ad-banner {
-    max-width: 100%;
-    border-radius: 16px 16px 0 0;
-    animation: adSlideUpMobile 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
-
-/* ─── Dark mode ───────────────────────────────────────────────── */
-@media (prefers-color-scheme: dark) {
-  .ad-manager--header,
-  .ad-manager--footer {
-    background: #161616;
-    border-color: #2a2a2a;
-  }
-  .ad-manager--sidebar {
-    /* dark mode sidebar needs no bg — cards handle it */
-  }
-}
-
-@media (prefers-color-scheme: dark) and (max-width: 768px) {
-  .ad-manager--sidebar {
-    background: rgba(18, 18, 20, 0.97);
-    border-top-color: rgba(255, 255, 255, 0.08);
-  }
-}
-
-/* ─── Animations ──────────────────────────────────────────────── */
-@keyframes adFadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes adSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(32px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-@keyframes adSlideUpMobile {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-/* ============================================================
-   AdManager — layout wrapper for each placement type
-   ============================================================ */
-
-.ad-manager {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* ─── Sidebar (fixed right, vertically centered) ─────────────── */
-.ad-manager--sidebar {
-  position: fixed;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
   z-index: 100;
   width: 300px;
   max-width: 300px;
@@ -369,7 +120,7 @@
 }
 
 /* ─── Tablet: sidebar shifts left slightly ───────────────────── */
-@media (max-width: 1280px) {
+@media (min-width: 769px) and (max-width: 1280px) {
   .ad-manager--sidebar {
     right: 10px;
     width: 260px;
@@ -378,8 +129,8 @@
 }
 
 /* ─── Narrow desktop / large tablet: hide sidebar ────────────── */
-/* Only show sidebar when there's genuinely room next to content  */
-@media (max-width: 1100px) {
+/* Only hides between 769px–1100px; mobile gets its own layout    */
+@media (min-width: 769px) and (max-width: 1100px) {
   .ad-manager--sidebar {
     display: none;
   }
@@ -390,11 +141,12 @@
   /* Both minimized and expanded sidebar sit fixed at the bottom */
   .ad-manager--mobile-minimized,
   .ad-manager--mobile-expanded {
+    display: flex !important; /* override any display:none from wider breakpoints */
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    z-index: 200;
+    z-index: 1;
     pointer-events: all;
     /* override desktop sidebar styles */
     right: unset;
@@ -421,6 +173,8 @@
     gap: 8px;
     padding: 7px 12px 8px;
     overflow: hidden;
+    position: fixed;
+    bottom: 40px;
   }
 
   .ad-mobile-dock__label {
