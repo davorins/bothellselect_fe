@@ -637,21 +637,26 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         {!isMobile && promoVideoUrl && !videoError && showVideoElement && (
           <>
             {!showControlsPanel && (
-              <button
-                className='hp-controls-open'
-                onClick={openControlsPanel}
-                aria-label='Open Video Controls'
-                title='Video Controls'
-              >
-                <svg
-                  width='20'
-                  height='20'
-                  viewBox='0 0 24 24'
-                  fill='currentColor'
+              <>
+                <span className='hp-controls-open__label'>
+                  Click to watch the video uninterupted
+                </span>
+                <button
+                  className='hp-controls-open'
+                  onClick={openControlsPanel}
+                  aria-label='Open Video Controls'
+                  title='Video Controls'
                 >
-                  <path d='M8 5v14l11-7z' />
-                </svg>
-              </button>
+                  <svg
+                    width='20'
+                    height='20'
+                    viewBox='0 0 24 24'
+                    fill='currentColor'
+                  >
+                    <path d='M8 5v14l11-7z' />
+                  </svg>
+                </button>
+              </>
             )}
 
             <div
