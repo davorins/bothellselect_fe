@@ -52,7 +52,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         placement='sidebar'
         pageSlug={pageSlug}
         showMinimized={true}
-        maxAds={2}
+        maxAds={3}
       />
 
       {/* Popup ad — modal overlay, appears after 2s */}
