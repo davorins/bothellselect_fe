@@ -60,10 +60,8 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const [videoError, setVideoError] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
-
-  // FIX: Combined state for background visibility - on mobile, always show background, never video
-  const [isDesktop, setIsDesktop] = useState(true);
-  const [videoReady, setVideoReady] = useState(false);
+  const [showVideoElement, setShowVideoElement] = useState(false);
+  const [isMobile, setIsMobile] = useState(true); // Default to true for safety
 
   const [videoControls, setVideoControls] = useState<VideoControls>({
     isPlaying: false,
@@ -87,15 +85,23 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const timeUpdateThrottle = useRef<number>(0);
   const videoFileInputRef = useRef<HTMLInputElement>(null);
 
-  // FIX: Check if device is desktop (not mobile)
-  const checkIsDesktop = useCallback(() => {
-    const isMobileDevice = window.innerWidth <= 1023; // Use 1023 to match CSS
-    setIsDesktop(!isMobileDevice);
+  // Check mobile - more aggressive detection
+  const checkIfMobile = useCallback(() => {
+    const mobileWidth = window.innerWidth <= 768;
+    const mobileUA =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent,
+      );
+    const isMobileDevice = mobileWidth || mobileUA;
+    setIsMobile(isMobileDevice);
 
-    // Force background to be visible on mobile
-    if (isMobileDevice) {
-      setVideoReady(false);
+    // If mobile, force hide video element
+    if (isMobileDevice && videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.style.display = 'none';
     }
+
+    return isMobileDevice;
   }, []);
 
   // Preload background image
@@ -113,6 +119,8 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   // ── Fetch promo video URL ───────────────────────────────────────────────
   useEffect(() => {
     const fetchPromoVideo = async () => {
+      const isMobileDevice = checkIfMobile();
+
       try {
         const res = await fetch(`${API_BASE_URL}/upload/promo-video`);
         if (!res.ok) throw new Error('Failed to fetch');
@@ -122,32 +130,31 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           setPromoVideoUrl(urlWithCache);
 
           // Only preload video on desktop
-          if (isDesktop) {
+          if (!isMobileDevice) {
             const video = document.createElement('video');
             video.preload = 'auto';
             video.src = urlWithCache;
             video.oncanplaythrough = () => {
               console.log('Video preloaded, ready to show');
-              setVideoReady(true);
+              setShowVideoElement(true);
             };
             video.onerror = () => {
               console.log('Video failed to preload, showing background image');
-              setVideoReady(false);
+              setShowVideoElement(false);
             };
           }
         } else {
-          setVideoReady(false);
+          setShowVideoElement(false);
         }
       } catch (err) {
         console.error('Could not fetch promo video URL:', err);
-        setVideoReady(false);
+        setShowVideoElement(false);
       }
     };
 
     preloadBackgroundImage();
-    checkIsDesktop();
     fetchPromoVideo();
-  }, [preloadBackgroundImage, isDesktop, checkIsDesktop]);
+  }, [preloadBackgroundImage, checkIfMobile]);
 
   // ── Admin video upload ─────────────────────────────────────────────────
   const uploadVideo = useCallback(
@@ -228,12 +235,12 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           setTimeout(() => setUploadSuccess(false), 3000);
 
           // Only preload on desktop
-          if (isDesktop) {
+          if (!isMobile) {
             const video = document.createElement('video');
             video.preload = 'auto';
             video.src = urlWithCache;
             video.oncanplaythrough = () => {
-              setVideoReady(true);
+              setShowVideoElement(true);
             };
           }
         } else throw new Error('No video URL returned from server');
@@ -245,7 +252,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         if (videoFileInputRef.current) videoFileInputRef.current.value = '';
       }
     },
-    [token, videoControls.isPlaying, isDesktop],
+    [token, videoControls.isPlaying, isMobile],
   );
 
   const handleVideoFileChange = useCallback(
@@ -296,7 +303,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       setPromoVideoUrl('');
       setShowAdminPanel(false);
       setUploadSuccess(true);
-      setVideoReady(false);
+      setShowVideoElement(false);
       setTimeout(() => setUploadSuccess(false), 3000);
     } catch (err: any) {
       setUploadError(`Failed to remove video: ${err.message}`);
@@ -304,21 +311,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       setVideoUploading(false);
     }
   }, [token]);
-
-  // FIX: Listen for resize events to handle orientation changes
-  useEffect(() => {
-    const handleResize = () => {
-      checkIsDesktop();
-    };
-
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-    };
-  }, [checkIsDesktop]);
 
   // Handle fullscreen change events - PAUSE BACKGROUND VIDEO
   useEffect(() => {
@@ -387,7 +379,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
 
   // Handle popup video open/close - PAUSE BACKGROUND VIDEO
   useEffect(() => {
-    if (showVideoPopup) {
+    if (showVideoPopup && !isMobile) {
       // Pause background video when popup opens
       if (videoRef.current && !videoRef.current.paused) {
         wasBackgroundPlaying.current = true;
@@ -416,11 +408,11 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           });
       }
     }
-  }, [showVideoPopup, isBackgroundVideoPaused]);
+  }, [showVideoPopup, isBackgroundVideoPaused, isMobile]);
 
   // Video handlers
   const togglePlayPause = useCallback(() => {
-    if (!videoRef.current || !isDesktop) return;
+    if (!videoRef.current || isMobile) return;
     if (videoRef.current.paused) {
       videoRef.current
         .play()
@@ -430,18 +422,18 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       videoRef.current.pause();
       setVideoControls((prev) => ({ ...prev, isPlaying: false }));
     }
-  }, [isDesktop]);
+  }, [isMobile]);
 
   const toggleMute = useCallback(() => {
-    if (!videoRef.current || !isDesktop) return;
+    if (!videoRef.current || isMobile) return;
     const newMuted = !videoControls.isMuted;
     videoRef.current.muted = newMuted;
     setVideoControls((prev) => ({ ...prev, isMuted: newMuted }));
-  }, [videoControls.isMuted, isDesktop]);
+  }, [videoControls.isMuted, isMobile]);
 
   const handleProgressChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (!isDesktop) return;
+      if (isMobile) return;
       const progress = parseFloat(e.target.value);
       const rounded = Math.round(progress);
       setVideoProgress(rounded);
@@ -450,11 +442,11 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         lastRoundedProgress.current = rounded;
       }
     },
-    [videoDuration, isDesktop],
+    [videoDuration, isMobile],
   );
 
   const handleTimeUpdate = useCallback(() => {
-    if (!videoRef.current || !videoDuration || !isDesktop) return;
+    if (!videoRef.current || !videoDuration || isMobile) return;
 
     const now = Date.now();
     if (now - timeUpdateThrottle.current < 250) return;
@@ -473,26 +465,25 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         lastRoundedProgress.current = rounded;
       }
     });
-  }, [videoDuration, isDesktop]);
+  }, [videoDuration, isMobile]);
 
   const handleLoadedMetadata = useCallback(() => {
-    if (videoRef.current && isDesktop) {
+    if (videoRef.current && !isMobile) {
       setVideoDuration(videoRef.current.duration);
       setVideoLoaded(true);
       setVideoError(false);
     }
-  }, [isDesktop]);
+  }, [isMobile]);
 
   const handleVideoError = useCallback(() => {
     console.error('Video failed to load');
     setVideoError(true);
-    setVideoReady(false);
+    setShowVideoElement(false);
   }, []);
 
   const openControlsPanel = useCallback(() => {
-    if (!isDesktop) return;
-    setShowControlsPanel(true);
-  }, [isDesktop]);
+    if (!isMobile) setShowControlsPanel(true);
+  }, [isMobile]);
 
   const closeControlsPanel = useCallback(() => {
     setShowControlsPanel(false);
@@ -511,7 +502,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   }, []);
 
   const toggleFullscreen = useCallback(() => {
-    if (!videoRef.current || !isDesktop) return;
+    if (!videoRef.current || isMobile) return;
     const container = videoRef.current.parentElement;
     if (!container) return;
     if (!videoControls.isFullscreen) {
@@ -521,7 +512,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       document.exitFullscreen?.();
       setVideoControls((prev) => ({ ...prev, isFullscreen: false }));
     }
-  }, [videoControls.isFullscreen, isDesktop]);
+  }, [videoControls.isFullscreen, isMobile]);
 
   const handleKeyPress = useCallback(
     (event: KeyboardEvent) => {
@@ -545,6 +536,33 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     [videoProgress],
   );
 
+  // Force remove video on mobile - mutation observer for safety
+  useEffect(() => {
+    const forceRemoveVideoOnMobile = () => {
+      if (isMobile) {
+        const videos = document.querySelectorAll('.hp-stage__video');
+        videos.forEach((video) => {
+          if (video && video.parentNode) {
+            video.remove();
+          }
+        });
+      }
+    };
+
+    forceRemoveVideoOnMobile();
+
+    const observer = new MutationObserver(() => {
+      forceRemoveVideoOnMobile();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => observer.disconnect();
+  }, [isMobile]);
+
   // Clean up animation frame on unmount
   useEffect(() => {
     return () => {
@@ -556,10 +574,18 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyPress);
+    window.addEventListener('resize', checkIfMobile);
+    window.addEventListener('orientationchange', checkIfMobile);
+
+    // Initial check
+    checkIfMobile();
+
     return () => {
       document.removeEventListener('keydown', handleKeyPress);
+      window.removeEventListener('resize', checkIfMobile);
+      window.removeEventListener('orientationchange', checkIfMobile);
     };
-  }, [handleKeyPress]);
+  }, [handleKeyPress, checkIfMobile]);
 
   useEffect(() => {
     document.body.style.overflow = showVideoPopup ? 'hidden' : '';
@@ -583,16 +609,14 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         onDragOver={isAdmin ? handleDrag : undefined}
         onDrop={isAdmin ? handleDrop : undefined}
       >
-        {/* FIX: Background image always visible on mobile, only visible on desktop before video loads */}
-        {(!isDesktop || !videoReady) && (
-          <div className='hp-stage__background-image' />
-        )}
+        {/* Background Image - ALWAYS RENDERED - never conditionally hidden */}
+        <div className='hp-stage__background-image' />
 
-        {/* FIX: Video ONLY renders on desktop and when ready */}
-        {isDesktop && promoVideoUrl && !videoError && videoReady && (
+        {/* Video - ONLY on desktop, NEVER on mobile */}
+        {!isMobile && promoVideoUrl && !videoError && showVideoElement && (
           <video
             ref={videoRef}
-            className={`hp-stage__video ${!videoReady ? 'fade-in' : ''}`}
+            className='hp-stage__video'
             src={promoVideoUrl}
             autoPlay
             muted={videoControls.isMuted}
@@ -602,10 +626,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
             onError={handleVideoError}
-            style={{
-              opacity: videoReady ? 1 : 0,
-              transition: 'opacity 0.5s ease',
-            }}
           />
         )}
 
@@ -613,8 +633,8 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           <HomeTileRenderer pageSlug='home' />
         </div>
 
-        {/* FIX: Video controls only show on desktop and when video exists */}
-        {isDesktop && promoVideoUrl && !videoError && videoReady && (
+        {/* Video Controls - ONLY on desktop */}
+        {!isMobile && promoVideoUrl && !videoError && showVideoElement && (
           <>
             {!showControlsPanel && (
               <button
@@ -880,8 +900,8 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         )}
       </div>
 
-      {/* Video Popup */}
-      {showVideoPopup && promoVideoUrl && (
+      {/* Video Popup - ONLY on desktop */}
+      {!isMobile && showVideoPopup && promoVideoUrl && (
         <div className='hp-popup' onClick={closeVideoPopup}>
           <div className='hp-popup__box' onClick={(e) => e.stopPropagation()}>
             <video
