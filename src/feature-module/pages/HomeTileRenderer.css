@@ -263,7 +263,7 @@
   bottom: calc(0px + 170px);
   left: 50%;
   transform: translateX(-50%);
-  width: 90%;
+  width: 100%;
   max-width: 1600px;
   z-index: 1001;
   pointer-events: auto;
@@ -721,8 +721,7 @@
   }
 
   .htr-expanded-container {
-    bottom: 80px;
-    width: 95%;
+    bottom: 60px;
   }
   .htr-expanded-content {
     padding: 24px;
@@ -803,8 +802,7 @@
   }
 
   .htr-expanded-container {
-    bottom: 80px;
-    width: 98%;
+    bottom: 60px;
   }
   .htr-expanded-content {
     padding: 10px;
