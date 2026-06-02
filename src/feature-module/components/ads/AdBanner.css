@@ -181,11 +181,9 @@
   cursor: default;
   gap: 0;
 }
-.ad-banner--minimized .ad-label {
-  position: static;
-  font-size: 8px;
-  padding: 1px 4px;
-  white-space: nowrap;
+
+.ad-banner__minimized-body > .ad-label {
+  display: none;
 }
 .ad-banner__minimized-body {
   display: flex;

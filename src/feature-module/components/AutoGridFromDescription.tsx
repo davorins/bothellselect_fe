@@ -404,8 +404,22 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
     }
 
     const accent = '#3b82f6';
+    const sortAgeGroups = (groups: string[]): string[] => {
+      return [...groups].sort((a, b) => {
+        // Define custom order: everything except College first, then College last
+        const aIsCollege = a.toLowerCase().includes('college');
+        const bIsCollege = b.toLowerCase().includes('college');
+
+        if (aIsCollege && !bIsCollege) return 1; // College goes to end
+        if (!aIsCollege && bIsCollege) return -1; // Non-College comes first
+
+        // For non-College items, sort alphabetically or by grade number if possible
+        return a.localeCompare(b);
+      });
+    };
+
     const ageGroupsDisplay = trainingDetails.ageGroups?.length
-      ? trainingDetails.ageGroups.join(', ')
+      ? sortAgeGroups(trainingDetails.ageGroups).join(', ')
       : '';
     const handleRegister = () => onRegister?.();
 
@@ -750,8 +764,20 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
     }
 
     const accent = '#f59e0b';
+    const sortAgeGroups = (groups: string[]): string[] => {
+      return [...groups].sort((a, b) => {
+        const aIsCollege = a.toLowerCase().includes('college');
+        const bIsCollege = b.toLowerCase().includes('college');
+
+        if (aIsCollege && !bIsCollege) return 1;
+        if (!aIsCollege && bIsCollege) return -1;
+
+        return a.localeCompare(b);
+      });
+    };
+
     const ageGroupsDisplay = tryoutDetails.ageGroups?.length
-      ? tryoutDetails.ageGroups.join(', ')
+      ? sortAgeGroups(tryoutDetails.ageGroups).join(', ')
       : '';
     const handleRegister = () => onRegister?.();
 

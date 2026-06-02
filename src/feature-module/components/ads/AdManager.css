@@ -15,7 +15,7 @@
   top: 50%;
   transform: translateY(-50%);
   z-index: 100;
-  width: 410px !important;
+  width: 100%;
   max-height: 80vh;
   overflow-y: auto;
   overflow-x: visible;
@@ -31,10 +31,10 @@
 
 /* Grid layouts based on ad count */
 .ad-manager--sidebar.ads-count-1 {
-  width: 260px;
+  width: 410px;
 }
 .ad-manager--sidebar.ads-count-2 {
-  width: 260px; /* stack vertically, slightly smaller cards */
+  width: 410px; /* stack vertically, slightly smaller cards */
 }
 .ad-manager--sidebar.ads-count-3,
 .ad-manager--sidebar.ads-count-many {
