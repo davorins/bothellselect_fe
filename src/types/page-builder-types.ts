@@ -23,6 +23,7 @@ export type SectionType =
   | 'image-gallery'
   | 'stats'
   | 'cta'
+  | 'events'
   | 'team'
   | 'schedule'
   | 'pricing'

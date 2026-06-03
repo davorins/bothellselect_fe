@@ -40,14 +40,18 @@ function sectionToTileMeta(section: PageSection): TileMeta {
     team: 'ti-users',
     stats: 'ti-chart-bar',
     custom: 'ti-code',
+    events: 'ti-calendar-event',
   };
   let label =
     section.title ||
     section.type.charAt(0).toUpperCase() + section.type.slice(1);
 
-  // Override for form type to a generic title
   if (section.type === 'form') {
     label = 'Events';
+  }
+
+  if (section.type === 'events') {
+    label = section.title || 'Events';
   }
 
   return {
@@ -60,13 +64,12 @@ function sectionToTileMeta(section: PageSection): TileMeta {
 
 // ─── Get background image based on tile index and type ────────────────────
 function getTileBackgroundImage(index: number, sectionType: string): string {
-  // Map indices to specific background images (sequential)
   const backgroundMap: Record<number, string> = {
-    0: '/assets/img/theme/tile_01.png', // Welcome
-    1: '/assets/img/theme/tile_02.png', // Registration
-    2: '/assets/img/theme/tile_03.png', // Form
-    3: '/assets/img/theme/tile_04.png', // Spotlight
-    4: '/assets/img/theme/tile_05.png', // Additional tiles
+    0: '/assets/img/theme/tile_01.png',
+    1: '/assets/img/theme/tile_02.png',
+    2: '/assets/img/theme/tile_03.png',
+    3: '/assets/img/theme/tile_04.png',
+    4: '/assets/img/theme/tile_05.png',
     5: '/assets/img/theme/tile_06.png',
     6: '/assets/img/theme/tile_07.png',
     7: '/assets/img/theme/tile_08.png',
@@ -74,18 +77,16 @@ function getTileBackgroundImage(index: number, sectionType: string): string {
     9: '/assets/img/theme/tile_10.png',
   };
 
-  // Use index-based mapping if available
   if (backgroundMap[index]) {
     return backgroundMap[index];
   }
 
-  // Fallback to type-based mapping
   if (sectionType === 'welcome') return '/assets/img/theme/tile_01.png';
   if (sectionType === 'registration') return '/assets/img/theme/tile_02.png';
   if (sectionType === 'form') return '/assets/img/theme/tile_03.png';
   if (sectionType === 'spotlight') return '/assets/img/theme/tile_04.png';
+  if (sectionType === 'events') return '/assets/img/theme/tile_05.png';
 
-  // Default fallback - cycle through available images
   const defaultImages = [
     '/assets/img/theme/tile_05.png',
     '/assets/img/theme/tile_06.png',
@@ -122,9 +123,36 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
       const res = await fetch(`${API_BASE_URL}/page-builder/pages/${pageSlug}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      if (data.success) setPage(data.data);
-      else throw new Error(data.message || 'Failed to load page');
+      if (data.success) {
+        let sections = data.data.sections || [];
+
+        // Check if events tile already exists
+        const hasEventsTile = sections.some((s: any) => s.type === 'events');
+
+        // If no events tile, add it at position 4 (after spotlight)
+        if (!hasEventsTile) {
+          const eventsTile = {
+            id: 'custom-events-section',
+            type: 'events',
+            title: 'Events',
+            subtitle: 'View all upcoming events and programs',
+            content: '',
+            position: 4,
+            isActive: true,
+            config: {},
+            styles: {},
+          };
+
+          sections.push(eventsTile);
+          sections.sort((a: any, b: any) => a.position - b.position);
+        }
+
+        setPage({ ...data.data, sections });
+      } else {
+        throw new Error(data.message || 'Failed to load page');
+      }
     } catch {
+      // Use fallback with events tile
       setPage({
         _id: 'default-home',
         pageType: 'home',
@@ -162,7 +190,7 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
           {
             id: 'default-form-section',
             type: 'form',
-            title: 'Contact Form',
+            title: 'Forms',
             content: '',
             position: 2,
             isActive: true,
@@ -177,6 +205,17 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
             position: 3,
             isActive: true,
             config: { limit: 1, showFeatured: true },
+            styles: {},
+          },
+          {
+            id: 'custom-events-section',
+            type: 'events',
+            title: 'Events',
+            subtitle: 'View all upcoming events and programs',
+            content: '',
+            position: 4,
+            isActive: true,
+            config: {},
             styles: {},
           },
         ],
@@ -233,6 +272,7 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
 
   // ── fetch form configs ─────────────────────────────────────────────────────
   const fetchAllFormConfigs = useCallback(async () => {
+    // Keep your existing implementation
     try {
       let formConfigsData: Record<string, any> = {};
       let tournamentConfigs: TournamentSpecificConfig[] = [];
@@ -468,12 +508,10 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
     };
   };
 
-  // Helper function to check if there are any active embedded forms
   const hasActiveEmbeddedForms = useCallback(() => {
     return activeFormIds.size > 0;
   }, [activeFormIds]);
 
-  // Helper function to check if there are any registration forms available
   const hasActiveRegistrationForms = useCallback(() => {
     return (
       formConfigs.player?.isActive ||
@@ -484,14 +522,19 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
   }, [formConfigs]);
 
   const renderTileContent = (section: PageSection) => {
+    // Handle events tile
+    const sectionType = section.type as string;
+    if (sectionType === 'events') {
+      // For events tile in expanded view, also navigate to /events
+      navigate('/events');
+      return null;
+    }
+
     switch (section.type) {
       case 'welcome':
       case 'text':
         return (
           <div className='welcome-container'>
-            {/* <div className='welcome-icon'>
-              <i className='ti ti-home-heart'></i>
-            </div> */}
             <div className='welcome-title'>{section.title || 'Welcome'}</div>
             <div
               className='welcome-content'
@@ -551,11 +594,9 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
         );
 
       case 'form': {
-        // Don't render the form section if there are no active embedded forms
         if (!hasActiveEmbeddedForms()) {
           return null;
         }
-
         if (!section.config?.formId)
           return (
             <p style={{ color: 'rgba(255,255,255,.5)' }}>No form configured.</p>
@@ -571,11 +612,9 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
       }
 
       case 'registration':
-        // Don't render the registration section if there are no active registration forms
         if (!hasActiveRegistrationForms()) {
           return null;
         }
-
         return !formConfigs.player &&
           !formConfigs.training &&
           !formConfigs.tournament &&
@@ -649,6 +688,19 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
     }
   };
 
+  // Handle tile click - for events tile, navigate directly
+  const handleTileClick = (section: PageSection) => {
+    const sectionType = section.type as string;
+
+    // If it's an events tile, navigate directly to /events
+    if (sectionType === 'events') {
+      navigate('/events');
+    } else {
+      // Otherwise expand the tile as normal
+      setActiveTileId(section.id);
+    }
+  };
+
   if (loading) {
     return (
       <div className='htr-spinner'>
@@ -669,7 +721,6 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
 
   return (
     <>
-      {/* macOS Dock style overlay when a tile is expanded */}
       {activeTileId && expandedSection && (
         <div className='htr-dock-overlay'>
           <div className='htr-expanded-container'>
@@ -682,15 +733,12 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
             </div>
           </div>
 
-          {/* Dock with all tiles as icons */}
           <div className='htr-dock'>
-            {/* <div className='glow-effect' /> */}
             <div className='htr-dock-inner'>
               {sections.map((section) => {
                 const meta = sectionToTileMeta(section);
                 const isActive = activeTileId === section.id;
 
-                // Check if this section should be hidden
                 let shouldHide = false;
                 if (section.type === 'form' && !hasActiveEmbeddedForms()) {
                   shouldHide = true;
@@ -708,9 +756,7 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
                   <button
                     key={section.id}
                     className={`htr-dock-item ${isActive ? 'active' : ''}`}
-                    onClick={() =>
-                      setActiveTileId(isActive ? null : section.id)
-                    }
+                    onClick={() => handleTileClick(section)}
                     aria-pressed={isActive}
                     aria-label={`Toggle ${meta.label}`}
                   >
@@ -729,8 +775,6 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
                   height='20'
                   viewBox='0 0 24 24'
                   fill='currentColor'
-                  aria-hidden='true'
-                  focusable='false'
                 >
                   <path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z' />
                 </svg>
@@ -740,16 +784,14 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
         </div>
       )}
 
-      {/* Tiles grid view - side by side on desktop, stacked on mobile */}
       {!activeTileId && (
         <div className='htr-tiles-wrapper'>
-          {/* <div className='glow-effect' /> */}
           <div className='htr-tiles-grid'>
             {sections.map((section, idx) => {
               const meta = sectionToTileMeta(section);
               const backgroundImage = getTileBackgroundImage(idx, section.type);
+              const sectionType = section.type as string;
 
-              // Check if this section should be hidden due to no content
               let shouldHide = false;
               if (section.type === 'form' && !hasActiveEmbeddedForms()) {
                 shouldHide = true;
@@ -761,7 +803,6 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
                 shouldHide = true;
               }
 
-              // Skip rendering this tile if it should be hidden
               if (shouldHide) {
                 return null;
               }
@@ -775,7 +816,7 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                   }}
-                  onClick={() => setActiveTileId(section.id)}
+                  onClick={() => handleTileClick(section)}
                 >
                   {backgroundImage && <div className='htr-tile-overlay'></div>}
                   <div className='htr-tile-icon'>
@@ -784,7 +825,11 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
                   <div className='htr-tile-content'>
                     <span className='htr-tile-title'>{meta.label}</span>
                     <span className='htr-tile-subtitle'>{meta.sublabel}</span>
-                    <span className='htr-tile-cta'>Click to open</span>
+                    <span className='htr-tile-cta'>
+                      {sectionType === 'events'
+                        ? 'Go to Events'
+                        : 'Click to open'}
+                    </span>
                   </div>
                 </button>
               );
