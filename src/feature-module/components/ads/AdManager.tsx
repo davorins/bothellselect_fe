@@ -13,10 +13,36 @@ interface AdManagerProps {
 }
 
 const CLOSED_AD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const SIDEBAR_DISMISSED_TTL_MS = 45 * 24 * 60 * 60 * 1000;
+const SIDEBAR_DISMISSED_KEY = 'ads_sidebar_dismissed_at';
+
 type ClosedEntry = { closedAt: number };
 
 const getStorageKey = (placement: string, suffix: string) =>
   `ads_${placement}_${suffix}`;
+
+const isSidebarDismissed = (): boolean => {
+  try {
+    const raw = localStorage.getItem(SIDEBAR_DISMISSED_KEY);
+    if (!raw) return false;
+    const dismissedAt = parseInt(raw, 10);
+    return Date.now() - dismissedAt < SIDEBAR_DISMISSED_TTL_MS;
+  } catch {
+    return false;
+  }
+};
+
+const dismissSidebar = () => {
+  try {
+    const timestamp = Date.now();
+    console.log('Dismissing sidebar, saving timestamp:', timestamp);
+    localStorage.setItem(SIDEBAR_DISMISSED_KEY, timestamp.toString());
+    const saved = localStorage.getItem(SIDEBAR_DISMISSED_KEY);
+    console.log('Verified saved timestamp:', saved);
+  } catch (error) {
+    console.error('Failed to save dismissal:', error);
+  }
+};
 
 const loadClosedAds = (placement: string): Record<string, ClosedEntry> => {
   try {
@@ -59,9 +85,17 @@ const AdManager: React.FC<AdManagerProps> = ({
   const [authToken, setAuthToken] = useState<string | undefined>();
   const [showPopup, setShowPopup] = useState(false);
 
+  // Sidebar hidden state - initialize from localStorage
+  const [isSidebarHidden, setIsSidebarHidden] = useState<boolean>(() => {
+    if (placement === 'sidebar') {
+      return isSidebarDismissed();
+    }
+    return false;
+  });
+
   // Mobile carousel state
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileMinimized, setMobileMinimized] = useState(true); // always start minimized on mobile
+  const [mobileMinimized, setMobileMinimized] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
 
   // Touch/swipe state
@@ -69,13 +103,26 @@ const AdManager: React.FC<AdManagerProps> = ({
   const touchStartY = useRef<number>(0);
   const isDragging = useRef(false);
   const carouselRef = useRef<HTMLDivElement>(null);
-
   const popupTimerRef = useRef<NodeJS.Timeout>();
 
   const isLocalDev =
     window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1';
   const previewMode = isLocalDev;
+
+  // Listen for storage changes (in case another tab changes it)
+  useEffect(() => {
+    if (placement === 'sidebar') {
+      const handleStorageChange = (e: StorageEvent) => {
+        if (e.key === SIDEBAR_DISMISSED_KEY) {
+          console.log('Storage changed, re-checking dismissal');
+          setIsSidebarHidden(isSidebarDismissed());
+        }
+      };
+      window.addEventListener('storage', handleStorageChange);
+      return () => window.removeEventListener('storage', handleStorageChange);
+    }
+  }, [placement]);
 
   // Detect mobile
   useEffect(() => {
@@ -85,7 +132,7 @@ const AdManager: React.FC<AdManagerProps> = ({
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // On mobile, reset to minimized whenever ads change
+  // On mobile, reset to minimized whenever ads reload
   useEffect(() => {
     if (isMobile && placement === 'sidebar') {
       setMobileMinimized(true);
@@ -168,34 +215,48 @@ const AdManager: React.FC<AdManagerProps> = ({
     if (placement === 'popup') setShowPopup(false);
   }, [placement]);
 
-  const handleClose = (adId: string) => {
-    if (placement === 'popup') setShowPopup(false);
-    if (previewMode) return;
-    const updated = { ...closedAds, [adId]: { closedAt: Date.now() } };
-    setClosedAds(updated);
-    try {
-      localStorage.setItem(
-        getStorageKey(placement, 'closed'),
-        JSON.stringify(updated),
-      );
-    } catch {}
-  };
+  const handleClose = useCallback(
+    (adId: string) => {
+      if (placement === 'popup') setShowPopup(false);
+      if (previewMode) return;
+      const updated = { ...closedAds, [adId]: { closedAt: Date.now() } };
+      setClosedAds(updated);
+      try {
+        localStorage.setItem(
+          getStorageKey(placement, 'closed'),
+          JSON.stringify(updated),
+        );
+      } catch {}
+    },
+    [placement, previewMode, closedAds],
+  );
 
-  const handleMinimize = (adId: string, minimized: boolean) => {
-    const updated = new Set(minimizedAds);
-    if (minimized) updated.add(adId);
-    else updated.delete(adId);
-    setMinimizedAds(updated);
-    if (previewMode) return;
-    try {
-      localStorage.setItem(
-        getStorageKey(placement, 'minimized'),
-        JSON.stringify([...updated]),
-      );
-    } catch {}
-  };
+  const handleMinimize = useCallback(
+    (adId: string, minimized: boolean) => {
+      const updated = new Set(minimizedAds);
+      if (minimized) updated.add(adId);
+      else updated.delete(adId);
+      setMinimizedAds(updated);
+      if (previewMode) return;
+      try {
+        localStorage.setItem(
+          getStorageKey(placement, 'minimized'),
+          JSON.stringify([...updated]),
+        );
+      } catch {}
+    },
+    [minimizedAds, previewMode],
+  );
 
-  // ── Swipe handlers ────────────────────────────────────────────
+  // Dismiss the entire sidebar for 45 days
+  const handleSidebarDismiss = useCallback(() => {
+    console.log('Dismiss button clicked!');
+    dismissSidebar();
+    setIsSidebarHidden(true);
+    console.log('Sidebar should now be hidden - state updated to true');
+  }, []);
+
+  // Swipe handlers
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
@@ -215,15 +276,18 @@ const AdManager: React.FC<AdManagerProps> = ({
     if (!isDragging.current) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(dx) < 40) return;
-    if (dx < 0) {
-      setActiveIndex((i) => Math.min(i + 1, adCount - 1));
-    } else {
-      setActiveIndex((i) => Math.max(i - 1, 0));
-    }
+    if (dx < 0) setActiveIndex((i) => Math.min(i + 1, adCount - 1));
+    else setActiveIndex((i) => Math.max(i - 1, 0));
     isDragging.current = false;
   }, []);
 
   const displayAds = previewMode ? ads : ads.filter((ad) => !closedAds[ad._id]);
+
+  // EARLY RETURN - Hide sidebar if dismissed (must be before any other conditional returns)
+  if (placement === 'sidebar' && isSidebarHidden && !previewMode) {
+    console.log('Sidebar is hidden - returning null');
+    return null;
+  }
 
   if (loading || error || displayAds.length === 0) return null;
 
@@ -249,7 +313,7 @@ const AdManager: React.FC<AdManagerProps> = ({
     adCount > 0 &&
     displayAds.every((ad) => minimizedAds.has(ad._id));
 
-  // ── Popup ──────────────────────────────────────────────────────
+  // Popup placement
   if (placement === 'popup') {
     if (!showPopup) return null;
     return (
@@ -274,9 +338,8 @@ const AdManager: React.FC<AdManagerProps> = ({
     );
   }
 
-  // ── Mobile sidebar: minimized dock + swipeable carousel ────────
+  // Mobile sidebar
   if (placement === 'sidebar' && isMobile) {
-    // Minimized state: horizontal pill row
     if (mobileMinimized) {
       return (
         <div className='ad-manager ad-manager--sidebar ad-manager--mobile-minimized'>
@@ -321,17 +384,33 @@ const AdManager: React.FC<AdManagerProps> = ({
                 );
               })}
             </div>
+            <button
+              className='ad-mobile-dock__close'
+              onClick={handleSidebarDismiss}
+              aria-label='Close sponsor bar'
+              title='Hide for 45 days'
+            >
+              <svg
+                width='12'
+                height='12'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2.5'
+                aria-hidden='true'
+              >
+                <line x1='18' y1='6' x2='6' y2='18' />
+                <line x1='6' y1='6' x2='18' y2='18' />
+              </svg>
+            </button>
           </div>
         </div>
       );
     }
 
-    // Expanded state: full carousel
     const clampedIndex = Math.min(activeIndex, adCount - 1);
-
     return (
       <div className='ad-manager ad-manager--sidebar ad-manager--mobile-expanded'>
-        {/* Header row: "Sponsors" label + collapse button */}
         <div className='ad-carousel__header'>
           <span className='ad-carousel__title'>
             Sponsors
@@ -341,27 +420,47 @@ const AdManager: React.FC<AdManagerProps> = ({
               </span>
             )}
           </span>
-          <button
-            className='ad-carousel__collapse'
-            onClick={() => setMobileMinimized(true)}
-            aria-label='Collapse ads'
-          >
-            <svg
-              width='14'
-              height='14'
-              viewBox='0 0 24 24'
-              fill='none'
-              stroke='currentColor'
-              strokeWidth='2.5'
-              aria-hidden='true'
+          <div className='ad-carousel__header-actions'>
+            <button
+              className='ad-carousel__collapse'
+              onClick={() => setMobileMinimized(true)}
+              aria-label='Collapse ads'
             >
-              <polyline points='18 15 12 21 6 15' />
-            </svg>
-            Collapse
-          </button>
+              <svg
+                width='14'
+                height='14'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2.5'
+                aria-hidden='true'
+              >
+                <polyline points='18 15 12 21 6 15' />
+              </svg>
+              Collapse
+            </button>
+            <button
+              className='ad-carousel__dismiss'
+              onClick={handleSidebarDismiss}
+              aria-label='Close sponsor ads for 45 days'
+              title='Hide for 45 days'
+            >
+              <svg
+                width='13'
+                height='13'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2.5'
+                aria-hidden='true'
+              >
+                <line x1='18' y1='6' x2='6' y2='18' />
+                <line x1='6' y1='6' x2='18' y2='18' />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        {/* Swipeable card area */}
         <div
           ref={carouselRef}
           className='ad-carousel__track-wrap'
@@ -388,7 +487,6 @@ const AdManager: React.FC<AdManagerProps> = ({
           </div>
         </div>
 
-        {/* Dot indicators */}
         {adCount > 1 && (
           <div className='ad-carousel__dots'>
             {displayAds.map((_, i) => (
@@ -405,10 +503,52 @@ const AdManager: React.FC<AdManagerProps> = ({
     );
   }
 
-  // ── Desktop sidebar + all other placements ─────────────────────
+  // Desktop sidebar
+  if (placement === 'sidebar') {
+    return (
+      <div
+        className={`ad-manager ad-manager--sidebar ${countClass} ${allMinimized ? 'is-minimized' : ''} ${className}`}
+        aria-label='Advertisements'
+      >
+        <button
+          className='ad-sidebar__dismiss'
+          onClick={handleSidebarDismiss}
+          aria-label='Close sponsor ads for 45 days'
+          title='Hide for 45 days'
+        >
+          <svg
+            width='14'
+            height='14'
+            viewBox='0 0 24 24'
+            fill='none'
+            stroke='currentColor'
+            strokeWidth='2'
+            aria-hidden='true'
+          >
+            <line x1='18' y1='6' x2='6' y2='18' />
+            <line x1='6' y1='6' x2='18' y2='18' />
+          </svg>
+        </button>
+
+        {displayAds.map((ad) => (
+          <AdBanner
+            key={ad._id}
+            ad={ad}
+            authToken={authToken}
+            size={adSize}
+            minimized={showMinimized && minimizedAds.has(ad._id)}
+            onClose={() => handleClose(ad._id)}
+            onMinimize={(m) => handleMinimize(ad._id, m)}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  // All other placements
   return (
     <div
-      className={`ad-manager ad-manager--${placement} ${countClass} ${allMinimized ? 'is-minimized' : ''} ${className}`}
+      className={`ad-manager ad-manager--${placement} ${countClass} ${className}`}
       aria-label='Advertisements'
     >
       {displayAds.map((ad) => (

@@ -25,14 +25,42 @@
   gap: 10px;
   padding: 4px 2px;
   scrollbar-width: none;
-  /* Don't eat clicks in the gap between cards */
-  pointer-events: none;
-}
-.ad-manager--sidebar > * {
-  pointer-events: all;
+  /* FIX: Changed from 'none' to 'auto' to allow clicks */
+  pointer-events: auto;
 }
 .ad-manager--sidebar::-webkit-scrollbar {
   display: none;
+}
+
+/* Dismiss button styles - make sure it's always clickable */
+.ad-sidebar__dismiss {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 102;
+  color: white;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+}
+
+.ad-sidebar__dismiss:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.05);
+}
+
+.ad-sidebar__dismiss svg {
+  width: 14px;
+  height: 14px;
+  stroke: white;
 }
 
 /* Count-based width adjustments */
@@ -146,8 +174,8 @@
     bottom: 0;
     left: 0;
     width: 100%;
-    z-index: 1;
-    pointer-events: all;
+    z-index: 1000;
+    pointer-events: auto;
     /* override desktop sidebar styles */
     right: unset;
     top: unset;
@@ -173,8 +201,8 @@
     gap: 8px;
     padding: 7px 12px 8px;
     overflow: hidden;
-    position: fixed;
-    bottom: 40px;
+    width: 100%;
+    position: relative;
   }
 
   .ad-mobile-dock__label {
@@ -208,7 +236,6 @@
     cursor: pointer;
     flex-shrink: 0;
     transition: background 0.15s;
-    /* reset button styles */
     font-family: inherit;
   }
   .ad-mobile-pill:hover,
@@ -234,6 +261,24 @@
     text-overflow: ellipsis;
   }
 
+  .ad-mobile-dock__close {
+    background: rgba(0, 0, 0, 0.1);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+
+  .ad-mobile-dock__close:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
   /* ── Expanded carousel ── */
   .ad-manager--mobile-expanded {
     background: rgba(255, 255, 255, 0.98);
@@ -241,7 +286,7 @@
     box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
     padding-bottom: env(safe-area-inset-bottom);
     animation: adSlideUpMobile 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 10;
+    z-index: 1001;
   }
 
   .ad-carousel__header {
@@ -271,6 +316,12 @@
     text-transform: none;
   }
 
+  .ad-carousel__header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .ad-carousel__collapse {
     display: flex;
     align-items: center;
@@ -290,11 +341,27 @@
     background: rgba(0, 0, 0, 0.05);
   }
 
+  .ad-carousel__dismiss {
+    background: rgba(0, 0, 0, 0.1);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .ad-carousel__dismiss:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
   /* Overflow container — clips the sliding track */
   .ad-carousel__track-wrap {
     overflow: hidden;
     width: 100%;
-    /* prevent accidental vertical scroll during horizontal swipe */
     touch-action: pan-y;
   }
 
@@ -406,6 +473,14 @@
   }
   .ad-carousel__collapse:hover {
     background: rgba(255, 255, 255, 0.06);
+  }
+  .ad-mobile-dock__close,
+  .ad-carousel__dismiss {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .ad-mobile-dock__close:hover,
+  .ad-carousel__dismiss:hover {
+    background: rgba(255, 255, 255, 0.2);
   }
   .ad-carousel__dot {
     background: #444;
