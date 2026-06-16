@@ -55,7 +55,7 @@
     background-position: center bottom;
     pointer-events: none;
     z-index: 2;
-    opacity: 0.92;
+    opacity: 0.9;
     mix-blend-mode: normal;
     background-color: #000;
   }
