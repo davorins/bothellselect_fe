@@ -16,7 +16,7 @@
   bottom: 0;
   width: 100%;
   height: 100%;
-  background-image: url('../../../public/assets/img/theme/main.png');
+  background-image: url('../../../public/assets/img/theme/main.jpg');
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center bottom;
@@ -49,14 +49,14 @@
     right: 0;
     width: 100%;
     height: 100%;
-    background-image: url('../../../public/assets/img/theme/main.png');
+    background-image: url('../../../public/assets/img/theme/main.jpg');
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center bottom;
     pointer-events: none;
     z-index: 2;
-    opacity: 0.9;
-    mix-blend-mode: inherit;
+    opacity: 0.92;
+    mix-blend-mode: normal;
     background-color: #000;
   }
 }
@@ -116,7 +116,7 @@
 }
 
 /* Background video - Desktop only */
-@media (min-width: 769px) {
+@media (min-width: 769px) and (max-width: 2560px) {
   .hp-stage__video {
     position: absolute;
     inset: 0;
@@ -125,7 +125,22 @@
     object-fit: cover;
     z-index: 1;
     cursor: pointer;
-    filter: brightness(0.9);
+    filter: brightness(0);
+  }
+
+  .htr-tiles-wrapper {
+    max-width: 1280px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+/* Large/Ultra-wide screens (1921px and above) */
+@media (min-width: 2561px) {
+  .htr-tiles-wrapper {
+    max-width: 1600px;
+    margin: 0 auto;
+    width: 100%;
   }
 }
 
@@ -178,7 +193,7 @@
 
 /* ─── Tile overlay ─────────────────────────────────────────────── */
 .hp-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 4;
   display: flex;
@@ -191,7 +206,8 @@
 .hp-overlay > * {
   pointer-events: all;
   width: 100%;
-  max-width: 1600px;
+  margin: 0 auto;
+  position: relative;
 }
 
 /* ─── Open Controls Button ───────────────────────────────── */
@@ -700,7 +716,7 @@
   }
 
   .hp-stage__background-image {
-    background-image: url('../../../public/assets/img/theme/main.png');
+    background-image: url('../../../public/assets/img/theme/main.jpg');
   }
 }
 
