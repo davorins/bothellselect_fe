@@ -122,6 +122,7 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
   const getSeasonPaymentStatus = (season: any): string => {
     if (season.paymentStatus) return season.paymentStatus;
     if (season.paymentComplete) return 'paid';
+    if (season.refunded) return 'refund';
     return 'pending';
   };
 
@@ -278,6 +279,19 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                         {seasons.map((season, index) => {
                           const paymentStatus = getSeasonPaymentStatus(season);
                           const isPaid = paymentStatus === 'paid';
+                          const isRefund = paymentStatus === 'refund';
+
+                          // Determine badge color and text
+                          let badgeColor = 'warning';
+                          let statusText = 'Pending';
+                          if (isPaid) {
+                            badgeColor = 'success';
+                            statusText = 'Paid';
+                          } else if (isRefund) {
+                            badgeColor = 'danger';
+                            statusText = 'Refunded';
+                          }
+
                           return (
                             <div
                               key={index}
@@ -299,9 +313,9 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                                   )}
                                 </div>
                                 <span
-                                  className={`badge badge-soft-${isPaid ? 'success' : 'warning'}`}
+                                  className={`badge badge-soft-${badgeColor}`}
                                 >
-                                  {isPaid ? 'Paid' : 'Pending'}
+                                  {statusText}
                                 </span>
                               </div>
                               {season.amountPaid && (
@@ -312,6 +326,11 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                                       {season.cardBrand} •••• {season.cardLast4}
                                     </span>
                                   )}
+                                </div>
+                              )}
+                              {isRefund && season.refundDate && (
+                                <div className='text-muted small mt-1'>
+                                  Refunded on: {formatDate(season.refundDate)}
                                 </div>
                               )}
                             </div>
@@ -327,9 +346,19 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                         {player.season} / {player.registrationYear}
                       </span>
                       <span
-                        className={`badge badge-soft-${player.paymentComplete ? 'success' : 'warning'}`}
+                        className={`badge badge-soft-${
+                          (player as any).paymentComplete
+                            ? 'success'
+                            : (player as any).refunded
+                              ? 'danger'
+                              : 'warning'
+                        }`}
                       >
-                        {player.paymentComplete ? 'Paid' : 'Pending'}
+                        {(player as any).paymentComplete
+                          ? 'Paid'
+                          : (player as any).refunded
+                            ? 'Refunded'
+                            : 'Pending'}
                       </span>
                     </div>
                   </div>
