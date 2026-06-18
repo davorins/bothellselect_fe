@@ -49,6 +49,7 @@ interface EnhancedPaymentModuleProps extends PaymentModuleProps {
     email: string;
     playerCount: number;
     totalAmount: number;
+    duplicate?: boolean;
   }) => void;
   savedUserData?: any;
   savedPlayers?: any[];
@@ -169,6 +170,7 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
     customerEmail || '',
   );
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [duplicateDetected, setDuplicateDetected] = useState(false);
 
   // Payment configuration state
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfigType | null>(
@@ -180,6 +182,9 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
   // Refs to track previous values and prevent infinite loops
   const prevPlayersRef = useRef<any[]>();
   const prevFormDataPlayersRef = useRef<any[]>();
+  const isSubmittingRef = useRef(false);
+  const idempotencyKeyRef = useRef<string>('');
+  const paymentAttemptedRef = useRef(false);
 
   // Fetch payment configuration on mount
   useEffect(() => {
@@ -207,7 +212,6 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
           const activeSystem = response.data.paymentSystem as PaymentSystem;
           setPaymentSystem(activeSystem);
 
-          // Create a PaymentConfiguration object from the response
           const paymentConfigData: PaymentConfigType = {
             _id: 'temp',
             paymentSystem: activeSystem,
@@ -230,11 +234,8 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
             system: activeSystem,
             environment: response.data.environment,
             currency: response.data.currency,
-            squareConfig: response.data.squareConfig,
-            cloverConfig: response.data.cloverConfig,
           });
 
-          // Validate Square configuration
           if (activeSystem === 'square') {
             if (
               !response.data.squareConfig?.applicationId ||
@@ -415,19 +416,40 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
     tournamentConfig,
   ]);
 
+  // Reset duplicate detection when amount or players change
+  useEffect(() => {
+    setDuplicateDetected(false);
+    paymentAttemptedRef.current = false;
+  }, [calculatedAmount, effectivePlayers, effectiveTeams]);
+
   // Unified payment processing function
   const processPayment = async (token: string, cardDetails: any) => {
+    // Prevent multiple submissions
+    if (isSubmittingRef.current) {
+      console.warn('Payment already in progress — ignoring duplicate call');
+      return;
+    }
+
+    // Prevent re-submission after duplicate was detected
+    if (duplicateDetected) {
+      console.warn('Payment already completed — ignoring duplicate call');
+      return;
+    }
+
+    isSubmittingRef.current = true;
+
+    // Generate a unique idempotency key
+    idempotencyKeyRef.current = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
     try {
       setIsPaying(true);
       setPaymentError(null);
 
-      // Get token BEFORE making the request
       const tokenAuth = localStorage.getItem('token');
       if (!tokenAuth) {
         throw new Error('Authentication token not found. Please log in again.');
       }
 
-      // Get active payment system from state
       const activeSystem = paymentSystem;
 
       if (!activeSystem) {
@@ -464,26 +486,24 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
         amount: calculatedAmount,
         email: localCustomerEmail,
         registrationType,
-        // Players with proper typing
         players: effectivePlayers.map((p: Player) => ({
           playerId: p._id,
           season: effectiveEventData?.season || 'Tryout',
           year: effectiveEventData?.year || new Date().getFullYear(),
           tryoutId: effectiveEventData?.eventId,
         })),
-        // Nested cardDetails (for tryout validation)
         cardDetails: {
           last_4: last4,
           card_brand: brand,
           exp_month: parseInt(expMonth),
           exp_year: parseInt(expYear),
         },
-        // Flattened fields (for paymentProcessRoutes validation)
         cardExpYear: parseInt(expYear),
         cardExpMonth: parseInt(expMonth),
         cardLastFour: last4,
         cardBrand: brand,
         paymentSystem: activeSystem,
+        idempotencyKey: idempotencyKeyRef.current,
       };
 
       // Add parentId
@@ -579,6 +599,7 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
         registrationType,
         amount: paymentData.amount,
         paymentSystem: activeSystem,
+        idempotencyKey: idempotencyKeyRef.current,
       });
 
       const response = await axios.post(
@@ -594,11 +615,60 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
       );
 
       if (response.data.success) {
+        // Check if this was a duplicate payment that was already processed
+        if (response.data.duplicate) {
+          console.log(
+            '⚠️ Duplicate payment detected, using existing payment:',
+            response.data,
+          );
+          setDuplicateDetected(true);
+
+          const successData = {
+            success: true,
+            paymentId: response.data.paymentId,
+            paymentSystem: response.data.paymentSystem || activeSystem,
+            externalPaymentId:
+              response.data.externalPaymentId || response.data.paymentId,
+            receiptUrl: response.data.receiptUrl || '',
+            players: response.data.players || [],
+            teams: response.data.teams || [],
+            amount: paymentData.amount,
+            email: localCustomerEmail,
+            playerCount: paymentData.players?.length || 0,
+            teamCount: paymentData.teamIds?.length || 0,
+            totalAmount: paymentData.amount / 100,
+            duplicate: true,
+          };
+
+          // Call all callbacks with duplicate flag
+          if (onPaymentSuccess) {
+            onPaymentSuccess({
+              ...response.data,
+              token: paymentData.token,
+              calculatedAmount: paymentData.amount,
+              paymentSystem: activeSystem,
+              duplicate: true,
+            });
+          }
+
+          if (onPaymentComplete) {
+            onPaymentComplete(successData);
+          }
+
+          if (onComplete) {
+            onComplete(successData);
+          }
+
+          console.log('⚠️ Using existing payment:', successData);
+          return;
+        }
+
+        // Normal successful payment
         const successData = {
           success: true,
           paymentId: response.data.paymentId,
           paymentSystem: response.data.paymentSystem || activeSystem,
-          externalPaymentId: response.data.paymentId,
+          externalPaymentId: response.data.externalPaymentId,
           receiptUrl: response.data.receiptUrl,
           players: response.data.players || [],
           teams: response.data.teams || [],
@@ -607,6 +677,7 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
           playerCount: paymentData.players?.length || 0,
           teamCount: paymentData.teamIds?.length || 0,
           totalAmount: paymentData.amount / 100,
+          duplicate: false,
         };
 
         if (onPaymentSuccess) {
@@ -637,11 +708,55 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
       console.error('❌ Payment processing error:', error);
 
       let errorMessage = 'Payment processing failed';
+
       if (error.response) {
-        errorMessage =
-          error.response.data?.message ||
-          error.response.data?.error ||
-          `Server error: ${error.response.status}`;
+        // Handle duplicate response (409)
+        if (error.response.status === 409) {
+          // Check if the server returned success: true for duplicate
+          if (error.response.data?.success) {
+            console.log(
+              '⚠️ Duplicate payment detected via 409 with success:',
+              error.response.data,
+            );
+            setDuplicateDetected(true);
+
+            const successData = {
+              success: true,
+              paymentId: error.response.data.paymentId,
+              paymentSystem: error.response.data.paymentSystem || paymentSystem,
+              externalPaymentId:
+                error.response.data.externalPaymentId ||
+                error.response.data.paymentId,
+              receiptUrl: error.response.data.receiptUrl || '',
+              players: [],
+              teams: [],
+              amount: calculatedAmount,
+              email: localCustomerEmail,
+              playerCount: 0,
+              teamCount: 0,
+              totalAmount: calculatedAmount / 100,
+              duplicate: true,
+            };
+
+            if (onPaymentComplete) {
+              onPaymentComplete(successData);
+            }
+
+            if (onComplete) {
+              onComplete(successData);
+            }
+            return;
+          }
+
+          errorMessage =
+            error.response.data?.message ||
+            'Duplicate payment request detected. Please wait a moment and try again.';
+        } else {
+          errorMessage =
+            error.response.data?.message ||
+            error.response.data?.error ||
+            `Server error: ${error.response.status}`;
+        }
 
         if (error.response.data?.squareErrors) {
           const squareError = error.response.data.squareErrors[0];
@@ -662,6 +777,7 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
       }
       throw error;
     } finally {
+      isSubmittingRef.current = false;
       setIsPaying(false);
     }
   };
@@ -705,52 +821,46 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
   };
 
   const handlePaymentSubmit = async () => {
-    try {
-      setIsPaying(true);
-      setPaymentError(null);
+    // Prevent submission if already paying or duplicate detected
+    if (isPaying || isSubmittingRef.current || duplicateDetected) {
+      console.warn('Payment submission blocked:', {
+        isPaying,
+        isSubmitting: isSubmittingRef.current,
+        duplicateDetected,
+      });
+      return;
+    }
 
-      // Basic validation
-      if (!localCustomerEmail) {
-        throw new Error('Please enter an email address for your receipt');
-      }
+    setPaymentError(null);
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(localCustomerEmail)) {
-        throw new Error('Please enter a valid email address');
-      }
+    if (!localCustomerEmail) {
+      setPaymentError('Please enter an email address for your receipt');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(localCustomerEmail)) {
+      setPaymentError('Please enter a valid email address');
+      return;
+    }
+    if (calculatedAmount <= 0) {
+      setPaymentError('Invalid payment amount');
+      return;
+    }
+    if (!paymentSystem) {
+      setPaymentError('No active payment system configured');
+      return;
+    }
 
-      if (calculatedAmount <= 0) {
-        throw new Error('Invalid payment amount');
-      }
-
-      // Get active payment system from state (CHANGED: use state instead of API call)
-      const activeSystem = paymentSystem;
-
-      if (!activeSystem) {
-        throw new Error('No active payment system configured');
-      }
-
-      // For Square, trigger form submission
-      if (activeSystem === 'square' && paymentFormRef.current) {
+    if (paymentSystem === 'square' && paymentFormRef.current) {
+      try {
         const result = await paymentFormRef.current.tokenize();
         await handleSquareTokenized(result);
+      } catch (error: any) {
+        if (!isSubmittingRef.current) {
+          setPaymentError(error.message || 'Payment failed');
+          if (onPaymentError) onPaymentError(error.message);
+        }
       }
-      // For Clover, the form handles submission internally via handleCloverToken
-      else if (activeSystem === 'clover') {
-        // Clover form submits directly, no need to do anything here
-        // The CloverPaymentForm component will call handleCloverToken
-      } else {
-        throw new Error(`Unsupported payment system: ${activeSystem}`);
-      }
-    } catch (error: any) {
-      const errorMsg = error.message || 'Payment processing failed';
-      console.error('❌ Payment submission error:', errorMsg);
-      setPaymentError(errorMsg);
-      if (onPaymentError) {
-        onPaymentError(errorMsg);
-      }
-    } finally {
-      setIsPaying(false);
     }
   };
 
@@ -808,8 +918,26 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
 
       return (
         <div
-          className={`payment-form-container ${disabled ? 'opacity-50' : ''}`}
+          className='payment-form-container'
+          style={{ position: 'relative' }}
         >
+          {(isPaying || duplicateDetected) && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 10,
+                background: 'rgba(255,255,255,0.6)',
+                cursor: 'not-allowed',
+                borderRadius: 8,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <span className='spinner-border spinner-border-sm text-primary' />
+            </div>
+          )}
           <PaymentForm
             applicationId={appId}
             locationId={locationId}
@@ -852,7 +980,7 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
           onTokenReceived={handleCloverToken}
           amount={calculatedAmount / 100}
           email={localCustomerEmail}
-          disabled={disabled || isPaying}
+          disabled={disabled || isPaying || duplicateDetected}
           environment={cloverEnvironment}
         />
       );
@@ -965,6 +1093,12 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
             paymentConfig?.cloverConfig?.environment === 'sandbox' && (
               <span className='badge bg-warning ms-2'>Sandbox Mode</span>
             )}
+          {duplicateDetected && (
+            <span className='badge bg-success ms-2'>
+              <i className='ti ti-check me-1'></i>
+              Already Paid
+            </span>
+          )}
         </div>
       </div>
       <div className='card-body'>
@@ -972,6 +1106,14 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
           <div className='alert alert-danger mb-4'>
             <i className='ti ti-alert-triangle me-2'></i>
             <strong>Payment Error:</strong> {paymentError}
+          </div>
+        )}
+
+        {duplicateDetected && (
+          <div className='alert alert-success mb-4'>
+            <i className='ti ti-check-circle me-2'></i>
+            <strong>Payment Already Processed:</strong> This payment was already
+            completed successfully. No further action is needed.
           </div>
         )}
 
@@ -1031,7 +1173,7 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
               setLocalCustomerEmail(e.target.value.toLowerCase())
             }
             required
-            disabled={disabled || isPaying}
+            disabled={disabled || isPaying || duplicateDetected}
             placeholder='Enter email for payment receipt'
           />
           {!localCustomerEmail && (

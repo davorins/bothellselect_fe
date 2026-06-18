@@ -78,7 +78,7 @@ const ContactPage = () => {
           {/* Left side - Illustration with glassmorphism - Centered image */}
 
           <ImageWithBasePath
-            src='assets/img/authentication/authentication.png'
+            src='assets/img/theme/player_1.png'
             alt='Contact Illustration'
             className='contact-illustration-img'
           />
