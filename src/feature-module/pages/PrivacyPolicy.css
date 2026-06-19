@@ -1,0 +1,570 @@
+/* ── Privacy Policy Page - White Theme ───────────────────────────────── */
+
+.privacy-white-container {
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  font-family:
+    'DM Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Helvetica Neue',
+    sans-serif;
+}
+
+/* Full Page Background Image with Dramatic Entrance */
+.privacy-background-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: scale(1.1);
+  transition:
+    opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.privacy-background-image.loaded {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.privacy-bg-parallax {
+  width: 110%;
+  height: 110%;
+  position: relative;
+  top: -5%;
+  left: -5%;
+  transition: transform 0.1s ease-out;
+  will-change: transform;
+}
+
+.privacy-bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+  animation: slowZoom 20s ease-in-out infinite alternate;
+}
+
+@keyframes slowZoom {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.05);
+  }
+}
+
+.privacy-bg-gradient-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    circle at 30% 50%,
+    transparent 0%,
+    rgba(89, 66, 48, 0.05) 100%
+  );
+  z-index: 2;
+  pointer-events: none;
+  animation: gradientPulse 8s ease-in-out infinite;
+}
+
+@keyframes gradientPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Floating Particles */
+.privacy-particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.privacy-particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: rgba(89, 66, 48, 0.3);
+  border-radius: 50%;
+  bottom: -10px;
+  animation: floatUp 4s linear infinite;
+  opacity: 0;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.5;
+  }
+  90% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Content wrapper */
+.privacy-content-wrapper-white {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  animation: contentSlideIn 0.8s ease-out 0.3s backwards;
+}
+
+@keyframes contentSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Grid Layout */
+.privacy-grid-white {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 48px;
+  align-items: start;
+}
+
+/* Left Column - Image */
+.privacy-image-col {
+  animation: imageSlideIn 0.8s ease-out 0.3s backwards;
+  position: sticky;
+  top: 100px;
+}
+
+@keyframes imageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.privacy-image-card {
+  position: relative;
+}
+
+.privacy-image-glass {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 40px 32px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.privacy-image-glass:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 30px 60px -12px rgba(89, 66, 48, 0.2);
+}
+
+.privacy-image-glow {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  height: 300px;
+  background: rgba(89, 66, 48, 0.08);
+  filter: blur(80px);
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.privacy-img {
+  max-width: 100%;
+  height: auto;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.1));
+}
+
+.privacy-image-badge {
+  position: absolute;
+  bottom: -20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(89, 66, 48, 0.2);
+  border-radius: 18px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #1e293b;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.privacy-image-badge i {
+  font-size: 1.4rem;
+  color: #594230;
+  flex-shrink: 0;
+}
+
+/* Right Column - Content */
+.privacy-content-col {
+  animation: contentSlideUp 0.8s cubic-bezier(0.34, 1.2, 0.64, 1) 0.5s backwards;
+}
+
+@keyframes contentSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.privacy-card-white {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 48px 40px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  margin-top: 4rem;
+  margin-bottom: 4rem;
+}
+
+.privacy-card-white:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 30px 60px -12px rgba(89, 66, 48, 0.2);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+/* Header */
+.privacy-header-white {
+  text-align: center;
+  margin-bottom: 40px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.privacy-header-icon-white {
+  width: 64px;
+  height: 64px;
+  background: rgba(89, 66, 48, 0.1);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  border: 1px solid rgba(89, 66, 48, 0.2);
+  animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(89, 66, 48, 0.2);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(89, 66, 48, 0);
+  }
+}
+
+.privacy-header-icon-white i {
+  font-size: 32px;
+  color: #594230;
+}
+
+.privacy-header-white h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #1e293b 0%, #594230 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.privacy-header-white p {
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.6;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Privacy Sections */
+.privacy-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.privacy-section {
+  animation: sectionFadeIn 0.5s ease-out backwards;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  transition: all 0.3s ease;
+}
+
+.privacy-section:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateX(4px);
+}
+
+.privacy-section:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.privacy-section:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.privacy-section:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.privacy-section:nth-child(4) {
+  animation-delay: 0.4s;
+}
+.privacy-section:nth-child(5) {
+  animation-delay: 0.5s;
+}
+.privacy-section:nth-child(6) {
+  animation-delay: 0.6s;
+}
+
+@keyframes sectionFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.privacy-section h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.privacy-section h2 i {
+  font-size: 1.3rem;
+  color: #594230;
+}
+
+.privacy-section p {
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.65;
+  margin-bottom: 12px;
+}
+
+.privacy-section ul {
+  margin: 0;
+  padding-left: 24px;
+}
+
+.privacy-section li {
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 6px;
+}
+
+.privacy-section li:last-child {
+  margin-bottom: 0;
+}
+
+.privacy-contact-section {
+  background: rgba(89, 66, 48, 0.05);
+  border: 1px solid rgba(89, 66, 48, 0.1);
+}
+
+.privacy-contact-section a {
+  color: #594230;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.privacy-contact-section a:hover {
+  color: #8b7355;
+  text-decoration: underline;
+}
+
+/* Footer */
+.privacy-footer-white {
+  text-align: center;
+  padding-top: 24px;
+  margin-top: 24px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.privacy-footer-white p {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .privacy-grid-white {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .privacy-image-col {
+    position: relative;
+    top: 0;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .privacy-content-col {
+    order: 2;
+  }
+}
+
+@media (max-width: 768px) {
+  .privacy-content-wrapper-white {
+    padding: 40px 20px;
+  }
+
+  .privacy-card-white {
+    padding: 32px 24px;
+  }
+
+  .privacy-header-white h1 {
+    font-size: 1.6rem;
+  }
+
+  .privacy-header-white p {
+    font-size: 0.85rem;
+  }
+
+  .privacy-section {
+    padding: 16px;
+  }
+
+  .privacy-section h2 {
+    font-size: 1.1rem;
+  }
+
+  .privacy-section h2 i {
+    font-size: 1.1rem;
+  }
+
+  .privacy-section p,
+  .privacy-section li {
+    font-size: 0.8rem;
+  }
+
+  .privacy-image-glass {
+    padding: 30px 24px;
+  }
+
+  .privacy-image-badge {
+    bottom: -14px;
+    right: 12px;
+    font-size: 0.72rem;
+    padding: 8px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .privacy-card-white {
+    padding: 24px 20px;
+  }
+
+  .privacy-header-icon-white {
+    width: 52px;
+    height: 52px;
+  }
+
+  .privacy-header-icon-white i {
+    font-size: 26px;
+  }
+
+  .privacy-header-white h1 {
+    font-size: 1.4rem;
+  }
+
+  .privacy-section {
+    padding: 12px;
+  }
+
+  .privacy-section ul {
+    padding-left: 20px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .privacy-background-image,
+  .privacy-card-white,
+  .privacy-particle,
+  .privacy-image-glass {
+    animation: none;
+    transition: none;
+  }
+
+  .privacy-background-image {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .privacy-particle {
+    display: none;
+  }
+}

@@ -1,124 +1,217 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ImageWithBasePath from '../../core/common/imageWithBasePath';
+import './PrivacyPolicy.css';
 
 const PrivacyPolicy = () => {
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
+
+  useEffect(() => {
+    // Preload image and trigger entrance animation
+    const img = new Image();
+    img.src = 'assets/img/bg/bg_privacypolicy.png';
+    img.onload = () => {
+      setIsImageLoaded(true);
+    };
+
+    const timer = setTimeout(() => {
+      setIsImageLoaded(true);
+    }, 500);
+
+    // Mouse move effect for parallax
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      setMousePosition({ x, y });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
   return (
-    <div className='container-fuild'>
-      <div className='login-wrapper w-100 overflow-hidden position-relative flex-wrap d-block vh-100'>
-        <div className='row'>
-          <div className='col-lg-6'>
-            <div className='d-lg-flex align-items-center justify-content-center bg-light-300 d-lg-block d-none flex-wrap vh-100 overflowy-auto bg-01'>
-              <div>
+    <div className='privacy-white-container'>
+      {/* Background Image with dramatic entrance */}
+      <div
+        className={`privacy-background-image ${isImageLoaded ? 'loaded' : ''}`}
+      >
+        <div
+          className='privacy-bg-parallax'
+          style={{
+            transform: `translate(${(mousePosition.x - 50) * -0.02}px, ${(mousePosition.y - 50) * -0.02}px)`,
+          }}
+        >
+          <ImageWithBasePath
+            src='assets/img/bg/bg_privacypolicy.png'
+            alt='Background'
+            className='privacy-bg-img'
+          />
+        </div>
+        <div className='privacy-bg-overlay' />
+        <div className='privacy-bg-gradient-overlay' />
+      </div>
+
+      {/* Floating particles */}
+      <div className='privacy-particles'>
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className='privacy-particle'
+            style={{
+              animationDelay: `${i * 0.5}s`,
+              left: `${Math.random() * 100}%`,
+              animationDuration: `${3 + Math.random() * 5}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className='privacy-content-wrapper-white'>
+        <div className='privacy-grid-white'>
+          {/* Left column - Image */}
+          <div className='privacy-image-col'>
+            <div className='privacy-image-card'>
+              {/* <div className='privacy-image-glass'>
+                <div className='privacy-image-glow' />
                 <ImageWithBasePath
                   src='assets/img/authentication/authentication.png'
-                  alt='Img'
+                  alt='Privacy Shield'
+                  className='privacy-img'
                 />
               </div>
+              <div className='privacy-image-badge'>
+                <i className='ti ti-shield-lock' />
+                <span>
+                  Your Privacy
+                  <br />
+                  Matters to Us
+                </span>
+              </div> */}
             </div>
           </div>
-          <div className='col-lg-6 col-md-12 col-sm-12'>
-            <div className='row justify-content-center align-items-center vh-100 overflow-auto flex-wrap'>
-              <div className='ourteam-page'>
-                <div className='p-4'>
-                  <h1 className='mb-4 text-center'>
-                    Privacy Policy for Bothell Select Camp
-                  </h1>
-                  <h5 className='mb-2 text-center'>
-                    This Privacy Policy describes how Bothell Select camp
-                    collects, uses, and shares personal information when you use
-                    our basketball camp services.
-                  </h5>
+
+          {/* Right column - Privacy Policy Content */}
+          <div className='privacy-content-col'>
+            <div className='privacy-card-white'>
+              <div className='privacy-header-white'>
+                <div className='privacy-header-icon-white'>
+                  <i className='ti ti-shield' />
                 </div>
-                <div className='p-2'>
-                  <h2 className='mb-2'>Information We Collect</h2>
-                  <p className='mb-2'>
+                <h1>Privacy Policy</h1>
+                <p>
+                  This Privacy Policy describes how Bothell Select camp
+                  collects, uses, and shares personal information when you use
+                  our basketball camp services.
+                </p>
+              </div>
+
+              <div className='privacy-sections'>
+                {/* Information We Collect */}
+                <div className='privacy-section'>
+                  <h2>
+                    <i className='ti ti-info-circle' />
+                    Information We Collect
+                  </h2>
+                  <p>
                     We collect personal information you provide directly to us
                     when you register for our basketball camp. This information
                     may include:
                   </p>
                   <ul>
-                    <li className='mb-2'>Participant’s name</li>
-                    <li className='mb-2'>Participant’s age</li>
-                    <li className='mb-2'>Parent or guardian’s name</li>
-                    <li className='mb-2'>
+                    <li>Participant's name</li>
+                    <li>Participant's age</li>
+                    <li>Parent or guardian's name</li>
+                    <li>
                       Contact information (e.g., email address, phone number)
                     </li>
-                    <li className='mb-2'>Emergency contact information</li>
-                    <li className='mb-2'>
-                      Medical information relevant to the participant’s
+                    <li>Emergency contact information</li>
+                    <li>
+                      Medical information relevant to the participant's
                       participation in the camp
                     </li>
-                    <li className='mb-2'>
-                      Dietary restrictions or food allergies
-                    </li>
-                    <li className='mb-2'>
+                    <li>Dietary restrictions or food allergies</li>
+                    <li>
                       Any other information necessary for the provision of our
                       Services
                     </li>
                   </ul>
                 </div>
-                <div className='p-2'>
-                  <h2 className='mb-2'>How We Use Your Information</h2>
-                  <p className='mb-2'>
+
+                {/* How We Use Your Information */}
+                <div className='privacy-section'>
+                  <h2>
+                    <i className='ti ti-chart-bar' />
+                    How We Use Your Information
+                  </h2>
+                  <p>
                     We may use the personal information we collect for the
                     following purposes:
                   </p>
                   <ul>
-                    <li className='mb-2'>
-                      To register participants for the basketball camp
-                    </li>
-                    <li className='mb-2'>
+                    <li>To register participants for the basketball camp</li>
+                    <li>
                       To communicate with participants and their parents or
                       guardians regarding camp-related information, updates, and
                       activities
                     </li>
-                    <li className='mb-2'>
+                    <li>
                       To ensure the safety and well-being of participants during
                       the camp
                     </li>
-                    <li className='mb-2'>
-                      To provide medical care or assistance if needed
-                    </li>
-                    <li className='mb-2'>
+                    <li>To provide medical care or assistance if needed</li>
+                    <li>
                       To respond to inquiries, concerns, or requests related to
                       the camp
                     </li>
-                    <li className='mb-2'>
+                    <li>
                       To improve and enhance our basketball summer camp services
                     </li>
                   </ul>
                 </div>
-                <div className='p-2'>
-                  <h2 className='mb-2'>Information Sharing</h2>
-                  <p className='mb-2'>
+
+                {/* Information Sharing */}
+                <div className='privacy-section'>
+                  <h2>
+                    <i className='ti ti-share' />
+                    Information Sharing
+                  </h2>
+                  <p>
                     We do not sell, trade, or otherwise transfer your personal
                     information to third parties without your consent, except as
                     described in this Privacy Policy. We may share personal
                     information with:
                   </p>
                   <ul>
-                    <li className='mb-2'>
+                    <li>
                       Our staff members and volunteers who need access to such
                       information to facilitate the basketball camp
                     </li>
-                    <li className='mb-2'>
+                    <li>
                       Service providers or third parties who assist us in
                       operating our camp, such as medical personnel, catering
                       services, or transportation providers
                     </li>
-                    <li className='mb-2'>
+                    <li>
                       Law enforcement or government authorities when required by
                       law or to protect our rights, property, or safety, or the
                       rights, property, or safety of others
                     </li>
-                    <li className='mb-2'>
+                    <li>
                       Other parties with your consent or at your direction
                     </li>
                   </ul>
                 </div>
-                <div className='p-2'>
-                  <h2 className='mb-2'>Data Security</h2>
-                  <p className='mb-2'>
+
+                {/* Data Security */}
+                <div className='privacy-section'>
+                  <h2>
+                    <i className='ti ti-lock' />
+                    Data Security
+                  </h2>
+                  <p>
                     We take reasonable measures to protect the personal
                     information we collect from unauthorized access, disclosure,
                     alteration, or destruction. However, please be aware that no
@@ -127,23 +220,40 @@ const PrivacyPolicy = () => {
                     security.
                   </p>
                 </div>
-                <div className='p-2'>
-                  <h2 className='mb-2'>Changes to this Privacy Policy</h2>
-                  <p className='mb-2'>
+
+                {/* Changes to this Privacy Policy */}
+                <div className='privacy-section'>
+                  <h2>
+                    <i className='ti ti-edit' />
+                    Changes to this Privacy Policy
+                  </h2>
+                  <p>
                     We may update this Privacy Policy from time to time. Any
                     changes will be posted on this page, and the date of the
                     last update will be indicated at the top of the policy.
                   </p>
                 </div>
-                <div className='p-2'>
-                  <h2 className='mb-2'>Contact Us</h2>
-                  <p className='mb-0'>
+
+                {/* Contact Us */}
+                <div className='privacy-section privacy-contact-section'>
+                  <h2>
+                    <i className='ti ti-mail' />
+                    Contact Us
+                  </h2>
+                  <p>
                     If you have any questions or concerns about this Privacy
                     Policy or our practices regarding your personal information,
                     please send us an{' '}
                     <a href='mailto:bothellselect@proton.me'>email</a>.
                   </p>
                 </div>
+              </div>
+
+              <div className='privacy-footer-white'>
+                <p>
+                  © {new Date().getFullYear()} Bothell Select Basketball. All
+                  rights reserved.
+                </p>
               </div>
             </div>
           </div>
