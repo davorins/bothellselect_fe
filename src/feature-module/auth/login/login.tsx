@@ -24,7 +24,7 @@ const Login = () => {
   useEffect(() => {
     // Preload image and trigger entrance animation
     const img = new Image();
-    img.src = 'assets/img/bg/bg_contact.png';
+    img.src = 'assets/img/bg/bg_login.png';
     img.onload = () => {
       setIsImageLoaded(true);
     };
@@ -97,7 +97,7 @@ const Login = () => {
           }}
         >
           <ImageWithBasePath
-            src='assets/img/bg/bg_contact.png'
+            src='assets/img/bg/bg_login.png'
             alt='Background'
             className='login-bg-img'
           />
