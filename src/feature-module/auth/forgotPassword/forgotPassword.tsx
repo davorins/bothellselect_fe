@@ -18,7 +18,7 @@ const ForgotPassword = () => {
   useEffect(() => {
     // Preload image and trigger entrance animation
     const img = new Image();
-    img.src = 'assets/img/theme/player10_1.png';
+    img.src = 'assets/img/bg/bg_forgotPassword.png';
     img.onload = () => {
       setIsImageLoaded(true);
     };
@@ -81,7 +81,7 @@ const ForgotPassword = () => {
           }}
         >
           <ImageWithBasePath
-            src='assets/img/theme/player10_1.png'
+            src='assets/img/bg/bg_forgotPassword.png'
             alt='Background'
             className='forgot-bg-img'
           />

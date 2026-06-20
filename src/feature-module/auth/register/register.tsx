@@ -1,4 +1,4 @@
-// Register.tsx - Improved with better receipt/review formatting
+// Register.tsx - Updated with White Theme
 
 import React, {
   useState,
@@ -24,6 +24,7 @@ import ImageWithBasePath from '../../../core/common/imageWithBasePath';
 import DynamicPlayerRegistrationModule from '../../components/registration-modules/DynamicPlayerRegistrationModule';
 import { PlayerRegistrationProps } from '../../../types/registration-types';
 import axios from 'axios';
+import './Register.css';
 
 interface FormData {
   email: string;
@@ -75,6 +76,8 @@ const Register = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registrationTimestamp, setRegistrationTimestamp] = useState('');
   const [showPlayerChoice, setShowPlayerChoice] = useState(false);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
 
   const [formData, setFormData] = useState<FormData>({
     email: '',
@@ -84,6 +87,32 @@ const Register = () => {
   const [localSavedUserData, setLocalSavedUserData] = useState<any>(null);
   const [guardianInfo, setGuardianInfo] = useState<GuardianInfo | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
+
+  useEffect(() => {
+    // Preload image and trigger entrance animation
+    const img = new Image();
+    img.src = 'assets/img/bg/bg_registration.png';
+    img.onload = () => {
+      setIsImageLoaded(true);
+    };
+
+    const timer = setTimeout(() => {
+      setIsImageLoaded(true);
+    }, 500);
+
+    // Mouse move effect for parallax
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      setMousePosition({ x, y });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
 
   const updateFormData = (newData: Partial<FormData>) => {
     setFormData((prev) => ({ ...prev, ...newData }));
@@ -414,68 +443,55 @@ const Register = () => {
       case 'guardian':
         if (showPlayerChoice) {
           return (
-            <div className='card mb-4'>
-              <div className='card-header bg-light'>
-                <div className='d-flex align-items-center'>
-                  <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
-                    <i className='ti ti-users fs-16' />
-                  </span>
-                  <h4 className='text-dark'>Add Players to Your Account</h4>
+            <div className='register-card-white'>
+              <div className='register-card-header'>
+                <div className='register-card-icon'>
+                  <i className='ti ti-users' />
                 </div>
+                <h4>Add Players to Your Account</h4>
               </div>
-              <div className='card-body'>
+              <div className='register-card-body'>
                 {successMessage && (
-                  <div className='alert alert-success mb-4'>
-                    <i className='ti ti-check-circle me-2'></i>
-                    {successMessage}
+                  <div className='register-alert-success'>
+                    <i className='ti ti-circle-check' />
+                    <span>{successMessage}</span>
+                    <button
+                      className='register-alert-close'
+                      onClick={() => setSuccessMessage(null)}
+                    >
+                      <i className='ti ti-x' />
+                    </button>
                   </div>
                 )}
-                <div className='text-center py-4'>
-                  <i className='ti ti-user-question fs-1 text-primary mb-3'></i>
+                <div className='register-player-choice'>
+                  <i className='ti ti-user-question' />
                   <h3>Would you like to add players to your account?</h3>
-                  <p className='text-muted'>
-                    You can add them now or later from your dashboard.
-                  </p>
+                  <p>You can add them now or later from your dashboard.</p>
 
-                  <div className='row mt-4'>
-                    <div className='col-md-6 mb-3'>
-                      <div className='card h-100 border-success border-2'>
-                        <div className='card-body text-center d-flex flex-column'>
-                          <i className='ti ti-user-plus fs-1 text-success mb-3'></i>
-                          <h4 className='text-success'>Add Players Now</h4>
-                          <div className='mt-auto'>
-                            <button
-                              type='button'
-                              className='btn btn-success w-100'
-                              onClick={handleAddPlayers}
-                            >
-                              <i className='ti ti-plus me-2'></i>Add Players Now
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                  <div className='register-choice-grid'>
+                    <div className='register-choice-card add-players'>
+                      <i className='ti ti-user-plus' />
+                      <h4>Add Players Now</h4>
+                      <button
+                        type='button'
+                        className='register-choice-btn success'
+                        onClick={handleAddPlayers}
+                      >
+                        <i className='ti ti-plus' />
+                        Add Players Now
+                      </button>
                     </div>
-                    <div className='col-md-6 mb-3'>
-                      <div className='card h-100 border-primary border-2'>
-                        <div className='card-body text-center d-flex flex-column'>
-                          <i className='ti ti-check fs-1 text-primary mb-3'></i>
-                          <h4 className='text-primary'>
-                            Complete Registration
-                          </h4>
-                          <div className='mt-auto'>
-                            <button
-                              type='button'
-                              className='btn btn-outline-primary w-100'
-                              onClick={handleGoToReview}
-                              disabled={isSubmitting}
-                            >
-                              {isSubmitting
-                                ? 'Processing...'
-                                : 'Continue to Review'}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                    <div className='register-choice-card complete'>
+                      <i className='ti ti-check' />
+                      <h4>Complete Registration</h4>
+                      <button
+                        type='button'
+                        className='register-choice-btn outline'
+                        onClick={handleGoToReview}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? 'Processing...' : 'Continue to Review'}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -501,50 +517,48 @@ const Register = () => {
       case 'review':
         return (
           <form onSubmit={handleSubmit}>
-            <div className='card mb-4'>
-              <div className='card-header bg-light'>
-                <div className='d-flex align-items-center'>
-                  <span className='bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0'>
-                    <i className='ti ti-receipt fs-16' />
-                  </span>
-                  <h4 className='text-dark'>Registration Receipt & Review</h4>
+            <div className='register-card-white'>
+              <div className='register-card-header'>
+                <div className='register-card-icon'>
+                  <i className='ti ti-receipt' />
                 </div>
+                <h4>Registration Receipt & Review</h4>
               </div>
-              <div className='card-body'>
+              <div className='register-card-body'>
                 {successMessage && (
-                  <div className='alert alert-success mb-4'>
-                    <i className='ti ti-check-circle me-2'></i>
-                    {successMessage}
+                  <div className='register-alert-success'>
+                    <i className='ti ti-circle-check' />
+                    <span>{successMessage}</span>
+                    <button
+                      className='register-alert-close'
+                      onClick={() => setSuccessMessage(null)}
+                    >
+                      <i className='ti ti-x' />
+                    </button>
                   </div>
                 )}
 
                 {/* Account Information Section */}
-                <div className='card mb-4 border'>
-                  <div className='card-header bg-primary bg-opacity-10'>
-                    <h5 className='mb-0'>
-                      <i className='ti ti-user-circle me-2'></i>
-                      Account Information
-                    </h5>
+                <div className='register-info-section'>
+                  <div className='register-info-header'>
+                    <i className='ti ti-user-circle' />
+                    <h5>Account Information</h5>
                   </div>
-                  <div className='card-body'>
-                    <div className='row'>
-                      <div className='col-md-6 mb-3'>
-                        <label className='text-muted small fw-semibold mb-1'>
-                          EMAIL ADDRESS
-                        </label>
-                        <p className='mb-0 fw-medium'>
-                          {formData.tempAccount?.email ||
-                            formData.email ||
-                            'Not provided'}
-                        </p>
+                  <div className='register-info-content'>
+                    <div className='register-info-row'>
+                      <div className='register-info-label'>EMAIL ADDRESS</div>
+                      <div className='register-info-value'>
+                        {formData.tempAccount?.email ||
+                          formData.email ||
+                          'Not provided'}
                       </div>
-                      <div className='col-md-6 mb-3'>
-                        <label className='text-muted small fw-semibold mb-1'>
-                          REGISTRATION DATE
-                        </label>
-                        <p className='mb-0 fw-medium'>
-                          {registrationTimestamp || new Date().toLocaleString()}
-                        </p>
+                    </div>
+                    <div className='register-info-row'>
+                      <div className='register-info-label'>
+                        REGISTRATION DATE
+                      </div>
+                      <div className='register-info-value'>
+                        {registrationTimestamp || new Date().toLocaleString()}
                       </div>
                     </div>
                   </div>
@@ -552,38 +566,28 @@ const Register = () => {
 
                 {/* Guardian/Parent Information Section */}
                 {guardianInfo && (
-                  <div className='card mb-4 border'>
-                    <div className='card-header bg-primary bg-opacity-10'>
-                      <h5 className='mb-0'>
-                        <i className='ti ti-user-shield me-2'></i>
-                        Guardian / Parent Information
-                      </h5>
+                  <div className='register-info-section'>
+                    <div className='register-info-header'>
+                      <i className='ti ti-user-shield' />
+                      <h5>Guardian / Parent Information</h5>
                     </div>
-                    <div className='card-body'>
-                      <div className='row'>
-                        <div className='col-md-6 mb-3'>
-                          <label className='text-muted small fw-semibold mb-1'>
-                            FULL NAME
-                          </label>
-                          <p className='mb-0 fw-medium'>
-                            {guardianInfo.fullName || 'Not provided'}
-                          </p>
+                    <div className='register-info-content'>
+                      <div className='register-info-row'>
+                        <div className='register-info-label'>FULL NAME</div>
+                        <div className='register-info-value'>
+                          {guardianInfo.fullName || 'Not provided'}
                         </div>
-                        <div className='col-md-6 mb-3'>
-                          <label className='text-muted small fw-semibold mb-1'>
-                            PHONE NUMBER
-                          </label>
-                          <p className='mb-0 fw-medium'>
-                            {formatPhone(guardianInfo.phone)}
-                          </p>
+                      </div>
+                      <div className='register-info-row'>
+                        <div className='register-info-label'>PHONE NUMBER</div>
+                        <div className='register-info-value'>
+                          {formatPhone(guardianInfo.phone)}
                         </div>
-                        <div className='col-md-6 mb-3'>
-                          <label className='text-muted small fw-semibold mb-1'>
-                            EMAIL ADDRESS
-                          </label>
-                          <p className='mb-0 fw-medium'>
-                            {guardianInfo.email || 'Not provided'}
-                          </p>
+                      </div>
+                      <div className='register-info-row'>
+                        <div className='register-info-label'>EMAIL ADDRESS</div>
+                        <div className='register-info-value'>
+                          {guardianInfo.email || 'Not provided'}
                         </div>
                       </div>
                     </div>
@@ -593,38 +597,31 @@ const Register = () => {
                 {/* Players Information Section */}
                 {players.length > 0 &&
                   players.some((p) => p.fullName?.trim()) && (
-                    <div className='card mb-4 border'>
-                      <div className='card-header bg-primary bg-opacity-10'>
-                        <h5 className='mb-0'>
-                          <i className='ti ti-users me-2'></i>
+                    <div className='register-info-section'>
+                      <div className='register-info-header'>
+                        <i className='ti ti-users' />
+                        <h5>
                           Players Information (
                           {players.filter((p) => p.fullName?.trim()).length})
                         </h5>
                       </div>
-                      <div className='card-body'>
+                      <div className='register-info-content'>
                         {players.map((player, index) => {
                           if (!player.fullName?.trim()) return null;
                           return (
-                            <div
-                              key={index}
-                              className='border rounded p-3 mb-3'
-                            >
-                              <div className='row'>
-                                <div className='col-md-6 mb-2'>
-                                  <label className='text-muted small fw-semibold mb-1'>
-                                    FULL NAME
-                                  </label>
-                                  <p className='mb-0 fw-medium'>
-                                    {player.fullName}
-                                  </p>
+                            <div key={index} className='register-player-item'>
+                              <div className='register-info-row'>
+                                <div className='register-info-label'>
+                                  FULL NAME
                                 </div>
-                                <div className='col-md-6 mb-2'>
-                                  <label className='text-muted small fw-semibold mb-1'>
-                                    GRADE
-                                  </label>
-                                  <p className='mb-0 fw-medium'>
-                                    {player.grade || 'Not provided'}
-                                  </p>
+                                <div className='register-info-value'>
+                                  {player.fullName}
+                                </div>
+                              </div>
+                              <div className='register-info-row'>
+                                <div className='register-info-label'>GRADE</div>
+                                <div className='register-info-value'>
+                                  {player.grade || 'Not provided'}
                                 </div>
                               </div>
                             </div>
@@ -637,16 +634,14 @@ const Register = () => {
                 {/* No Players Message */}
                 {(!players.length ||
                   !players.some((p) => p.fullName?.trim())) && (
-                  <div className='card mb-4 border'>
-                    <div className='card-header bg-primary bg-opacity-10'>
-                      <h5 className='mb-0'>
-                        <i className='ti ti-users me-2'></i>
-                        Players Information
-                      </h5>
+                  <div className='register-info-section'>
+                    <div className='register-info-header'>
+                      <i className='ti ti-users' />
+                      <h5>Players Information</h5>
                     </div>
-                    <div className='card-body text-center py-4'>
-                      <i className='ti ti-user-off fs-1 text-muted mb-2'></i>
-                      <p className='mb-0 text-muted'>
+                    <div className='register-info-content text-center py-4'>
+                      <i className='ti ti-user-off' />
+                      <p>
                         No players added yet. You can add players later from
                         your dashboard.
                       </p>
@@ -655,37 +650,37 @@ const Register = () => {
                 )}
 
                 {/* Action Buttons */}
-                <div className='d-flex justify-content-between align-items-center mt-4 pt-3 border-top'>
+                <div className='register-action-buttons'>
                   <button
                     type='button'
-                    className='btn btn-outline-secondary'
+                    className='register-btn-secondary'
                     onClick={handleBack}
                   >
-                    <i className='ti ti-arrow-left me-1'></i>
+                    <i className='ti ti-arrow-left' />
                     Back
                   </button>
                   <div>
                     <button
                       type='button'
-                      className='btn btn-outline-primary me-2'
+                      className='register-btn-outline'
                       onClick={handleAddMorePlayers}
                     >
-                      <i className='ti ti-plus me-1'></i>
+                      <i className='ti ti-plus' />
                       Add More Players
                     </button>
                     <button
                       type='submit'
-                      className='btn btn-success'
+                      className='register-btn-primary'
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? (
                         <>
-                          <span className='spinner-border spinner-border-sm me-2'></span>
+                          <span className='spinner-white'></span>
                           Processing...
                         </>
                       ) : (
                         <>
-                          <i className='ti ti-check me-1'></i>
+                          <i className='ti ti-check' />
                           Confirm & Complete Registration
                         </>
                       )}
@@ -700,83 +695,76 @@ const Register = () => {
       case 'success':
         const registeredPlayers = players.filter((p) => p.fullName?.trim());
         return (
-          <div className='card border-0 shadow-sm'>
-            <div className='card-header bg-success text-white text-center py-4'>
-              <i
-                className='ti ti-circle-check fs-1 text-white mb-2'
-                style={{ fontSize: '3rem' }}
-              ></i>
-              <h4 className='mb-0 text-white'>Registration Complete!</h4>
+          <div className='register-success-card'>
+            <div className='register-success-header'>
+              <i className='ti ti-circle-check' />
+              <h4>Registration Complete!</h4>
             </div>
-            <div className='card-body text-center py-4'>
-              <h2 className='text-success mb-3'>
-                Welcome to Bothell Select Basketball!
-              </h2>
+            <div className='register-success-body'>
+              <h2>Welcome to Bothell Select Basketball!</h2>
 
               {successMessage && (
-                <div className='alert alert-success mb-4'>
-                  <i className='ti ti-check-circle me-2'></i>
-                  {successMessage}
+                <div className='register-alert-success'>
+                  <i className='ti ti-circle-check' />
+                  <span>{successMessage}</span>
                 </div>
               )}
 
-              <div className='alert alert-info mb-4'>
-                <i className='ti ti-mail-check fs-4 me-3'></i>
-                <strong>Welcome email sent!</strong>
-                <div className='mt-1'>
-                  Please check{' '}
-                  <strong>
-                    {formData.tempAccount?.email || formData.email}
-                  </strong>{' '}
-                  for account details.
+              <div className='register-email-info'>
+                <i className='ti ti-mail-check' />
+                <div>
+                  <strong>Welcome email sent!</strong>
+                  <div>
+                    Please check{' '}
+                    <strong>
+                      {formData.tempAccount?.email || formData.email}
+                    </strong>{' '}
+                    for account details.
+                  </div>
                 </div>
               </div>
 
               {registeredPlayers.length > 0 && (
-                <div className='card border mb-4'>
-                  <div className='card-header bg-light'>
-                    <h5 className='mb-0'>
-                      <i className='ti ti-users me-2'></i>
+                <div className='register-players-summary'>
+                  <div className='register-players-header'>
+                    <i className='ti ti-users' />
+                    <h5>
                       Successfully Registered Players (
                       {registeredPlayers.length})
                     </h5>
                   </div>
-                  <div className='card-body'>
-                    <div className='row'>
-                      {registeredPlayers.map((p, i) => (
-                        <div key={i} className='col-md-6 mb-2'>
-                          <div className='border rounded p-2 text-start'>
-                            <strong>{p.fullName}</strong>
-                            <span className='text-muted d-block small'>
-                              {p.grade} Grade • {p.gender}
-                              {p.dob &&
-                                ` • DOB: ${new Date(p.dob).toLocaleDateString()}`}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                  <div className='register-players-list'>
+                    {registeredPlayers.map((p, i) => (
+                      <div key={i} className='register-player-summary'>
+                        <strong>{p.fullName}</strong>
+                        <span>
+                          {p.grade} Grade • {p.gender}
+                          {p.dob &&
+                            ` • DOB: ${new Date(p.dob).toLocaleDateString()}`}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
 
-              <div className='d-flex justify-content-center gap-3'>
+              <div className='register-success-actions'>
                 {registeredPlayers.length === 0 && (
                   <button
                     type='button'
-                    className='btn btn-outline-primary'
+                    className='register-btn-outline'
                     onClick={handleAddMorePlayers}
                   >
-                    <i className='ti ti-plus me-2'></i>
+                    <i className='ti ti-plus' />
                     Add Players Now
                   </button>
                 )}
                 <button
                   type='button'
-                  className='btn btn-primary btn-lg'
+                  className='register-btn-primary'
                   onClick={handleComplete}
                 >
-                  <i className='ti ti-home me-2'></i>
+                  <i className='ti ti-home' />
                   Go to Dashboard
                 </button>
               </div>
@@ -791,8 +779,8 @@ const Register = () => {
 
   if (isProcessing) {
     return (
-      <div className='container-fuild'>
-        <div className='login-wrapper w-100 overflow-hidden position-relative flex-wrap d-block vh-100'>
+      <div className='register-white-container'>
+        <div className='register-loading'>
           <LoadingSpinner />
         </div>
       </div>
@@ -800,61 +788,111 @@ const Register = () => {
   }
 
   return (
-    <div className='container-fuild'>
-      <div className='login-wrapper w-100 overflow-hidden position-relative flex-wrap d-block vh-100'>
-        <div className='row'>
-          <div className='col-lg-6 d-none d-lg-flex align-items-center justify-content-center bg-light-300'>
-            <ImageWithBasePath
-              src='assets/img/authentication/authentication.png'
-              alt='Img'
-            />
+    <div className='register-white-container'>
+      {/* Background Image with dramatic entrance */}
+      <div
+        className={`register-background-image ${isImageLoaded ? 'loaded' : ''}`}
+      >
+        <div
+          className='register-bg-parallax'
+          style={{
+            transform: `translate(${(mousePosition.x - 50) * -0.02}px, ${(mousePosition.y - 50) * -0.02}px)`,
+          }}
+        >
+          <ImageWithBasePath
+            src='assets/img/bg/bg_registration.png'
+            alt='Background'
+            className='register-bg-img'
+          />
+        </div>
+        <div className='register-bg-overlay' />
+        <div className='register-bg-gradient-overlay' />
+      </div>
+
+      {/* Floating particles */}
+      <div className='register-particles'>
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className='register-particle'
+            style={{
+              animationDelay: `${i * 0.5}s`,
+              left: `${Math.random() * 100}%`,
+              animationDuration: `${3 + Math.random() * 5}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className='register-content-wrapper-white'>
+        <div className='register-grid-white'>
+          {/* Left column - Image */}
+          <div className='register-image-col'>
+            <div className='register-image-card'>
+              {/* <div className='register-image-glass'>
+                <div className='register-image-glow' />
+                <ImageWithBasePath
+                  src='assets/img/bg/bg_registration.png'
+                  alt='Register'
+                  className='register-img'
+                />
+              </div>
+              <div className='register-image-badge'>
+                <i className='ti ti-user-plus' />
+                <span>
+                  Join Bothell Select Family
+                  <br />
+                  Start Your Journey
+                </span>
+              </div> */}
+            </div>
           </div>
 
-          <div className='col-lg-6 col-md-12 col-sm-12'>
-            <div className='row justify-content-center align-items-center vh-100 overflow-auto'>
-              <div className='col-md-10 mx-auto p-4'>
-                <div className='mx-auto mb-4 text-center'>
-                  <ImageWithBasePath
-                    src='assets/img/logo.png'
-                    className='img-fluid'
-                    alt='Logo'
-                  />
+          {/* Right column - Registration Form */}
+          <div className='register-form-col'>
+            <div className='register-form-card-white'>
+              <div className='register-header-white'>
+                <div className='register-header-icon-white'>
+                  <i className='ti ti-ball-basketball' />
                 </div>
+                <h1>Create Your Account</h1>
+                <p>
+                  Register to join Bothell Select Basketball. Players can be
+                  added now or later.
+                </p>
+              </div>
 
-                <div className='form-header text-center mb-4'>
-                  <h2>Create Your Account</h2>
-                  <p>
-                    Register to join Bothell Select Basketball. Players can be
-                    added now or later.
-                  </p>
+              {formError && (
+                <div className='register-alert-error'>
+                  <i className='ti ti-alert-circle' />
+                  <span>{formError}</span>
+                  <button
+                    className='register-alert-close'
+                    onClick={() => setFormError(null)}
+                  >
+                    <i className='ti ti-x' />
+                  </button>
                 </div>
+              )}
 
-                {currentStep !== 'success' && (
-                  <StepIndicator
-                    steps={steps}
-                    currentStep={currentStep}
-                    className='mb-4'
-                  />
-                )}
+              {currentStep !== 'success' && (
+                <StepIndicator
+                  steps={steps}
+                  currentStep={currentStep}
+                  className='register-step-indicator'
+                />
+              )}
 
-                {formError && (
-                  <div className='alert alert-danger mb-4'>
-                    <i className='ti ti-alert-circle me-2'></i>
-                    {formError}
+              <div className='register-step-content'>{renderStepContent()}</div>
+
+              {currentStep !== 'success' &&
+                currentStep !== 'verifyEmail' &&
+                currentStep !== 'account' && (
+                  <div className='register-footer-link'>
+                    Already have an account?{' '}
+                    <Link to={routes.login}>Sign In</Link>
                   </div>
                 )}
-
-                <div className='step-content'>{renderStepContent()}</div>
-
-                {currentStep !== 'success' &&
-                  currentStep !== 'verifyEmail' &&
-                  currentStep !== 'account' && (
-                    <div className='text-center mt-4'>
-                      Already have an account?{' '}
-                      <Link to={routes.login}>Sign In</Link>
-                    </div>
-                  )}
-              </div>
             </div>
           </div>
         </div>
