@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { all_routes } from '../../router/all_routes';
 import ImageWithBasePath from '../../../core/common/imageWithBasePath';
 import { useAuth } from '../../../context/AuthContext';
+import './Login.css';
 
 type PasswordField = 'password';
 
@@ -15,8 +16,36 @@ const Login = () => {
   const [passwordVisibility, setPasswordVisibility] = useState({
     password: false,
   });
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
   const currentYear = new Date().getFullYear();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Preload image and trigger entrance animation
+    const img = new Image();
+    img.src = 'assets/img/bg/bg_contact.png';
+    img.onload = () => {
+      setIsImageLoaded(true);
+    };
+
+    const timer = setTimeout(() => {
+      setIsImageLoaded(true);
+    }, 500);
+
+    // Mouse move effect for parallax
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      setMousePosition({ x, y });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
 
   const handleCreateAccount = () => {
     navigate(routes.register);
@@ -33,7 +62,6 @@ const Login = () => {
     e.preventDefault();
     setError('');
 
-    // Basic validation
     if (!email.trim()) {
       setError('Email is required');
       return;
@@ -48,8 +76,6 @@ const Login = () => {
       await login(email.trim(), password.trim());
     } catch (error: any) {
       console.error('Login error:', error);
-
-      // This ensures that the error message displayed is coming from the backend or a fallback message.
       setError(
         error.response?.data?.error ||
           error.message ||
@@ -59,173 +85,180 @@ const Login = () => {
   };
 
   return (
-    <>
-      <div className='container-fuild'>
-        <div className='login-wrapper w-100 overflow-hidden position-relative flex-wrap d-block vh-100'>
-          <div className='row'>
-            <div className='col-lg-6'>
-              <div className='d-lg-flex align-items-center justify-content-center bg-light-300 d-lg-block d-none flex-wrap vh-100 overflowy-auto bg-01'>
-                <div>
-                  <ImageWithBasePath
-                    src='assets/img/authentication/authentication.png'
-                    alt='Img'
+    <div className='login-white-container'>
+      {/* Background Image with dramatic entrance */}
+      <div
+        className={`login-background-image ${isImageLoaded ? 'loaded' : ''}`}
+      >
+        <div
+          className='login-bg-parallax'
+          style={{
+            transform: `translate(${(mousePosition.x - 50) * -0.02}px, ${(mousePosition.y - 50) * -0.02}px)`,
+          }}
+        >
+          <ImageWithBasePath
+            src='assets/img/bg/bg_contact.png'
+            alt='Background'
+            className='login-bg-img'
+          />
+        </div>
+        <div className='login-bg-overlay' />
+        <div className='login-bg-gradient-overlay' />
+      </div>
+
+      {/* Floating particles */}
+      <div className='login-particles'>
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className='login-particle'
+            style={{
+              animationDelay: `${i * 0.5}s`,
+              left: `${Math.random() * 100}%`,
+              animationDuration: `${3 + Math.random() * 5}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className='login-content-wrapper-white'>
+        <div className='login-grid-white'>
+          {/* Left side - Image Column */}
+          <div className='login-image-col'>
+            <div className='login-image-card'>
+              {/* <div className='login-image-glass'>
+                <div className='login-image-glow' />
+              </div>
+              <div className='login-image-badge'>
+                <i className='ti ti-ball-basketball' />
+                <span>
+                  Join Bothell Select
+                  <br />
+                  Basketball Family
+                </span>
+              </div> */}
+            </div>
+          </div>
+
+          {/* Right side - Login Form */}
+          <div className='login-form-col'>
+            <div className='login-form-card-white'>
+              <div className='login-header-white'>
+                <div className='login-header-icon-white'>
+                  <i className='ti ti-lock' />
+                </div>
+                <h1>Welcome Back</h1>
+                <p>Please enter your details to sign in to your account</p>
+              </div>
+
+              {error && (
+                <div className='login-alert-white'>
+                  <i className='ti ti-alert-circle' />
+                  <span>{error}</span>
+                  <button
+                    type='button'
+                    className='login-alert-close'
+                    onClick={() => setError('')}
+                  >
+                    <i className='ti ti-x' />
+                  </button>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className='login-form-white'>
+                <div className='form-group-white'>
+                  <label className='form-label-white'>
+                    <i className='ti ti-mail' />
+                    Email Address
+                  </label>
+                  <input
+                    type='email'
+                    className='form-control-white'
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder='Enter your email'
+                    required
                   />
                 </div>
-              </div>
-            </div>
-            <div className='col-lg-6 col-md-12 col-sm-12'>
-              <div className='row justify-content-center align-items-center vh-100 overflow-auto flex-wrap '>
-                <div className='col-md-8 mx-auto p-4'>
-                  <form onSubmit={handleSubmit}>
-                    <div>
-                      <div className=' mx-auto mb-5 text-center'>
-                        <ImageWithBasePath
-                          src='assets/img/logo.png'
-                          className='img-fluid'
-                          alt='Logo'
-                        />
-                      </div>
-                      <div className='card'>
-                        <div className='card-body p-4'>
-                          <div className=' mb-4'>
-                            <h2 className='mb-2'>Welcome</h2>
-                            <p className='mb-0'>
-                              Please enter your details to sign in
-                            </p>
-                          </div>
-                          {error && (
-                            <div
-                              className='alert alert-danger alert-dismissible fade show'
-                              role='alert'
-                            >
-                              <i className='fas fa-exclamation-circle me-2'></i>
-                              {error}
-                              <button
-                                type='button'
-                                className='btn-close'
-                                onClick={() => setError('')}
-                                aria-label='Close'
-                              ></button>
-                            </div>
-                          )}
 
-                          <div className='mb-3 '>
-                            <label className='form-label'>Email Address</label>
-                            <div className='input-icon mb-3 position-relative'>
-                              <span className='input-icon-addon'>
-                                <i
-                                  className={`ti ti-mail ${
-                                    error ? 'd-none' : ''
-                                  }`}
-                                />
-                              </span>
-                              <input
-                                type='text'
-                                className={`form-control ${
-                                  error && 'is-invalid'
-                                }`}
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                              />
-                            </div>
-                            <label className='form-label'>Password</label>
-                            <div className='pass-group'>
-                              <input
-                                type={
-                                  passwordVisibility.password
-                                    ? 'text'
-                                    : 'password'
-                                }
-                                className={`pass-input form-control ${
-                                  error && 'is-invalid'
-                                }`}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                              />
-                              <span
-                                className={`ti toggle-passwords ${
-                                  passwordVisibility.password
-                                    ? 'ti-eye'
-                                    : 'ti-eye-off'
-                                } ${error ? 'd-none' : ''}`} // Hide the icon if error exists
-                                onClick={() =>
-                                  togglePasswordVisibility('password')
-                                }
-                              ></span>
-                            </div>
-                          </div>
-                          <div className='form-wrap form-wrap-checkbox mb-3'>
-                            <div className='d-flex align-items-center'>
-                              <div className='form-check form-check-md mb-0'>
-                                <input
-                                  className='form-check-input mt-0'
-                                  type='checkbox'
-                                />
-                              </div>
-                              <p className='ms-1 mb-0 '>Remember Me</p>
-                            </div>
-                            <div className='text-end '>
-                              <Link
-                                to={routes.forgotPassword}
-                                className='link-danger'
-                              >
-                                Forgot Password?
-                              </Link>
-                            </div>
-                          </div>
-                          <div className='mb-3'>
-                            <button
-                              type='submit'
-                              className='btn btn-primary w-100'
-                            >
-                              Sign In
-                            </button>
-                          </div>
-                          <div className='text-center'>
-                            <h6 className='fw-normal text-dark mb-0'>
-                              Don’t have an account?{' '}
-                              <button
-                                className='btn btn-outline-primary ms-2'
-                                onClick={handleCreateAccount}
-                              >
-                                Create Account
-                              </button>
-                            </h6>
-                          </div>
-                        </div>
-                      </div>
-                      <div className='mt-2 text-center'>
-                        <div className='text-center mb-4'>
-                          <span className='text-muted'>
-                            Looking for tickets you already purchased?
-                            <br />
-                          </span>
-                          <Link
-                            to='/find-tickets'
-                            className='btn btn-outline-primary mt-2'
-                          >
-                            <i className='ti ti-ticket me-1'></i>
-                            Find My Tickets
-                          </Link>
-                        </div>
-                        <p className='mb-0 '>
-                          © {currentYear} Bothell Select by{' '}
-                          <a href='https://rainbootsmarketing.com/'>
-                            Rainboots
-                          </a>
-                        </p>
-                      </div>
-                    </div>
-                  </form>
+                <div className='form-group-white'>
+                  <label className='form-label-white'>
+                    <i className='ti ti-lock' />
+                    Password
+                  </label>
+                  <div className='password-wrapper-white'>
+                    <input
+                      type={passwordVisibility.password ? 'text' : 'password'}
+                      className='form-control-white'
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder='Enter your password'
+                      required
+                    />
+                    <button
+                      type='button'
+                      className='password-toggle-white'
+                      onClick={() => togglePasswordVisibility('password')}
+                    >
+                      <i
+                        className={`ti ${
+                          passwordVisibility.password ? 'ti-eye' : 'ti-eye-off'
+                        }`}
+                      />
+                    </button>
+                  </div>
                 </div>
-              </div>
+
+                <div className='login-options-white'>
+                  <label className='checkbox-white'>
+                    <input type='checkbox' />
+                    <span>Remember Me</span>
+                  </label>
+                  <Link
+                    to={routes.forgotPassword}
+                    className='forgot-link-white'
+                  >
+                    Forgot Password?
+                  </Link>
+                </div>
+
+                <button type='submit' className='login-submit-btn-white'>
+                  Sign In
+                  <i className='ti ti-arrow-right' />
+                </button>
+
+                <div className='login-footer-white'>
+                  <p>
+                    Don't have an account?{' '}
+                    <button
+                      type='button'
+                      className='signup-link-white'
+                      onClick={handleCreateAccount}
+                    >
+                      Create Account
+                    </button>
+                  </p>
+                </div>
+
+                <div className='login-tickets-white'>
+                  <p className='login-tickets-text'>
+                    Looking for tickets you already purchased?
+                  </p>
+                  <Link to='/find-tickets' className='tickets-link-white'>
+                    <i className='ti ti-ticket' />
+                    Find My Tickets
+                  </Link>
+                </div>
+
+                <div className='login-copyright-white'>
+                  <p>© {currentYear} Bothell Select by Rainboots</p>
+                </div>
+              </form>
             </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

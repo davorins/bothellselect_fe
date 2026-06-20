@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { all_routes } from '../../router/all_routes';
 import ImageWithBasePath from '../../../core/common/imageWithBasePath';
 import axios from 'axios';
+import './ForgotPassword.css';
 
 const ForgotPassword = () => {
   const routes = all_routes;
@@ -10,7 +11,35 @@ const ForgotPassword = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
   const currentYear = new Date().getFullYear();
+
+  useEffect(() => {
+    // Preload image and trigger entrance animation
+    const img = new Image();
+    img.src = 'assets/img/theme/player10_1.png';
+    img.onload = () => {
+      setIsImageLoaded(true);
+    };
+
+    const timer = setTimeout(() => {
+      setIsImageLoaded(true);
+    }, 500);
+
+    // Mouse move effect for parallax
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      setMousePosition({ x, y });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,103 +69,169 @@ const ForgotPassword = () => {
   };
 
   return (
-    <>
-      <div className='container-fuild'>
-        <div className='login-wrapper w-100 overflow-hidden position-relative flex-wrap d-block vh-100'>
-          <div className='row'>
-            <div className='col-lg-6'>
-              <div className='d-lg-flex align-items-center justify-content-center bg-light-300 d-lg-block d-none flex-wrap vh-100 overflowy-auto bg-01'>
-                <div>
-                  <ImageWithBasePath
-                    src='assets/img/authentication/authentication.png'
-                    alt='Img'
+    <div className='forgot-white-container'>
+      {/* Background Image with dramatic entrance */}
+      <div
+        className={`forgot-background-image ${isImageLoaded ? 'loaded' : ''}`}
+      >
+        <div
+          className='forgot-bg-parallax'
+          style={{
+            transform: `translate(${(mousePosition.x - 50) * -0.02}px, ${(mousePosition.y - 50) * -0.02}px)`,
+          }}
+        >
+          <ImageWithBasePath
+            src='assets/img/theme/player10_1.png'
+            alt='Background'
+            className='forgot-bg-img'
+          />
+        </div>
+        <div className='forgot-bg-overlay' />
+        <div className='forgot-bg-gradient-overlay' />
+      </div>
+
+      {/* Animated gradient orbs */}
+      <div className='forgot-orb-white forgot-orb-white-1' />
+      <div className='forgot-orb-white forgot-orb-white-2' />
+      <div className='forgot-orb-white forgot-orb-white-3' />
+
+      {/* Floating particles */}
+      <div className='forgot-particles'>
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className='forgot-particle'
+            style={{
+              animationDelay: `${i * 0.5}s`,
+              left: `${Math.random() * 100}%`,
+              animationDuration: `${3 + Math.random() * 5}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className='forgot-content-wrapper-white'>
+        <div className='forgot-grid-white'>
+          {/* Left column - Image */}
+          <div className='forgot-image-col'>
+            <div className='forgot-image-card'>
+              {/* <div className='forgot-image-glass'>
+                <div className='forgot-image-glow' />
+                <ImageWithBasePath
+                  src='assets/img/authentication/authentication.png'
+                  alt='Reset Password'
+                  className='forgot-img'
+                />
+              </div>
+              <div className='forgot-image-badge'>
+                <i className='ti ti-key' />
+                <span>
+                  Reset Your Password
+                  <br />
+                  Get Back on Court
+                </span>
+              </div> */}
+            </div>
+          </div>
+
+          {/* Right column - Forgot Password Form */}
+          <div className='forgot-form-col'>
+            <div className='forgot-form-card-white'>
+              <div className='forgot-header-white'>
+                <div className='forgot-header-icon-white'>
+                  <i className='ti ti-lock-question' />
+                </div>
+                <h1>Forgot Password?</h1>
+                <p>
+                  Enter your email address and we'll send you instructions to
+                  reset your password.
+                </p>
+              </div>
+
+              {error && (
+                <div className='forgot-alert-white forgot-alert-error'>
+                  <i className='ti ti-alert-circle' />
+                  <span>{error}</span>
+                  <button
+                    type='button'
+                    className='forgot-alert-close'
+                    onClick={() => setError('')}
+                  >
+                    <i className='ti ti-x' />
+                  </button>
+                </div>
+              )}
+
+              {success && (
+                <div className='forgot-alert-white forgot-alert-success'>
+                  <i className='ti ti-circle-check' />
+                  <span>
+                    Password reset link sent to your email! Please check your
+                    inbox.
+                  </span>
+                  <button
+                    type='button'
+                    className='forgot-alert-close'
+                    onClick={() => setSuccess(false)}
+                  >
+                    <i className='ti ti-x' />
+                  </button>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className='forgot-form-white'>
+                <div className='form-group-white'>
+                  <label className='form-label-white'>
+                    <i className='ti ti-mail' />
+                    Email Address
+                  </label>
+                  <input
+                    type='email'
+                    className='form-control-white'
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder='Enter your email address'
+                    required
+                    disabled={success}
                   />
                 </div>
-              </div>
-            </div>
-            <div className='col-lg-6 col-md-12 col-sm-12'>
-              <div className='row justify-content-center align-items-center vh-100 overflow-auto flex-wrap '>
-                <div className='col-md-8 mx-auto p-4'>
-                  <form onSubmit={handleSubmit}>
-                    <div>
-                      <div className=' mx-auto mb-5 text-center'>
-                        <ImageWithBasePath
-                          src='assets/img/logo.png'
-                          className='img-fluid'
-                          alt='Logo'
-                        />
-                      </div>
-                      <div className='card'>
-                        <div className='card-body p-4'>
-                          <div className=' mb-4'>
-                            <h2 className='mb-2'>Forgot Password?</h2>
-                            <p className='mb-0'>
-                              If you forgot your password, well, then we’ll
-                              email you instructions to reset your password.
-                            </p>
-                          </div>
-                          <div className='mb-3 '>
-                            <label className='form-label'>Email Address</label>
-                            <div className='input-icon mb-3 position-relative'>
-                              <span className='input-icon-addon'>
-                                <i className='ti ti-mail' />
-                              </span>
-                              <input
-                                type='email'
-                                className='form-control'
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                              />
-                            </div>
-                          </div>
-                          {error && (
-                            <div className='alert alert-danger mb-3'>
-                              {error}
-                            </div>
-                          )}
-                          {success && (
-                            <div className='alert alert-success mb-3'>
-                              Password reset link sent to your email
-                            </div>
-                          )}
-                          <div className='mb-3'>
-                            <button
-                              type='submit'
-                              className='btn btn-primary w-100'
-                              disabled={isSubmitting || success}
-                            >
-                              {isSubmitting ? 'Sending...' : 'Send Reset Link'}
-                            </button>
-                          </div>
-                          <div className='text-center'>
-                            <h6 className='fw-normal text-dark mb-0'>
-                              Return to{' '}
-                              <Link to={routes.login} className='hover-a '>
-                                {' '}
-                                Login
-                              </Link>
-                            </h6>
-                          </div>
-                        </div>
-                      </div>
-                      <div className='mt-5 text-center'>
-                        <p className='mb-0 '>
-                          © {currentYear} Bothell Select by{' '}
-                          <a href='https://rainbootsmarketing.com/'>
-                            Rainboots
-                          </a>
-                        </p>
-                      </div>
-                    </div>
-                  </form>
+
+                <button
+                  type='submit'
+                  className='forgot-submit-btn-white'
+                  disabled={isSubmitting || success}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className='spinner-white' />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      Send Reset Link
+                      <i className='ti ti-arrow-right' />
+                    </>
+                  )}
+                </button>
+
+                <div className='forgot-footer-white'>
+                  <p>
+                    Return to{' '}
+                    <Link to={routes.login} className='login-link-white'>
+                      Sign In
+                    </Link>
+                  </p>
                 </div>
-              </div>
+
+                <div className='forgot-copyright-white'>
+                  <p>© {currentYear} Bothell Select by Rainboots</p>
+                </div>
+              </form>
             </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
