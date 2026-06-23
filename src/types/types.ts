@@ -604,28 +604,49 @@ export interface EmailAttachment {
 }
 
 export interface EmailTemplate {
-  _id: string;
+  _id?: string;
   title: string;
   subject: string;
   content: string;
+  completeContent?: string;
   status: boolean;
   includeSignature: boolean;
-  signatureConfig: SignatureConfig;
+  signatureConfig: {
+    organizationName: string;
+    title: string;
+    fullName: string;
+    phone: string;
+    email: string;
+    website: string;
+    additionalInfo: string;
+  };
+  variables: Array<{
+    name: string;
+    description: string;
+    defaultValue?: string;
+  }>;
   category: 'system' | 'marketing' | 'transactional' | 'notification' | 'other';
-  tags: string[];
-  variables: TemplateVariable[];
   createdBy?: string;
   lastUpdatedBy?: string;
-  version?: number;
-  previousVersions?: Array<{
+  tags: string[];
+  version: number;
+  previousVersions: Array<{
     content: string;
     updatedAt: Date;
-    updatedBy: string;
+    updatedBy?: string;
   }>;
-  predefinedVariables?: string[];
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
-  attachments: (EmailAttachment | TempEmailAttachment)[];
+  predefinedVariables: string[];
+  attachments: Array<{
+    _id?: string;
+    filename: string;
+    url: string;
+    size: number;
+    mimeType: string;
+    uploadedAt: Date;
+  }>;
+  builderConfig?: any;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface EmailCampaignData {

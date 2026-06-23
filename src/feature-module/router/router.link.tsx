@@ -1,4 +1,5 @@
 // router.link.tsx
+
 import React from 'react';
 import { Route, Navigate, useParams } from 'react-router-dom';
 import { all_routes } from './all_routes';
@@ -41,7 +42,9 @@ import Prefixes from '../settings/websiteSettings/prefixes';
 import Socialauthentication from '../settings/websiteSettings/socialAuthentication';
 import Languagesettings from '../settings/websiteSettings/language';
 import EmailSettings from '../settings/systemSettings/emailSettings';
-import Emailtemplates from '../settings/systemSettings/email-templates';
+import EmailTemplatesPage from '../settings/systemSettings/email-templates';
+import { EmailTemplateSelector } from '../../components/EmailTemplateSelector';
+import EmailTemplateBuilder from '../../components/EmailTemplateBuilder';
 import SmsSettings from '../settings/systemSettings/smsSettings';
 import OtpSettings from '../settings/systemSettings/otp-settings';
 import GdprCookies from '../settings/systemSettings/gdprCookies';
@@ -56,7 +59,6 @@ import Profile from '../pages/profile';
 import LockScreen from '../auth/lockScreen';
 import NotificationActivities from '../pages/profile/activities';
 import ProtectedRoute from '../components/ProtectedRoute';
-import { EmailTemplateSelector } from '../../components/EmailTemplateSelector';
 import Events from '../announcements/events';
 import FormBuilder from '../../components/admin/FormBuilder';
 import TournamentAdminPage from '../pages/tournament/index';
@@ -90,18 +92,7 @@ const PageRendererWrapper: React.FC = () => {
   return <PageRenderer pageSlug={slug || ''} isEditing={false} />;
 };
 
-// Home page component (optional)
-const HomePage: React.FC = () => {
-  return <PageRenderer pageSlug='home' isEditing={false} />;
-};
-
 export const publicRoutes = [
-  // {
-  //   path: "/",
-  //   name: "Root",
-  //   element: <Navigate to="/login" />,
-  //   route: Route,
-  // },
   {
     path: routes.adminDashboard,
     element: (
@@ -158,7 +149,7 @@ export const publicRoutes = [
   },
   // Page Management - Admin Routes
   {
-    path: routes.pageList, // '/admin/pages' - Make sure this matches your all_routes
+    path: routes.pageList,
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
         <PageList />
@@ -167,7 +158,7 @@ export const publicRoutes = [
     route: Route,
   },
   {
-    path: routes.pageBuilderNew, // '/admin/page-builder/new'
+    path: routes.pageBuilderNew,
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
         <CreateNewPage />
@@ -176,7 +167,7 @@ export const publicRoutes = [
     route: Route,
   },
   {
-    path: routes.pageBuilderEdit, // '/admin/page-builder/edit/:id'
+    path: routes.pageBuilderEdit,
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
         <PageBuilder />
@@ -185,7 +176,7 @@ export const publicRoutes = [
     route: Route,
   },
   {
-    path: routes.pageBuilder, // '/admin/page-builder' - Main page builder
+    path: routes.pageBuilder,
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
         <Navigate to={routes.pageBuilderNew} replace />
@@ -324,7 +315,6 @@ export const publicRoutes = [
   },
 
   //Settings
-
   {
     path: routes.profilesettings,
     element: <Profilesettings />,
@@ -365,9 +355,34 @@ export const publicRoutes = [
     path: routes.emailSettings,
     element: <EmailSettings />,
   },
+  // ✅ EMAIL TEMPLATES ROUTE - Uses the wrapper page
   {
     path: routes.emailTemplates,
-    element: <Emailtemplates />,
+    element: (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <EmailTemplatesPage />
+      </ProtectedRoute>
+    ),
+    route: Route,
+  },
+  // ✅ EMAIL TEMPLATES BUILDER ROUTES - Direct access to builder
+  {
+    path: routes.emailTemplates + '/builder',
+    element: (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <EmailTemplateBuilder />
+      </ProtectedRoute>
+    ),
+    route: Route,
+  },
+  {
+    path: routes.emailTemplates + '/builder/:id',
+    element: (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <EmailTemplateBuilder />
+      </ProtectedRoute>
+    ),
+    route: Route,
   },
   {
     path: routes.formBuilder,
@@ -425,7 +440,7 @@ export const publicRoutes = [
     path: routes.activity,
     element: <NotificationActivities />,
   },
-  // Team Management Routes - ADD THESE
+  // Team Management Routes
   {
     path: routes.teams,
     element: (
@@ -515,8 +530,8 @@ export const authRoutes = [
     route: Route,
   },
   {
-    path: all_routes.dynamicPage, // '/page/:slug'
-    element: <PageRenderer pageSlug='' />,
+    path: all_routes.dynamicPage,
+    element: <PageRendererWrapper />,
     route: Route,
   },
 ];
@@ -599,7 +614,6 @@ export const protectedRoutes = [
     ),
     route: Route,
   },
-
   // Admin Registration Management
   {
     path: routes.adminRegistrationManager,

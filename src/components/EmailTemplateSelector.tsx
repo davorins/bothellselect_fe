@@ -389,10 +389,15 @@ export const EmailTemplateSelector: React.FC = () => {
   useEffect(() => {
     const loadTemplates = async () => {
       try {
-        const response = await emailTemplateService.getAll();
+        const response: any = await emailTemplateService.getAll();
+        const responseData = response?.data;
         const data = Array.isArray(response)
           ? response
-          : response?.data?.data || response?.data || [];
+          : Array.isArray(responseData?.data)
+            ? responseData.data
+            : Array.isArray(responseData)
+              ? responseData
+              : [];
         if (!Array.isArray(data)) throw new Error('Invalid data format');
 
         // Filter out disabled templates (status === false)
@@ -907,7 +912,7 @@ export const EmailTemplateSelector: React.FC = () => {
 
     try {
       const campaignData: EmailCampaignData = {
-        templateId: selectedTemplate._id,
+        templateId: selectedTemplate._id!,
         ...(selectedUsers.length > 0 && { parentIds: selectedUsers }),
         ...(selectedSeason &&
           selectedYear && {

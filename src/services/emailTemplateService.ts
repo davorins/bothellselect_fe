@@ -1,79 +1,135 @@
-import axios from 'axios';
-import { EmailTemplate } from '../types/types';
+// services/emailTemplateService.ts
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+import axios from 'axios';
+import type { EmailTemplate } from '../types/types';
+import { generateEmailHTML, BuilderConfig } from '../utils/generateEmailHTML';
+
+const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 const API_URL = `${API_BASE_URL}/email-templates`;
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+const getAuthHeaders = () => ({
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem('token')}`,
+    'Content-Type': 'application/json',
+  },
+});
+
+// ── Helper: Generate signature HTML ──────────────────────────────────────────
+
+export function generateSignatureHTML(
+  sig: EmailTemplate['signatureConfig'],
+): string {
+  if (!sig) return '';
+  const {
+    organizationName = 'Bothell Select',
+    fullName = '',
+    title = '',
+    phone = '',
+    email = '',
+    website = '',
+    additionalInfo = '',
+  } = sig;
+  return `
+<div style="margin-top:40px;padding-top:20px;border-top:1px solid #eaeaea;">
+  <strong style="font-size:15px;display:block;color:#222;margin-bottom:6px;">${organizationName}</strong>
+  ${fullName ? `<div style="font-size:13px;font-weight:600;color:#333;margin-bottom:2px;">${fullName}</div>` : ''}
+  ${title ? `<div style="font-size:12px;color:#666;margin-bottom:8px;">${title}</div>` : ''}
+  <div style="font-size:13px;color:#555;">
+    ${phone ? `<div style="margin-bottom:3px;">📞 ${phone}</div>` : ''}
+    ${email ? `<div style="margin-bottom:3px;">✉️ <a href="mailto:${email}" style="color:#506ee4;">${email}</a></div>` : ''}
+    ${website ? `<div style="margin-bottom:3px;">🌐 <a href="${website}" style="color:#506ee4;">${website}</a></div>` : ''}
+    ${additionalInfo ? `<div style="margin-top:6px;color:#888;font-size:12px;">${additionalInfo}</div>` : ''}
+  </div>
+</div>`;
+}
+
+// ── Helper: Generate attachments HTML ────────────────────────────────────────
+
+export function generateAttachmentsHTML(
+  attachments: EmailTemplate['attachments'],
+): string {
+  if (!attachments?.length) return '';
+  const items = attachments
+    .map((a: any) => {
+      if (!a?.filename) return '';
+      const icon = a.mimeType?.startsWith('image/')
+        ? '🖼️'
+        : a.mimeType === 'application/pdf'
+          ? '📄'
+          : a.mimeType?.includes('word')
+            ? '📝'
+            : a.mimeType?.includes('excel')
+              ? '📊'
+              : '📎';
+      const size = a.size ? `${(a.size / 1024).toFixed(1)} KB` : '';
+      return `
+        <div style="margin:10px 0;padding:12px;background:#f8f9fa;border-radius:6px;border-left:4px solid #506ee4;">
+          <span style="font-size:20px;">${icon}</span>
+          <strong style="display:block;font-size:13px;color:#333;margin-top:4px;">${a.filename}</strong>
+          ${size ? `<span style="font-size:11px;color:#888;">${size}</span>` : ''}
+          ${a.url ? `<div style="margin-top:6px;"><a href="${a.url}" style="color:#506ee4;font-size:12px;" target="_blank">Download</a></div>` : ''}
+        </div>`;
+    })
+    .filter(Boolean)
+    .join('');
+  if (!items) return '';
+  return `
+<div style="margin-top:28px;padding-top:20px;border-top:2px solid #eaeaea;">
+  <h3 style="font-size:16px;color:#333;margin:0 0 12px;">📎 Attachments (${attachments.length})</h3>
+  ${items}
+</div>`;
+}
+
+// ── Build complete HTML from template ────────────────────────────────────────
+
+export function buildCompleteHTML(template: any): string {
+  const cfg = template.builderConfig as BuilderConfig | undefined;
+
+  const effectiveCfg: BuilderConfig = cfg || {
+    layout: 'minimal',
+    primaryColor: '#506ee4',
+    backgroundColor: '#f0f4ff',
+    headerBg: '#1e3a8a',
+    ctaColor: '#506ee4',
+    fontFamily: 'system',
+    headerTitle: '',
+    headerSubtitle: '',
+    showLogo: true,
+    logoUrl:
+      'https://pub-eab2790b2e94418f896b048a8e6658d0.r2.dev/logo/logo.png',
+    headerImage: '',
+    inlineImage: '',
+    backgroundImage: '',
+    overlayOpacity: 0.55,
+    imagePosition: 'center',
+    imageCaption: '',
+    ctaText: '',
+    ctaUrl: '',
+    footerText:
+      "You're receiving this because you're part of <strong>Bothell Select</strong>.",
   };
-};
 
-export const emailTemplateService = {
-  async getAll() {
-    try {
-      console.group('[Template Service] Starting template fetch');
-      console.log('API URL:', API_URL);
+  const signatureHTML =
+    template.includeSignature && template.signatureConfig
+      ? generateSignatureHTML(template.signatureConfig)
+      : '';
 
-      const token = localStorage.getItem('token');
-      console.log('Using token:', token ? 'Exists' : 'MISSING');
+  const attachmentsHTML = generateAttachmentsHTML(template.attachments || []);
 
-      const response = await axios.get(API_URL, getAuthHeaders());
-      console.log('Full response:', response);
+  return generateEmailHTML(
+    effectiveCfg,
+    template.content || '<p>No content provided.</p>',
+    template.subject || 'Email',
+    signatureHTML,
+    attachmentsHTML,
+  );
+}
 
-      if (!response.data.success) {
-        throw new Error(`API Error: ${response.data.error}`);
-      }
+// ── API calls ─────────────────────────────────────────────────────────────────
 
-      const templates = response.data.data;
-      console.log(`Received ${templates.length} templates`);
-      console.groupEnd();
-
-      return templates;
-    } catch (error) {
-      console.error('[Template Service] Critical Error:', error);
-      throw error;
-    }
-  },
-
-  async getAllActiveTemplates() {
-    try {
-      const response = await axios.get(
-        `${API_URL}?status=true`,
-        getAuthHeaders()
-      );
-      return response.data.data || [];
-    } catch (error) {
-      console.error('Error fetching active templates:', error);
-      throw error;
-    }
-  },
-
-  async getById(id: string) {
-    const response = await axios.get(`${API_URL}/${id}`, getAuthHeaders());
-    return response.data.data;
-  },
-
-  async sendTemplate(templateId: string, parentId: string, playerId: string) {
-    const response = await axios.post(
-      `${API_URL}/send-template`,
-      { templateId, parentId, playerId },
-      getAuthHeaders()
-    );
-    return response.data;
-  },
-};
-
-// ✅ Sanitize payload to only send valid fields to backend
-const sanitizeTemplatePayload = (template: EmailTemplate) => {
-  const { title, subject, content, status, variables, category, tags } =
-    template;
-
-  return {
+function sanitizePayload(template: any) {
+  const {
     title,
     subject,
     content,
@@ -81,83 +137,96 @@ const sanitizeTemplatePayload = (template: EmailTemplate) => {
     variables,
     category,
     tags,
+    includeSignature,
+    signatureConfig,
+    predefinedVariables,
+    createdBy,
+    lastUpdatedBy,
+    attachments,
+    builderConfig,
+  } = template;
+
+  const payload: any = {
+    title,
+    subject,
+    content,
+    status: status !== undefined ? status : true,
+    variables: variables || [],
+    category: category || 'transactional',
+    tags: tags || [],
+    includeSignature: includeSignature || false,
+    signatureConfig: signatureConfig || {},
+    predefinedVariables: predefinedVariables || [],
+    builderConfig: builderConfig || null,
   };
-};
 
-// ✅ Fetch all templates
-export const getTemplates = async () => {
-  try {
-    const response = await axios.get(API_URL, getAuthHeaders());
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching templates:', error);
-    throw error;
-  }
-};
+  if (createdBy) payload.createdBy = createdBy;
+  if (lastUpdatedBy) payload.lastUpdatedBy = lastUpdatedBy;
+  if (attachments) payload.attachments = attachments;
 
-// ✅ Create new template
-export const createTemplate = async (templateData: EmailTemplate) => {
-  try {
-    const payload = sanitizeTemplatePayload(templateData);
-    const response = await axios.post(API_URL, payload, getAuthHeaders());
-    return response.data;
-  } catch (error) {
-    console.error('Error creating template:', error);
-    throw error;
-  }
-};
+  return payload;
+}
 
-// ✅ Update existing template
-export const updateTemplate = async (
-  id: string,
-  templateData: EmailTemplate
-) => {
-  try {
-    const payload = sanitizeTemplatePayload(templateData);
-    const response = await axios.put(
-      `${API_URL}/${id}`,
-      payload,
-      getAuthHeaders()
+export const emailTemplateService = {
+  async getAll(): Promise<EmailTemplate[]> {
+    const res = await axios.get(API_URL, getAuthHeaders());
+    if (!res.data.success) throw new Error(res.data.error);
+    return res.data.data;
+  },
+
+  async getAllActive(): Promise<EmailTemplate[]> {
+    const res = await axios.get(`${API_URL}?status=true`, getAuthHeaders());
+    return res.data.data || [];
+  },
+
+  async getById(id: string): Promise<EmailTemplate> {
+    const res = await axios.get(`${API_URL}/${id}`, getAuthHeaders());
+    return res.data.data;
+  },
+
+  async create(templateData: any): Promise<EmailTemplate> {
+    const payload = sanitizePayload(templateData);
+    const res = await axios.post(API_URL, payload, getAuthHeaders());
+    return res.data.data;
+  },
+
+  async update(id: string, templateData: any): Promise<EmailTemplate> {
+    const payload = sanitizePayload(templateData);
+    const res = await axios.put(`${API_URL}/${id}`, payload, getAuthHeaders());
+    return res.data.data;
+  },
+
+  async delete(id: string): Promise<void> {
+    await axios.delete(`${API_URL}/${id}`, getAuthHeaders());
+  },
+
+  async uploadAttachment(templateId: string, file: File) {
+    const form = new FormData();
+    form.append('attachment', file);
+    const res = await axios.post(`${API_URL}/${templateId}/attachments`, form, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return res.data.data;
+  },
+
+  async deleteAttachment(templateId: string, attachmentId: string) {
+    const res = await axios.delete(
+      `${API_URL}/${templateId}/attachments/${attachmentId}`,
+      getAuthHeaders(),
     );
-    return response.data;
-  } catch (error) {
-    console.error('Error updating template:', error);
-    throw error;
-  }
-};
+    return res.data;
+  },
 
-// ✅ Delete a template
-export const deleteTemplate = async (id: string) => {
-  try {
-    const response = await axios.delete(`${API_URL}/${id}`, getAuthHeaders());
-    return response.data;
-  } catch (error) {
-    console.error('Error deleting template:', error);
-    throw error;
-  }
-};
-
-// ✅ Send email using a template (standalone function)
-export const sendTemplateEmail = async ({
-  templateId,
-  parentId,
-  playerId,
-  to,
-}: {
-  templateId: string;
-  parentId: string;
-  playerId: string;
-  to?: string;
-}) => {
-  try {
-    const response = await axios.post(
-      `${API_URL}/send-template`,
-      { templateId, parentId, playerId, to },
-      getAuthHeaders()
-    );
-    return response.data;
-  } catch (error) {
-    console.error('Error sending template email:', error);
-    throw error;
-  }
+  async sendTemplate(params: {
+    templateId: string;
+    parentId?: string;
+    playerId?: string;
+    to?: string;
+  }) {
+    const res = await axios.post(`${API_URL}/send`, params, getAuthHeaders());
+    return res.data;
+  },
 };

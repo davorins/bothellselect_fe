@@ -1,3 +1,5 @@
+// settings/systemSettings/email-templates/EmailTemplatesList.tsx
+
 import React, { useState, useEffect, useRef, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -21,11 +23,8 @@ import {
   EmailTemplate,
   ApiResponse,
   ApiErrorResponse,
-  TempEmailAttachment,
-  EmailAttachment,
-} from '../../../types/types';
-import LoadingSpinner from '../../../components/common/LoadingSpinner';
-import { isR2Url, getR2AttachmentUrl } from '../../../utils/r2Utils';
+} from '../../../../types/types';
+import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 
 const QuillEditor = forwardRef<ReactQuill, ReactQuillProps>((props, ref) => (
   <ReactQuill {...props} ref={ref} />
@@ -38,43 +37,72 @@ const R2_LOGO_URL = process.env.REACT_APP_R2_PUBLIC_URL
   ? `${process.env.REACT_APP_R2_PUBLIC_URL}/logo/logo.png`
   : 'https://bothellselect.com/assets/img/logo.png';
 
+// Default builder config
+const DEFAULT_BUILDER_CONFIG = {
+  layout: 'minimal',
+  primaryColor: '#506ee4',
+  backgroundColor: '#f0f4ff',
+  headerBg: '#1e3a8a',
+  ctaColor: '#506ee4',
+  fontFamily: 'system',
+  headerTitle: '',
+  headerSubtitle: '',
+  showLogo: true,
+  logoUrl: R2_LOGO_URL,
+  headerImage: '',
+  inlineImage: '',
+  backgroundImage: '',
+  overlayOpacity: 0.55,
+  imagePosition: 'center',
+  imageCaption: '',
+  ctaText: '',
+  ctaUrl: 'https://bothellselect.com/dashboard',
+  footerText:
+    "You're receiving this because you're part of <strong>Bothell Select</strong>.",
+};
+
 interface AvailableVariable {
   label: string;
   value: string;
 }
 
-const EmailTemplates = () => {
+interface EmailTemplateWithConfig extends EmailTemplate {
+  builderConfig?: any;
+}
+
+interface EmailTemplatesListProps {
+  onEditTemplate?: (template: EmailTemplate) => void;
+}
+
+const normalizeAttachment = (att: any): any => {
+  if (!att) return att;
+  if ('content' in att) {
+    return att;
+  }
+  return {
+    ...att,
+    uploadedAt:
+      typeof att.uploadedAt === 'string'
+        ? att.uploadedAt
+        : att.uploadedAt instanceof Date
+          ? att.uploadedAt.toISOString()
+          : new Date().toISOString(),
+  };
+};
+
+const EmailTemplatesList: React.FC<EmailTemplatesListProps> = ({
+  onEditTemplate,
+}) => {
   const navigate = useNavigate();
-  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
-  const [activeTemplates, setActiveTemplates] = useState<EmailTemplate[]>([]);
-  const [inactiveTemplates, setInactiveTemplates] = useState<EmailTemplate[]>(
-    [],
-  );
-  const [newTemplate, setNewTemplate] = useState<{
-    title: string;
-    subject: string;
-    content: string;
-    status: boolean;
-    category:
-      | 'system'
-      | 'marketing'
-      | 'transactional'
-      | 'notification'
-      | 'other';
-    tags: string[];
-    variables: any[];
-    includeSignature: boolean;
-    signatureConfig: {
-      organizationName: string;
-      title: string;
-      fullName: string;
-      phone: string;
-      email: string;
-      website: string;
-      additionalInfo: string;
-    };
-    attachments: (EmailAttachment | TempEmailAttachment)[];
-  }>({
+  const [templates, setTemplates] = useState<EmailTemplateWithConfig[]>([]);
+  const [activeTemplates, setActiveTemplates] = useState<
+    EmailTemplateWithConfig[]
+  >([]);
+  const [inactiveTemplates, setInactiveTemplates] = useState<
+    EmailTemplateWithConfig[]
+  >([]);
+
+  const [newTemplate, setNewTemplate] = useState<any>({
     title: '',
     subject: '',
     content: '',
@@ -93,11 +121,11 @@ const EmailTemplates = () => {
       additionalInfo: '',
     },
     attachments: [],
+    builderConfig: DEFAULT_BUILDER_CONFIG,
   });
 
-  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(
-    null,
-  );
+  const [editingTemplate, setEditingTemplate] =
+    useState<EmailTemplateWithConfig | null>(null);
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -125,204 +153,14 @@ const EmailTemplates = () => {
     { label: "Player's School", value: '[player.schoolName]' },
   ];
 
-  // File upload handler
-  const handleFileUpload = async (
-    files: FileList,
-    isEditModal: boolean = false,
-  ) => {
-    const token = localStorage.getItem('token');
-
-    Array.from(files).forEach(async (file) => {
-      try {
-        // Validate file size (10MB limit)
-        if (file.size > 10 * 1024 * 1024) {
-          setError(`File ${file.name} exceeds 10MB limit`);
-          return;
-        }
-
-        // Validate file type
-        const allowedTypes = [
-          'image/jpeg',
-          'image/png',
-          'image/gif',
-          'image/webp',
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'text/plain',
-          'application/zip',
-          'application/x-rar-compressed',
-        ];
-
-        if (!allowedTypes.includes(file.type)) {
-          setError(`File type ${file.type} is not allowed`);
-          return;
-        }
-
-        setUploadingFiles((prev) => [...prev, file]);
-
-        const formData = new FormData();
-        formData.append('attachment', file);
-
-        // Determine which template to upload to
-        const templateId =
-          isEditModal && editingTemplate ? editingTemplate._id : null;
-
-        // If we're in add mode, store file temporarily as base64
-        if (!templateId) {
-          // Read file as base64 for temporary storage
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const base64 = e.target?.result as string;
-            const tempAttachment: TempEmailAttachment = {
-              filename: file.name,
-              size: file.size,
-              mimeType: file.type,
-              content: base64.split(',')[1], // Remove data URL prefix
-              uploadedAt: new Date().toISOString(),
-            };
-
-            setNewTemplate((prev) => ({
-              ...prev,
-              attachments: [...prev.attachments, tempAttachment],
-            }));
-          };
-          reader.readAsDataURL(file);
-
-          // Remove from uploading files
-          setUploadingFiles((prev) => prev.filter((f) => f !== file));
-          return;
-        }
-
-        // Upload to existing template
-        const response = await axios.post(
-          `${process.env.REACT_APP_API_BASE_URL}/email-templates/${templateId}/upload-attachment`,
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data',
-            },
-            onUploadProgress: (progressEvent) => {
-              const percentCompleted = Math.round(
-                (progressEvent.loaded * 100) /
-                  (progressEvent.total || file.size),
-              );
-              setUploadProgress((prev) => ({
-                ...prev,
-                [file.name]: percentCompleted,
-              }));
-            },
-          },
-        );
-
-        if (response.data.success) {
-          const uploadedAttachment = response.data.data.attachment;
-
-          if (isEditModal && editingTemplate) {
-            setEditingTemplate((prev) => ({
-              ...prev!,
-              attachments: [...(prev!.attachments || []), uploadedAttachment],
-            }));
-          } else {
-            setNewTemplate((prev) => ({
-              ...prev,
-              attachments: [...prev.attachments, uploadedAttachment],
-            }));
-          }
-        }
-      } catch (err) {
-        const error = err as AxiosError<ApiErrorResponse>;
-        setError(error.response?.data?.error || 'Failed to upload file');
-      } finally {
-        // Clean up
-        setUploadingFiles((prev) => prev.filter((f) => f !== file));
-        setUploadProgress((prev) => {
-          const newProgress = { ...prev };
-          delete newProgress[file.name];
-          return newProgress;
-        });
-      }
-    });
-  };
-
-  // File removal handler
-  const handleRemoveAttachment = async (
-    attachmentId: string,
-    isEditModal: boolean = false,
-  ) => {
-    try {
-      const token = localStorage.getItem('token');
-
-      // If we're in add mode (no template ID yet), just remove from state
-      if (!isEditModal && !editingTemplate) {
-        setNewTemplate((prev) => ({
-          ...prev,
-          attachments: prev.attachments.filter((att) =>
-            // For temporary files, filter by filename
-            // For uploaded files, filter by _id
-            '_id' in att
-              ? att._id !== attachmentId
-              : att.filename !== attachmentId,
-          ),
-        }));
-        return;
-      }
-
-      // For existing templates, call API if it has an _id
-      const templateId =
-        isEditModal && editingTemplate ? editingTemplate._id : null;
-
-      if (templateId && !attachmentId.startsWith('temp_')) {
-        // Only call API if it's a real attachment (has _id, not temp file)
-        await axios.delete(
-          `${process.env.REACT_APP_API_BASE_URL}/email-templates/${templateId}/attachments/${attachmentId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
-      }
-
-      // Update state
-      if (isEditModal && editingTemplate) {
-        setEditingTemplate((prev) => ({
-          ...prev!,
-          attachments: (prev!.attachments || []).filter((att) =>
-            '_id' in att ? att._id !== attachmentId : true,
-          ),
-        }));
-      } else {
-        setNewTemplate((prev) => ({
-          ...prev,
-          attachments: prev.attachments.filter((att) =>
-            '_id' in att
-              ? att._id !== attachmentId
-              : att.filename !== attachmentId,
-          ),
-        }));
-      }
-    } catch (err) {
-      const error = err as AxiosError<ApiErrorResponse>;
-      setError(error.response?.data?.error || 'Failed to remove attachment');
-    }
-  };
-
-  // Format file size
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
-
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Get file icon based on type
   const getFileIcon = (mimeType: string): string => {
     if (mimeType.startsWith('image/')) return 'ti ti-photo';
     if (mimeType === 'application/pdf') return 'ti ti-file-text';
@@ -336,27 +174,14 @@ const EmailTemplates = () => {
     return 'ti ti-file';
   };
 
-  // File Attachments Section Component
-  const FileAttachmentsSection: React.FC<{
-    attachments: (EmailAttachment | TempEmailAttachment)[];
-    onRemove: (attachmentId: string) => void;
-    onUpload: (files: FileList) => void;
-    uploadingFiles?: File[];
-    uploadProgress?: { [key: string]: number };
-    isEditMode?: boolean;
-  }> = ({
+  const FileAttachmentsSection: React.FC<any> = ({
     attachments,
     onRemove,
     onUpload,
     uploadingFiles = [],
     uploadProgress = {},
-    isEditMode = false,
   }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleFileInputClick = () => {
-      fileInputRef.current?.click();
-    };
 
     return (
       <div className='border rounded p-3 mt-5 mb-3'>
@@ -378,19 +203,17 @@ const EmailTemplates = () => {
             <Button
               variant='outline-primary'
               size='sm'
-              onClick={handleFileInputClick}
+              onClick={() => fileInputRef.current?.click()}
             >
-              <i className='ti ti-paperclip me-1'></i>
-              Add Files
+              <i className='ti ti-paperclip me-1'></i> Add Files
             </Button>
           </div>
         </div>
 
-        {/* Uploading files progress */}
         {uploadingFiles.length > 0 && (
           <div className='mb-3'>
             <h6>Uploading Files:</h6>
-            {uploadingFiles.map((file) => (
+            {uploadingFiles.map((file: File) => (
               <div key={file.name} className='d-flex align-items-center mb-2'>
                 <div className='flex-fill me-3'>
                   <div className='d-flex justify-content-between'>
@@ -410,20 +233,15 @@ const EmailTemplates = () => {
           </div>
         )}
 
-        {/* Attachments list */}
         {attachments.length > 0 ? (
           <div className='mt-3'>
             <h6>Attached Files ({attachments.length}):</h6>
             <div className='list-group'>
-              {attachments.map((attachment, index) => {
-                const isTempFile = !('_id' in attachment);
+              {attachments.map((attachment: any, index: number) => {
+                const isTempFile = 'content' in attachment;
                 const attachmentId = isTempFile
                   ? `temp_${attachment.filename}_${index}`
                   : attachment._id || `attachment_${index}`;
-                const displayId = isTempFile
-                  ? attachment.filename
-                  : attachment._id || '';
-
                 return (
                   <div
                     key={attachmentId}
@@ -473,7 +291,6 @@ const EmailTemplates = () => {
           </div>
         )}
 
-        {/* File requirements */}
         <div className='mt-3'>
           <small className='text-muted'>
             <i className='ti ti-info-circle me-1'></i>
@@ -484,7 +301,169 @@ const EmailTemplates = () => {
     );
   };
 
-  // Separate templates into active and inactive
+  const handleFileUpload = async (
+    files: FileList,
+    isEditModal: boolean = false,
+  ) => {
+    const token = localStorage.getItem('token');
+
+    Array.from(files).forEach(async (file) => {
+      try {
+        if (file.size > 10 * 1024 * 1024) {
+          setError(`File ${file.name} exceeds 10MB limit`);
+          return;
+        }
+
+        const allowedTypes = [
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'image/webp',
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'text/plain',
+          'application/zip',
+          'application/x-rar-compressed',
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+          setError(`File type ${file.type} is not allowed`);
+          return;
+        }
+
+        setUploadingFiles((prev) => [...prev, file]);
+        const formData = new FormData();
+        formData.append('attachment', file);
+
+        const templateId =
+          isEditModal && editingTemplate ? editingTemplate._id : null;
+
+        if (!templateId) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const base64 = e.target?.result as string;
+            const tempAttachment = {
+              filename: file.name,
+              size: file.size,
+              mimeType: file.type,
+              content: base64.split(',')[1],
+              uploadedAt: new Date().toISOString(),
+            };
+            setNewTemplate((prev: any) => ({
+              ...prev,
+              attachments: [...prev.attachments, tempAttachment],
+            }));
+          };
+          reader.readAsDataURL(file);
+          setUploadingFiles((prev) => prev.filter((f) => f !== file));
+          return;
+        }
+
+        const response = await axios.post(
+          `${process.env.REACT_APP_API_BASE_URL}/email-templates/${templateId}/attachments`,
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data',
+            },
+            onUploadProgress: (progressEvent) => {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) /
+                  (progressEvent.total || file.size),
+              );
+              setUploadProgress((prev) => ({
+                ...prev,
+                [file.name]: percentCompleted,
+              }));
+            },
+          },
+        );
+
+        if (response.data.success) {
+          const uploadedAttachment = normalizeAttachment(
+            response.data.data.attachment,
+          );
+          if (isEditModal && editingTemplate) {
+            setEditingTemplate((prev) => ({
+              ...prev!,
+              attachments: [...(prev!.attachments || []), uploadedAttachment],
+            }));
+          } else {
+            setNewTemplate((prev: any) => ({
+              ...prev,
+              attachments: [...prev.attachments, uploadedAttachment],
+            }));
+          }
+        }
+      } catch (err) {
+        const error = err as AxiosError<ApiErrorResponse>;
+        setError(error.response?.data?.error || 'Failed to upload file');
+      } finally {
+        setUploadingFiles((prev) => prev.filter((f) => f !== file));
+        setUploadProgress((prev) => {
+          const newProgress = { ...prev };
+          delete newProgress[file.name];
+          return newProgress;
+        });
+      }
+    });
+  };
+
+  const handleRemoveAttachment = async (
+    attachmentId: string,
+    isEditModal: boolean = false,
+  ) => {
+    try {
+      const token = localStorage.getItem('token');
+
+      if (!isEditModal && !editingTemplate) {
+        setNewTemplate((prev: any) => ({
+          ...prev,
+          attachments: prev.attachments.filter((att: any) => {
+            if ('content' in att) return att.filename !== attachmentId;
+            return att._id !== attachmentId;
+          }),
+        }));
+        return;
+      }
+
+      const templateId =
+        isEditModal && editingTemplate ? editingTemplate._id : null;
+
+      if (templateId && !attachmentId.startsWith('temp_')) {
+        await axios.delete(
+          `${process.env.REACT_APP_API_BASE_URL}/email-templates/${templateId}/attachments/${attachmentId}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+      }
+
+      if (isEditModal && editingTemplate) {
+        setEditingTemplate((prev) => ({
+          ...prev!,
+          attachments: (prev!.attachments || []).filter((att: any) => {
+            if ('content' in att) return true;
+            return att._id !== attachmentId;
+          }),
+        }));
+      } else {
+        setNewTemplate((prev: any) => ({
+          ...prev,
+          attachments: prev.attachments.filter((att: any) => {
+            if ('content' in att) return att.filename !== attachmentId;
+            return att._id !== attachmentId;
+          }),
+        }));
+      }
+    } catch (err) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(error.response?.data?.error || 'Failed to remove attachment');
+    }
+  };
+
   useEffect(() => {
     const active = templates.filter((template) => template.status === true);
     const inactive = templates.filter((template) => template.status === false);
@@ -492,80 +471,58 @@ const EmailTemplates = () => {
     setInactiveTemplates(inactive);
   }, [templates]);
 
-  // Apply email-friendly styles to HTML content
   function addEmailStyles(html: string): string {
     if (!html) return '';
-
     let styledHtml = html;
-
-    // Add basic styles to paragraphs
     styledHtml = styledHtml.replace(
       /<p(\s[^>]*)?>/g,
       '<p style="margin: 0 0 16px; padding: 0; line-height: 1.6; color: #333;"$1>',
     );
-
-    // Style headings
     styledHtml = styledHtml.replace(
       /<h1(\s[^>]*)?>/g,
       '<h1 style="font-size: 28px; font-weight: bold; margin: 0 0 20px; padding: 0; color: #222; line-height: 1.3;"$1>',
     );
-
     styledHtml = styledHtml.replace(
       /<h2(\s[^>]*)?>/g,
       '<h2 style="font-size: 24px; font-weight: bold; margin: 0 0 18px; padding: 0; color: #222; line-height: 1.3;"$1>',
     );
-
     styledHtml = styledHtml.replace(
       /<h3(\s[^>]*)?>/g,
       '<h3 style="font-size: 20px; font-weight: 600; margin: 0 0 16px; padding: 0; color: #222; line-height: 1.3;"$1>',
     );
-
-    // Style lists
     styledHtml = styledHtml.replace(
       /<ul(\s[^>]*)?>/g,
       '<ul style="margin: 0 0 16px 20px; padding: 0; color: #333; line-height: 1.6;"$1>',
     );
-
     styledHtml = styledHtml.replace(
       /<ol(\s[^>]*)?>/g,
       '<ol style="margin: 0 0 16px 20px; padding: 0; color: #333; line-height: 1.6;"$1>',
     );
-
     styledHtml = styledHtml.replace(
       /<li(\s[^>]*)?>/g,
       '<li style="margin: 0 0 8px; padding: 0;"$1>',
     );
-
-    // Style links
     styledHtml = styledHtml.replace(
       /<a(\s[^>]*)?>/g,
       '<a style="color: rgba(0, 0, 0, .7); text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;"$1>',
     );
-
-    // Style bold and italic
     styledHtml = styledHtml.replace(
       /<strong(\s[^>]*)?>/g,
       '<strong style="font-weight: bold;"$1>',
     );
-
     styledHtml = styledHtml.replace(
       /<em(\s[^>]*)?>/g,
       '<em style="font-style: italic;"$1>',
     );
-
-    // Style blockquotes
     styledHtml = styledHtml.replace(
       /<blockquote(\s[^>]*)?>/g,
       '<blockquote style="margin: 20px 0; padding: 15px 20px; background-color: #f8f9fa; border-left: 4px solid #506ee4; color: #555; font-style: italic;"$1>',
     );
-
     return styledHtml;
   }
 
-  // Generate email signature HTML
   const generateSignatureHTML = (signatureConfig: any) => {
     if (!signatureConfig) return '';
-
     const {
       organizationName = '',
       title = '',
@@ -575,7 +532,6 @@ const EmailTemplates = () => {
       website = '',
       additionalInfo = '',
     } = signatureConfig;
-
     return `
 <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eaeaea;">
   <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
@@ -583,11 +539,8 @@ const EmailTemplates = () => {
       <td style="padding: 0; vertical-align: top;">
         <div style="color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
           <strong style="color: #222; font-size: 16px; display: block; margin-bottom: 8px;">${organizationName}</strong>
-          
           ${fullName ? `<div style="margin-bottom: 4px;"><strong>${fullName}</strong></div>` : ''}
-          
           ${title ? `<div style="margin-bottom: 4px; color: #666; font-size: 14px;">${title}</div>` : ''}
-          
           <div style="margin-top: 12px; font-size: 14px;">
             ${phone ? `<div style="margin-bottom: 4px;"><span style="color: #666;">Phone:</span> <span style="color: #333;">${phone}</span></div>` : ''}
             ${email ? `<div style="margin-bottom: 4px;"><span style="color: #666;">Email:</span> <a href="mailto:${email}" style="color: rgba(0, 0, 0, .7); text-decoration: none;">${email}</a></div>` : ''}
@@ -601,140 +554,10 @@ const EmailTemplates = () => {
 </div>`;
   };
 
-  // Function to get the complete email HTML with wrapper for sending
-  const getCompleteEmailHTML = (
-    content: string,
-    includeSignature: boolean = false,
-    signatureConfig: any = null,
-    attachments: any[] = [],
-  ) => {
-    let styledContent = addEmailStyles(content);
-
-    // Add attachments HTML if present
-    if (attachments && attachments.length > 0) {
-      styledContent += generateAttachmentsHTML(attachments);
-    }
-
-    // Add signature if enabled and configured
-    if (includeSignature && signatureConfig) {
-      const signatureHTML = generateSignatureHTML(signatureConfig);
-      styledContent += signatureHTML;
-    }
-
-    return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Email Template</title>
-  <style>
-    @media only screen and (max-width: 600px) {
-      .container {
-        width: 100% !important;
-        padding: 10px !important;
-      }
-      
-      .email-body {
-        padding: 30px 40px 0 40px !important;
-      }
-      
-      .header-img {
-        height: 30px !important;
-      }
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      line-height: 1.6;
-      color: #333333;
-      margin: 0;
-      padding: 0;
-      -webkit-text-size-adjust: 100%;
-      -ms-text-size-adjust: 100%;
-    }
-  </style>
-</head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" align="center" style="background-color: #f6f6f6; padding: 40px 0;">
-    <tr>
-      <td align="center" style="padding: 0;">
-        <!--[if (gte mso 9)|(IE)]>
-        <table width="600" align="center" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-        <td>
-        <![endif]-->
-        <div class="container" style="max-width: 600px; margin: 0 auto;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden;">
-            <!-- Header -->
-            <tr>
-              <td style="padding: 30px 30px 0;">
-                <div style="text-align: left; border-bottom: 1px solid #eaeaea; padding-bottom: 20px;">
-                  <img src="${R2_LOGO_URL}" alt="Bothell Select Logo" height="30" style="display: block; margin: 0; height: 30px;" 
-                       onerror="this.onerror=null; this.src='https://bothellselect.com/assets/img/logo.png';" />
-                </div>
-              </td>
-            </tr>
-            
-            <!-- Email Content -->
-            <tr>
-              <td class="email-body" style="padding: 30px;">
-                <div style="max-width: 100%;">
-                  ${styledContent}
-                </div>
-              </td>
-            </tr>
-            
-            <!-- Footer -->
-            <tr>
-              <td style="padding: 0 30px;">
-                <div style="text-align: center; font-size: 13px; color: #666; padding: 30px 0 20px; margin-top: 40px; border-top: 1px solid #eaeaea;">
-                  <p style="margin: 0 0 8px;">You're receiving this email because you're part of <strong style="color: #333;">Bothell Select</strong>.</p>
-                  <p style="margin: 0;">
-                    <a href="https://bothellselect.com/general-settings/notifications-settings" style="color: rgba(0, 0, 0, .7); text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;">
-                      Unsubscribe
-                    </a> • 
-                    <a href="https://bothellselect.com/contact-us" style="color: rgba(0, 0, 0, .7); text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;">
-                      Contact Us
-                    </a> • 
-                    <a href="https://bothellselect.com" style="color: rgba(0, 0, 0, .7); text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;">
-                      Website
-                    </a>
-                  </p>
-                </div>
-              </td>
-            </tr>
-          </table>
-          
-          <!-- Additional footer info (outside the main card) -->
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top: 20px;">
-            <tr>
-              <td align="center" style="padding: 20px 0;">
-                <p style="margin: 0; font-size: 12px; color: #999;">
-                  &copy; ${new Date().getFullYear()} Bothell Select. All rights reserved.
-                </p>
-              </td>
-            </tr>
-          </table>
-        </div>
-        <!--[if (gte mso 9)|(IE)]>
-        </td>
-        </tr>
-        </table>
-        <![endif]-->
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-`;
-  };
-
-  // Generate attachments HTML for preview
   const generateAttachmentsHTML = (attachments: any[]): string => {
     if (!attachments || attachments.length === 0) return '';
 
-    const getFileIcon = (mimeType: string) => {
+    const getFileIconEmoji = (mimeType: string) => {
       if (mimeType.startsWith('image/')) return '🖼️';
       if (mimeType === 'application/pdf') return '📄';
       if (mimeType.includes('word') || mimeType.includes('document'))
@@ -759,29 +582,17 @@ const EmailTemplates = () => {
         (att) => `
       <div style="margin: 12px 0; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #506ee4;">
         <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="font-size: 24px; line-height: 1;">${getFileIcon(
-            att.mimeType,
-          )}</div>
+          <div style="font-size: 24px; line-height: 1;">${getFileIconEmoji(att.mimeType)}</div>
           <div style="flex: 1;">
-            <div style="font-weight: 600; color: #333; margin-bottom: 4px;">${
-              att.filename
-            }</div>
-            <div style="font-size: 12px; color: #666;">
-              ${formatFileSizePreview(att.size)} • ${att.mimeType}
-            </div>
+            <div style="font-weight: 600; color: #333; margin-bottom: 4px;">${att.filename}</div>
+            <div style="font-size: 12px; color: #666;">${formatFileSizePreview(att.size)} • ${att.mimeType}</div>
           </div>
         </div>
         ${
           att.url
-            ? `
-          <div style="margin-top: 8px; font-size: 13px;">
-            <a href="${att.url}" 
-               style="color: rgba(0, 0, 0, .7); text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;"
-               target="_blank" rel="noopener noreferrer">
-              🔗 Direct download link
-            </a>
-          </div>
-        `
+            ? `<div style="margin-top: 8px; font-size: 13px;">
+          <a href="${att.url}" style="color: rgba(0, 0, 0, .7); text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;" target="_blank" rel="noopener noreferrer">🔗 Direct download link</a>
+        </div>`
             : ''
         }
       </div>
@@ -791,617 +602,83 @@ const EmailTemplates = () => {
 
     return `
       <div style="margin-top: 30px; padding-top: 25px; border-top: 2px solid #eaeaea;">
-        <h3 style="color: #333; margin-bottom: 20px; font-size: 18px;">
-          📎 Attachments (${attachments.length})
-        </h3>
-        <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-          ${attachmentItems}
-        </div>
+        <h3 style="color: #333; margin-bottom: 20px; font-size: 18px;">📎 Attachments (${attachments.length})</h3>
+        <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 15px;">${attachmentItems}</div>
       </div>
     `;
   };
 
-  useEffect(() => {
-    return () => {
-      // Cleanup Quill instances
-      [quillRef, editQuillRef].forEach((ref) => {
-        if (ref.current) {
-          const quill = ref.current.getEditor();
-          quill.off('text-change');
-        }
-      });
-    };
-  }, []);
-
-  // Load templates from API with proper error handling
-  useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          navigate('/login');
-          return;
-        }
-
-        const response = await axios.get<ApiResponse<EmailTemplate[]>>(
-          `${process.env.REACT_APP_API_BASE_URL}/email-templates`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
-
-        // Ensure we always set an array, even if response.data.data is undefined
-        setTemplates(
-          Array.isArray(response.data?.data)
-            ? response.data.data.map((t) => ({
-                ...t,
-                variables: t.variables || [],
-                tags: t.tags || [],
-                includeSignature: t.includeSignature || false,
-                signatureConfig: t.signatureConfig || {
-                  organizationName: '',
-                  title: '',
-                  fullName: '',
-                  phone: '',
-                  email: '',
-                  website: '',
-                  additionalInfo: '',
-                },
-                attachments: t.attachments || [],
-              }))
-            : [],
-        );
-      } catch (err) {
-        const error = err as Error;
-        setError(error.message || 'Failed to load templates');
-        setTemplates([]); // Explicitly set empty array on error
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTemplates();
-  }, [navigate, refreshTrigger]);
-
-  // Handle input changes with proper typing
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
+  const getCompleteEmailHTML = (
+    content: string,
+    includeSignature: boolean = false,
+    signatureConfig: any = null,
+    attachments: any[] = [],
   ) => {
-    const { name, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
+    let styledContent = addEmailStyles(content);
+    if (attachments && attachments.length > 0)
+      styledContent += generateAttachmentsHTML(attachments);
+    if (includeSignature && signatureConfig)
+      styledContent += generateSignatureHTML(signatureConfig);
 
-    setNewTemplate((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Template</title>
+  <style>
+    @media only screen and (max-width: 600px) { .container { width: 100% !important; padding: 10px !important; } .email-body { padding: 30px 40px 0 40px !important; } .header-img { height: 30px !important; } }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+  </style>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" align="center" style="background-color: #f6f6f6; padding: 40px 0;">
+    <tr>
+      <td align="center" style="padding: 0;">
+        <div class="container" style="max-width: 600px; margin: 0 auto;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden;">
+            <tr>
+              <td style="padding: 30px 30px 0;">
+                <div style="text-align: left; border-bottom: 1px solid #eaeaea; padding-bottom: 20px;">
+                  <img src="${R2_LOGO_URL}" alt="Bothell Select Logo" height="30" style="display: block; margin: 0; height: 30px;" onerror="this.onerror=null; this.src='https://bothellselect.com/assets/img/logo.png';" />
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="email-body" style="padding: 30px;">
+                <div style="max-width: 100%;">${styledContent}</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 0 30px;">
+                <div style="text-align: center; font-size: 13px; color: #666; padding: 30px 0 20px; margin-top: 40px; border-top: 1px solid #eaeaea;">
+                  <p style="margin: 0 0 8px;">You're receiving this email because you're part of <strong style="color: #333;">Bothell Select</strong>.</p>
+                  <p style="margin: 0;">
+                    <a href="https://bothellselect.com/general-settings/notifications-settings" style="color: rgba(0, 0, 0, .7); text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;">Unsubscribe</a> • 
+                    <a href="https://bothellselect.com/contact-us" style="color: rgba(0, 0, 0, .7); text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;">Contact Us</a> • 
+                    <a href="https://bothellselect.com" style="color: rgba(0, 0, 0, .7); text-decoration: none; border-bottom: 1px solid #506ee4; padding-bottom: 1px;">Website</a>
+                  </p>
+                </div>
+              </td>
+            </tr>
+          </table>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top: 20px;">
+            <tr>
+              <td align="center" style="padding: 20px 0;">
+                <p style="margin: 0; font-size: 12px; color: #999;">&copy; ${new Date().getFullYear()} Bothell Select. All rights reserved.</p>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
   };
 
-  // Handle signature input changes
-  const handleSignatureChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
-
-    setNewTemplate((prev) => ({
-      ...prev,
-      signatureConfig: {
-        ...prev.signatureConfig,
-        [name]: value,
-      },
-    }));
-  };
-
-  // Handle tags input change
-  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const tags = e.target.value.split(',').map((tag) => tag.trim());
-    setNewTemplate((prev) => ({ ...prev, tags }));
-  };
-
-  // Content change handlers with null checks
-  const handleContentChange = (content: string) => {
-    setNewTemplate((prev) => ({ ...prev, content }));
-  };
-
-  const handleEditContentChange = (content: string) => {
-    if (editingTemplate) {
-      setEditingTemplate({
-        ...editingTemplate,
-        content,
-      });
-    }
-  };
-
-  // Handle edit signature changes
-  const handleEditSignatureChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
-
-    if (editingTemplate) {
-      setEditingTemplate({
-        ...editingTemplate,
-        signatureConfig: {
-          ...editingTemplate.signatureConfig,
-          [name]: value,
-        },
-      });
-    }
-  };
-
-  const addTemplate = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Check for duplicate title
-    const isDuplicate = templates.some(
-      (template) =>
-        template.title.toLowerCase().trim() ===
-        newTemplate.title.toLowerCase().trim(),
-    );
-
-    if (isDuplicate) {
-      setError(
-        `A template with the title "${newTemplate.title}" already exists.`,
-      );
-      // Highlight the title field
-      const titleInput = document.querySelector('input[name="title"]');
-      titleInput?.classList.add('is-invalid');
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      const token = localStorage.getItem('token');
-
-      // DO NOT include signature in stored content - store only the message body
-      const storedContent = newTemplate.content;
-
-      // Separate base64 files from already uploaded files
-      const base64Attachments = newTemplate.attachments.filter(
-        (att) => 'content' in att,
-      ) as TempEmailAttachment[];
-
-      const uploadedAttachments = newTemplate.attachments.filter(
-        (att) => '_id' in att,
-      ) as EmailAttachment[];
-
-      // Prepare payload for template creation
-      const payload = {
-        title: newTemplate.title.trim(),
-        subject: newTemplate.subject.trim(),
-        content: storedContent,
-        status: newTemplate.status,
-        category: newTemplate.category,
-        tags: newTemplate.tags.filter((tag) => tag.trim() !== ''),
-        variables:
-          newTemplate.variables?.map((v) => ({
-            name: v.name.trim(),
-            description: v.description.trim(),
-            defaultValue: v.defaultValue?.trim() || '',
-          })) || [],
-        includeSignature: newTemplate.includeSignature,
-        signatureConfig: newTemplate.signatureConfig,
-        attachments: uploadedAttachments.map((att) => ({
-          filename: att.filename,
-          url: att.url,
-          size: att.size,
-          mimeType: att.mimeType,
-        })),
-      };
-
-      // Create the template
-      const response = await axios.post<EmailTemplate>(
-        `${process.env.REACT_APP_API_BASE_URL}/email-templates`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-
-      // Upload base64 files after template creation
-      const templateId = response.data._id;
-      for (const tempAttachment of base64Attachments) {
-        try {
-          // Convert base64 to blob
-          const byteCharacters = atob(tempAttachment.content);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-          }
-          const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], { type: tempAttachment.mimeType });
-          const file = new File([blob], tempAttachment.filename, {
-            type: tempAttachment.mimeType,
-          });
-
-          const formData = new FormData();
-          formData.append('attachment', file);
-
-          await axios.post(
-            `${process.env.REACT_APP_API_BASE_URL}/email-templates/${templateId}/upload-attachment`,
-            formData,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'multipart/form-data',
-              },
-            },
-          );
-        } catch (uploadError) {
-          console.error(
-            `Failed to upload ${tempAttachment.filename}:`,
-            uploadError,
-          );
-        }
-      }
-
-      if (response.data) {
-        setRefreshTrigger((prev) => prev + 1);
-        resetNewTemplate();
-        setShowAddModal(false);
-        setSuccessMessage('Template created successfully!');
-        setTimeout(() => setSuccessMessage(null), 3000);
-      }
-    } catch (err) {
-      const error = err as AxiosError<ApiErrorResponse>;
-      setError(
-        error.response?.data?.message ||
-          error.message ||
-          'Failed to create template',
-      );
-      console.error('API Error:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const saveEditedTemplate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingTemplate) return;
-
-    setIsSaving(true);
-
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      // Store only the content, NOT with signature
-      const storedContent = editingTemplate.content;
-
-      // Filter out any temporary attachments (ones with content field)
-      const validAttachments = (editingTemplate.attachments || []).filter(
-        (att) => '_id' in att || 'url' in att,
-      ) as EmailAttachment[];
-
-      // Prepare attachments for backend
-      const attachmentsForBackend = validAttachments.map((att) => ({
-        filename: att.filename,
-        url: att.url,
-        size: att.size,
-        mimeType: att.mimeType,
-        // Include _id if it exists (for existing attachments)
-        ...(att._id && { _id: att._id }),
-        // Include uploadedAt if it exists
-        ...(att.uploadedAt && { uploadedAt: att.uploadedAt }),
-      }));
-
-      // Create payload that matches backend expectations
-      const payload = {
-        title: editingTemplate.title.trim(),
-        subject: editingTemplate.subject.trim(),
-        content: storedContent, // Store only the content, NOT with signature
-        status: editingTemplate.status,
-        category: editingTemplate.category,
-        tags: editingTemplate.tags.filter((tag) => tag.trim() !== ''),
-        variables: (editingTemplate.variables || []).map((v) => ({
-          name: v.name?.trim() || '',
-          description: v.description?.trim() || '',
-          defaultValue: v.defaultValue?.trim() || '',
-        })),
-        includeSignature: editingTemplate.includeSignature,
-        signatureConfig: editingTemplate.signatureConfig,
-        // Include attachments in payload
-        attachments: attachmentsForBackend,
-      };
-
-      console.log('Saving template payload:', {
-        title: payload.title,
-        attachmentCount: attachmentsForBackend.length,
-        attachments: attachmentsForBackend,
-      });
-
-      const response = await axios.put<EmailTemplate>(
-        `${process.env.REACT_APP_API_BASE_URL}/email-templates/${editingTemplate._id}`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-
-      if (response.data) {
-        // Update the template in state with the response (which should include attachments)
-        setTemplates((prev) =>
-          prev.map((t) => (t._id === editingTemplate._id ? response.data : t)),
-        );
-        setRefreshTrigger((prev) => prev + 1);
-        setEditingTemplate(null);
-        setShowEditModal(false);
-        setSuccessMessage('Template updated successfully!');
-        setTimeout(() => setSuccessMessage(null), 3000);
-      }
-    } catch (err) {
-      const error = err as AxiosError<ApiErrorResponse>;
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        'Failed to update template';
-      setError(errorMessage);
-
-      console.error('Update Error Details:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const confirmDelete = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!templateToDelete) return;
-
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      await axios.delete(
-        `${process.env.REACT_APP_API_BASE_URL}/email-templates/${templateToDelete}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      setTemplates((prev) => prev.filter((t) => t._id !== templateToDelete));
-      setTemplateToDelete(null);
-      setShowDeleteModal(false);
-      setSuccessMessage('Template deleted successfully!');
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
-      const error = err as AxiosError<ApiErrorResponse>;
-      setError(
-        error.response?.data?.message ||
-          error.message ||
-          'Failed to delete template',
-      );
-    }
-  };
-
-  const resetNewTemplate = () => {
-    setNewTemplate({
-      title: '',
-      subject: '',
-      content: '',
-      status: true,
-      category: 'system',
-      tags: [],
-      variables: [],
-      includeSignature: false,
-      signatureConfig: {
-        organizationName: '',
-        title: '',
-        fullName: '',
-        phone: '',
-        email: '',
-        website: '',
-        additionalInfo: '',
-      },
-      attachments: [],
-    });
-  };
-
-  // Rich text editor configuration
-  const modules = {
-    toolbar: [
-      [{ header: [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      ['link', 'image'],
-      ['clean'],
-    ],
-  };
-
-  const formats = [
-    'header',
-    'bold',
-    'italic',
-    'underline',
-    'strike',
-    'blockquote',
-    'list',
-    'bullet',
-    'link',
-    'image',
-  ];
-
-  const handleEditInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
-  ) => {
-    const { name, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
-
-    if (editingTemplate) {
-      if (name === 'includeSignature') {
-        // Explicitly handle the boolean case
-        setEditingTemplate({
-          ...editingTemplate,
-          includeSignature: type === 'checkbox' ? checked : value === 'true',
-        });
-      } else {
-        // Handle other fields
-        setEditingTemplate({
-          ...editingTemplate,
-          [name]: type === 'checkbox' ? checked : value,
-        });
-      }
-    }
-  };
-
-  const handleEditTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const tags = e.target.value.split(',').map((tag) => tag.trim());
-    if (editingTemplate) {
-      setEditingTemplate({
-        ...editingTemplate,
-        tags: tags || [],
-      });
-    }
-  };
-
-  // Function to insert variable into Quill editor
-  const insertVariable = (variable: string, isEditModal: boolean = false) => {
-    const editor = isEditModal
-      ? editQuillRef.current?.getEditor()
-      : quillRef.current?.getEditor();
-
-    if (editor) {
-      const range = editor.getSelection();
-      if (range) {
-        editor.insertText(range.index, variable);
-        editor.setSelection(range.index + variable.length, 0);
-      } else {
-        // If no selection, insert at the end
-        const length = editor.getLength();
-        editor.insertText(length - 1, variable);
-        editor.setSelection(length - 1 + variable.length, 0);
-      }
-    }
-  };
-
-  // Helper function to detect and remove signature from content
-  const removeSignatureFromContent = (content: string): string => {
-    if (!content) return '';
-
-    // Pattern 1: Look for the signature div with margin-top: 40px (from generateSignatureHTML)
-    const signatureDivPattern =
-      /<div[^>]*style="[^"]*margin-top: 40px[^"]*"[^>]*>[\s\S]*?<\/div>/i;
-
-    // Pattern 2: Look for signature structure (organization name, phone, email, website in sequence)
-    const signatureStructurePattern =
-      /<table[^>]*cellpadding="0"[^>]*cellspacing="0"[^>]*>[\s\S]*?<strong[^>]*>.*?<\/strong>[\s\S]*?Phone:[\s\S]*?Email:[\s\S]*?Website:[\s\S]*?<\/table>/i;
-
-    // Pattern 3: Look for border-top signature separator
-    const borderTopPattern =
-      /<div[^>]*style="[^"]*border-top: 1px solid #eaeaea[^"]*"[^>]*>[\s\S]*?<\/div>/i;
-
-    let cleanedContent = content;
-
-    // Try each pattern
-    [signatureDivPattern, signatureStructurePattern, borderTopPattern].forEach(
-      (pattern) => {
-        cleanedContent = cleanedContent.replace(pattern, '').trim();
-      },
-    );
-
-    // Also remove any empty divs that might be left after signature removal
-    cleanedContent = cleanedContent.replace(/<div[^>]*><\/div>/g, '').trim();
-    cleanedContent = cleanedContent.replace(/<div[^>]*>\s*<\/div>/g, '').trim();
-
-    return cleanedContent;
-  };
-
-  // Extract main content from stored HTML for editing
-  const extractContentForEditing = (storedHtml: string): string => {
-    if (!storedHtml) return '';
-
-    // Check if this is a full email template or just content
-    const hasEmailWrapper =
-      storedHtml.includes('email-body') ||
-      storedHtml.includes('Bothell Select Logo') ||
-      storedHtml.includes("You're receiving this email");
-
-    if (!hasEmailWrapper) {
-      // Already just content, return as is
-      return storedHtml;
-    }
-
-    // Try to extract content from email-body
-    const emailBodyRegex =
-      /<td[^>]*class="email-body"[^>]*>[\s\S]*?<div[^>]*>([\s\S]*?)<\/div>[\s\S]*?<\/td>/i;
-    const match = storedHtml.match(emailBodyRegex);
-
-    if (match && match[1]) {
-      // Remove any wrapper divs and inline styles
-      let content = match[1]
-        .replace(/style="[^"]*"/g, '')
-        .replace(/class="[^"]*"/g, '')
-        .trim();
-
-      // Clean up any remaining wrapper tags
-      content = content.replace(/^<div[^>]*>/, '').replace(/<\/div>$/, '');
-
-      return content;
-    }
-
-    // Last resort: return the original HTML
-    return storedHtml;
-  };
-
-  // Function to set editing template with cleaned content
-  const startEditingTemplate = (template: EmailTemplate) => {
-    // Extract just the main content for editing
-    const cleanedContent = extractContentForEditing(template.content);
-
-    setEditingTemplate({
-      ...template,
-      content: cleanedContent,
-      variables: template.variables || [],
-      tags: template.tags || [],
-      includeSignature: template.includeSignature || false,
-      signatureConfig: template.signatureConfig || {
-        organizationName: '',
-        title: '',
-        fullName: '',
-        phone: '',
-        email: '',
-        website: '',
-        additionalInfo: '',
-      },
-      attachments: template.attachments || [],
-    });
-    setShowEditModal(true);
-  };
-
-  // Email Preview Component Props
-  interface EmailPreviewProps {
-    content: string;
-    includeSignature?: boolean;
-    signatureConfig?: any;
-    attachments?: any[];
-  }
-
-  // Email Preview Component
-  const EmailPreview: React.FC<EmailPreviewProps> = ({
+  const EmailPreview: React.FC<any> = ({
     content,
     includeSignature = false,
     signatureConfig = null,
@@ -1413,7 +690,6 @@ const EmailTemplates = () => {
       signatureConfig,
       attachments,
     );
-
     return (
       <div
         style={{
@@ -1447,26 +723,36 @@ const EmailTemplates = () => {
     );
   };
 
-  // Template List Component
-  const TemplateList = ({ templates }: { templates: EmailTemplate[] }) => {
+  // ✅ KEY FUNCTION - Handles edit click and calls parent if available
+  const handleEditClick = (template: EmailTemplateWithConfig) => {
+    if (onEditTemplate) {
+      // Close edit modal if open
+      setShowEditModal(false);
+      // Call the parent handler to open the builder
+      onEditTemplate(template);
+    } else {
+      // Fallback to the old modal behavior
+      startEditingTemplate(template);
+    }
+  };
+
+  const TemplateList = ({
+    templates,
+  }: {
+    templates: EmailTemplateWithConfig[];
+  }) => {
     return (
       <div className='row'>
         {templates.length > 0 ? (
           templates.map((template) => (
-            <div
-              className='col-xxl-4 col-md-6'
-              key={`${template._id}-${
-                template.updatedAt || template.createdAt
-              }`}
-            >
+            <div className='col-xxl-4 col-md-6' key={template._id}>
               <div className='d-flex align-items-center justify-content-between bg-white p-3 border rounded mb-3'>
                 <div>
                   <h5 className='fs-15 fw-normal mb-1'>
                     {template.title}
                     {!template.status && (
                       <Badge bg='warning' className='ms-2'>
-                        <i className='ti ti-ban me-1'></i>
-                        Inactive
+                        <i className='ti ti-ban me-1'></i>Inactive
                       </Badge>
                     )}
                   </h5>
@@ -1491,10 +777,11 @@ const EmailTemplates = () => {
                   </div>
                 </div>
                 <div className='d-flex align-items-center'>
+                  {/* ✅ UPDATED EDIT BUTTON */}
                   <Button
                     variant='outline-light'
                     className='bg-white btn-icon me-2'
-                    onClick={() => startEditingTemplate(template)}
+                    onClick={() => handleEditClick(template)}
                   >
                     <i className='ti ti-edit' />
                   </Button>
@@ -1502,7 +789,7 @@ const EmailTemplates = () => {
                     variant='outline-light'
                     className='bg-white btn-icon'
                     onClick={() => {
-                      setTemplateToDelete(template._id);
+                      setTemplateToDelete(template._id || null);
                       setShowDeleteModal(true);
                     }}
                   >
@@ -1527,9 +814,432 @@ const EmailTemplates = () => {
     );
   };
 
-  if (loading) {
-    return <LoadingSpinner />;
-  }
+  // Load templates
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
+
+        const response = await axios.get<ApiResponse<any[]>>(
+          `${process.env.REACT_APP_API_BASE_URL}/email-templates`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+
+        setTemplates(
+          Array.isArray(response.data?.data)
+            ? response.data.data.map((t) => ({
+                ...t,
+                variables: t.variables || [],
+                tags: t.tags || [],
+                includeSignature: t.includeSignature || false,
+                signatureConfig: t.signatureConfig || {
+                  organizationName: '',
+                  title: '',
+                  fullName: '',
+                  phone: '',
+                  email: '',
+                  website: '',
+                  additionalInfo: '',
+                },
+                attachments: (t.attachments || []).map((att: any) =>
+                  normalizeAttachment(att),
+                ),
+                builderConfig: t.builderConfig || DEFAULT_BUILDER_CONFIG,
+              }))
+            : [],
+        );
+      } catch (err) {
+        const error = err as Error;
+        setError(error.message || 'Failed to load templates');
+        setTemplates([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTemplates();
+  }, [navigate, refreshTrigger]);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    setNewTemplate((prev: any) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleSignatureChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = e.target;
+    setNewTemplate((prev: any) => ({
+      ...prev,
+      signatureConfig: { ...prev.signatureConfig, [name]: value },
+    }));
+  };
+
+  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const tags = e.target.value.split(',').map((tag) => tag.trim());
+    setNewTemplate((prev: any) => ({ ...prev, tags }));
+  };
+
+  const handleContentChange = (content: string) =>
+    setNewTemplate((prev: any) => ({ ...prev, content }));
+  const handleEditContentChange = (content: string) => {
+    if (editingTemplate) setEditingTemplate({ ...editingTemplate, content });
+  };
+
+  const handleEditInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    if (editingTemplate) {
+      setEditingTemplate({
+        ...editingTemplate,
+        [name]: type === 'checkbox' ? checked : value,
+      });
+    }
+  };
+
+  const handleEditSignatureChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = e.target;
+    if (editingTemplate) {
+      setEditingTemplate({
+        ...editingTemplate,
+        signatureConfig: { ...editingTemplate.signatureConfig, [name]: value },
+      });
+    }
+  };
+
+  const handleEditTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const tags = e.target.value.split(',').map((tag) => tag.trim());
+    if (editingTemplate)
+      setEditingTemplate({ ...editingTemplate, tags: tags || [] });
+  };
+
+  const insertVariable = (variable: string, isEditModal: boolean = false) => {
+    const editor = isEditModal
+      ? editQuillRef.current?.getEditor()
+      : quillRef.current?.getEditor();
+    if (editor) {
+      const range = editor.getSelection();
+      if (range) {
+        editor.insertText(range.index, variable);
+        editor.setSelection(range.index + variable.length, 0);
+      } else {
+        const length = editor.getLength();
+        editor.insertText(length - 1, variable);
+        editor.setSelection(length - 1 + variable.length, 0);
+      }
+    }
+  };
+
+  const resetNewTemplate = () => {
+    setNewTemplate({
+      title: '',
+      subject: '',
+      content: '',
+      status: true,
+      category: 'system',
+      tags: [],
+      variables: [],
+      includeSignature: false,
+      signatureConfig: {
+        organizationName: '',
+        title: '',
+        fullName: '',
+        phone: '',
+        email: '',
+        website: '',
+        additionalInfo: '',
+      },
+      attachments: [],
+      builderConfig: DEFAULT_BUILDER_CONFIG,
+    });
+  };
+
+  const startEditingTemplate = (template: EmailTemplateWithConfig) => {
+    setEditingTemplate({
+      ...template,
+      variables: template.variables || [],
+      tags: template.tags || [],
+      includeSignature: template.includeSignature || false,
+      signatureConfig: template.signatureConfig || {
+        organizationName: '',
+        title: '',
+        fullName: '',
+        phone: '',
+        email: '',
+        website: '',
+        additionalInfo: '',
+      },
+      attachments: (template.attachments || []).map((att: any) =>
+        normalizeAttachment(att),
+      ),
+      builderConfig: template.builderConfig || DEFAULT_BUILDER_CONFIG,
+    });
+    setShowEditModal(true);
+  };
+
+  const addTemplate = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const isDuplicate = templates.some(
+      (template) =>
+        template.title.toLowerCase().trim() ===
+        newTemplate.title.toLowerCase().trim(),
+    );
+
+    if (isDuplicate) {
+      setError(
+        `A template with the title "${newTemplate.title}" already exists.`,
+      );
+      const titleInput = document.querySelector('input[name="title"]');
+      titleInput?.classList.add('is-invalid');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const token = localStorage.getItem('token');
+
+      const base64Attachments = newTemplate.attachments.filter(
+        (att: any) => 'content' in att,
+      );
+      const uploadedAttachments = newTemplate.attachments.filter(
+        (att: any) => !('content' in att),
+      );
+
+      const payload = {
+        title: newTemplate.title.trim(),
+        subject: newTemplate.subject.trim(),
+        content: newTemplate.content,
+        status: newTemplate.status,
+        category: newTemplate.category,
+        tags: newTemplate.tags.filter((tag: string) => tag.trim() !== ''),
+        variables:
+          newTemplate.variables?.map((v: any) => ({
+            name: v.name.trim(),
+            description: v.description.trim(),
+            defaultValue: v.defaultValue?.trim() || '',
+          })) || [],
+        includeSignature: newTemplate.includeSignature,
+        signatureConfig: newTemplate.signatureConfig,
+        builderConfig: newTemplate.builderConfig || DEFAULT_BUILDER_CONFIG,
+        attachments: uploadedAttachments.map((att: any) => ({
+          filename: att.filename,
+          url: att.url,
+          size: att.size,
+          mimeType: att.mimeType,
+          uploadedAt: att.uploadedAt || new Date().toISOString(),
+        })),
+      };
+
+      const response = await axios.post<EmailTemplateWithConfig>(
+        `${process.env.REACT_APP_API_BASE_URL}/email-templates`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      const templateId = response.data._id;
+      for (const tempAttachment of base64Attachments) {
+        try {
+          const byteCharacters = atob(tempAttachment.content);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++)
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: tempAttachment.mimeType });
+          const file = new File([blob], tempAttachment.filename, {
+            type: tempAttachment.mimeType,
+          });
+
+          const formData = new FormData();
+          formData.append('attachment', file);
+          await axios.post(
+            `${process.env.REACT_APP_API_BASE_URL}/email-templates/${templateId}/attachments`,
+            formData,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data',
+              },
+            },
+          );
+        } catch (uploadError) {
+          console.error(
+            `Failed to upload ${tempAttachment.filename}:`,
+            uploadError,
+          );
+        }
+      }
+
+      if (response.data) {
+        setRefreshTrigger((prev) => prev + 1);
+        resetNewTemplate();
+        setShowAddModal(false);
+        setSuccessMessage('Template created successfully!');
+        setTimeout(() => setSuccessMessage(null), 3000);
+      }
+    } catch (err) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to create template',
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const saveEditedTemplate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTemplate) return;
+
+    setIsSaving(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const validAttachments = (editingTemplate.attachments || [])
+        .filter((att: any) => !('content' in att))
+        .map((att: any) => ({
+          filename: att.filename,
+          url: att.url,
+          size: att.size,
+          mimeType: att.mimeType,
+          uploadedAt: att.uploadedAt || new Date().toISOString(),
+          ...(att._id && { _id: att._id }),
+        }));
+
+      const payload = {
+        title: editingTemplate.title.trim(),
+        subject: editingTemplate.subject.trim(),
+        content: editingTemplate.content,
+        status: editingTemplate.status,
+        category: editingTemplate.category,
+        tags: editingTemplate.tags.filter((tag: string) => tag.trim() !== ''),
+        variables: (editingTemplate.variables || []).map((v: any) => ({
+          name: v.name?.trim() || '',
+          description: v.description?.trim() || '',
+          defaultValue: v.defaultValue?.trim() || '',
+        })),
+        includeSignature: editingTemplate.includeSignature,
+        signatureConfig: editingTemplate.signatureConfig,
+        builderConfig: editingTemplate.builderConfig || DEFAULT_BUILDER_CONFIG,
+        attachments: validAttachments,
+      };
+
+      const response = await axios.put<EmailTemplateWithConfig>(
+        `${process.env.REACT_APP_API_BASE_URL}/email-templates/${editingTemplate._id}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (response.data) {
+        setTemplates((prev) =>
+          prev.map((t) => (t._id === editingTemplate._id ? response.data : t)),
+        );
+        setRefreshTrigger((prev) => prev + 1);
+        setEditingTemplate(null);
+        setShowEditModal(false);
+        setSuccessMessage('Template updated successfully!');
+        setTimeout(() => setSuccessMessage(null), 3000);
+      }
+    } catch (err) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to update template',
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const confirmDelete = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!templateToDelete) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      await axios.delete(
+        `${process.env.REACT_APP_API_BASE_URL}/email-templates/${templateToDelete}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      setTemplates((prev) => prev.filter((t) => t._id !== templateToDelete));
+      setTemplateToDelete(null);
+      setShowDeleteModal(false);
+      setSuccessMessage('Template deleted successfully!');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to delete template',
+      );
+    }
+  };
+
+  const modules = {
+    toolbar: [
+      [{ header: [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      ['link', 'image'],
+      ['clean'],
+    ],
+  };
+
+  const formats = [
+    'header',
+    'bold',
+    'italic',
+    'underline',
+    'strike',
+    'blockquote',
+    'list',
+    'bullet',
+    'link',
+    'image',
+  ];
+
+  if (loading) return <LoadingSpinner />;
 
   return (
     <div className='page-wrapper'>
@@ -1539,8 +1249,6 @@ const EmailTemplates = () => {
             {error}
           </Alert>
         )}
-
-        {/* Success message display */}
         {successMessage && (
           <Alert
             variant='success'
@@ -1635,15 +1343,14 @@ const EmailTemplates = () => {
         </div>
       </div>
 
-      {/* Add Email Template Modal */}
+      {/* Add Modal */}
       <Modal
         show={showAddModal}
         onHide={() => setShowAddModal(false)}
         size='lg'
-        className='email-template-modal'
         dialogClassName='modal-90w'
       >
-        <Modal.Header closeButton style={{ borderBottom: '1px solid #dee2e6' }}>
+        <Modal.Header closeButton>
           <Modal.Title>Add Email Template</Modal.Title>
         </Modal.Header>
         <Modal.Body
@@ -1664,9 +1371,6 @@ const EmailTemplates = () => {
                   value={newTemplate.title}
                   onChange={handleInputChange}
                   required
-                  className={
-                    error?.includes('already exists') ? 'is-invalid' : ''
-                  }
                 />
               </Form.Group>
 
@@ -1718,6 +1422,7 @@ const EmailTemplates = () => {
                       text='dark'
                       className='me-2 mb-2 cursor-pointer'
                       onClick={() => insertVariable(variable.value, false)}
+                      style={{ cursor: 'pointer' }}
                     >
                       {variable.label}
                     </Badge>
@@ -1738,20 +1443,17 @@ const EmailTemplates = () => {
                 />
               </Form.Group>
 
-              {/* Add File Attachments Section */}
-              <Form.Group className='mb-3'>
-                <FileAttachmentsSection
-                  attachments={newTemplate.attachments}
-                  onRemove={(attachmentId) =>
-                    handleRemoveAttachment(attachmentId, false)
-                  }
-                  onUpload={(files) => handleFileUpload(files, false)}
-                  uploadingFiles={uploadingFiles}
-                  uploadProgress={uploadProgress}
-                />
-              </Form.Group>
+              <FileAttachmentsSection
+                attachments={newTemplate.attachments}
+                onRemove={(attachmentId: string) =>
+                  handleRemoveAttachment(attachmentId, false)
+                }
+                onUpload={(files: FileList) => handleFileUpload(files, false)}
+                uploadingFiles={uploadingFiles}
+                uploadProgress={uploadProgress}
+              />
 
-              {/* Email Signature Section */}
+              {/* Signature Section */}
               <div className='border rounded p-3 mb-3'>
                 <Form.Group className='mt-2 mb-3 d-flex align-items-center justify-content-between'>
                   <div>
@@ -1768,16 +1470,14 @@ const EmailTemplates = () => {
                   </div>
                   <Form.Check
                     type='switch'
-                    id='include-signature-switch'
                     label='Include Signature'
-                    name='includeSignature'
                     checked={newTemplate.includeSignature}
-                    onChange={(e) => {
-                      setNewTemplate((prev) => ({
+                    onChange={(e) =>
+                      setNewTemplate((prev: any) => ({
                         ...prev,
                         includeSignature: e.target.checked,
-                      }));
-                    }}
+                      }))
+                    }
                   />
                 </Form.Group>
 
@@ -1809,7 +1509,6 @@ const EmailTemplates = () => {
                         </Form.Group>
                       </Col>
                     </Row>
-
                     <Row className='mb-3'>
                       <Col md={6}>
                         <Form.Group>
@@ -1836,7 +1535,6 @@ const EmailTemplates = () => {
                         </Form.Group>
                       </Col>
                     </Row>
-
                     <Row className='mb-3'>
                       <Col md={6}>
                         <Form.Group>
@@ -1863,8 +1561,7 @@ const EmailTemplates = () => {
                         </Form.Group>
                       </Col>
                     </Row>
-
-                    <Form.Group className='mb-3'>
+                    <Form.Group>
                       <Form.Label>Additional Information</Form.Label>
                       <Form.Control
                         as='textarea'
@@ -1874,15 +1571,11 @@ const EmailTemplates = () => {
                         value={newTemplate.signatureConfig.additionalInfo}
                         onChange={handleSignatureChange}
                       />
-                      <Form.Text className='text-muted'>
-                        This will appear below your contact information
-                      </Form.Text>
                     </Form.Group>
                   </div>
                 )}
               </div>
 
-              {/* Email Preview */}
               {newTemplate.content && (
                 <Form.Group className='mb-3'>
                   <Form.Label>Preview</Form.Label>
@@ -1910,7 +1603,6 @@ const EmailTemplates = () => {
                 </div>
                 <Form.Check
                   type='switch'
-                  id='status-switch'
                   label='Active'
                   name='status'
                   checked={newTemplate.status}
@@ -1946,14 +1638,7 @@ const EmailTemplates = () => {
                 >
                   {isSaving ? (
                     <>
-                      <Spinner
-                        as='span'
-                        size='sm'
-                        animation='border'
-                        role='status'
-                        aria-hidden='true'
-                        className='me-2'
-                      />
+                      <Spinner size='sm' animation='border' className='me-2' />
                       Creating...
                     </>
                   ) : (
@@ -1966,15 +1651,14 @@ const EmailTemplates = () => {
         </Modal.Body>
       </Modal>
 
-      {/* Edit Email Template Modal */}
+      {/* Edit Modal */}
       <Modal
         show={showEditModal}
         onHide={() => setShowEditModal(false)}
         size='lg'
-        className='email-template-modal'
         dialogClassName='modal-90w'
       >
-        <Modal.Header closeButton style={{ borderBottom: '1px solid #dee2e6' }}>
+        <Modal.Header closeButton>
           <Modal.Title>Edit Email Template</Modal.Title>
         </Modal.Header>
         <Modal.Body
@@ -1998,7 +1682,6 @@ const EmailTemplates = () => {
                     required
                   />
                 </Form.Group>
-
                 <Form.Group className='mb-3'>
                   <Form.Label>Subject*</Form.Label>
                   <Form.Control
@@ -2010,7 +1693,6 @@ const EmailTemplates = () => {
                     required
                   />
                 </Form.Group>
-
                 <Form.Group className='mb-3'>
                   <Form.Label>Category</Form.Label>
                   <Form.Select
@@ -2025,7 +1707,6 @@ const EmailTemplates = () => {
                     <option value='other'>Other</option>
                   </Form.Select>
                 </Form.Group>
-
                 <Form.Group className='mb-3'>
                   <Form.Label>Tags (comma separated)</Form.Label>
                   <Form.Control
@@ -2047,6 +1728,7 @@ const EmailTemplates = () => {
                         text='dark'
                         className='me-2 mb-2 cursor-pointer'
                         onClick={() => insertVariable(variable.value, true)}
+                        style={{ cursor: 'pointer' }}
                       >
                         {variable.label}
                       </Badge>
@@ -2067,21 +1749,17 @@ const EmailTemplates = () => {
                   />
                 </Form.Group>
 
-                {/* Add File Attachments Section for Edit Modal */}
-                <Form.Group className='mb-3'>
-                  <FileAttachmentsSection
-                    attachments={editingTemplate.attachments || []}
-                    onRemove={(attachmentId) =>
-                      handleRemoveAttachment(attachmentId, true)
-                    }
-                    onUpload={(files) => handleFileUpload(files, true)}
-                    uploadingFiles={uploadingFiles}
-                    uploadProgress={uploadProgress}
-                    isEditMode={true}
-                  />
-                </Form.Group>
+                <FileAttachmentsSection
+                  attachments={editingTemplate.attachments || []}
+                  onRemove={(attachmentId: string) =>
+                    handleRemoveAttachment(attachmentId, true)
+                  }
+                  onUpload={(files: FileList) => handleFileUpload(files, true)}
+                  uploadingFiles={uploadingFiles}
+                  uploadProgress={uploadProgress}
+                />
 
-                {/* Email Signature Section */}
+                {/* Signature Section */}
                 <div className='border rounded p-3 mb-3'>
                   <Form.Group className='mb-3 d-flex align-items-center justify-content-between'>
                     <div>
@@ -2098,7 +1776,6 @@ const EmailTemplates = () => {
                     </div>
                     <Form.Check
                       type='switch'
-                      id='edit-include-signature-switch'
                       label='Include Signature'
                       name='includeSignature'
                       checked={editingTemplate.includeSignature}
@@ -2139,7 +1816,6 @@ const EmailTemplates = () => {
                           </Form.Group>
                         </Col>
                       </Row>
-
                       <Row className='mb-3'>
                         <Col md={6}>
                           <Form.Group>
@@ -2170,7 +1846,6 @@ const EmailTemplates = () => {
                           </Form.Group>
                         </Col>
                       </Row>
-
                       <Row className='mb-3'>
                         <Col md={6}>
                           <Form.Group>
@@ -2201,8 +1876,7 @@ const EmailTemplates = () => {
                           </Form.Group>
                         </Col>
                       </Row>
-
-                      <Form.Group className='mb-3'>
+                      <Form.Group>
                         <Form.Label>Additional Information</Form.Label>
                         <Form.Control
                           as='textarea'
@@ -2215,15 +1889,11 @@ const EmailTemplates = () => {
                           }
                           onChange={handleEditSignatureChange}
                         />
-                        <Form.Text className='text-muted'>
-                          This will appear below your contact information
-                        </Form.Text>
                       </Form.Group>
                     </div>
                   )}
                 </div>
 
-                {/* Email Preview */}
                 {editingTemplate.content && (
                   <Form.Group className='mt-5'>
                     <Form.Label>Preview</Form.Label>
@@ -2251,7 +1921,6 @@ const EmailTemplates = () => {
                   </div>
                   <Form.Check
                     type='switch'
-                    id='edit-status-switch'
                     label='Active'
                     name='status'
                     checked={editingTemplate.status}
@@ -2288,11 +1957,8 @@ const EmailTemplates = () => {
                     {isSaving ? (
                       <>
                         <Spinner
-                          as='span'
                           size='sm'
                           animation='border'
-                          role='status'
-                          aria-hidden='true'
                           className='me-2'
                         />
                         Saving...
@@ -2308,7 +1974,7 @@ const EmailTemplates = () => {
         </Modal.Body>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Modal */}
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Confirm Deletion</Modal.Title>
@@ -2334,4 +2000,4 @@ const EmailTemplates = () => {
   );
 };
 
-export default EmailTemplates;
+export default EmailTemplatesList;
