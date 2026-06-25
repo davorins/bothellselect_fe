@@ -1,49 +1,52 @@
 // settings/systemSettings/email-templates/index.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from 'react-bootstrap';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import EmailTemplatesList from './EmailTemplatesList';
 import EmailTemplateBuilder from '../../../../components/EmailTemplateBuilder';
 import type { EmailTemplate } from '../../../../types/types';
 
 const EmailTemplatesPage: React.FC = () => {
-  const [showBuilder, setShowBuilder] = useState(false);
-  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(
-    null,
-  );
+  const navigate = useNavigate();
+  const location = useLocation();
+  const params = useParams<{ id: string }>();
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Check if we're on a builder route
+  const isBuilderRoute = location.pathname.includes('/builder');
+  const templateIdFromUrl = isBuilderRoute ? params.id || null : null;
+
   const handleCreateNew = () => {
-    setEditingTemplateId(null);
-    setShowBuilder(true);
+    navigate('/system-settings/email-templates/builder');
   };
 
   const handleEditTemplate = (template: EmailTemplate) => {
-    setEditingTemplateId(template._id || null);
-    setShowBuilder(true);
+    navigate(`/system-settings/email-templates/builder/${template._id}`);
   };
 
   const handleSave = (template: EmailTemplate) => {
-    setShowBuilder(false);
-    setEditingTemplateId(null);
+    // Navigate back to the list after saving
+    navigate('/system-settings/email-templates');
     setRefreshKey((prev) => prev + 1);
   };
 
   const handleCancel = () => {
-    setShowBuilder(false);
-    setEditingTemplateId(null);
+    navigate('/system-settings/email-templates');
   };
 
-  if (showBuilder) {
+  // If we're on a builder route, render the builder
+  if (isBuilderRoute) {
     return (
       <EmailTemplateBuilder
-        templateId={editingTemplateId}
+        templateId={templateIdFromUrl}
         onSave={handleSave}
         onCancel={handleCancel}
       />
     );
   }
 
+  // Otherwise render the list
   return (
     <div className='email-templates-page'>
       <div className='d-flex justify-content-between align-items-center mb-4'>

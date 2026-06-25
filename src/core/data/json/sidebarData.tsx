@@ -164,6 +164,14 @@ export const SidebarData = [
         roles: ['admin'],
       },
       {
+        label: 'Template Builder',
+        submenu: false,
+        showSubRoute: false,
+        link: routes.emailTemplatesBuilder,
+        icon: 'ti ti-layout-grid-add',
+        roles: ['admin'],
+      },
+      {
         label: 'Send Email',
         submenu: false,
         showSubRoute: false,

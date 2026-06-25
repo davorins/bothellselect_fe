@@ -1,0 +1,351 @@
+/* components/EmailTemplateBuilder/EmailTemplateBuilder.css */
+
+.email-builder-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px);
+  background: #f8fafc;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.builder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.builder-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ─── Toolbox (Left) ─── */
+
+.builder-toolbox {
+  width: 220px;
+  flex-shrink: 0;
+  background: #fff;
+  border-right: 1px solid #e2e8f0;
+  padding: 12px 14px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.toolbox-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.toolbox-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.toolbox-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 4px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 10px;
+  color: #475569;
+  gap: 2px;
+}
+
+.toolbox-item:hover {
+  background: #eef2ff;
+  border-color: #506ee4;
+  color: #506ee4;
+}
+
+.toolbox-item i {
+  font-size: 18px;
+}
+
+.toolbox-item span {
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* ─── Canvas (Center) ─── */
+
+.builder-canvas {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f1f5f9;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.canvas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 16px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.canvas-body {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background: #e8ecf1;
+}
+
+.canvas-body.desktop {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.canvas-body.mobile {
+  max-width: 375px;
+  margin: 0 auto;
+}
+
+.empty-canvas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 300px;
+  background: #fff;
+  border-radius: 8px;
+  border: 2px dashed #d1d5db;
+}
+
+/* ─── Elements ─── */
+
+.builder-element {
+  background: #fff;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: all 0.15s;
+}
+
+.builder-element:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.builder-element.selected {
+  border-color: #506ee4 !important;
+  box-shadow: 0 0 0 2px rgba(80, 110, 228, 0.15);
+}
+
+.builder-element.dragging {
+  opacity: 0.5;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.element-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 8px;
+  background: #f8fafc;
+  border-radius: 4px 4px 0 0;
+  border-bottom: 1px solid #eef2f6;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.builder-element:hover .element-toolbar,
+.builder-element.selected .element-toolbar {
+  opacity: 1;
+}
+
+.element-type-badge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 1px 8px;
+  border-radius: 10px;
+}
+
+.element-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.element-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+
+.element-actions button:hover {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.element-actions button:hover .ti-trash {
+  color: #ef4444;
+}
+
+.element-content {
+  padding: 8px 12px;
+  min-height: 20px;
+}
+
+.element-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+.image-placeholder,
+.video-placeholder {
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+/* ─── Feature Settings ─── */
+
+.feature-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.feature-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.feature-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.feature-list::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+
+.settings-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+/* ─── Settings Panel (Right) ─── */
+
+.builder-settings {
+  width: 320px;
+  flex-shrink: 0;
+  background: #fff;
+  border-left: 1px solid #e2e8f0;
+  padding: 12px 16px;
+  overflow-y: auto;
+}
+
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ─── Responsive ─── */
+
+@media (max-width: 1200px) {
+  .builder-toolbox {
+    width: 170px;
+  }
+  .builder-settings {
+    width: 280px;
+  }
+}
+
+@media (max-width: 992px) {
+  .builder-layout {
+    flex-direction: column;
+  }
+  .builder-toolbox {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    max-height: 140px;
+    overflow-y: auto;
+  }
+  .toolbox-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+  .builder-canvas {
+    flex: 1;
+    min-height: 300px;
+  }
+  .builder-settings {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #e2e8f0;
+    max-height: 250px;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .builder-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .builder-header .d-flex {
+    flex-wrap: wrap;
+  }
+  .toolbox-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+  .builder-settings {
+    max-height: 200px;
+  }
+}

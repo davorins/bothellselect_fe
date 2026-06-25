@@ -92,6 +92,19 @@ const PageRendererWrapper: React.FC = () => {
   return <PageRenderer pageSlug={slug || ''} isEditing={false} />;
 };
 
+// ─── Email Template Builder Wrapper ──────────────────────────────────────
+// This handles the /builder and /builder/:id routes
+const EmailTemplateBuilderWrapper: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  return <EmailTemplateBuilder templateId={id || null} />;
+};
+
+// ─── Email Templates Page Wrapper ───────────────────────────────────────
+// This handles the main email templates listing page
+const EmailTemplatesPageWrapper: React.FC = () => {
+  return <EmailTemplatesPage />;
+};
+
 export const publicRoutes = [
   {
     path: routes.adminDashboard,
@@ -355,31 +368,32 @@ export const publicRoutes = [
     path: routes.emailSettings,
     element: <EmailSettings />,
   },
-  // ✅ EMAIL TEMPLATES ROUTE - Uses the wrapper page
+  // ✅ EMAIL TEMPLATES ROUTE - Main list page
   {
     path: routes.emailTemplates,
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
-        <EmailTemplatesPage />
+        <EmailTemplatesPageWrapper />
       </ProtectedRoute>
     ),
     route: Route,
   },
-  // ✅ EMAIL TEMPLATES BUILDER ROUTES - Direct access to builder
+  // ✅ EMAIL TEMPLATES BUILDER - Create new (no ID)
   {
-    path: routes.emailTemplates + '/builder',
+    path: routes.emailTemplatesBuilder,
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
-        <EmailTemplateBuilder />
+        <EmailTemplateBuilderWrapper />
       </ProtectedRoute>
     ),
     route: Route,
   },
+  // ✅ EMAIL TEMPLATES BUILDER - Edit existing (with ID)
   {
-    path: routes.emailTemplates + '/builder/:id',
+    path: routes.emailTemplatesEdit,
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
-        <EmailTemplateBuilder />
+        <EmailTemplateBuilderWrapper />
       </ProtectedRoute>
     ),
     route: Route,

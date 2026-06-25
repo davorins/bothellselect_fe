@@ -723,16 +723,13 @@ const EmailTemplatesList: React.FC<EmailTemplatesListProps> = ({
     );
   };
 
-  // ✅ KEY FUNCTION - Handles edit click and calls parent if available
   const handleEditClick = (template: EmailTemplateWithConfig) => {
+    // This will call the parent's handleEditTemplate which navigates to the builder route
     if (onEditTemplate) {
-      // Close edit modal if open
-      setShowEditModal(false);
-      // Call the parent handler to open the builder
       onEditTemplate(template);
     } else {
-      // Fallback to the old modal behavior
-      startEditingTemplate(template);
+      // Fallback: navigate directly
+      navigate(`/system-settings/email-templates/builder/${template._id}`);
     }
   };
 
@@ -1292,7 +1289,9 @@ const EmailTemplatesList: React.FC<EmailTemplatesListProps> = ({
                   <Button
                     variant='outline-light'
                     className='bg-white btn-icon me-2'
-                    onClick={() => setShowAddModal(true)}
+                    onClick={() =>
+                      navigate('/system-settings/email-templates/builder')
+                    }
                   >
                     <i className='ti ti-plus' />
                   </Button>
