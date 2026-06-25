@@ -44,12 +44,32 @@ type ElementType =
   | 'video'
   | 'social'
   | 'html'
-  | 'features';
+  | 'features'
+  | 'list'; // Added list type
 
 // Use React.CSSProperties for proper CSS typing
 interface ElementStyle extends React.CSSProperties {
   // Allow any additional CSS properties
   [key: string]: any;
+}
+
+// List item types
+type BulletType =
+  | 'circle'
+  | 'disc'
+  | 'square'
+  | 'icon'
+  | 'image'
+  | 'number'
+  | 'check'
+  | 'star'
+  | 'arrow';
+
+interface ListItem {
+  id: string;
+  content: string;
+  icon?: string; // For icon type bullets
+  image?: string; // For image type bullets
 }
 
 interface FeatureItem {
@@ -78,6 +98,15 @@ interface FeatureLayout {
   showIcons: boolean;
 }
 
+interface ListLayout {
+  bulletType: BulletType;
+  bulletColor: string;
+  bulletSize: 'small' | 'medium' | 'large';
+  showBullets: boolean;
+  iconSize: 'small' | 'medium' | 'large';
+  gap: number;
+}
+
 interface EmailElement {
   id: string;
   type: ElementType;
@@ -91,6 +120,8 @@ interface EmailElement {
   settings?: Record<string, any>;
   features?: FeatureItem[];
   featureLayout?: FeatureLayout;
+  items?: ListItem[]; // For list elements
+  listLayout?: ListLayout; // For list elements
 }
 
 interface EmailBuilderState {
@@ -217,6 +248,37 @@ const createFeaturesElement = (): EmailElement => {
   };
 };
 
+// Create list element
+const createListElement = (): EmailElement => {
+  return {
+    id: generateId(),
+    type: 'list',
+    style: {
+      padding: '8px 0',
+      fontSize: '16px',
+      lineHeight: 1.8,
+      color: '#333333',
+    },
+    items: [
+      { id: generateId(), content: 'List item 1' },
+      { id: generateId(), content: 'List item 2' },
+      { id: generateId(), content: 'List item 3' },
+    ],
+    listLayout: {
+      bulletType: 'circle',
+      bulletColor: '#506ee4',
+      bulletSize: 'medium',
+      showBullets: true,
+      iconSize: 'medium',
+      gap: 8,
+    },
+    settings: {
+      ordered: false,
+      startNumber: 1,
+    },
+  };
+};
+
 const createElement = (
   type: ElementType,
   overrides?: Partial<EmailElement>,
@@ -253,6 +315,8 @@ const createElement = (
           padding: '8px 0',
         },
       };
+    case 'list':
+      return createListElement();
     case 'image':
       return {
         ...base,
@@ -383,12 +447,14 @@ interface EmailTemplateBuilderProps {
   templateId?: string | null;
   onSave?: (template: EmailTemplate) => void;
   onCancel?: () => void;
+  onNewTemplate?: () => void; // New prop for creating new template
 }
 
 const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
   templateId = null,
   onSave,
   onCancel,
+  onNewTemplate,
 }) => {
   // ─── State ──────────────────────────────────────────────────────────────
 
@@ -503,6 +569,39 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
           });
           return elements;
         }
+      }
+    }
+
+    // Detect lists
+    const ulMatch = html.match(/<ul[^>]*>([\s\S]*?)<\/ul>/);
+    if (ulMatch) {
+      const liMatches = ulMatch[1].match(/<li[^>]*>([\s\S]*?)<\/li>/g);
+      if (liMatches) {
+        const items: ListItem[] = liMatches.map((li) => ({
+          id: generateId(),
+          content: li.replace(/<[^>]*>/g, '').trim(),
+        }));
+        elements.push({
+          id: generateId(),
+          type: 'list',
+          items: items,
+          listLayout: {
+            bulletType: 'disc',
+            bulletColor: '#506ee4',
+            bulletSize: 'medium',
+            showBullets: true,
+            iconSize: 'medium',
+            gap: 8,
+          },
+          style: {
+            padding: '8px 0',
+            fontSize: '16px',
+            lineHeight: 1.8,
+            color: '#333333',
+          },
+          settings: { ordered: false },
+        });
+        return elements;
       }
     }
 
@@ -670,6 +769,8 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
           return `<h2 style="${styleStr}">${el.content || ''}</h2>`;
         case 'paragraph':
           return `<p style="${styleStr}">${el.content || ''}</p>`;
+        case 'list':
+          return renderListHtml(el);
         case 'image':
           return `<div style="text-align:${el.style?.textAlign || 'center'};padding:4px 0;">
             <img src="${el.src || ''}" alt="${el.alt || ''}" style="${styleStr}" />
@@ -721,6 +822,91 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
         default:
           return '';
       }
+    };
+
+    const renderListHtml = (el: EmailElement): string => {
+      if (!el.items || el.items.length === 0) return '';
+
+      const layout = el.listLayout || {
+        bulletType: 'circle',
+        bulletColor: '#506ee4',
+        bulletSize: 'medium',
+        showBullets: true,
+        iconSize: 'medium',
+        gap: 8,
+      };
+
+      const bulletType = layout.bulletType;
+      const bulletColor = layout.bulletColor || '#506ee4';
+      const bulletSize = layout.bulletSize || 'medium';
+      const showBullets = layout.showBullets !== false;
+      const iconSize = layout.iconSize || 'medium';
+      const gap = layout.gap || 8;
+
+      const sizeMap: Record<string, string> = {
+        small: '12px',
+        medium: '16px',
+        large: '20px',
+      };
+
+      const iconSizeMap: Record<string, string> = {
+        small: '16px',
+        medium: '24px',
+        large: '32px',
+      };
+
+      const bulletSizeStr = sizeMap[bulletSize] || '16px';
+      const iconSizeStr = iconSizeMap[iconSize] || '24px';
+
+      const getBulletHtml = (item: ListItem, index: number): string => {
+        if (!showBullets) return '';
+
+        const color = bulletColor;
+
+        switch (bulletType) {
+          case 'circle':
+            return `<span style="display:inline-block;width:${bulletSizeStr};height:${bulletSizeStr};border-radius:50%;background:${color};flex-shrink:0;margin-top:4px;"></span>`;
+          case 'square':
+            return `<span style="display:inline-block;width:${bulletSizeStr};height:${bulletSizeStr};background:${color};flex-shrink:0;margin-top:4px;"></span>`;
+          case 'disc':
+            return `<span style="display:inline-block;width:${bulletSizeStr};height:${bulletSizeStr};border-radius:50%;background:${color};flex-shrink:0;margin-top:4px;"></span>`;
+          case 'icon':
+            return `<span style="font-size:${iconSizeStr};flex-shrink:0;">${item.icon || '•'}</span>`;
+          case 'image':
+            return item.image
+              ? `<img src="${item.image}" style="width:${iconSizeStr};height:${iconSizeStr};object-fit:cover;border-radius:50%;flex-shrink:0;" />`
+              : `<span style="display:inline-block;width:${iconSizeStr};height:${iconSizeStr};border-radius:50%;background:${color};flex-shrink:0;margin-top:4px;"></span>`;
+          case 'number':
+            return `<span style="font-weight:bold;color:${color};flex-shrink:0;min-width:${bulletSizeStr};text-align:center;">${index + 1}.</span>`;
+          case 'check':
+            return `<span style="color:${color};font-size:${iconSizeStr};flex-shrink:0;">✓</span>`;
+          case 'star':
+            return `<span style="color:${color};font-size:${iconSizeStr};flex-shrink:0;">★</span>`;
+          case 'arrow':
+            return `<span style="color:${color};font-size:${iconSizeStr};flex-shrink:0;">→</span>`;
+          default:
+            return `<span style="display:inline-block;width:${bulletSizeStr};height:${bulletSizeStr};border-radius:50%;background:${color};flex-shrink:0;margin-top:4px;"></span>`;
+        }
+      };
+
+      const isOrdered = el.settings?.ordered || false;
+      const itemsHtml = el.items
+        .map((item: ListItem, index: number) => {
+          const bulletHtml = getBulletHtml(item, index);
+          const isNumber = bulletType === 'number' || isOrdered;
+          const itemStyle = `display:flex;align-items:flex-start;gap:${gap}px;margin-bottom:${gap}px;`;
+
+          return `<li style="${itemStyle}">
+          ${bulletHtml}
+          <span style="flex:1;word-break:break-word;">${item.content}</span>
+        </li>`;
+        })
+        .join('');
+
+      const listTag = isOrdered || bulletType === 'number' ? 'ol' : 'ul';
+      return `<${listTag} style="list-style:none;padding:0;margin:0;${styleToCssString(el.style)}">
+        ${itemsHtml}
+      </${listTag}>`;
     };
 
     const renderFeaturesHtml = (el: EmailElement): string => {
@@ -940,6 +1126,12 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
               id: generateId(),
             }));
           }
+          if (copy.items) {
+            copy.items = copy.items.map((item: ListItem) => ({
+              ...item,
+              id: generateId(),
+            }));
+          }
           return [el, copy];
         }
         if (el.columns) {
@@ -1046,6 +1238,806 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // ─── List Settings Panel ─────────────────────────────────────────────
+
+  const renderListSettings = (el: EmailElement) => {
+    if (!el.items || el.type !== 'list') return null;
+
+    const layout = el.listLayout || {
+      bulletType: 'circle',
+      bulletColor: '#506ee4',
+      bulletSize: 'medium',
+      showBullets: true,
+      iconSize: 'medium',
+      gap: 8,
+    };
+
+    const bulletTypeOptions: {
+      value: BulletType;
+      label: string;
+      icon: string;
+    }[] = [
+      { value: 'circle', label: 'Circle', icon: '●' },
+      { value: 'disc', label: 'Disc', icon: '•' },
+      { value: 'square', label: 'Square', icon: '■' },
+      { value: 'icon', label: 'Icon', icon: '⭐' },
+      { value: 'image', label: 'Image', icon: '🖼️' },
+      { value: 'number', label: 'Number', icon: '1.' },
+      { value: 'check', label: 'Check', icon: '✓' },
+      { value: 'star', label: 'Star', icon: '★' },
+      { value: 'arrow', label: 'Arrow', icon: '→' },
+    ];
+
+    return (
+      <div className='list-settings'>
+        <h6 className='settings-title'>List Settings</h6>
+
+        <Form.Group className='mb-2'>
+          <Form.Label className='small'>Bullet Type</Form.Label>
+          <div className='bullet-type-selector'>
+            <div className='d-flex flex-wrap gap-1'>
+              {bulletTypeOptions.map((option) => (
+                <Button
+                  key={option.value}
+                  variant={
+                    layout.bulletType === option.value
+                      ? 'primary'
+                      : 'outline-secondary'
+                  }
+                  size='sm'
+                  onClick={() => {
+                    updateElement(el.id, {
+                      listLayout: { ...layout, bulletType: option.value },
+                    });
+                  }}
+                  className='bullet-option-btn'
+                  title={option.label}
+                >
+                  <span style={{ fontSize: '14px' }}>{option.icon}</span>
+                </Button>
+              ))}
+            </div>
+          </div>
+        </Form.Group>
+
+        <Form.Group className='mb-2'>
+          <Form.Label className='small'>Bullet Color</Form.Label>
+          <div className='d-flex gap-2'>
+            <input
+              type='color'
+              value={layout.bulletColor || '#506ee4'}
+              onChange={(e) =>
+                updateElement(el.id, {
+                  listLayout: { ...layout, bulletColor: e.target.value },
+                })
+              }
+              style={{
+                width: '40px',
+                height: '40px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                padding: '2px',
+              }}
+            />
+            <Form.Control
+              type='text'
+              size='sm'
+              value={layout.bulletColor || ''}
+              onChange={(e) =>
+                updateElement(el.id, {
+                  listLayout: { ...layout, bulletColor: e.target.value },
+                })
+              }
+              placeholder='#506ee4'
+            />
+          </div>
+        </Form.Group>
+
+        <Form.Group className='mb-2'>
+          <Form.Label className='small'>Bullet Size</Form.Label>
+          <Form.Select
+            size='sm'
+            value={layout.bulletSize || 'medium'}
+            onChange={(e) =>
+              updateElement(el.id, {
+                listLayout: {
+                  ...layout,
+                  bulletSize: e.target.value as 'small' | 'medium' | 'large',
+                },
+              })
+            }
+          >
+            <option value='small'>Small</option>
+            <option value='medium'>Medium</option>
+            <option value='large'>Large</option>
+          </Form.Select>
+        </Form.Group>
+
+        {(layout.bulletType === 'icon' || layout.bulletType === 'image') && (
+          <Form.Group className='mb-2'>
+            <Form.Label className='small'>Icon/Image Size</Form.Label>
+            <Form.Select
+              size='sm'
+              value={layout.iconSize || 'medium'}
+              onChange={(e) =>
+                updateElement(el.id, {
+                  listLayout: {
+                    ...layout,
+                    iconSize: e.target.value as 'small' | 'medium' | 'large',
+                  },
+                })
+              }
+            >
+              <option value='small'>Small</option>
+              <option value='medium'>Medium</option>
+              <option value='large'>Large</option>
+            </Form.Select>
+          </Form.Group>
+        )}
+
+        <Form.Group className='mb-2'>
+          <Form.Label className='small'>Gap (px)</Form.Label>
+          <Form.Control
+            type='number'
+            size='sm'
+            value={layout.gap || 8}
+            onChange={(e) =>
+              updateElement(el.id, {
+                listLayout: {
+                  ...layout,
+                  gap: parseInt(e.target.value) || 8,
+                },
+              })
+            }
+            min='0'
+            max='40'
+          />
+        </Form.Group>
+
+        <Form.Check
+          type='switch'
+          label='Show Bullets'
+          checked={layout.showBullets !== false}
+          onChange={(e) =>
+            updateElement(el.id, {
+              listLayout: { ...layout, showBullets: e.target.checked },
+            })
+          }
+          className='mb-2'
+        />
+
+        <Form.Check
+          type='switch'
+          label='Ordered List (Numbers)'
+          checked={el.settings?.ordered || false}
+          onChange={(e) =>
+            updateElement(el.id, {
+              settings: { ...el.settings, ordered: e.target.checked },
+            })
+          }
+          className='mb-2'
+        />
+
+        <hr />
+        <h6 className='settings-title'>List Items ({el.items.length})</h6>
+
+        <div className='list-items'>
+          {el.items.map((item: ListItem, index: number) => (
+            <div key={item.id} className='border rounded p-2 mb-2'>
+              <div className='d-flex justify-content-between align-items-center mb-2'>
+                <span className='small fw-bold'>Item {index + 1}</span>
+                <div className='d-flex gap-1'>
+                  <Button
+                    variant='outline-danger'
+                    size='sm'
+                    onClick={() => {
+                      const updatedItems =
+                        el.items?.filter((i: ListItem) => i.id !== item.id) ||
+                        [];
+                      updateElement(el.id, { items: updatedItems });
+                    }}
+                    title='Delete item'
+                  >
+                    <i className='ti ti-trash' style={{ fontSize: '12px' }}></i>
+                  </Button>
+                </div>
+              </div>
+              <Form.Group>
+                <Form.Control
+                  type='text'
+                  size='sm'
+                  value={item.content}
+                  onChange={(e) => {
+                    const updatedItems =
+                      el.items?.map((i: ListItem) =>
+                        i.id === item.id
+                          ? { ...i, content: e.target.value }
+                          : i,
+                      ) || [];
+                    updateElement(el.id, { items: updatedItems });
+                  }}
+                  placeholder='List item text'
+                />
+              </Form.Group>
+
+              {layout.bulletType === 'icon' && (
+                <Form.Group className='mt-1'>
+                  <Form.Label className='small'>Icon</Form.Label>
+                  <Form.Control
+                    type='text'
+                    size='sm'
+                    value={item.icon || ''}
+                    onChange={(e) => {
+                      const updatedItems =
+                        el.items?.map((i: ListItem) =>
+                          i.id === item.id ? { ...i, icon: e.target.value } : i,
+                        ) || [];
+                      updateElement(el.id, { items: updatedItems });
+                    }}
+                    placeholder='⭐'
+                  />
+                </Form.Group>
+              )}
+
+              {layout.bulletType === 'image' && (
+                <Form.Group className='mt-1'>
+                  <Form.Label className='small'>Image URL</Form.Label>
+                  <div className='d-flex gap-2'>
+                    <Form.Control
+                      type='text'
+                      size='sm'
+                      value={item.image || ''}
+                      onChange={(e) => {
+                        const updatedItems =
+                          el.items?.map((i: ListItem) =>
+                            i.id === item.id
+                              ? { ...i, image: e.target.value }
+                              : i,
+                          ) || [];
+                        updateElement(el.id, { items: updatedItems });
+                      }}
+                      placeholder='https://...'
+                    />
+                    <Button
+                      variant='outline-secondary'
+                      size='sm'
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (e) => {
+                          const file = (e.target as HTMLInputElement)
+                            .files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              const dataUrl = ev.target?.result as string;
+                              const updatedItems =
+                                el.items?.map((i: ListItem) =>
+                                  i.id === item.id
+                                    ? { ...i, image: dataUrl }
+                                    : i,
+                                ) || [];
+                              updateElement(el.id, { items: updatedItems });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        };
+                        input.click();
+                      }}
+                    >
+                      Upload
+                    </Button>
+                  </div>
+                  {item.image && (
+                    <div className='mt-1'>
+                      <img
+                        src={item.image}
+                        alt={item.content}
+                        style={{ maxHeight: '40px', borderRadius: '4px' }}
+                      />
+                    </div>
+                  )}
+                </Form.Group>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <Button
+          variant='outline-primary'
+          size='sm'
+          className='w-100 mt-2'
+          onClick={() => {
+            const newItem: ListItem = {
+              id: generateId(),
+              content: `List item ${(el.items?.length || 0) + 1}`,
+            };
+            const updatedItems = [...(el.items || []), newItem];
+            updateElement(el.id, { items: updatedItems });
+          }}
+        >
+          <i className='ti ti-plus me-1'></i> Add List Item
+        </Button>
+      </div>
+    );
+  };
+
+  // ─── Element Settings Panel ───────────────────────────────────────────
+
+  const renderSettingsPanel = () => {
+    const el = getSelectedElement();
+    if (!el) {
+      return (
+        <div className='settings-empty'>
+          <p className='text-muted'>Select an element to edit its settings</p>
+        </div>
+      );
+    }
+
+    // If it's a features element, render the feature settings
+    if (el.type === 'features') {
+      return renderFeatureSettings(el);
+    }
+
+    // If it's a list element, render list settings
+    if (el.type === 'list') {
+      return renderListSettings(el);
+    }
+
+    // Otherwise render regular settings
+    return (
+      <div className='settings-panel'>
+        <h6 className='settings-title'>
+          <span className='badge bg-primary me-2'>{el.type}</span>
+          Element Settings
+        </h6>
+
+        {/* Content */}
+        {['heading', 'paragraph', 'button', 'html'].includes(el.type) && (
+          <Form.Group className='mb-3'>
+            <Form.Label>Content</Form.Label>
+            {el.type === 'html' ? (
+              <Form.Control
+                as='textarea'
+                rows={4}
+                value={el.content || ''}
+                onChange={(e) =>
+                  updateElement(el.id, { content: e.target.value })
+                }
+              />
+            ) : (
+              <Form.Control
+                type='text'
+                value={el.content || ''}
+                onChange={(e) =>
+                  updateElement(el.id, { content: e.target.value })
+                }
+              />
+            )}
+          </Form.Group>
+        )}
+
+        {/* Image */}
+        {el.type === 'image' && (
+          <>
+            <Form.Group className='mb-3'>
+              <Form.Label>Image URL</Form.Label>
+              <div className='d-flex gap-2'>
+                <Form.Control
+                  type='text'
+                  value={el.src || ''}
+                  onChange={(e) =>
+                    updateElement(el.id, { src: e.target.value })
+                  }
+                  placeholder='https://example.com/image.jpg'
+                />
+                <Button
+                  variant='outline-secondary'
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.onchange = (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          updateElement(el.id, {
+                            src: ev.target?.result as string,
+                          });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    };
+                    input.click();
+                  }}
+                >
+                  Upload
+                </Button>
+              </div>
+            </Form.Group>
+            {el.src && (
+              <div className='mb-3'>
+                <img
+                  src={el.src}
+                  alt='Preview'
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '100px',
+                    borderRadius: '4px',
+                  }}
+                />
+              </div>
+            )}
+            <Form.Group className='mb-3'>
+              <Form.Label>Alt Text</Form.Label>
+              <Form.Control
+                type='text'
+                value={el.alt || ''}
+                onChange={(e) => updateElement(el.id, { alt: e.target.value })}
+              />
+            </Form.Group>
+            <Form.Group className='mb-3'>
+              <Form.Label>Caption</Form.Label>
+              <Form.Control
+                type='text'
+                value={el.settings?.caption || ''}
+                onChange={(e) =>
+                  updateElement(el.id, {
+                    settings: { ...el.settings, caption: e.target.value },
+                  })
+                }
+              />
+            </Form.Group>
+          </>
+        )}
+
+        {/* Button */}
+        {el.type === 'button' && (
+          <>
+            <Form.Group className='mb-3'>
+              <Form.Label>Button Text</Form.Label>
+              <Form.Control
+                type='text'
+                value={el.content || ''}
+                onChange={(e) =>
+                  updateElement(el.id, { content: e.target.value })
+                }
+              />
+            </Form.Group>
+            <Form.Group className='mb-3'>
+              <Form.Label>Link URL</Form.Label>
+              <Form.Control
+                type='text'
+                value={el.href || ''}
+                onChange={(e) => updateElement(el.id, { href: e.target.value })}
+                placeholder='https://example.com'
+              />
+            </Form.Group>
+            <Form.Group className='mb-3'>
+              <Form.Label>Open in new tab</Form.Label>
+              <Form.Check
+                type='switch'
+                checked={el.settings?.target === '_blank'}
+                onChange={(e) =>
+                  updateElement(el.id, {
+                    settings: {
+                      ...el.settings,
+                      target: e.target.checked ? '_blank' : '_self',
+                    },
+                  })
+                }
+              />
+            </Form.Group>
+          </>
+        )}
+
+        {/* Video */}
+        {el.type === 'video' && (
+          <>
+            <Form.Group className='mb-3'>
+              <Form.Label>YouTube/Vimeo URL</Form.Label>
+              <Form.Control
+                type='text'
+                value={el.src || ''}
+                onChange={(e) => updateElement(el.id, { src: e.target.value })}
+                placeholder='https://www.youtube.com/embed/...'
+              />
+            </Form.Group>
+            <Form.Group className='mb-3'>
+              <Form.Label>Aspect Ratio</Form.Label>
+              <Form.Select
+                value={el.settings?.aspectRatio || '16:9'}
+                onChange={(e) =>
+                  updateElement(el.id, {
+                    settings: { ...el.settings, aspectRatio: e.target.value },
+                  })
+                }
+              >
+                <option value='16:9'>16:9</option>
+                <option value='4:3'>4:3</option>
+                <option value='1:1'>1:1 (Square)</option>
+                <option value='21:9'>21:9 (Ultrawide)</option>
+              </Form.Select>
+            </Form.Group>
+          </>
+        )}
+
+        {/* Columns */}
+        {el.type === 'columns' && (
+          <>
+            <Form.Group className='mb-3'>
+              <Form.Label>Number of Columns</Form.Label>
+              <Form.Select
+                value={el.settings?.columnCount || 2}
+                onChange={(e) => {
+                  const count = parseInt(e.target.value);
+                  const currentColumns = el.columns || [];
+                  const newColumns = Array(count)
+                    .fill(null)
+                    .map((_, i) => {
+                      if (i < currentColumns.length) return currentColumns[i];
+                      return {
+                        ...createElement('paragraph'),
+                        id: generateId(),
+                      };
+                    });
+                  updateElement(el.id, {
+                    columns: newColumns,
+                    settings: { ...el.settings, columnCount: count },
+                  });
+                }}
+              >
+                {[1, 2, 3, 4].map((n) => (
+                  <option key={n} value={n}>
+                    {n} {n === 1 ? 'Column' : 'Columns'}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className='mb-3'>
+              <Form.Label>Gap (px)</Form.Label>
+              <Form.Control
+                type='number'
+                value={el.settings?.gap || 20}
+                onChange={(e) =>
+                  updateElement(el.id, {
+                    settings: {
+                      ...el.settings,
+                      gap: parseInt(e.target.value) || 20,
+                    },
+                  })
+                }
+              />
+            </Form.Group>
+          </>
+        )}
+
+        {/* Social */}
+        {el.type === 'social' && (
+          <div>
+            {(el.settings?.platforms || []).map(
+              (platform: any, index: number) => (
+                <Form.Group key={index} className='mb-2'>
+                  <Form.Label>{platform.name || 'Platform'}</Form.Label>
+                  <Form.Control
+                    type='text'
+                    value={platform.url || ''}
+                    onChange={(e) => {
+                      const platforms = [...(el.settings?.platforms || [])];
+                      platforms[index] = {
+                        ...platforms[index],
+                        url: e.target.value,
+                      };
+                      updateElement(el.id, {
+                        settings: { ...el.settings, platforms },
+                      });
+                    }}
+                    placeholder='https://...'
+                  />
+                </Form.Group>
+              ),
+            )}
+            <Button
+              variant='outline-secondary'
+              size='sm'
+              onClick={() => {
+                const platforms = [...(el.settings?.platforms || [])];
+                platforms.push({ name: 'New Platform', url: '', icon: '●' });
+                updateElement(el.id, {
+                  settings: { ...el.settings, platforms },
+                });
+              }}
+            >
+              + Add Platform
+            </Button>
+          </div>
+        )}
+
+        {/* Common Style Settings */}
+        <hr />
+        <h6 className='mb-2'>Style Settings</h6>
+
+        <Form.Group className='mb-2'>
+          <Form.Label>Text Alignment</Form.Label>
+          <div className='d-flex gap-1'>
+            {['left', 'center', 'right', 'justify'].map((align) => (
+              <Button
+                key={align}
+                variant={
+                  el.style?.textAlign === align
+                    ? 'primary'
+                    : 'outline-secondary'
+                }
+                size='sm'
+                onClick={() =>
+                  updateElement(el.id, {
+                    style: { ...el.style, textAlign: align as any },
+                  })
+                }
+              >
+                {align === 'left' && '↞'}
+                {align === 'center' && '↔'}
+                {align === 'right' && '↠'}
+                {align === 'justify' && '≡'}
+              </Button>
+            ))}
+          </div>
+        </Form.Group>
+
+        <Form.Group className='mb-2'>
+          <Form.Label>Font Size</Form.Label>
+          <Form.Control
+            type='text'
+            value={el.style?.fontSize || ''}
+            onChange={(e) =>
+              updateElement(el.id, {
+                style: { ...el.style, fontSize: e.target.value },
+              })
+            }
+            placeholder='16px'
+          />
+        </Form.Group>
+
+        <Form.Group className='mb-2'>
+          <Form.Label>Font Weight</Form.Label>
+          <Form.Control
+            type='text'
+            value={el.style?.fontWeight || ''}
+            onChange={(e) =>
+              updateElement(el.id, {
+                style: { ...el.style, fontWeight: e.target.value },
+              })
+            }
+            placeholder='400 or bold'
+          />
+        </Form.Group>
+
+        <Form.Group className='mb-2'>
+          <Form.Label>Color</Form.Label>
+          <div className='d-flex gap-2'>
+            <input
+              type='color'
+              value={el.style?.color || '#333333'}
+              onChange={(e) =>
+                updateElement(el.id, {
+                  style: { ...el.style, color: e.target.value },
+                })
+              }
+              style={{
+                width: '40px',
+                height: '40px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                padding: '2px',
+              }}
+            />
+            <Form.Control
+              type='text'
+              value={el.style?.color || ''}
+              onChange={(e) =>
+                updateElement(el.id, {
+                  style: { ...el.style, color: e.target.value },
+                })
+              }
+            />
+          </div>
+        </Form.Group>
+
+        <Form.Group className='mb-2'>
+          <Form.Label>Background Color</Form.Label>
+          <div className='d-flex gap-2'>
+            <input
+              type='color'
+              value={el.style?.backgroundColor || '#ffffff'}
+              onChange={(e) =>
+                updateElement(el.id, {
+                  style: { ...el.style, backgroundColor: e.target.value },
+                })
+              }
+              style={{
+                width: '40px',
+                height: '40px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                padding: '2px',
+              }}
+            />
+            <Form.Control
+              type='text'
+              value={el.style?.backgroundColor || ''}
+              onChange={(e) =>
+                updateElement(el.id, {
+                  style: { ...el.style, backgroundColor: e.target.value },
+                })
+              }
+            />
+          </div>
+        </Form.Group>
+
+        <Form.Group className='mb-2'>
+          <Form.Label>Padding</Form.Label>
+          <Form.Control
+            type='text'
+            value={el.style?.padding || ''}
+            onChange={(e) =>
+              updateElement(el.id, {
+                style: { ...el.style, padding: e.target.value },
+              })
+            }
+            placeholder='8px 0'
+          />
+        </Form.Group>
+
+        <Form.Group className='mb-2'>
+          <Form.Label>Margin</Form.Label>
+          <Form.Control
+            type='text'
+            value={el.style?.margin || ''}
+            onChange={(e) =>
+              updateElement(el.id, {
+                style: { ...el.style, margin: e.target.value },
+              })
+            }
+            placeholder='0 0 16px 0'
+          />
+        </Form.Group>
+
+        <Form.Group className='mb-2'>
+          <Form.Label>Border Radius</Form.Label>
+          <Form.Control
+            type='text'
+            value={el.style?.borderRadius || ''}
+            onChange={(e) =>
+              updateElement(el.id, {
+                style: { ...el.style, borderRadius: e.target.value },
+              })
+            }
+            placeholder='8px'
+          />
+        </Form.Group>
+
+        <div className='d-flex gap-2 mt-3'>
+          <Button
+            variant='outline-danger'
+            size='sm'
+            onClick={() => deleteElement(el.id)}
+          >
+            <i className='ti ti-trash me-1'></i> Delete
+          </Button>
+          <Button
+            variant='outline-secondary'
+            size='sm'
+            onClick={() => duplicateElement(el.id)}
+          >
+            <i className='ti ti-copy me-1'></i> Duplicate
+          </Button>
+        </div>
+      </div>
+    );
   };
 
   // ─── Feature Settings Panel ───────────────────────────────────────────
@@ -1508,476 +2500,6 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
     );
   };
 
-  // ─── Element Settings Panel ───────────────────────────────────────────
-
-  const renderSettingsPanel = () => {
-    const el = getSelectedElement();
-    if (!el) {
-      return (
-        <div className='settings-empty'>
-          <p className='text-muted'>Select an element to edit its settings</p>
-        </div>
-      );
-    }
-
-    // If it's a features element, render the feature settings
-    if (el.type === 'features') {
-      return renderFeatureSettings(el);
-    }
-
-    // Otherwise render regular settings
-    return (
-      <div className='settings-panel'>
-        <h6 className='settings-title'>
-          <span className='badge bg-primary me-2'>{el.type}</span>
-          Element Settings
-        </h6>
-
-        {/* Content */}
-        {['heading', 'paragraph', 'button', 'html'].includes(el.type) && (
-          <Form.Group className='mb-3'>
-            <Form.Label>Content</Form.Label>
-            {el.type === 'html' ? (
-              <Form.Control
-                as='textarea'
-                rows={4}
-                value={el.content || ''}
-                onChange={(e) =>
-                  updateElement(el.id, { content: e.target.value })
-                }
-              />
-            ) : (
-              <Form.Control
-                type='text'
-                value={el.content || ''}
-                onChange={(e) =>
-                  updateElement(el.id, { content: e.target.value })
-                }
-              />
-            )}
-          </Form.Group>
-        )}
-
-        {/* Image */}
-        {el.type === 'image' && (
-          <>
-            <Form.Group className='mb-3'>
-              <Form.Label>Image URL</Form.Label>
-              <div className='d-flex gap-2'>
-                <Form.Control
-                  type='text'
-                  value={el.src || ''}
-                  onChange={(e) =>
-                    updateElement(el.id, { src: e.target.value })
-                  }
-                  placeholder='https://example.com/image.jpg'
-                />
-                <Button
-                  variant='outline-secondary'
-                  onClick={() => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*';
-                    input.onchange = (e) => {
-                      const file = (e.target as HTMLInputElement).files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (ev) => {
-                          updateElement(el.id, {
-                            src: ev.target?.result as string,
-                          });
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    };
-                    input.click();
-                  }}
-                >
-                  Upload
-                </Button>
-              </div>
-            </Form.Group>
-            {el.src && (
-              <div className='mb-3'>
-                <img
-                  src={el.src}
-                  alt='Preview'
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: '100px',
-                    borderRadius: '4px',
-                  }}
-                />
-              </div>
-            )}
-            <Form.Group className='mb-3'>
-              <Form.Label>Alt Text</Form.Label>
-              <Form.Control
-                type='text'
-                value={el.alt || ''}
-                onChange={(e) => updateElement(el.id, { alt: e.target.value })}
-              />
-            </Form.Group>
-            <Form.Group className='mb-3'>
-              <Form.Label>Caption</Form.Label>
-              <Form.Control
-                type='text'
-                value={el.settings?.caption || ''}
-                onChange={(e) =>
-                  updateElement(el.id, {
-                    settings: { ...el.settings, caption: e.target.value },
-                  })
-                }
-              />
-            </Form.Group>
-          </>
-        )}
-
-        {/* Button */}
-        {el.type === 'button' && (
-          <>
-            <Form.Group className='mb-3'>
-              <Form.Label>Button Text</Form.Label>
-              <Form.Control
-                type='text'
-                value={el.content || ''}
-                onChange={(e) =>
-                  updateElement(el.id, { content: e.target.value })
-                }
-              />
-            </Form.Group>
-            <Form.Group className='mb-3'>
-              <Form.Label>Link URL</Form.Label>
-              <Form.Control
-                type='text'
-                value={el.href || ''}
-                onChange={(e) => updateElement(el.id, { href: e.target.value })}
-                placeholder='https://example.com'
-              />
-            </Form.Group>
-            <Form.Group className='mb-3'>
-              <Form.Label>Open in new tab</Form.Label>
-              <Form.Check
-                type='switch'
-                checked={el.settings?.target === '_blank'}
-                onChange={(e) =>
-                  updateElement(el.id, {
-                    settings: {
-                      ...el.settings,
-                      target: e.target.checked ? '_blank' : '_self',
-                    },
-                  })
-                }
-              />
-            </Form.Group>
-          </>
-        )}
-
-        {/* Video */}
-        {el.type === 'video' && (
-          <>
-            <Form.Group className='mb-3'>
-              <Form.Label>YouTube/Vimeo URL</Form.Label>
-              <Form.Control
-                type='text'
-                value={el.src || ''}
-                onChange={(e) => updateElement(el.id, { src: e.target.value })}
-                placeholder='https://www.youtube.com/embed/...'
-              />
-            </Form.Group>
-            <Form.Group className='mb-3'>
-              <Form.Label>Aspect Ratio</Form.Label>
-              <Form.Select
-                value={el.settings?.aspectRatio || '16:9'}
-                onChange={(e) =>
-                  updateElement(el.id, {
-                    settings: { ...el.settings, aspectRatio: e.target.value },
-                  })
-                }
-              >
-                <option value='16:9'>16:9</option>
-                <option value='4:3'>4:3</option>
-                <option value='1:1'>1:1 (Square)</option>
-                <option value='21:9'>21:9 (Ultrawide)</option>
-              </Form.Select>
-            </Form.Group>
-          </>
-        )}
-
-        {/* Columns */}
-        {el.type === 'columns' && (
-          <>
-            <Form.Group className='mb-3'>
-              <Form.Label>Number of Columns</Form.Label>
-              <Form.Select
-                value={el.settings?.columnCount || 2}
-                onChange={(e) => {
-                  const count = parseInt(e.target.value);
-                  const currentColumns = el.columns || [];
-                  const newColumns = Array(count)
-                    .fill(null)
-                    .map((_, i) => {
-                      if (i < currentColumns.length) return currentColumns[i];
-                      return {
-                        ...createElement('paragraph'),
-                        id: generateId(),
-                      };
-                    });
-                  updateElement(el.id, {
-                    columns: newColumns,
-                    settings: { ...el.settings, columnCount: count },
-                  });
-                }}
-              >
-                {[1, 2, 3, 4].map((n) => (
-                  <option key={n} value={n}>
-                    {n} {n === 1 ? 'Column' : 'Columns'}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-            <Form.Group className='mb-3'>
-              <Form.Label>Gap (px)</Form.Label>
-              <Form.Control
-                type='number'
-                value={el.settings?.gap || 20}
-                onChange={(e) =>
-                  updateElement(el.id, {
-                    settings: {
-                      ...el.settings,
-                      gap: parseInt(e.target.value) || 20,
-                    },
-                  })
-                }
-              />
-            </Form.Group>
-          </>
-        )}
-
-        {/* Social */}
-        {el.type === 'social' && (
-          <div>
-            {(el.settings?.platforms || []).map(
-              (platform: any, index: number) => (
-                <Form.Group key={index} className='mb-2'>
-                  <Form.Label>{platform.name || 'Platform'}</Form.Label>
-                  <Form.Control
-                    type='text'
-                    value={platform.url || ''}
-                    onChange={(e) => {
-                      const platforms = [...(el.settings?.platforms || [])];
-                      platforms[index] = {
-                        ...platforms[index],
-                        url: e.target.value,
-                      };
-                      updateElement(el.id, {
-                        settings: { ...el.settings, platforms },
-                      });
-                    }}
-                    placeholder='https://...'
-                  />
-                </Form.Group>
-              ),
-            )}
-            <Button
-              variant='outline-secondary'
-              size='sm'
-              onClick={() => {
-                const platforms = [...(el.settings?.platforms || [])];
-                platforms.push({ name: 'New Platform', url: '', icon: '●' });
-                updateElement(el.id, {
-                  settings: { ...el.settings, platforms },
-                });
-              }}
-            >
-              + Add Platform
-            </Button>
-          </div>
-        )}
-
-        {/* Common Style Settings */}
-        <hr />
-        <h6 className='mb-2'>Style Settings</h6>
-
-        <Form.Group className='mb-2'>
-          <Form.Label>Text Alignment</Form.Label>
-          <div className='d-flex gap-1'>
-            {['left', 'center', 'right', 'justify'].map((align) => (
-              <Button
-                key={align}
-                variant={
-                  el.style?.textAlign === align
-                    ? 'primary'
-                    : 'outline-secondary'
-                }
-                size='sm'
-                onClick={() =>
-                  updateElement(el.id, {
-                    style: { ...el.style, textAlign: align as any },
-                  })
-                }
-              >
-                {align === 'left' && '↞'}
-                {align === 'center' && '↔'}
-                {align === 'right' && '↠'}
-                {align === 'justify' && '≡'}
-              </Button>
-            ))}
-          </div>
-        </Form.Group>
-
-        <Form.Group className='mb-2'>
-          <Form.Label>Font Size</Form.Label>
-          <Form.Control
-            type='text'
-            value={el.style?.fontSize || ''}
-            onChange={(e) =>
-              updateElement(el.id, {
-                style: { ...el.style, fontSize: e.target.value },
-              })
-            }
-            placeholder='16px'
-          />
-        </Form.Group>
-
-        <Form.Group className='mb-2'>
-          <Form.Label>Font Weight</Form.Label>
-          <Form.Control
-            type='text'
-            value={el.style?.fontWeight || ''}
-            onChange={(e) =>
-              updateElement(el.id, {
-                style: { ...el.style, fontWeight: e.target.value },
-              })
-            }
-            placeholder='400 or bold'
-          />
-        </Form.Group>
-
-        <Form.Group className='mb-2'>
-          <Form.Label>Color</Form.Label>
-          <div className='d-flex gap-2'>
-            <input
-              type='color'
-              value={el.style?.color || '#333333'}
-              onChange={(e) =>
-                updateElement(el.id, {
-                  style: { ...el.style, color: e.target.value },
-                })
-              }
-              style={{
-                width: '40px',
-                height: '40px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                padding: '2px',
-              }}
-            />
-            <Form.Control
-              type='text'
-              value={el.style?.color || ''}
-              onChange={(e) =>
-                updateElement(el.id, {
-                  style: { ...el.style, color: e.target.value },
-                })
-              }
-            />
-          </div>
-        </Form.Group>
-
-        <Form.Group className='mb-2'>
-          <Form.Label>Background Color</Form.Label>
-          <div className='d-flex gap-2'>
-            <input
-              type='color'
-              value={el.style?.backgroundColor || '#ffffff'}
-              onChange={(e) =>
-                updateElement(el.id, {
-                  style: { ...el.style, backgroundColor: e.target.value },
-                })
-              }
-              style={{
-                width: '40px',
-                height: '40px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                padding: '2px',
-              }}
-            />
-            <Form.Control
-              type='text'
-              value={el.style?.backgroundColor || ''}
-              onChange={(e) =>
-                updateElement(el.id, {
-                  style: { ...el.style, backgroundColor: e.target.value },
-                })
-              }
-            />
-          </div>
-        </Form.Group>
-
-        <Form.Group className='mb-2'>
-          <Form.Label>Padding</Form.Label>
-          <Form.Control
-            type='text'
-            value={el.style?.padding || ''}
-            onChange={(e) =>
-              updateElement(el.id, {
-                style: { ...el.style, padding: e.target.value },
-              })
-            }
-            placeholder='8px 0'
-          />
-        </Form.Group>
-
-        <Form.Group className='mb-2'>
-          <Form.Label>Margin</Form.Label>
-          <Form.Control
-            type='text'
-            value={el.style?.margin || ''}
-            onChange={(e) =>
-              updateElement(el.id, {
-                style: { ...el.style, margin: e.target.value },
-              })
-            }
-            placeholder='0 0 16px 0'
-          />
-        </Form.Group>
-
-        <Form.Group className='mb-2'>
-          <Form.Label>Border Radius</Form.Label>
-          <Form.Control
-            type='text'
-            value={el.style?.borderRadius || ''}
-            onChange={(e) =>
-              updateElement(el.id, {
-                style: { ...el.style, borderRadius: e.target.value },
-              })
-            }
-            placeholder='8px'
-          />
-        </Form.Group>
-
-        <div className='d-flex gap-2 mt-3'>
-          <Button
-            variant='outline-danger'
-            size='sm'
-            onClick={() => deleteElement(el.id)}
-          >
-            <i className='ti ti-trash me-1'></i> Delete
-          </Button>
-          <Button
-            variant='outline-secondary'
-            size='sm'
-            onClick={() => duplicateElement(el.id)}
-          >
-            <i className='ti ti-copy me-1'></i> Duplicate
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
   // ─── Element Renderer (Builder Canvas) ──────────────────────────────
 
   const renderElementPreview = (el: EmailElement, index: number) => {
@@ -1998,6 +2520,8 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
               {el.content || 'Paragraph text'}
             </p>
           );
+        case 'list':
+          return renderListPreview(el);
         case 'image':
           return (
             <div style={{ textAlign: style.textAlign || 'center' }}>
@@ -2247,6 +2771,248 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
           </div>
         )}
       </Draggable>
+    );
+  };
+
+  const renderListPreview = (el: EmailElement) => {
+    if (!el.items || el.items.length === 0) {
+      return (
+        <div className='text-center p-3 text-muted'>
+          <i className='ti ti-list' style={{ fontSize: '24px' }}></i>
+          <p className='mb-0'>
+            No list items added. Add items in the settings panel.
+          </p>
+        </div>
+      );
+    }
+
+    const layout = el.listLayout || {
+      bulletType: 'circle',
+      bulletColor: '#506ee4',
+      bulletSize: 'medium',
+      showBullets: true,
+      iconSize: 'medium',
+      gap: 8,
+    };
+
+    const bulletType = layout.bulletType;
+    const bulletColor = layout.bulletColor || '#506ee4';
+    const bulletSize = layout.bulletSize || 'medium';
+    const showBullets = layout.showBullets !== false;
+    const iconSize = layout.iconSize || 'medium';
+    const gap = layout.gap || 8;
+
+    const sizeMap: Record<string, string> = {
+      small: '12px',
+      medium: '16px',
+      large: '20px',
+    };
+
+    const iconSizeMap: Record<string, string> = {
+      small: '16px',
+      medium: '24px',
+      large: '32px',
+    };
+
+    const bulletSizeStr = sizeMap[bulletSize] || '16px';
+    const iconSizeStr = iconSizeMap[iconSize] || '24px';
+
+    const getBulletElement = (item: ListItem, index: number) => {
+      if (!showBullets) return null;
+
+      const color = bulletColor;
+
+      switch (bulletType) {
+        case 'circle':
+          return (
+            <span
+              style={{
+                display: 'inline-block',
+                width: bulletSizeStr,
+                height: bulletSizeStr,
+                borderRadius: '50%',
+                background: color,
+                flexShrink: 0,
+                marginTop: '4px',
+              }}
+            />
+          );
+        case 'square':
+          return (
+            <span
+              style={{
+                display: 'inline-block',
+                width: bulletSizeStr,
+                height: bulletSizeStr,
+                background: color,
+                flexShrink: 0,
+                marginTop: '4px',
+              }}
+            />
+          );
+        case 'disc':
+          return (
+            <span
+              style={{
+                display: 'inline-block',
+                width: bulletSizeStr,
+                height: bulletSizeStr,
+                borderRadius: '50%',
+                background: color,
+                flexShrink: 0,
+                marginTop: '4px',
+              }}
+            />
+          );
+        case 'icon':
+          return (
+            <span style={{ fontSize: iconSizeStr, flexShrink: 0 }}>
+              {item.icon || '•'}
+            </span>
+          );
+        case 'image':
+          return item.image ? (
+            <img
+              src={item.image}
+              style={{
+                width: iconSizeStr,
+                height: iconSizeStr,
+                objectFit: 'cover',
+                borderRadius: '50%',
+                flexShrink: 0,
+              }}
+            />
+          ) : (
+            <span
+              style={{
+                display: 'inline-block',
+                width: iconSizeStr,
+                height: iconSizeStr,
+                borderRadius: '50%',
+                background: color,
+                flexShrink: 0,
+                marginTop: '4px',
+              }}
+            />
+          );
+        case 'number':
+          return (
+            <span
+              style={{
+                fontWeight: 'bold',
+                color: color,
+                flexShrink: 0,
+                minWidth: bulletSizeStr,
+                textAlign: 'center',
+              }}
+            >
+              {index + 1}.
+            </span>
+          );
+        case 'check':
+          return (
+            <span
+              style={{
+                color: color,
+                fontSize: iconSizeStr,
+                flexShrink: 0,
+              }}
+            >
+              ✓
+            </span>
+          );
+        case 'star':
+          return (
+            <span
+              style={{
+                color: color,
+                fontSize: iconSizeStr,
+                flexShrink: 0,
+              }}
+            >
+              ★
+            </span>
+          );
+        case 'arrow':
+          return (
+            <span
+              style={{
+                color: color,
+                fontSize: iconSizeStr,
+                flexShrink: 0,
+              }}
+            >
+              →
+            </span>
+          );
+        default:
+          return (
+            <span
+              style={{
+                display: 'inline-block',
+                width: bulletSizeStr,
+                height: bulletSizeStr,
+                borderRadius: '50%',
+                background: color,
+                flexShrink: 0,
+                marginTop: '4px',
+              }}
+            />
+          );
+      }
+    };
+
+    const style = el.style || {};
+    const isOrdered = el.settings?.ordered || false;
+    const listStyle: React.CSSProperties = {
+      listStyle: 'none',
+      padding: 0,
+      margin: 0,
+      ...style,
+    };
+
+    return (
+      <div style={{ padding: '4px' }}>
+        {isOrdered || bulletType === 'number' ? (
+          <ol style={listStyle}>
+            {el.items.map((item: ListItem, index: number) => (
+              <li
+                key={item.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: `${gap}px`,
+                  marginBottom: `${gap}px`,
+                }}
+              >
+                {getBulletElement(item, index)}
+                <span style={{ flex: 1, wordBreak: 'break-word' }}>
+                  {item.content}
+                </span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <ul style={listStyle}>
+            {el.items.map((item: ListItem, index: number) => (
+              <li
+                key={item.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: `${gap}px`,
+                  marginBottom: `${gap}px`,
+                }}
+              >
+                {getBulletElement(item, index)}
+                <span style={{ flex: 1, wordBreak: 'break-word' }}>
+                  {item.content}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     );
   };
 
@@ -2523,6 +3289,16 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
             <h4 className='mb-0'>
               {templateId ? 'Edit Template' : 'Create Template'}
             </h4>
+            {templateId && onNewTemplate && (
+              <Button
+                variant='outline-primary'
+                size='sm'
+                onClick={onNewTemplate}
+                title='Create a new template'
+              >
+                <i className='ti ti-plus me-1'></i> New Template
+              </Button>
+            )}
           </div>
           <div className='d-flex gap-2'>
             <Button
@@ -2587,6 +3363,11 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
                   type: 'features',
                   label: 'Features',
                   icon: 'ti ti-grid-dots',
+                },
+                {
+                  type: 'list',
+                  label: 'List',
+                  icon: 'ti ti-list',
                 },
               ].map((item) => (
                 <button
