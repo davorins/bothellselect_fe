@@ -843,16 +843,18 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
               Elite Basketball Training
             </div>
             <h1 className='hp-hero__title'>
-              <span className='hp-hero__word'>Develop</span>{' '}
-              <span className='hp-hero__word'>Excellence</span>{' '}
+              <span className='hp-hero__word'>Help</span>{' '}
+              <span className='hp-hero__word'>Your</span>{' '}
+              <span className='hp-hero__word'>Child</span>{' '}
+              <span className='hp-hero__word'>Excel</span>{' '}
               <span className='hp-hero__word'>On &amp;</span>{' '}
               <span className='hp-hero__word'>Off</span>{' '}
               <span className='hp-hero__word'>The Court</span>
             </h1>
             <p className='hp-hero__body'>
-              Join Bothell Select Basketball — where passion meets purpose.
-              Elite coaching, character development, and a community that
-              champions your journey.
+              Join Bothell Select Basketball—where passion meets purpose. Elite
+              coaching, character development, and a community that champions
+              every young athlete's journey.
             </p>
           </div>
         </div>
