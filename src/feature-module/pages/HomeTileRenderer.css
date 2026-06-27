@@ -1431,7 +1431,8 @@
     font-size: 0.68rem;
   }
   .htr-expanded-container {
-    bottom: 55px;
+    position: relative;
+    bottom: 0;
   }
   .htr-dock-inner {
     gap: 6px;
