@@ -785,8 +785,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     );
   }
 
-  const showVideoSection =
-    !isMobile && promoVideoUrl && !videoError && videoLoaded;
+  const showVideoSection = promoVideoUrl && !videoError && videoLoaded;
 
   return (
     <div
@@ -797,7 +796,10 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       onDrop={isAdmin ? handleDrop : undefined}
     >
       {/* ─── HERO SECTION ────────────────────────────────────────────────────── */}
-      <section className='hp-hero' ref={heroRef}>
+      <section
+        className={`hp-hero ${arcDone && isMobile ? 'hp-hero--hidden' : ''}`}
+        ref={heroRef}
+      >
         <div className='hp-hero__bg-wrapper'>
           <img
             src='/assets/img/theme/bg-main.png'

@@ -94,8 +94,6 @@
   height: auto;
   object-fit: cover;
   pointer-events: none;
-  /* will-change removed — was permanently promoting a large layer with no benefit
-     outside the brief animation window */
 }
 
 .hp-hero__overlay {
@@ -312,7 +310,6 @@
   pointer-events: none;
 }
 
-/* Darkening overlay sits on top of the decorative video */
 .hp-stage__video-overlay {
   position: absolute;
   inset: 0;
@@ -604,8 +601,6 @@
     rgba(0, 0, 0, 0.85) 0%,
     rgba(0, 0, 0, 0.4) 100%
   );
-  /* backdrop-filter removed from the controls panel — it was compositing over
-     a playing video which forces a full re-composite each frame */
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding: 16px 24px 20px;
 }
@@ -953,8 +948,6 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  /* backdrop-filter retained here — it's a single small static element,
-     not overlapping a playing video */
   backdrop-filter: blur(8px);
   font-size: 1.2rem;
   transition:
@@ -1273,8 +1266,6 @@
 
 /* ─── CONTACT FORM ───────────────────────────────────────────────── */
 .hp-contact-form {
-  /* backdrop-filter removed — the form sits over a static dark background
-     so a semi-transparent bg is sufficient and cheaper */
   background: rgba(255, 255, 255, 0.05);
   border-radius: 20px;
   padding: 30px;
@@ -1521,13 +1512,22 @@
    RESPONSIVE — MOBILE (≤ 768px)
    ════════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .hp-hero {
-    min-height: 80vh;
-    padding: 40px 0;
-  }
-  .hp-hero__bg {
+  .hp-hero--hidden,
+  .hp-cut,
+  .hp-cut-light,
+  .hp-cut-reverse-light,
+  .hp-cut-reverse-dark,
+  .hp-cut-dark {
     display: none !important;
   }
+
+  /* Hide background image and video on mobile – loader only */
+  .hp-hero__bg,
+  .hp-hero__background-image,
+  .hp-stage__video {
+    display: none !important;
+  }
+
   /* Arc canvas fades out after done */
   .hp-arc-canvas {
     transition: opacity 0.8s ease;
@@ -1536,18 +1536,23 @@
     opacity: 0;
     pointer-events: none;
   }
+
   /* Spark disappears after animation */
   .hp-spark--active {
     animation: sparkFlash 0.4s ease forwards;
   }
+
   /* Ensure tiles are visible after arcDone */
   .hp-tiles-container.slide-up {
     opacity: 1 !important;
     transform: translateY(0) !important;
   }
+
+  /* Hero content remains visible */
   .hp-hero__inner {
-    padding: 0 16px;
+    display: block !important; /* ensure it's visible */
   }
+
   .hp-hero__title {
     font-size: clamp(1.8rem, 7vw, 2.8rem);
   }
@@ -1556,14 +1561,6 @@
   }
   .hp-hero__eyebrow {
     margin-bottom: 24px;
-  }
-  .hp-hero__background-image {
-    background-size: cover;
-    background-position: center;
-  }
-  /* Hero decorative video hidden on mobile (controlled in JSX, but belt-and-suspenders) */
-  .hp-stage__video {
-    display: none !important;
   }
 
   .hp-section {
@@ -1621,7 +1618,6 @@
   .hp-contact-methods {
     grid-template-columns: 1fr;
   }
-  /* Contact image column hidden on mobile — form is enough */
   .hp-contact-image {
     display: none;
   }
@@ -1690,17 +1686,8 @@
    ════════════════════════════════════════════════════════════════ */
 @media (max-width: 480px) {
   .hp-hero {
-    min-height: 70vh;
+    min-height: auto;
     padding: 20px 0;
-  }
-  .hp-hero__title {
-    font-size: 1.6rem;
-  }
-  .hp-hero__body {
-    font-size: 0.88rem;
-  }
-  .hp-hero__content {
-    top: -120px;
   }
 
   .hp-section {
@@ -1736,7 +1723,7 @@
   }
 
   .hp-tiles-section {
-    margin-top: -10px;
+    margin-top: 6rem;
     min-height: 200px;
   }
 }
