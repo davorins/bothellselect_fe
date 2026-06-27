@@ -1439,9 +1439,6 @@
     transition: none;
     transform: none;
   }
-  .hp-spark {
-    display: none;
-  }
   .hp-video__shimmer {
     animation: none;
     background: rgba(30, 30, 40, 0.9);
