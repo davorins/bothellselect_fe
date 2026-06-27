@@ -244,7 +244,7 @@
 
 /* ── Dock Overlay ────────────────────────────────────────────────── */
 .htr-dock-overlay {
-  position: fixed;
+  position: relative;
   inset: 0;
   z-index: 1000;
   pointer-events: none;
@@ -895,6 +895,10 @@
   .htr-dock-item i {
     font-size: 1.1rem;
   }
+
+  .htr-dock-overlay {
+    height: 46vh;
+  }
 }
 
 /* ── 1024 x 768 / 1024 x 600 (Small Desktop / iPad Landscape) ───── */
@@ -1231,6 +1235,9 @@
   }
   .htr-dock {
     bottom: 90px;
+  }
+  .htr-dock-overlay {
+    height: 47vh;
   }
 }
 

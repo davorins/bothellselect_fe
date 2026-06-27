@@ -84,9 +84,9 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             id: 'welcome-home',
             type: 'welcome',
             position: 0,
-            title: 'Welcome to Bothell Select AAU',
+            title: 'Welcome to Bothell Select',
             content:
-              '<p>Being a part of the Bothell Select AAU basketball program requires a serious commitment to the basketball season. One of the goals of a successful high school feeder program is to develop players into the types of athletes that can be successful at the high school level!</p>',
+              '<p>Being a part of the Bothell Select basketball program requires a serious commitment to the basketball season. One of the goals of a successful high school feeder program is to develop players into the types of athletes that can be successful at the high school level!</p>',
             isActive: true,
           },
           {
@@ -124,7 +124,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             id: 'welcome-about',
             type: 'welcome',
             position: 0,
-            title: 'About Bothell Select AAU',
+            title: 'About Bothell Select',
             content:
               '<p>Learn about our mission, values, and coaching staff.</p>',
             isActive: true,

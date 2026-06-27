@@ -533,9 +533,31 @@ const HomeTileRenderer: React.FC<Props> = ({ pageSlug }) => {
     switch (section.type) {
       case 'welcome':
       case 'text':
+        // Get the title from section, default to 'Welcome'
+        const welcomeTitle = section.title || 'Welcome';
+        const welcomeSubtitle =
+          section.subtitle || 'Bothell Select Basketball Program';
+
         return (
           <div className='welcome-container'>
-            <div className='welcome-title'>{section.title || 'Welcome'}</div>
+            <div className='welcome-title-wrapper'>
+              <span className='welcome-eyebrow'>
+                <span className='welcome-eyebrow-dot' />
+                {welcomeSubtitle}
+              </span>
+              <h1 className='welcome-title'>
+                {welcomeTitle.split(' ').map((word, i) => (
+                  <span
+                    key={i}
+                    className='welcome-word'
+                    style={{ animationDelay: `${0.1 + i * 0.08}s` }}
+                  >
+                    {word}
+                    {i < welcomeTitle.split(' ').length - 1 ? '\u00A0' : ''}
+                  </span>
+                ))}
+              </h1>
+            </div>
             <div
               className='welcome-content'
               dangerouslySetInnerHTML={{ __html: section.content || '' }}
