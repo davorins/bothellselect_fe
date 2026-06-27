@@ -119,7 +119,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const isAdmin = parent?.role === 'admin';
   const token = localStorage.getItem('token');
 
-  // ── State (unchanged) ──────────────────────────────────────────────────────
+  // ── State ──────────────────────────────────────────────────────────────────
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [arcDone, setArcDone] = useState(false);
   const [tilesVisible, setTilesVisible] = useState(false);
@@ -188,7 +188,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     sectionsRef.current[2] = el;
   }, []);
 
-  // ── Effects (unchanged) ────────────────────────────────────────────────────
+  // ── Effects ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -258,7 +258,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     fetchPromoVideo();
   }, [preloadBackgroundImage]);
 
-  // ── Intersection Observer for Hero Video (FIXED) ──────────────────────────
+  // ── Intersection Observer for Hero Video ──────────────────────────────────
   useEffect(() => {
     const heroElement = heroRef.current;
     if (!heroElement) return;
@@ -268,17 +268,15 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         entries.forEach((entry) => {
           const isVisible = entry.isIntersecting;
           const heroVideo = heroVideoRef.current;
-          if (!heroVideo) return; // video not yet rendered
+          if (!heroVideo) return;
 
-          // If user paused via tile interaction, we want to resume when visible again
+          // If user paused via tile interaction, reset flag when hero becomes visible
           if (isVisible) {
-            // Reset the flag so auto-play can take over when hero is visible
             isHeroVideoPausedByUserRef.current = false;
             if (heroVideo.paused && heroVideo.src) {
               heroVideo.play().catch(() => {});
             }
           } else {
-            // Hero not visible – pause only if user hasn't manually paused (but we just reset, so it's fine)
             if (!heroVideo.paused) {
               heroVideo.pause();
             }
@@ -290,9 +288,9 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
 
     observer.observe(heroElement);
     return () => observer.disconnect();
-  }, [promoVideoUrl, videoLoaded, videoError, isMobile]); // Re-run when video availability changes
+  }, [promoVideoUrl, videoLoaded, videoError, isMobile, arcDone]);
 
-  // ── Intersection Observer for Section Video (FIXED) ──────────────────────
+  // ── Intersection Observer for Section Video ──────────────────────────────
   useEffect(() => {
     const sectionElement = videoSectionRef.current;
     if (!sectionElement) return;
@@ -304,7 +302,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           const sectionVideo = sectionVideoRef.current;
           if (!sectionVideo) return;
 
-          // Only auto-play/pause if user hasn't manually paused
           if (!userPausedSectionVideoRef.current) {
             if (isVisible) {
               if (sectionVideo.paused && sectionVideo.src) {
@@ -329,10 +326,9 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
 
     observer.observe(sectionElement);
     return () => observer.disconnect();
-  }, [promoVideoUrl, videoLoaded, videoError, isMobile]); // Re-run when video availability changes
+  }, [promoVideoUrl, videoLoaded, videoError, isMobile, arcDone]);
 
-  // ── The rest of the component (handlers, upload, etc.) unchanged ──────────
-  // (All functions below remain exactly as in the original code)
+  // ── Handlers (unchanged) ────────────────────────────────────────────────────
   const handleContactChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const { name, value } = e.target;
@@ -810,23 +806,28 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           />
         </div>
         <div className='hp-hero__overlay' />
+
         <canvas
           ref={canvasRef}
           className={`hp-arc-canvas${arcDone ? ' hp-arc-canvas--done' : ''}`}
         />
 
-        {!isMobile && promoVideoUrl && videoLoaded && !videoError && (
-          <video
-            ref={heroVideoRef}
-            className='hp-stage__video'
-            src={promoVideoUrl}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload='metadata'
-          />
-        )}
+        {/* Hero video only appears after arcDone and on non‑mobile */}
+        {!isMobile &&
+          promoVideoUrl &&
+          videoLoaded &&
+          !videoError &&
+          arcDone && (
+            <video
+              ref={heroVideoRef}
+              className='hp-stage__video'
+              src={promoVideoUrl}
+              muted
+              loop
+              playsInline
+              preload='metadata'
+            />
+          )}
 
         <div
           className={`hp-hero__background-image${arcDone ? ' hp-hero__background-image--visible' : ''}`}

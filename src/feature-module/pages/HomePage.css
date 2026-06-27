@@ -309,10 +309,6 @@
   object-fit: cover;
   z-index: 1;
   opacity: 0.15;
-  /* Removed CSS filter (brightness/blur/saturate) — applying a filter to a
-     playing video forces the browser to repaint every decoded frame through
-     the filter pipeline, which is extremely expensive. Use a semi-transparent
-     overlay div instead for the darkening effect. */
   pointer-events: none;
 }
 
@@ -1528,6 +1524,26 @@
   .hp-hero {
     min-height: 80vh;
     padding: 40px 0;
+  }
+  .hp-hero__bg {
+    display: none !important;
+  }
+  /* Arc canvas fades out after done */
+  .hp-arc-canvas {
+    transition: opacity 0.8s ease;
+  }
+  .hp-arc-canvas--done {
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* Spark disappears after animation */
+  .hp-spark--active {
+    animation: sparkFlash 0.4s ease forwards;
+  }
+  /* Ensure tiles are visible after arcDone */
+  .hp-tiles-container.slide-up {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
   }
   .hp-hero__inner {
     padding: 0 16px;
