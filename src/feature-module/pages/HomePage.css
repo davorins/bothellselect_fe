@@ -78,10 +78,7 @@
 
 .hp-hero__bg-wrapper {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   z-index: 0;
   overflow: hidden;
 }
@@ -96,8 +93,9 @@
   width: auto;
   height: auto;
   object-fit: cover;
-  will-change: transform, opacity;
   pointer-events: none;
+  /* will-change removed — was permanently promoting a large layer with no benefit
+     outside the brief animation window */
 }
 
 .hp-hero__overlay {
@@ -143,8 +141,7 @@
   margin-bottom: 40px;
   width: 100%;
   opacity: 0;
-  animation: hp-fade-up 0.6s ease forwards;
-  animation-delay: 0.05s;
+  animation: hp-fade-up 0.6s ease forwards 0.05s;
 }
 
 .hp-hero__eyebrow-dot {
@@ -200,10 +197,8 @@
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.7);
   margin: 0;
-  max-width: 100%;
   opacity: 0;
-  animation: hp-fade-up 0.7s ease forwards;
-  animation-delay: 0.65s;
+  animation: hp-fade-up 0.7s ease forwards 0.65s;
 }
 
 @keyframes hp-fade-up {
@@ -224,23 +219,14 @@
   width: 100%;
   height: 100%;
   z-index: 3;
-  opacity: 1;
-  transition: opacity 0.1s ease;
   pointer-events: none;
   display: block;
-}
-
-.hp-arc-canvas--done {
-  opacity: 1;
 }
 
 /* ─── Background image ──────────────────────────────────────────── */
 .hp-hero__background-image {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
   background-image: url('../../../public/assets/img/bg/bg_main.png');
@@ -261,7 +247,7 @@
   transform: scale(1);
 }
 
-/* ─── Dramatic spark/glow ────────────────────────────────────── */
+/* ─── Spark ──────────────────────────────────────────────────────── */
 .hp-spark {
   position: absolute;
   inset: 0;
@@ -271,7 +257,7 @@
 }
 
 .hp-spark--active {
-  animation: sparkFlash 0.4s ease 0s 1 forwards;
+  animation: sparkFlash 0.4s ease forwards;
 }
 
 @keyframes sparkFlash {
@@ -314,7 +300,7 @@
   }
 }
 
-/* ─── Background video ───────────────────────────────────────────── */
+/* ─── Background / decorative video in hero ─────────────────────── */
 .hp-stage__video {
   position: absolute;
   inset: 0;
@@ -323,8 +309,19 @@
   object-fit: cover;
   z-index: 1;
   opacity: 0.15;
-  filter: brightness(0.6) blur(1px) saturate(0.7);
-  transition: opacity 0.5s ease;
+  /* Removed CSS filter (brightness/blur/saturate) — applying a filter to a
+     playing video forces the browser to repaint every decoded frame through
+     the filter pipeline, which is extremely expensive. Use a semi-transparent
+     overlay div instead for the darkening effect. */
+  pointer-events: none;
+}
+
+/* Darkening overlay sits on top of the decorative video */
+.hp-stage__video-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.45);
   pointer-events: none;
 }
 
@@ -359,14 +356,12 @@
   clip-path: polygon(0 0, 100% 0, 100% 100%, 0 0);
   pointer-events: none;
 }
-
 .hp-cut-dark {
   height: 90px;
   background: var(--dark-0);
   clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0 0);
   pointer-events: none;
 }
-
 .hp-cut-dark.hero {
   position: relative;
   bottom: 62px;
@@ -408,7 +403,6 @@
   margin-bottom: 48px;
   position: relative;
   padding-left: 20px;
-  transition: all 0.4s var(--ease-sport);
 }
 
 .hp-section__head::before {
@@ -462,7 +456,7 @@
   margin-top: 8px;
 }
 
-/* ─── TILES SECTION ──────────────────────────────────────────── */
+/* ─── TILES SECTION ──────────────────────────────────────────────── */
 .hp-tiles-section {
   position: relative;
   z-index: 2;
@@ -489,8 +483,8 @@
   opacity: 0;
   transform: translateY(60px);
   transition:
-    opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 0.8s var(--ease-sport),
+    transform 0.8s var(--ease-sport);
 }
 
 .hp-tiles-container.slide-up {
@@ -503,7 +497,7 @@
   position: relative;
 }
 
-/* ─── VIDEO SECTION ─────────────────────────────────────────────── */
+/* ─── VIDEO SECTION ──────────────────────────────────────────────── */
 .hp-section--video {
   background: var(--dark-0);
   padding: 0 0 80px;
@@ -536,10 +530,7 @@
 
 .hp-video__shimmer {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: linear-gradient(
     90deg,
     rgba(30, 30, 40, 0.8) 0%,
@@ -568,16 +559,10 @@
   border: 3px solid rgba(212, 129, 42, 0.3);
   border-top-color: var(--gold);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: hp-spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* ─── Video Controls ────────────────────────────────────────────── */
+/* ─── Video Controls ─────────────────────────────────────────────── */
 .hp-controls-open {
   width: 36px;
   height: 36px;
@@ -589,7 +574,9 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
   position: absolute;
   right: 24px;
   bottom: 24px;
@@ -598,18 +585,6 @@
 .hp-controls-open:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: scale(1.1);
-}
-.hp-controls-open__label {
-  position: absolute;
-  bottom: 30px;
-  right: 75px;
-  background: rgba(0, 0, 0, 0.75);
-  color: rgba(255, 255, 255, 0.75);
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  white-space: nowrap;
-  z-index: 100;
 }
 
 .hp-controls {
@@ -626,19 +601,23 @@
   transform: translateY(0);
   pointer-events: all;
 }
+
 .hp-controls__panel {
   background: linear-gradient(
     to top,
     rgba(0, 0, 0, 0.85) 0%,
     rgba(0, 0, 0, 0.4) 100%
   );
-  backdrop-filter: blur(12px);
+  /* backdrop-filter removed from the controls panel — it was compositing over
+     a playing video which forces a full re-composite each frame */
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding: 16px 24px 20px;
 }
+
 .hp-controls__progress {
   margin-bottom: 10px;
 }
+
 .hp-controls__slider {
   width: 100%;
   height: 3px;
@@ -662,6 +641,7 @@
 .hp-controls__slider::-webkit-slider-thumb:hover {
   transform: scale(1.3);
 }
+
 .hp-controls__row {
   display: flex;
   align-items: center;
@@ -673,6 +653,7 @@
   align-items: center;
   gap: 8px;
 }
+
 .hp-ctrl-btn {
   width: 36px;
   height: 36px;
@@ -684,7 +665,9 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
 }
 .hp-ctrl-btn:hover {
   background: rgba(255, 255, 255, 0.2);
@@ -697,6 +680,7 @@
 .hp-ctrl-btn--close:hover {
   background: rgba(255, 100, 100, 0.4);
 }
+
 .hp-controls__time {
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.8rem;
@@ -710,7 +694,7 @@
   opacity: 0.3;
 }
 
-/* ─── ABOUT SECTION ─────────────────────────────────────────────── */
+/* ─── ABOUT SECTION ──────────────────────────────────────────────── */
 .hp-section--about {
   background: var(--dark-1);
   position: relative;
@@ -739,49 +723,6 @@
   max-width: 600px;
   width: 100%;
   height: auto;
-  /* filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.3)); */
-}
-
-.hp-about-stats {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  width: 100%;
-}
-
-.hp-stat-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  padding: 24px 16px;
-  text-align: center;
-  transition: all 0.3s var(--ease-sport);
-}
-
-.hp-stat-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--gold);
-  background: rgba(212, 129, 42, 0.1);
-}
-
-.hp-stat-number {
-  font-size: 2.4rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-bright) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  margin-bottom: 4px;
-  line-height: 1;
-}
-
-.hp-stat-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-2);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .hp-about-content {
@@ -815,9 +756,10 @@
   color: var(--text-2);
   font-size: 0.85rem;
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition:
+    color 0.3s ease,
+    transform 0.3s ease;
 }
-
 .hp-highlight-item svg {
   color: var(--gold);
   flex-shrink: 0;
@@ -838,7 +780,7 @@
   flex-wrap: wrap;
 }
 
-/* ─── CONTACT SECTION ───────────────────────────────────────────── */
+/* ─── CONTACT SECTION ────────────────────────────────────────────── */
 .hp-section--contact {
   background: var(--dark-2);
   position: relative;
@@ -871,44 +813,9 @@
   gap: 30px;
 }
 
-.hp-contact-logo {
-  max-width: 200px;
-  width: 100%;
-  height: auto;
-  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.3));
-  transition: all 0.3s ease;
-}
-
-.hp-contact-logo:hover {
-  transform: scale(1.02);
-  filter: drop-shadow(0 15px 40px rgba(212, 129, 42, 0.3));
-}
-
-.hp-contact-quote {
-  padding: 20px 24px;
-  background: rgba(255, 255, 255, 0.05);
-  border-left: 3px solid var(--gold);
-  border-radius: 0 12px 12px 0;
-  text-align: left;
-}
-
-.hp-contact-quote svg {
-  color: var(--gold);
-  margin-bottom: 10px;
-}
-
-.hp-contact-quote p {
-  font-size: 0.9rem;
-  line-height: 1.5;
-  color: var(--text-2);
-  font-style: italic;
-  margin: 0;
-}
-
 .hp-contact-content {
   position: relative;
 }
-
 .hp-contact-text {
   margin-top: 0;
 }
@@ -937,27 +844,25 @@
   padding: 14px 16px;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
-  transition: all 0.3s ease;
+  transition:
+    background 0.3s ease,
+    transform 0.3s ease;
 }
-
 .hp-contact-item:hover {
   background: rgba(212, 129, 42, 0.08);
   transform: translateX(4px);
 }
-
 .hp-contact-item svg {
   color: var(--gold);
   flex-shrink: 0;
   margin-top: 2px;
 }
-
 .hp-contact-item h4 {
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--text-1);
   margin-bottom: 2px;
 }
-
 .hp-contact-item p {
   font-size: 0.78rem;
   color: var(--text-2);
@@ -965,7 +870,7 @@
   margin: 0;
 }
 
-/* ─── BUTTONS ─────────────────────────────────────────────────────── */
+/* ─── BUTTONS ────────────────────────────────────────────────────── */
 .hp-btn-primary {
   display: inline-flex;
   align-items: center;
@@ -980,9 +885,11 @@
   letter-spacing: 0.07em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.3s var(--ease-sport);
+  transition:
+    transform 0.3s var(--ease-sport),
+    box-shadow 0.3s var(--ease-sport),
+    gap 0.3s var(--ease-sport);
 }
-
 .hp-btn-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 25px rgba(212, 129, 42, 0.4);
@@ -1003,9 +910,11 @@
   letter-spacing: 0.07em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.3s var(--ease-sport);
+  transition:
+    background 0.3s var(--ease-sport),
+    transform 0.3s var(--ease-sport),
+    border-color 0.3s var(--ease-sport);
 }
-
 .hp-btn-secondary:hover {
   background: var(--gold-dim);
   transform: translateY(-2px);
@@ -1028,7 +937,6 @@
   flex-wrap: wrap;
   text-align: center;
 }
-
 .hp-footer-band__sep {
   opacity: 0.3;
 }
@@ -1049,6 +957,8 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  /* backdrop-filter retained here — it's a single small static element,
+     not overlapping a playing video */
   backdrop-filter: blur(8px);
   font-size: 1.2rem;
   transition:
@@ -1056,12 +966,10 @@
     border-color 0.2s,
     transform 0.3s;
 }
-
 .hp-admin-toggle:hover {
   color: var(--gold);
   border-color: rgba(212, 129, 42, 0.4);
 }
-
 .hp-admin-toggle.is-active {
   transform: rotate(90deg);
   color: var(--gold);
@@ -1135,6 +1043,7 @@
   color: #f87171;
   font-weight: 600;
 }
+
 .hp-admin-panel__success {
   background: rgba(74, 222, 128, 0.1);
   border: 1px solid rgba(74, 222, 128, 0.25);
@@ -1146,6 +1055,7 @@
   align-items: center;
   gap: 8px;
 }
+
 .hp-admin-panel__dropzone {
   background: rgba(255, 255, 255, 0.04);
   border: 2px dashed rgba(255, 255, 255, 0.15);
@@ -1153,7 +1063,10 @@
   padding: 20px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    transform 0.25s ease;
   color: white;
 }
 .hp-admin-panel__dropzone:hover,
@@ -1176,6 +1089,7 @@
   color: rgba(255, 255, 255, 0.4);
   font-size: 0.75rem;
 }
+
 .hp-admin-panel__progress {
   display: flex;
   flex-direction: column;
@@ -1197,6 +1111,7 @@
   color: rgba(255, 255, 255, 0.5);
   font-size: 0.8rem;
 }
+
 .hp-admin-panel__error {
   background: rgba(248, 113, 113, 0.1);
   border: 1px solid rgba(248, 113, 113, 0.25);
@@ -1216,10 +1131,12 @@
   font-size: 1.1rem;
   cursor: pointer;
 }
+
 .hp-admin-panel__actions {
   display: flex;
   gap: 8px;
 }
+
 .hp-admin-btn {
   flex: 1;
   padding: 9px 12px;
@@ -1232,7 +1149,9 @@
   justify-content: center;
   gap: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
 }
 .hp-admin-btn:disabled {
   opacity: 0.45;
@@ -1270,7 +1189,6 @@
   border: 3px dashed rgba(212, 129, 42, 0.4);
   animation: hp-drop-in 0.15s ease;
 }
-
 @keyframes hp-drop-in {
   from {
     opacity: 0;
@@ -1279,7 +1197,6 @@
     opacity: 1;
   }
 }
-
 .hp-drag-overlay i {
   font-size: 4rem;
   color: var(--gold);
@@ -1296,7 +1213,7 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  animation: fadeIn 0.25s ease;
+  animation: hp-fade-in 0.25s ease;
 }
 .hp-popup__box {
   background: rgba(14, 14, 18, 0.96);
@@ -1309,7 +1226,7 @@
   flex-direction: column;
   overflow: hidden;
   box-shadow: 0 32px 64px rgba(0, 0, 0, 0.6);
-  animation: fadeUp 0.3s ease;
+  animation: hp-slide-up 0.3s ease;
 }
 .hp-popup__video {
   width: 100%;
@@ -1329,7 +1246,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
   margin: 12px auto;
 }
 .hp-popup__close-btn:hover {
@@ -1337,7 +1256,7 @@
   transform: translateY(-2px);
 }
 
-@keyframes fadeIn {
+@keyframes hp-fade-in {
   from {
     opacity: 0;
   }
@@ -1345,7 +1264,7 @@
     opacity: 1;
   }
 }
-@keyframes fadeUp {
+@keyframes hp-slide-up {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -1356,7 +1275,159 @@
   }
 }
 
-/* ─── REDUCED MOTION ────────────────────────────────────────────── */
+/* ─── CONTACT FORM ───────────────────────────────────────────────── */
+.hp-contact-form {
+  /* backdrop-filter removed — the form sits over a static dark background
+     so a semi-transparent bg is sufficient and cheaper */
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+  max-width: 480px;
+}
+.hp-contact-form h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.hp-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.hp-form-group {
+  margin-bottom: 12px;
+}
+
+.hp-form-group input,
+.hp-form-group textarea {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: var(--text-1);
+  font-size: 0.9rem;
+  transition:
+    border-color 0.3s ease,
+    background 0.3s ease,
+    box-shadow 0.3s ease;
+  font-family: inherit;
+}
+.hp-form-group input::placeholder,
+.hp-form-group textarea::placeholder {
+  color: var(--text-3);
+}
+.hp-form-group input:focus,
+.hp-form-group textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 3px rgba(212, 129, 42, 0.15);
+}
+.hp-form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.hp-contact-form .hp-btn-primary {
+  width: 100%;
+  justify-content: center;
+}
+
+.hp-contact-footer-text {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  text-align: center;
+  margin-top: 12px;
+}
+
+/* ─── CONTACT SUCCESS MESSAGE ────────────────────────────────────── */
+.hp-contact-success-message {
+  text-align: center;
+  padding: 20px 0;
+}
+.hp-contact-success-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.hp-contact-success-icon svg {
+  color: #4ade80;
+}
+.hp-contact-success-message h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 8px;
+}
+.hp-contact-success-message p {
+  color: var(--text-2);
+  font-size: 0.95rem;
+}
+
+/* ─── MODAL OVERLAY ──────────────────────────────────────────────── */
+.hp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: hp-fade-in 0.25s ease;
+}
+.hp-modal {
+  background: var(--dark-1);
+  border-radius: 20px;
+  border: 1px solid var(--dark-border);
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: hp-slide-up 0.3s ease;
+}
+.hp-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--dark-border);
+}
+.hp-modal__header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-1);
+}
+.hp-modal__close {
+  background: none;
+  border: none;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 4px;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+.hp-modal__close:hover {
+  color: var(--text-1);
+  transform: rotate(90deg);
+}
+.hp-modal__body {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* ─── REDUCED MOTION ─────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .hp-hero__word,
   .hp-hero__eyebrow,
@@ -1365,31 +1436,21 @@
     opacity: 1;
     transform: none;
   }
-
-  .hp-hero__particles .particle {
-    animation: none;
-    opacity: 0.3;
-  }
-
   .hp-section {
     transition: none;
     opacity: 1;
     transform: none;
   }
-
   .hp-section.hp-visible .hp-section__head {
     animation: none;
   }
-
   .hp-arc-canvas {
     display: none;
   }
   .hp-hero__background-image {
     opacity: 1;
     transition: none;
-  }
-  .hp-hero__background-image--visible {
-    opacity: 1;
+    transform: none;
   }
   .hp-spark {
     display: none;
@@ -1398,10 +1459,13 @@
     animation: none;
     background: rgba(30, 30, 40, 0.9);
   }
+  .hp-tiles-container {
+    transition: none;
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════
-   MOBILE BREAKPOINTS
+   RESPONSIVE — TABLET (≤ 968px)
    ════════════════════════════════════════════════════════════════ */
 @media (max-width: 968px) {
   .hp-about-wrapper {
@@ -1409,16 +1473,10 @@
     gap: 40px;
     padding: 60px 0 52px;
   }
-  .hp-about-stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
   .hp-about-image {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
-  }
-  .hp-about-logo {
-    max-width: 140px;
   }
 
   .hp-contact-wrapper {
@@ -1435,6 +1493,13 @@
   .hp-contact-methods {
     grid-template-columns: 1fr 1fr;
   }
+  .hp-contact-form {
+    max-width: 100%;
+    padding: 24px;
+  }
+  .hp-form-row {
+    grid-template-columns: 1fr;
+  }
 
   .hp-section {
     padding: 60px 0 52px;
@@ -1450,16 +1515,15 @@
     height: 60px;
   }
 
-  .hp-controls-open__label {
-    display: none;
-  }
-
   .hp-tiles-section {
     margin-top: -40px;
     min-height: 300px;
   }
 }
 
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE — MOBILE (≤ 768px)
+   ════════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
   .hp-hero {
     min-height: 80vh;
@@ -1477,13 +1541,11 @@
   .hp-hero__eyebrow {
     margin-bottom: 24px;
   }
-  .hp-hero__particles {
-    display: none;
-  }
   .hp-hero__background-image {
     background-size: cover;
     background-position: center;
   }
+  /* Hero decorative video hidden on mobile (controlled in JSX, but belt-and-suspenders) */
   .hp-stage__video {
     display: none !important;
   }
@@ -1508,10 +1570,6 @@
   }
   .hp-section.hp-visible .hp-section__head {
     animation: none;
-  }
-  .hp-section__head:not(.hp-headline-visible) {
-    opacity: 1;
-    transform: none;
   }
 
   .hp-cut,
@@ -1539,9 +1597,6 @@
   .hp-about-image {
     flex-direction: column;
   }
-  .hp-about-stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
 
   .hp-contact-wrapper {
     padding: 40px 0 32px;
@@ -1550,8 +1605,15 @@
   .hp-contact-methods {
     grid-template-columns: 1fr;
   }
+  /* Contact image column hidden on mobile — form is enough */
   .hp-contact-image {
     display: none;
+  }
+  .hp-contact-form {
+    padding: 20px;
+  }
+  .hp-contact-form h3 {
+    font-size: 1.1rem;
   }
 
   .hp-video-wrapper {
@@ -1572,9 +1634,6 @@
     bottom: 16px;
     width: 32px;
     height: 32px;
-  }
-  .hp-controls-open__label {
-    display: none;
   }
 
   .hp-admin-toggle {
@@ -1604,13 +1663,15 @@
   .htr-tiles-wrapper {
     padding: 0;
   }
-
   .hp-tiles-section {
     margin-top: -20px;
     min-height: 250px;
   }
 }
 
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE — SMALL MOBILE (≤ 480px)
+   ════════════════════════════════════════════════════════════════ */
 @media (max-width: 480px) {
   .hp-hero {
     min-height: 70vh;
@@ -1621,6 +1682,9 @@
   }
   .hp-hero__body {
     font-size: 0.88rem;
+  }
+  .hp-hero__content {
+    top: -120px;
   }
 
   .hp-section {
@@ -1633,22 +1697,19 @@
     font-size: 1.4rem;
   }
 
-  .hp-about-stats {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-  .hp-stat-card {
-    padding: 16px 12px;
-  }
-  .hp-stat-number {
-    font-size: 1.8rem;
-  }
-  .hp-stat-label {
-    font-size: 0.65rem;
-  }
-
   .hp-contact-item {
     padding: 12px;
+  }
+  .hp-contact-form {
+    padding: 16px;
+  }
+  .hp-contact-form h3 {
+    font-size: 1rem;
+  }
+  .hp-form-group input,
+  .hp-form-group textarea {
+    padding: 10px 14px;
+    font-size: 0.85rem;
   }
 
   .hp-cut,
@@ -1664,7 +1725,9 @@
   }
 }
 
-/* ── Large / Ultra-wide (≥ 2560 x 1440) ─────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE — ULTRAWIDE (≥ 2560px)
+   ════════════════════════════════════════════════════════════════ */
 @media (min-width: 2560px) {
   .hp-tiles-container {
     max-width: 1600px;
@@ -1672,222 +1735,7 @@
   .hp-cut-dark.hero {
     bottom: 170px;
   }
-}
-
-/* ─── CONTACT FORM ───────────────────────────────────────────────── */
-.hp-contact-form {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  width: 100%;
-  max-width: 480px;
-}
-
-.hp-contact-form h3 {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--text-1);
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.hp-form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.hp-form-group {
-  margin-bottom: 12px;
-}
-
-.hp-form-group input,
-.hp-form-group textarea {
-  width: 100%;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  color: var(--text-1);
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  font-family: inherit;
-}
-
-.hp-form-group input::placeholder,
-.hp-form-group textarea::placeholder {
-  color: var(--text-3);
-}
-
-.hp-form-group input:focus,
-.hp-form-group textarea:focus {
-  outline: none;
-  border-color: var(--gold);
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 0 0 3px rgba(212, 129, 42, 0.15);
-}
-
-.hp-form-group textarea {
-  resize: vertical;
-  min-height: 100px;
-}
-
-.hp-contact-form .hp-btn-primary {
-  width: 100%;
-  justify-content: center;
-}
-
-.hp-contact-footer-text {
-  font-size: 0.75rem;
-  color: var(--text-3);
-  text-align: center;
-  margin-top: 12px;
-}
-
-/* ─── CONTACT SUCCESS MESSAGE ────────────────────────────────────── */
-.hp-contact-success-message {
-  text-align: center;
-  padding: 20px 0;
-}
-
-.hp-contact-success-icon {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-.hp-contact-success-icon svg {
-  color: #4ade80;
-}
-
-.hp-contact-success-message h3 {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--text-1);
-  margin-bottom: 8px;
-}
-
-.hp-contact-success-message p {
-  color: var(--text-2);
-  font-size: 0.95rem;
-}
-
-/* ─── CONTACT SECTION RESPONSIVE ─────────────────────────────────── */
-@media (max-width: 968px) {
-  .hp-contact-form {
-    max-width: 100%;
-    padding: 24px;
-  }
-
-  .hp-form-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .hp-contact-form {
-    padding: 20px;
-  }
-
-  .hp-contact-form h3 {
-    font-size: 1.1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .hp-contact-form {
-    padding: 16px;
-  }
-
-  .hp-contact-form h3 {
-    font-size: 1rem;
-  }
-
-  .hp-form-group input,
-  .hp-form-group textarea {
-    padding: 10px 14px;
-    font-size: 0.85rem;
-  }
-}
-
-/* ─── MODAL OVERLAY ───────────────────────────────────────────────── */
-.hp-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
-  z-index: 999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  animation: hp-fade-in 0.25s ease;
-}
-
-.hp-modal {
-  background: var(--dark-1);
-  border-radius: 20px;
-  border: 1px solid var(--dark-border);
-  max-width: 800px;
-  width: 100%;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: hp-slide-up 0.3s ease;
-}
-
-.hp-modal__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--dark-border);
-}
-
-.hp-modal__header h3 {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-1);
-}
-
-.hp-modal__close {
-  background: none;
-  border: none;
-  color: var(--text-2);
-  cursor: pointer;
-  padding: 4px;
-  transition: all 0.2s ease;
-}
-
-.hp-modal__close:hover {
-  color: var(--text-1);
-  transform: rotate(90deg);
-}
-
-.hp-modal__body {
-  padding: 24px;
-  overflow-y: auto;
-}
-
-@keyframes hp-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes hp-slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .hp-hero__content {
+    top: -280px;
   }
 }

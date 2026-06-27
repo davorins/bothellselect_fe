@@ -1,13 +1,6 @@
-import React, {
-  useEffect,
-  useState,
-  useRef,
-  useCallback,
-  useMemo,
-} from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import ImageWithBasePath from '../../core/common/imageWithBasePath';
 import HomeModals from './homeModals';
 import HomeTileRenderer from './HomeTileRenderer';
 import FormEmbed from '../../components/FormEmbed';
@@ -30,7 +23,7 @@ function runArcAnimation(canvas: HTMLCanvasElement): () => void {
   if (!canvasContext) return () => {};
   const ctx: CanvasRenderingContext2D = canvasContext;
 
-  const DURATION = 2200; // ms
+  const DURATION = 2200;
   let startTime: number | null = null;
   let animId: number;
 
@@ -39,6 +32,13 @@ function runArcAnimation(canvas: HTMLCanvasElement): () => void {
     canvas.height = canvas.offsetHeight;
   }
   resize();
+
+  // Offscreen canvas for the blurred glow — avoids re-applying CSS filter
+  // on every frame against the main canvas
+  const offscreen = document.createElement('canvas');
+  offscreen.width = canvas.width;
+  offscreen.height = canvas.height;
+  const octx = offscreen.getContext('2d')!;
 
   function draw(ts: number) {
     if (!startTime) startTime = ts;
@@ -50,8 +50,6 @@ function runArcAnimation(canvas: HTMLCanvasElement): () => void {
     const H = canvas.height;
 
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = 'transparent';
-    ctx.fillRect(0, 0, W, H);
 
     if (prog > 0) {
       const CX = W / 2;
@@ -61,14 +59,18 @@ function runArcAnimation(canvas: HTMLCanvasElement): () => void {
       const startAngle = Math.PI + (Math.PI - SWEEP) / 2;
       const endAngle = startAngle + SWEEP * prog;
 
-      // Outer glow
-      ctx.save();
-      ctx.strokeStyle = 'rgba(232, 98, 26, 0.18)';
-      ctx.lineWidth = 32;
+      // Outer glow — drawn on offscreen canvas then composited,
+      // avoiding a CSS filter call on the visible canvas each frame
+      offscreen.width = W;
+      offscreen.height = H;
+      octx.clearRect(0, 0, W, H);
+      octx.strokeStyle = 'rgba(232, 98, 26, 0.18)';
+      octx.lineWidth = 32;
+      octx.beginPath();
+      octx.arc(CX, CY, R, startAngle, endAngle);
+      octx.stroke();
       ctx.filter = 'blur(14px)';
-      ctx.beginPath();
-      ctx.arc(CX, CY, R, startAngle, endAngle);
-      ctx.stroke();
+      ctx.drawImage(offscreen, 0, 0);
       ctx.filter = 'none';
 
       // Mid glow
@@ -102,8 +104,6 @@ function runArcAnimation(canvas: HTMLCanvasElement): () => void {
       ctx.arc(tipX, tipY, 3.5, 0, Math.PI * 2);
       ctx.fillStyle = '#fff';
       ctx.fill();
-
-      ctx.restore();
     }
 
     if (t < 1) {
@@ -112,33 +112,10 @@ function runArcAnimation(canvas: HTMLCanvasElement): () => void {
   }
 
   animId = requestAnimationFrame(draw);
-
   return () => cancelAnimationFrame(animId);
 }
 
-// ─── Tile grid layout logic ───────────────────────────────────────────────────
-function getTileLayout(count: number): {
-  gridCols: string;
-  tileClass: string;
-} {
-  switch (count) {
-    case 1:
-      return { gridCols: '1fr', tileClass: 'tile-single' };
-    case 2:
-      return { gridCols: '1fr 1fr', tileClass: 'tile-half' };
-    case 3:
-      return { gridCols: '1fr 1fr 1fr', tileClass: 'tile-third' };
-    case 4:
-      return { gridCols: '1fr 1fr', tileClass: 'tile-quarter' };
-    case 5:
-    case 6:
-      return { gridCols: '1fr 1fr 1fr', tileClass: 'tile-sixth' };
-    default:
-      return { gridCols: '1fr 1fr 1fr', tileClass: 'tile-sixth' };
-  }
-}
-
-interface VideoControls {
+interface VideoControlsState {
   isPlaying: boolean;
   isFullscreen: boolean;
   isMuted: boolean;
@@ -178,7 +155,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   });
 
   // ── Video controls state ────────────────────────────────────────────────────
-  const [videoControls, setVideoControls] = useState<VideoControls>({
+  const [videoControls, setVideoControls] = useState<VideoControlsState>({
     isPlaying: false,
     isFullscreen: false,
     isMuted: true,
@@ -188,10 +165,13 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const [videoDuration, setVideoDuration] = useState(0);
   const [showVideoPopup, setShowVideoPopup] = useState(false);
 
-  const [isBackgroundVideoPaused, setIsBackgroundVideoPaused] = useState(false);
   const backgroundVideoCurrentTime = useRef<number>(0);
   const wasBackgroundPlaying = useRef<boolean>(false);
+  const isBackgroundVideoPausedRef = useRef<boolean>(false);
 
+  // heroVideoRef — decorative background; no controls attached
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
+  // videoRef — the "Program Highlights" section player with controls
   const videoRef = useRef<HTMLVideoElement>(null);
   const popupVideoRef = useRef<HTMLVideoElement>(null);
   const animationFrameId = useRef<number | null>(null);
@@ -203,14 +183,19 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // ── Section refs for scroll animations ──────────────────────────────────────
+  // ── Section refs — stable array, no inline function recreation ──────────────
   const sectionsRef = useRef<(HTMLDivElement | null)[]>([]);
   const heroRef = useRef<HTMLDivElement>(null);
-  const bgRef = useRef<HTMLImageElement>(null);
 
-  const setSectionRef = (index: number) => (el: HTMLDivElement | null) => {
-    sectionsRef.current[index] = el;
-  };
+  const setSectionRef0 = useCallback((el: HTMLDivElement | null) => {
+    sectionsRef.current[0] = el;
+  }, []);
+  const setSectionRef1 = useCallback((el: HTMLDivElement | null) => {
+    sectionsRef.current[1] = el;
+  }, []);
+  const setSectionRef2 = useCallback((el: HTMLDivElement | null) => {
+    sectionsRef.current[2] = el;
+  }, []);
 
   // ── Arc intro ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -245,12 +230,9 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
 
   // ── Trigger tiles slide-up after arc completes ─────────────────────────────
   useEffect(() => {
-    if (arcDone) {
-      const timer = setTimeout(() => {
-        setTilesVisible(true);
-      }, 400);
-      return () => clearTimeout(timer);
-    }
+    if (!arcDone) return;
+    const timer = setTimeout(() => setTilesVisible(true), 400);
+    return () => clearTimeout(timer);
   }, [arcDone]);
 
   // ── Mobile detection ────────────────────────────────────────────────────────
@@ -260,17 +242,16 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent,
       );
-    const isMobileDevice = mobileWidth || mobileUA;
-    setIsMobile(isMobileDevice);
-    return isMobileDevice;
+    const next = mobileWidth || mobileUA;
+    // Only update state when the value actually changes — avoids re-renders on every resize
+    setIsMobile((prev) => (prev === next ? prev : next));
+    return next;
   }, []);
 
   // ── Preload background image ────────────────────────────────────────────────
   const preloadBackgroundImage = useCallback(() => {
     const img = new Image();
     img.src = '/assets/img/bg/bg_main.png';
-    img.onload = () => console.log('Background image loaded');
-    img.onerror = () => console.log('Background image failed to load');
   }, []);
 
   // ── Fetch promo video URL ───────────────────────────────────────────────────
@@ -281,8 +262,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         if (!res.ok) throw new Error('Failed to fetch');
         const data = await res.json();
         if (data.videoUrl) {
-          const urlWithCache = `${data.videoUrl}?t=${Date.now()}`;
-          setPromoVideoUrl(urlWithCache);
+          setPromoVideoUrl(`${data.videoUrl}?t=${Date.now()}`);
           setVideoLoaded(true);
         } else {
           setVideoLoaded(false);
@@ -298,61 +278,57 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   }, [preloadBackgroundImage]);
 
   // ── Contact form handlers ───────────────────────────────────────────────────
-  const handleContactChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
-    setContactFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  const handleContactChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const { name, value } = e.target;
+      setContactFormData((prev) => ({ ...prev, [name]: value }));
+    },
+    [],
+  );
 
-  const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmittingContact(true);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/contact`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(contactFormData),
-      });
-
-      if (response.ok) {
-        setShowContactSuccess(true);
-        setContactFormData({
-          fullName: '',
-          email: '',
-          subject: '',
-          message: '',
+  const handleContactSubmit = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      setIsSubmittingContact(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/contact`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(contactFormData),
         });
-
-        setTimeout(() => {
-          setShowContactSuccess(false);
-        }, 5000);
-      } else {
-        const errorData = await response.json();
-        console.error('Error sending message:', errorData);
-        alert('Failed to send message. Please try again.');
+        if (response.ok) {
+          setShowContactSuccess(true);
+          setContactFormData({
+            fullName: '',
+            email: '',
+            subject: '',
+            message: '',
+          });
+          setTimeout(() => setShowContactSuccess(false), 5000);
+        } else {
+          alert('Failed to send message. Please try again.');
+        }
+      } catch {
+        alert('Something went wrong. Please try again later.');
+      } finally {
+        setIsSubmittingContact(false);
       }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      alert('Something went wrong. Please try again later.');
-    } finally {
-      setIsSubmittingContact(false);
-    }
-  };
+    },
+    [contactFormData],
+  );
 
   // ── Modal handlers ──────────────────────────────────────────────────────────
-  const openFormModal = (formId: string) => {
+  const openFormModal = useCallback((formId: string) => {
     setSelectedFormId(formId);
     setIsModalOpen(true);
     document.body.style.overflow = 'hidden';
-  };
+  }, []);
 
-  const closeFormModal = () => {
+  const closeFormModal = useCallback(() => {
     setIsModalOpen(false);
     setSelectedFormId(null);
     document.body.style.overflow = '';
-  };
+  }, []);
 
   // ── Admin video upload ──────────────────────────────────────────────────────
   const uploadVideo = useCallback(
@@ -377,20 +353,28 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         setUploadError('Video file must be less than 200MB');
         return;
       }
+
       setVideoUploading(true);
       setUploadProgress(0);
       setUploadError(null);
       setUploadSuccess(false);
       setShowAdminPanel(false);
-      if (videoRef.current && videoControls.isPlaying) {
+
+      // Read current play state directly from the element — avoids videoControls.isPlaying
+      // as a dep which would recreate this callback on every play/pause
+      if (videoRef.current && !videoRef.current.paused) {
         videoRef.current.pause();
         setVideoControls((prev) => ({ ...prev, isPlaying: false }));
       }
+
       try {
         const formData = new FormData();
         formData.append('video', file);
         const xhr = new XMLHttpRequest();
-        const uploadPromise = new Promise((resolve, reject) => {
+        const uploadPromise = new Promise<{
+          videoUrl: string;
+          success: boolean;
+        }>((resolve, reject) => {
           xhr.upload.addEventListener('progress', (event) => {
             if (event.lengthComputable)
               setUploadProgress(Math.round((event.loaded / event.total) * 100));
@@ -399,14 +383,14 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
             if (xhr.status >= 200 && xhr.status < 300) {
               try {
                 resolve(JSON.parse(xhr.responseText));
-              } catch (e) {
+              } catch {
                 reject(new Error('Invalid response from server'));
               }
             } else {
               try {
                 const err = JSON.parse(xhr.responseText);
                 reject(new Error(err.error || err.message || 'Upload failed'));
-              } catch (e) {
+              } catch {
                 reject(new Error(`Upload failed with status ${xhr.status}`));
               }
             }
@@ -421,17 +405,16 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           xhr.setRequestHeader('Authorization', `Bearer ${token}`);
           xhr.send(formData);
         });
-        const data = (await uploadPromise) as {
-          videoUrl: string;
-          success: boolean;
-        };
+
+        const data = await uploadPromise;
         if (data.videoUrl) {
-          const urlWithCache = `${data.videoUrl}?t=${Date.now()}`;
-          setPromoVideoUrl(urlWithCache);
+          setPromoVideoUrl(`${data.videoUrl}?t=${Date.now()}`);
           setUploadSuccess(true);
           setVideoLoaded(true);
           setTimeout(() => setUploadSuccess(false), 3000);
-        } else throw new Error('No video URL returned from server');
+        } else {
+          throw new Error('No video URL returned from server');
+        }
       } catch (err: any) {
         setUploadError(err.message || 'Failed to upload video');
       } finally {
@@ -439,7 +422,8 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         if (videoFileInputRef.current) videoFileInputRef.current.value = '';
       }
     },
-    [token, videoControls.isPlaying],
+    [token],
+    // Removed videoControls.isPlaying — we read videoRef.current.paused directly
   );
 
   const handleVideoFileChange = useCallback(
@@ -453,11 +437,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
+    setDragActive(e.type === 'dragenter' || e.type === 'dragover');
   }, []);
 
   const handleDrop = useCallback(
@@ -499,6 +479,27 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     }
   }, [token]);
 
+  // ── Helper: resume the section video after fullscreen/popup closes ──────────
+  const resumeSectionVideo = useCallback(() => {
+    if (
+      wasBackgroundPlaying.current &&
+      videoRef.current &&
+      isBackgroundVideoPausedRef.current
+    ) {
+      videoRef.current.currentTime = backgroundVideoCurrentTime.current;
+      videoRef.current
+        .play()
+        .then(() => {
+          setVideoControls((prev) => ({ ...prev, isPlaying: true }));
+          isBackgroundVideoPausedRef.current = false;
+          wasBackgroundPlaying.current = false;
+        })
+        .catch(() =>
+          setVideoControls((prev) => ({ ...prev, isPlaying: false })),
+        );
+    }
+  }, []);
+
   // ── Fullscreen change handler ───────────────────────────────────────────────
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -508,7 +509,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         (document as any).mozFullScreenElement ||
         (document as any).msFullscreenElement
       );
-
       setVideoControls((prev) => ({ ...prev, isFullscreen }));
 
       if (isFullscreen) {
@@ -516,27 +516,11 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           wasBackgroundPlaying.current = true;
           backgroundVideoCurrentTime.current = videoRef.current.currentTime;
           videoRef.current.pause();
-          setIsBackgroundVideoPaused(true);
+          isBackgroundVideoPausedRef.current = true;
           setVideoControls((prev) => ({ ...prev, isPlaying: false }));
         }
       } else {
-        if (
-          wasBackgroundPlaying.current &&
-          videoRef.current &&
-          isBackgroundVideoPaused
-        ) {
-          videoRef.current.currentTime = backgroundVideoCurrentTime.current;
-          videoRef.current
-            .play()
-            .then(() => {
-              setVideoControls((prev) => ({ ...prev, isPlaying: true }));
-              setIsBackgroundVideoPaused(false);
-              wasBackgroundPlaying.current = false;
-            })
-            .catch(() => {
-              setVideoControls((prev) => ({ ...prev, isPlaying: false }));
-            });
-        }
+        resumeSectionVideo();
       }
     };
 
@@ -560,38 +544,22 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         handleFullscreenChange,
       );
     };
-  }, [isBackgroundVideoPaused]);
+  }, [resumeSectionVideo]);
 
-  // ── Popup video open/close — pause/resume background video ─────────────────
+  // ── Popup video open/close — pause/resume section video ────────────────────
   useEffect(() => {
     if (showVideoPopup && !isMobile) {
       if (videoRef.current && !videoRef.current.paused) {
         wasBackgroundPlaying.current = true;
         backgroundVideoCurrentTime.current = videoRef.current.currentTime;
         videoRef.current.pause();
-        setIsBackgroundVideoPaused(true);
+        isBackgroundVideoPausedRef.current = true;
         setVideoControls((prev) => ({ ...prev, isPlaying: false }));
       }
     } else {
-      if (
-        wasBackgroundPlaying.current &&
-        videoRef.current &&
-        isBackgroundVideoPaused
-      ) {
-        videoRef.current.currentTime = backgroundVideoCurrentTime.current;
-        videoRef.current
-          .play()
-          .then(() => {
-            setVideoControls((prev) => ({ ...prev, isPlaying: true }));
-            setIsBackgroundVideoPaused(false);
-            wasBackgroundPlaying.current = false;
-          })
-          .catch(() => {
-            setVideoControls((prev) => ({ ...prev, isPlaying: false }));
-          });
-      }
+      resumeSectionVideo();
     }
-  }, [showVideoPopup, isBackgroundVideoPaused, isMobile]);
+  }, [showVideoPopup, isMobile, resumeSectionVideo]);
 
   // ── Video controls ──────────────────────────────────────────────────────────
   const togglePlayPause = useCallback(() => {
@@ -609,16 +577,16 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
 
   const toggleMute = useCallback(() => {
     if (!videoRef.current || isMobile) return;
-    const newMuted = !videoControls.isMuted;
+    const newMuted = !videoRef.current.muted;
     videoRef.current.muted = newMuted;
     setVideoControls((prev) => ({ ...prev, isMuted: newMuted }));
-  }, [videoControls.isMuted, isMobile]);
+  }, [isMobile]);
+  // Removed videoControls.isMuted dep — we read directly from the element
 
   const handleProgressChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (isMobile) return;
-      const progress = parseFloat(e.target.value);
-      const rounded = Math.round(progress);
+      const rounded = Math.round(parseFloat(e.target.value));
       setVideoProgress(rounded);
       if (videoRef.current && videoDuration > 0) {
         videoRef.current.currentTime = (rounded / 100) * videoDuration;
@@ -635,14 +603,16 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     if (now - timeUpdateThrottle.current < 250) return;
     timeUpdateThrottle.current = now;
 
-    if (animationFrameId.current) {
+    // Cancel any pending frame before scheduling a new one
+    if (animationFrameId.current !== null) {
       cancelAnimationFrame(animationFrameId.current);
     }
-
     animationFrameId.current = requestAnimationFrame(() => {
+      animationFrameId.current = null;
       if (!videoRef.current) return;
-      const raw = (videoRef.current.currentTime / videoDuration) * 100;
-      const rounded = Math.round(raw);
+      const rounded = Math.round(
+        (videoRef.current.currentTime / videoDuration) * 100,
+      );
       if (Math.abs(rounded - lastRoundedProgress.current) >= 1) {
         setVideoProgress(rounded);
         lastRoundedProgress.current = rounded;
@@ -668,41 +638,43 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     if (!isMobile) setShowControlsPanel(true);
   }, [isMobile]);
 
-  const closeControlsPanel = useCallback(() => {
-    setShowControlsPanel(false);
-  }, []);
+  const closeControlsPanel = useCallback(() => setShowControlsPanel(false), []);
 
   const openVideoPopup = useCallback(() => {
     setShowVideoPopup(true);
-    closeControlsPanel();
-  }, [closeControlsPanel]);
+    setShowControlsPanel(false);
+  }, []);
 
   const closeVideoPopup = useCallback(() => {
     setShowVideoPopup(false);
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    }
+    if (document.fullscreenElement) document.exitFullscreen();
   }, []);
 
   const toggleFullscreen = useCallback(() => {
     if (!videoRef.current || isMobile) return;
     const container = videoRef.current.parentElement;
     if (!container) return;
-    if (!videoControls.isFullscreen) {
+    if (!document.fullscreenElement) {
       container.requestFullscreen?.();
-      setVideoControls((prev) => ({ ...prev, isFullscreen: true }));
     } else {
       document.exitFullscreen?.();
-      setVideoControls((prev) => ({ ...prev, isFullscreen: false }));
     }
-  }, [videoControls.isFullscreen, isMobile]);
+  }, [isMobile]);
 
+  const formatTime = useCallback((seconds: number) => {
+    if (!seconds || isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  }, []);
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────────────
   const handleKeyPress = useCallback(
     (event: KeyboardEvent) => {
       if (event.code === 'Escape') {
         if (showVideoPopup) closeVideoPopup();
-        if (showControlsPanel) closeControlsPanel();
-        if (isModalOpen) closeFormModal();
+        else if (showControlsPanel) closeControlsPanel();
+        else if (isModalOpen) closeFormModal();
       }
     },
     [
@@ -711,27 +683,15 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       showControlsPanel,
       closeControlsPanel,
       isModalOpen,
+      closeFormModal,
     ],
-  );
-
-  const formatTime = useCallback((seconds: number) => {
-    if (isNaN(seconds) || !seconds) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  }, []);
-
-  const stableVideoProgress = useMemo(
-    () => Math.round(videoProgress),
-    [videoProgress],
   );
 
   // ── Cleanup animation frame on unmount ──────────────────────────────────────
   useEffect(() => {
     return () => {
-      if (animationFrameId.current) {
+      if (animationFrameId.current !== null)
         cancelAnimationFrame(animationFrameId.current);
-      }
     };
   }, []);
 
@@ -740,25 +700,17 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add('hp-visible');
-          }
+          if (e.isIntersecting) e.target.classList.add('hp-visible');
         });
       },
       { threshold: 0.1, rootMargin: '0px 0px -50px 0px' },
     );
 
-    const currentSections = sectionsRef.current;
-    currentSections.forEach((s) => {
-      if (s) {
-        observer.observe(s);
-        const rect = s.getBoundingClientRect();
-        if (rect.top < window.innerHeight && rect.bottom > 0) {
-          s.classList.add('hp-visible');
-        }
-      }
+    // No getBoundingClientRect calls — the observer fires synchronously for
+    // elements already in the viewport on the first callback tick
+    sectionsRef.current.forEach((s) => {
+      if (s) observer.observe(s);
     });
-
     return () => observer.disconnect();
   }, []);
 
@@ -767,9 +719,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     document.addEventListener('keydown', handleKeyPress);
     window.addEventListener('resize', checkIfMobile);
     window.addEventListener('orientationchange', checkIfMobile);
-
     checkIfMobile();
-
     return () => {
       document.removeEventListener('keydown', handleKeyPress);
       window.removeEventListener('resize', checkIfMobile);
@@ -777,11 +727,13 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     };
   }, [handleKeyPress, checkIfMobile]);
 
+  // ── Lock body scroll when modal / popup open ────────────────────────────────
   useEffect(() => {
     document.body.style.overflow =
       showVideoPopup || isModalOpen ? 'hidden' : '';
   }, [showVideoPopup, isModalOpen]);
 
+  // ── Loading screen ──────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className='hp-loading'>
@@ -790,6 +742,9 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       </div>
     );
   }
+
+  const showVideoSection =
+    !isMobile && promoVideoUrl && !videoError && videoLoaded;
 
   return (
     <div
@@ -803,7 +758,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       <section className='hp-hero' ref={heroRef}>
         <div className='hp-hero__bg-wrapper'>
           <img
-            ref={bgRef}
             src='/assets/img/theme/bg-main.png'
             alt='Basketball court background'
             className='hp-hero__bg'
@@ -813,29 +767,27 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
 
         <canvas
           ref={canvasRef}
-          className={`hp-arc-canvas ${arcDone ? 'hp-arc-canvas--done' : ''}`}
+          className={`hp-arc-canvas${arcDone ? ' hp-arc-canvas--done' : ''}`}
         />
 
+        {/* Decorative hero background video — separate ref from the controls video */}
         {!isMobile && promoVideoUrl && videoLoaded && !videoError && (
           <video
-            ref={videoRef}
+            ref={heroVideoRef}
             className='hp-stage__video'
             src={promoVideoUrl}
             autoPlay
             muted
             loop
             playsInline
-            preload='metadata'
-            onLoadedMetadata={handleLoadedMetadata}
-            onError={handleVideoError}
+            preload='none'
           />
         )}
 
         <div
-          className={`hp-hero__background-image ${arcDone ? 'hp-hero__background-image--visible' : ''}`}
+          className={`hp-hero__background-image${arcDone ? ' hp-hero__background-image--visible' : ''}`}
         />
-
-        <div className={`hp-spark ${arcDone ? 'hp-spark--active' : ''}`} />
+        <div className={`hp-spark${arcDone ? ' hp-spark--active' : ''}`} />
 
         <div className='hp-hero__inner'>
           <div className='hp-hero__content'>
@@ -859,23 +811,23 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         </div>
       </section>
 
-      {/* ─── TILES SECTION ────────────────────────────────────────────────────── */}
+      {/* ─── TILES SECTION ───────────────────────────────────────────────────── */}
       <section className='hp-tiles-section'>
-        <div className={`hp-tiles-container ${tilesVisible ? 'slide-up' : ''}`}>
+        <div className={`hp-tiles-container${tilesVisible ? ' slide-up' : ''}`}>
           <HomeTileRenderer pageSlug='home' />
         </div>
       </section>
 
-      {/* ─── MAIN CONTENT ───────────────────────────────────────────────────── */}
+      {/* ─── MAIN CONTENT ────────────────────────────────────────────────────── */}
       <main className='hp-main'>
         <div className='hp-cut-dark hero' aria-hidden='true' />
 
         <div className='hp-main__content'>
-          {/* ─── VIDEO SECTION ────────────────────────────────────────────── */}
-          {!isMobile && promoVideoUrl && !videoError && videoLoaded && (
+          {/* ─── VIDEO SECTION ──────────────────────────────────────────────── */}
+          {showVideoSection && (
             <section
               className='hp-section hp-section--video hp-visible'
-              ref={setSectionRef(0)}
+              ref={setSectionRef0}
             >
               <div className='hp-section__inner'>
                 <header className='hp-section__head'>
@@ -889,7 +841,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                 <div className='hp-video-wrapper'>
                   <video
                     ref={videoRef}
-                    className={`hp-video__player ${videoLoaded ? 'hp-video__player--loaded' : ''}`}
+                    className={`hp-video__player${videoLoaded ? ' hp-video__player--loaded' : ''}`}
                     src={promoVideoUrl}
                     autoPlay
                     muted
@@ -902,27 +854,25 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                   />
 
                   {!showControlsPanel && (
-                    <>
-                      <button
-                        className='hp-controls-open'
-                        onClick={openControlsPanel}
-                        aria-label='Open Video Controls'
-                        title='Video Controls'
+                    <button
+                      className='hp-controls-open'
+                      onClick={openControlsPanel}
+                      aria-label='Open Video Controls'
+                      title='Video Controls'
+                    >
+                      <svg
+                        width='20'
+                        height='20'
+                        viewBox='0 0 24 24'
+                        fill='currentColor'
                       >
-                        <svg
-                          width='20'
-                          height='20'
-                          viewBox='0 0 24 24'
-                          fill='currentColor'
-                        >
-                          <path d='M8 5v14l11-7z' />
-                        </svg>
-                      </button>
-                    </>
+                        <path d='M8 5v14l11-7z' />
+                      </svg>
+                    </button>
                   )}
 
                   <div
-                    className={`hp-controls ${showControlsPanel ? 'hp-controls--visible' : ''}`}
+                    className={`hp-controls${showControlsPanel ? ' hp-controls--visible' : ''}`}
                   >
                     <div className='hp-controls__panel'>
                       <div className='hp-controls__progress'>
@@ -930,11 +880,11 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                           type='range'
                           min='0'
                           max='100'
-                          value={stableVideoProgress}
+                          value={videoProgress}
                           onChange={handleProgressChange}
                           className='hp-controls__slider'
                           style={{
-                            background: `linear-gradient(to right, rgba(255,255,255,0.95) ${stableVideoProgress}%, rgba(255,255,255,0.2) ${stableVideoProgress}%)`,
+                            background: `linear-gradient(to right, rgba(255,255,255,0.95) ${videoProgress}%, rgba(255,255,255,0.2) ${videoProgress}%)`,
                           }}
                         />
                       </div>
@@ -1008,9 +958,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                             )}
                           </button>
                           <span className='hp-controls__time'>
-                            {formatTime(
-                              (stableVideoProgress / 100) * videoDuration,
-                            )}
+                            {formatTime((videoProgress / 100) * videoDuration)}
                             <span className='hp-controls__sep'>/</span>
                             {formatTime(videoDuration)}
                           </span>
@@ -1039,11 +987,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                                 ? 'Exit fullscreen'
                                 : 'Fullscreen'
                             }
-                            title={
-                              videoControls.isFullscreen
-                                ? 'Exit Fullscreen'
-                                : 'Fullscreen'
-                            }
                           >
                             {videoControls.isFullscreen ? (
                               <svg
@@ -1069,7 +1012,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                             className='hp-ctrl-btn hp-ctrl-btn--close'
                             onClick={closeControlsPanel}
                             aria-label='Close controls'
-                            title='Close'
                           >
                             <svg
                               width='16'
@@ -1095,10 +1037,10 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
             </section>
           )}
 
-          {/* ─── ABOUT SECTION ────────────────────────────────────────────── */}
+          {/* ─── ABOUT SECTION ──────────────────────────────────────────────── */}
           <section
             className='hp-section hp-section--about'
-            ref={setSectionRef(1)}
+            ref={setSectionRef1}
           >
             <div className='hp-cut' aria-hidden='true' />
             <div className='hp-section__inner'>
@@ -1109,24 +1051,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                     alt='Bothell Select Basketball'
                     className='hp-about'
                   />
-                  {/* <div className='hp-about-stats'>
-                    <div className='hp-stat-card'>
-                      <div className='hp-stat-number'>10+</div>
-                      <div className='hp-stat-label'>Years of Excellence</div>
-                    </div>
-                    <div className='hp-stat-card'>
-                      <div className='hp-stat-number'>200+</div>
-                      <div className='hp-stat-label'>Players Developed</div>
-                    </div>
-                    <div className='hp-stat-card'>
-                      <div className='hp-stat-number'>15+</div>
-                      <div className='hp-stat-label'>College Scholarships</div>
-                    </div>
-                    <div className='hp-stat-card'>
-                      <div className='hp-stat-number'>100%</div>
-                      <div className='hp-stat-label'>Commitment to Growth</div>
-                    </div>
-                  </div> */}
                 </div>
                 <div className='hp-about-content'>
                   <header className='hp-section__head'>
@@ -1243,10 +1167,10 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
             </div>
           </section>
 
-          {/* ─── CONTACT SECTION ───────────────────────────────────────────── */}
+          {/* ─── CONTACT SECTION ────────────────────────────────────────────── */}
           <section
             className='hp-section hp-section--contact'
-            ref={setSectionRef(2)}
+            ref={setSectionRef2}
           >
             <div className='hp-cut-reverse-dark' aria-hidden='true' />
             <div className='hp-section__inner'>
@@ -1263,15 +1187,13 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                       We're Here to Answer Your Questions
                     </p>
                   </header>
-
                   <div className='hp-contact-text'>
                     <p className='hp-contact-paragraph'>
                       Have questions about our programs, registration, or
                       upcoming events? Our team is ready to assist you. Reach
-                      out to us through any of the channels below or fill out
-                      the contact form.
+                      out through any of the channels below or fill out the
+                      contact form.
                     </p>
-
                     <div className='hp-contact-methods'>
                       <div className='hp-contact-item'>
                         <svg
@@ -1289,7 +1211,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                           <p>(425) 375-5235</p>
                         </div>
                       </div>
-
                       <div className='hp-contact-item'>
                         <svg
                           width='24'
@@ -1307,7 +1228,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                           <p>bothellselect@proton.me</p>
                         </div>
                       </div>
-
                       <div className='hp-contact-item'>
                         <svg
                           width='24'
@@ -1329,7 +1249,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                           </p>
                         </div>
                       </div>
-
                       <div className='hp-contact-item'>
                         <svg
                           width='24'
@@ -1371,8 +1290,8 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                           </div>
                           <h3>Message Sent Successfully!</h3>
                           <p>
-                            Thank you for reaching out. We've received your
-                            message and will get back to you shortly!
+                            Thank you for reaching out. We'll get back to you
+                            shortly!
                           </p>
                         </div>
                       ) : (
@@ -1419,7 +1338,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                                 rows={4}
                                 placeholder='Your Message'
                                 required
-                              ></textarea>
+                              />
                             </div>
                             <button
                               type='submit'
@@ -1443,7 +1362,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                           </form>
                           <p className='hp-contact-footer-text'>
                             We typically respond within 24-48 hours. For urgent
-                            matters, please call us directly.
+                            matters, please call us.
                           </p>
                         </>
                       )}
@@ -1462,7 +1381,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         </div>
       </main>
 
-      {/* FORM MODAL */}
+      {/* ─── FORM MODAL ──────────────────────────────────────────────────────── */}
       {isModalOpen && selectedFormId && (
         <div className='hp-modal-overlay' onClick={closeFormModal}>
           <div className='hp-modal' onClick={(e) => e.stopPropagation()}>
@@ -1511,7 +1430,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         </div>
       )}
 
-      {/* ─── ADMIN PANEL ────────────────────────────────────────────────────── */}
+      {/* ─── ADMIN PANEL ─────────────────────────────────────────────────────── */}
       {isAdmin && (
         <>
           <input
@@ -1522,8 +1441,8 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
             onChange={handleVideoFileChange}
           />
           <button
-            className={`hp-admin-toggle ${showAdminPanel ? 'is-active' : ''}`}
-            onClick={() => setShowAdminPanel(!showAdminPanel)}
+            className={`hp-admin-toggle${showAdminPanel ? ' is-active' : ''}`}
+            onClick={() => setShowAdminPanel((v) => !v)}
             title='Video Management'
           >
             <i
@@ -1548,7 +1467,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                   </div>
                 )}
                 <div
-                  className={`hp-admin-panel__dropzone ${dragActive ? 'is-drag-active' : ''}`}
+                  className={`hp-admin-panel__dropzone${dragActive ? ' is-drag-active' : ''}`}
                   onClick={() => videoFileInputRef.current?.click()}
                 >
                   <i className='ti ti-upload' />
