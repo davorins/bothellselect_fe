@@ -441,6 +441,10 @@ const EventCards: React.FC<EventCardsProps> = ({
                                   <div
                                     key={idx}
                                     className='event-card'
+                                    style={{
+                                      backgroundColor: `${categoryColor}15`,
+                                      borderLeftColor: categoryColor,
+                                    }}
                                     onClick={() => handleEventClick(event)}
                                   >
                                     <div className='event-time-badge'>
