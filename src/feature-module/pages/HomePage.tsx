@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import HomeModals from './homeModals';
 import HomeTileRenderer from './HomeTileRenderer';
 import FormEmbed from '../../components/FormEmbed';
+import TodayEvents from '../components/TodayEvents/TodayEvents';
 import './HomePage.css';
 
 const API_BASE_URL =
@@ -1069,9 +1070,17 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         </div>
       </section>
 
-      {/* ─── MAIN CONTENT ────────────────────────────────────────────────────── */}
+      {/* ─── TODAY'S EVENTS SECTION ─────────────────────────────────────────── */}
+      <section className='hp-section hp-section--today-events'>
+        <div className='hp-cut' aria-hidden='false' />
+        <div className='hp-section__inner'>
+          <TodayEvents />
+        </div>
+        <div className='hp-cut-reverse' aria-hidden='false' />
+      </section>
+
+      {/* ─── VIDEO CONTENT ────────────────────────────────────────────────────── */}
       <main className='hp-main'>
-        <div className='hp-cut-dark' aria-hidden='false' />
         <div className='hp-main__content'>
           {showVideoSection && (
             <section

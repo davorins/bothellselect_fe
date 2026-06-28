@@ -374,12 +374,16 @@
    SECTIONS
    ════════════════════════════════════════════════════════════════ */
 .hp-section {
-  padding: 80px 0 72px;
-  opacity: 0;
+  padding: 0;
+  opacity: 1;
   transform: translateY(36px);
   transition:
     opacity 0.65s var(--ease-sport),
     transform 0.65s var(--ease-sport);
+}
+
+.hp-section.hp-section--today-events {
+  background: var(--dark-1);
 }
 
 .hp-section.hp-visible {
@@ -499,7 +503,7 @@
 /* ─── VIDEO SECTION ──────────────────────────────────────────────── */
 .hp-section--video {
   background: var(--dark-0);
-  padding: 0 0 80px;
+  padding: 3rem 0 3rem;
 }
 
 .hp-video-wrapper {
@@ -1930,7 +1934,7 @@
 /* ── Full‑width CTA Banner ── */
 .hp-value__banner {
   background: var(--dark-0);
-  padding: 48px 0;
+  padding: 48px 0 0;
 }
 
 .hp-value__banner-content {

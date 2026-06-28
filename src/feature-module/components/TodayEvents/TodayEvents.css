@@ -1,0 +1,412 @@
+/* ─── Container ─────────────────────────────────────────────────────── */
+.te-container {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  padding: 20px 24px;
+  margin: 20px 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* ─── Header ───────────────────────────────────────────────────────── */
+.te-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.te-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.te-header-left i {
+  font-size: 1.3rem;
+  color: var(--gold, #d4812a);
+}
+
+.te-header-left h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-1, #ffffff);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.te-today-badge {
+  background: var(--gold, #d4812a);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.te-date-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.te-nav-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.te-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.te-nav-btn i {
+  font-size: 0.8rem;
+}
+
+.te-date-display {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  min-width: 130px;
+  text-align: center;
+}
+
+.te-today-btn {
+  padding: 4px 12px;
+  background: rgba(212, 129, 42, 0.15);
+  border: 0.5px solid rgba(212, 129, 42, 0.3);
+  border-radius: 6px;
+  color: var(--gold, #d4812a);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.te-today-btn:hover {
+  background: rgba(212, 129, 42, 0.25);
+}
+
+.te-today-btn-sm {
+  margin-top: 12px;
+  padding: 6px 16px;
+  font-size: 0.75rem;
+}
+
+/* ─── Empty State ──────────────────────────────────────────────────── */
+.te-empty {
+  text-align: center;
+  padding: 32px 20px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.te-empty i {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 12px;
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.te-empty p {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* ─── Events List ──────────────────────────────────────────────────── */
+.te-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.te-events-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.te-events-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 2px;
+}
+
+.te-events-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+.te-category-group {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.te-category-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
+}
+
+.te-category-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.te-category-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.te-category-count {
+  margin-left: auto;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1px 8px;
+  border-radius: 10px;
+}
+
+/* ─── Event Card ───────────────────────────────────────────────────── */
+.te-event-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-left: 3px solid;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.te-event-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateX(4px);
+}
+
+.te-event-time {
+  min-width: 70px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.te-event-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.te-event-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.te-event-location {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.te-event-location i {
+  font-size: 0.7rem;
+}
+
+.te-event-price {
+  font-size: 0.65rem;
+  color: var(--gold, #d4812a);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.te-event-price i {
+  font-size: 0.6rem;
+}
+
+.te-event-arrow {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.15);
+  transition: all 0.2s ease;
+}
+
+.te-event-card:hover .te-event-arrow {
+  color: rgba(255, 255, 255, 0.4);
+  transform: translateX(2px);
+}
+
+.te-event-arrow i {
+  font-size: 0.9rem;
+}
+
+/* ─── Loading ──────────────────────────────────────────────────────── */
+.te-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.te-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-top-color: var(--gold, #d4812a);
+  border-radius: 50%;
+  animation: te-spin 0.6s linear infinite;
+}
+
+@keyframes te-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─── Error ────────────────────────────────────────────────────────── */
+.te-error {
+  text-align: center;
+  padding: 32px 20px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.te-error i {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 12px;
+  color: #f87171;
+}
+
+.te-retry-btn {
+  margin-top: 12px;
+  padding: 6px 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.te-retry-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+/* ─── Responsive ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .te-container {
+    padding: 16px;
+    margin: 12px 0;
+  }
+
+  .te-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .te-header-left {
+    justify-content: center;
+  }
+
+  .te-date-nav {
+    justify-content: center;
+  }
+
+  .te-date-display {
+    min-width: 100px;
+    font-size: 0.8rem;
+  }
+
+  .te-event-card {
+    padding: 8px 12px;
+    gap: 10px;
+  }
+
+  .te-event-time {
+    min-width: 60px;
+    font-size: 0.65rem;
+  }
+
+  .te-event-title {
+    font-size: 0.8rem;
+  }
+
+  .te-events-list {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .te-container {
+    padding: 12px;
+  }
+
+  .te-header-left h3 {
+    font-size: 0.85rem;
+  }
+
+  .te-date-display {
+    min-width: 80px;
+    font-size: 0.7rem;
+  }
+
+  .te-nav-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .te-event-card {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .te-event-time {
+    min-width: 100%;
+    text-align: left;
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.3);
+  }
+}
