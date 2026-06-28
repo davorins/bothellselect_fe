@@ -1545,11 +1545,9 @@
   .hp-cut-light,
   .hp-cut-reverse-light,
   .hp-cut-reverse-dark,
-  .hp-cut-dark {
-    display: none !important;
-  }
-
-  /* Hide background image and video on mobile – loader only */
+  .hp-cut-dark,
+  .hp-value__media,
+  .hp-about-image,
   .hp-hero__bg,
   .hp-hero__background-image,
   .hp-stage__video {
