@@ -154,6 +154,12 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const [videoDuration, setVideoDuration] = useState(0);
   const [showVideoPopup, setShowVideoPopup] = useState(false);
 
+  // ── Scroll to registration tile ──────────────────────────────────────────
+  const [scrollToTileIndex, setScrollToTileIndex] = useState<number | null>(
+    null,
+  );
+  const tileWrapperRef = useRef<HTMLDivElement>(null);
+
   // ── Refs ────────────────────────────────────────────────────────────────────
   const heroVideoRef = useRef<HTMLVideoElement | null>(null);
   const sectionVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -176,6 +182,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const sectionsRef = useRef<(HTMLDivElement | null)[]>([]);
   const heroRef = useRef<HTMLDivElement | null>(null);
   const videoSectionRef = useRef<HTMLDivElement | null>(null);
+  const valueSectionRef = useRef<HTMLDivElement | null>(null);
 
   const setSectionRef0 = useCallback((el: HTMLDivElement | null) => {
     sectionsRef.current[0] = el;
@@ -186,6 +193,9 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   }, []);
   const setSectionRef2 = useCallback((el: HTMLDivElement | null) => {
     sectionsRef.current[2] = el;
+  }, []);
+  const setValueSectionRef = useCallback((el: HTMLDivElement | null) => {
+    valueSectionRef.current = el;
   }, []);
 
   // ── Effects ──────────────────────────────────────────────────────────────────
@@ -220,6 +230,55 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     const timer = setTimeout(() => setTilesVisible(true), 400);
     return () => clearTimeout(timer);
   }, [arcDone]);
+
+  // ── FIXED: scroll to tile AND open it (simulate click) ──────────────────
+  useEffect(() => {
+    if (
+      scrollToTileIndex === null ||
+      !tilesVisible ||
+      !tileWrapperRef.current
+    ) {
+      return;
+    }
+
+    let attempts = 0;
+    const maxAttempts = 5;
+    const interval = 500;
+
+    const tryScrollAndClick = () => {
+      const container = tileWrapperRef.current;
+      if (!container) {
+        setScrollToTileIndex(null);
+        return;
+      }
+
+      const tiles = container.querySelectorAll('.htr-tile');
+      const targetTile = tiles[scrollToTileIndex] as HTMLElement;
+
+      if (targetTile) {
+        // Scroll to the tile
+        targetTile.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // After a short delay (to let the scroll begin), click the tile to open it
+        setTimeout(() => {
+          targetTile.click();
+        }, 400);
+
+        setScrollToTileIndex(null);
+      } else {
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(tryScrollAndClick, interval);
+        } else {
+          setScrollToTileIndex(null);
+        }
+      }
+    };
+
+    // Start the first attempt after a tiny delay
+    const timer = setTimeout(tryScrollAndClick, 100);
+    return () => clearTimeout(timer);
+  }, [scrollToTileIndex, tilesVisible]);
 
   const checkIfMobile = useCallback(() => {
     const mobileWidth = window.innerWidth <= 768;
@@ -270,7 +329,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           const heroVideo = heroVideoRef.current;
           if (!heroVideo) return;
 
-          // If user paused via tile interaction, reset flag when hero becomes visible
           if (isVisible) {
             isHeroVideoPausedByUserRef.current = false;
             if (heroVideo.paused && heroVideo.src) {
@@ -328,7 +386,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     return () => observer.disconnect();
   }, [promoVideoUrl, videoLoaded, videoError, isMobile, arcDone]);
 
-  // ── Handlers (unchanged) ────────────────────────────────────────────────────
+  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleContactChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const { name, value } = e.target;
@@ -864,6 +922,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       <section className='hp-tiles-section'>
         <div className={`hp-tiles-container${tilesVisible ? ' slide-up' : ''}`}>
           <div
+            ref={tileWrapperRef}
             onClick={handleTileInteraction}
             onTouchStart={handleTileInteraction}
           >
@@ -871,10 +930,148 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           </div>
         </div>
       </section>
+      <div className='hp-cut-light-2 hero' aria-hidden='true' />
+
+      {/* ─── WHY BOTHELL SELECT ────────────────────────────────────────────── */}
+      <section className='hp-value-section' ref={setValueSectionRef}>
+        <div className='hp-value__inner'>
+          {/* Left: Player image */}
+          <div className='hp-value__media'>
+            <div className='hp-value__player'>
+              <img
+                src='/assets/img/players.png'
+                alt='Bothell Select Basketball'
+                className='hp-about'
+              />
+            </div>
+          </div>
+
+          {/* Right: Copy */}
+          <div className='hp-value__copy'>
+            <span className='hp-value__tag'>More Than Basketball</span>
+            <h2 className='hp-value__title'>A Foundation for Life</h2>
+            <p className='hp-value__lead'>
+              Every practice is an opportunity for your child to grow—not just
+              as an athlete, but as a confident, disciplined, and resilient
+              individual.
+            </p>
+            <p className='hp-value__text'>
+              At Bothell Select Basketball, we believe basketball is more than a
+              game. It's a powerful tool for teaching life skills that extend
+              far beyond the court. Our experienced coaches create a positive,
+              encouraging environment where young athletes build confidence,
+              develop strong fundamentals, learn the value of teamwork, and
+              discover what they're capable of through hard work and
+              perseverance.
+            </p>
+            <p className='hp-value__text'>
+              Whether your child is picking up a basketball for the first time
+              or preparing for competitive play, every athlete is challenged,
+              supported, and celebrated along their journey.
+            </p>
+            <div className='hp-value__cta-row'>
+              <button
+                className='hp-btn-primary'
+                onClick={() => setScrollToTileIndex(1)}
+              >
+                Join Bothell Select Today
+                <svg
+                  width='18'
+                  height='18'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2'
+                >
+                  <path d='M5 12h14M12 5l7 7-7 7' />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Glassmorphism Cards */}
+        <div className='hp-value__cards'>
+          <div className='hp-value-card'>
+            <i className='ti ti-ball-basketball fs-2'></i>
+            <h4>Elite Skill Development</h4>
+            <p>
+              Professional coaching focused on building strong fundamentals,
+              game IQ, and confidence.
+            </p>
+          </div>
+          <div className='hp-value-card'>
+            <i className='ti ti-heart fs-2'></i>
+            <h4>Positive Coaching Philosophy</h4>
+            <p>
+              Every player is encouraged, challenged, and supported—effort
+              matters as much as results.
+            </p>
+          </div>
+          <div className='hp-value-card'>
+            <i className='ti ti-heart-handshake fs-2'></i>
+            <h4>Character Comes First</h4>
+            <p>
+              Respect, leadership, accountability, teamwork, and sportsmanship
+              are woven into everything.
+            </p>
+          </div>
+          <div className='hp-value-card'>
+            <i className='ti ti-growth fs-2'></i>
+            <h4>Growth for Every Athlete</h4>
+            <p>
+              From beginners to experienced players, every child receives
+              age‑appropriate instruction.
+            </p>
+          </div>
+          <div className='hp-value-card'>
+            <i className='ti ti-users fs-2'></i>
+            <h4>A Community That Feels Like Family</h4>
+            <p>
+              Families become part of a welcoming community that celebrates
+              growth on and off the court.
+            </p>
+          </div>
+          <div className='hp-value-card'>
+            <i className='ti ti-trophy fs-2'></i>
+            <h4>Preparing Players for the Next Level</h4>
+            <p>
+              We help every athlete become the best version of
+              themselves—whether that means making a school team or building
+              confidence.
+            </p>
+          </div>
+        </div>
+        <div className='hp-cut-reverse' aria-hidden='true' />
+
+        {/* ── Full‑width CTA Banner ── */}
+        <div className='hp-value__banner'>
+          <div className='hp-value__banner-content'>
+            <h3>Help Your Child Reach Their Full Potential</h3>
+            <p>Join the Bothell Select Family Today</p>
+            <button
+              className='hp-btn-primary hp-value__banner-btn'
+              onClick={() => setScrollToTileIndex(1)}
+            >
+              Get Started
+              <svg
+                width='18'
+                height='18'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+              >
+                <path d='M5 12h14M12 5l7 7-7 7' />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </section>
 
       {/* ─── MAIN CONTENT ────────────────────────────────────────────────────── */}
       <main className='hp-main'>
-        <div className='hp-cut-dark hero' aria-hidden='true' />
+        <div className='hp-cut-dark' aria-hidden='false' />
         <div className='hp-main__content'>
           {showVideoSection && (
             <section
@@ -1088,7 +1285,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
             </section>
           )}
 
-          {/* ─── ABOUT SECTION (unchanged) ──────────────────────────────────── */}
+          {/* ─── ABOUT SECTION ──────────────────────────────────────────────────── */}
           <section
             className='hp-section hp-section--about'
             ref={setSectionRef1}
@@ -1099,28 +1296,41 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                 <div className='hp-about-image'>
                   <img
                     src='/assets/img/aboutus-state.png'
-                    alt='Bothell Select Basketball'
+                    alt='Bothell Select Basketball Coaches'
                     className='hp-about'
                   />
                 </div>
                 <div className='hp-about-content'>
                   <header className='hp-section__head'>
                     <span className='hp-section__label'>
-                      Where Passion, Growth, and Basketball Come Together
+                      Where Elite Experience Meets a Passion for Youth
+                      Development
                     </span>
                     <h2 className='hp-section__title'>About Bothell Select</h2>
-                    <p className='hp-section__sub'>
-                      Building Champions On and Off the Court
-                    </p>
                   </header>
                   <div className='hp-about-text'>
                     <p className='hp-about-paragraph'>
-                      Join a thriving basketball community where passion,
-                      teamwork, and player development come together. Learn from
-                      experienced coaches, build lasting friendships, and
-                      elevate your game in a fun, competitive, and supportive
-                      environment.
+                      Bothell Select Basketball is built on a foundation of
+                      <strong>
+                        {' '}
+                        decades of high‑level basketball experience
+                      </strong>
+                      . Our program is guided by coaches who have competed at
+                      the highest levels and now dedicate themselves to
+                      developing young athletes with the same discipline,
+                      creativity, and love for the game.
                     </p>
+
+                    <p className='hp-about-paragraph'>
+                      Our coaches bring a rare combination of
+                      <strong> international playing experience</strong>,
+                      <strong> elite coaching knowledge</strong>, and a genuine
+                      commitment to each player’s growth. They create an
+                      environment where young athletes learn the game the right
+                      way — with respect, hustle, and the freedom to express
+                      themselves.
+                    </p>
+
                     <div className='hp-about-highlights'>
                       <div className='hp-highlight-item'>
                         <svg
@@ -1134,7 +1344,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                           <path d='M22 11.08V12a10 10 0 1 1-5.93-9.14' />
                           <polyline points='22 4 12 14.01 9 11.01' />
                         </svg>
-                        <span>Elite Training Programs</span>
+                        <span>European &amp; American Fusion</span>
                       </div>
                       <div className='hp-highlight-item'>
                         <svg
@@ -1148,7 +1358,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                           <path d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' />
                           <circle cx='12' cy='7' r='4' />
                         </svg>
-                        <span>Expert Coaching Staff</span>
+                        <span>D1 &amp; Pro Experience</span>
                       </div>
                       <div className='hp-highlight-item'>
                         <svg
@@ -1164,7 +1374,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                           <path d='M23 21v-2a4 4 0 0 0-3-3.87' />
                           <path d='M16 3.13a4 4 0 0 1 0 7.75' />
                         </svg>
-                        <span>Youth Development Focus</span>
+                        <span>Character‑First Coaching</span>
                       </div>
                       <div className='hp-highlight-item'>
                         <svg
@@ -1179,15 +1389,10 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
                           <path d='M2 17l10 5 10-5' />
                           <path d='M2 12l10 5 10-5' />
                         </svg>
-                        <span>Competitive League Play</span>
+                        <span>Creative &amp; Disciplined Play</span>
                       </div>
                     </div>
-                    <p className='hp-about-paragraph'>
-                      Whether you're looking for your young athlete to sharpen
-                      their skills, gain confidence on the court, or simply
-                      enjoy the game they love, our programs deliver an
-                      experience your kids will never forget.
-                    </p>
+
                     <div className='hp-about-cta'>
                       <button
                         className='hp-btn-primary'
@@ -1218,7 +1423,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
             </div>
           </section>
 
-          {/* ─── CONTACT SECTION (unchanged) ────────────────────────────────── */}
+          {/* ─── CONTACT SECTION ────────────────────────────────────────────── */}
           <section
             className='hp-section hp-section--contact'
             ref={setSectionRef2}
@@ -1432,7 +1637,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         </div>
       </main>
 
-      {/* ─── MODALS & POPUPS (unchanged) ─────────────────────────────────────── */}
+      {/* ─── MODALS & POPUPS ────────────────────────────────────────────────── */}
       {isModalOpen && selectedFormId && (
         <div className='hp-modal-overlay' onClick={closeFormModal}>
           <div className='hp-modal' onClick={(e) => e.stopPropagation()}>
