@@ -893,6 +893,31 @@
   gap: 15px;
 }
 
+.hp-btn-primary-blue {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 28px;
+  background: rgb(59, 130, 246);
+  border: none;
+  border-radius: 40px;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    transform 0.3s var(--ease-sport),
+    box-shadow 0.3s var(--ease-sport),
+    gap 0.3s var(--ease-sport);
+}
+.hp-btn-primary-blue:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(5, 90, 235, 0.4);
+  gap: 15px;
+}
+
 .hp-btn-secondary {
   display: inline-flex;
   align-items: center;

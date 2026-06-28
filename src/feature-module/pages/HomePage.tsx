@@ -1050,7 +1050,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
             <h3>Help Your Child Reach Their Full Potential</h3>
             <p>Join the Bothell Select Family Today</p>
             <button
-              className='hp-btn-primary hp-value__banner-btn'
+              className='hp-btn-primary-blue'
               onClick={() => setScrollToTileIndex(1)}
             >
               Get Started
