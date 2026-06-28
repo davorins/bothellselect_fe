@@ -145,7 +145,6 @@ const TodayEvents: React.FC<TodayEventsProps> = ({ onEventClick }) => {
         <div className='te-header-left'>
           <i className='ti ti-calendar-event' />
           <h3>Today's Events</h3>
-          {isToday && <span className='te-today-badge'>Today</span>}
         </div>
         <div className='te-date-nav'>
           <button
