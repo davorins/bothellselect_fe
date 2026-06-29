@@ -330,36 +330,48 @@
   background: var(--dark-0);
   clip-path: polygon(0 0, 100% 0, 100% 0%, 0 100%);
   pointer-events: none;
+  position: relative;
+  top: -1px;
 }
 .hp-cut-reverse {
   height: 90px;
   background: var(--dark-0);
   clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0 0);
   pointer-events: none;
+  position: relative;
+  top: -1px;
 }
 .hp-cut-light {
   height: 90px;
   background: var(--dark-1);
   clip-path: polygon(0 0, 100% 0, 100% 0%, 0 100%);
   pointer-events: none;
+  position: relative;
+  top: -1px;
 }
 .hp-cut-reverse-light {
   height: 90px;
   background: var(--dark-2);
   clip-path: polygon(0 0, 100% 0, 100% 100%, 0 0);
   pointer-events: none;
+  position: relative;
+  top: -1px;
 }
 .hp-cut-reverse-dark {
   height: 90px;
   background: var(--dark-1);
   clip-path: polygon(0 0, 100% 0, 100% 100%, 0 0);
   pointer-events: none;
+  position: relative;
+  top: -1px;
 }
 .hp-cut-light-2 {
   height: 90px;
   background: var(--dark-1);
   clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0 0);
   pointer-events: none;
+  position: relative;
+  top: -1px;
 }
 .hp-cut-light-2.hero {
   position: relative;
