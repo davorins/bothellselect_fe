@@ -375,6 +375,7 @@
 }
 .hp-cut-light-2.hero {
   position: relative;
+  top: 0;
   margin-top: -5rem;
 }
 
