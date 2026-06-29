@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { EventDetails } from '../../../types/types';
@@ -12,6 +13,7 @@ interface TodayEventsProps {
 }
 
 const TodayEvents: React.FC<TodayEventsProps> = ({ onEventClick }) => {
+  const navigate = useNavigate();
   const [events, setEvents] = useState<EventDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs>(dayjs());
@@ -107,6 +109,27 @@ const TodayEvents: React.FC<TodayEventsProps> = ({ onEventClick }) => {
   };
 
   const isToday = selectedDate.isSame(dayjs(), 'day');
+
+  // ─── Handle event click: navigate to calendar with event data ──────────
+  const handleEventClick = useCallback(
+    (event: EventDetails) => {
+      // If there's an external handler, call it first
+      if (onEventClick) {
+        onEventClick(event);
+        return;
+      }
+
+      // Navigate to calendar page with event data in state
+      navigate('/events', {
+        state: {
+          selectedEvent: event,
+          openModal: true,
+          selectedDate: dayjs(event.start).format('YYYY-MM-DD'),
+        },
+      });
+    },
+    [navigate, onEventClick],
+  );
 
   if (isLoading) {
     return (
@@ -205,7 +228,7 @@ const TodayEvents: React.FC<TodayEventsProps> = ({ onEventClick }) => {
                 <div
                   key={event._id}
                   className='te-event-card'
-                  onClick={() => onEventClick?.(event)}
+                  onClick={() => handleEventClick(event)}
                   style={{
                     borderLeftColor: getCategoryColor(event.category),
                   }}

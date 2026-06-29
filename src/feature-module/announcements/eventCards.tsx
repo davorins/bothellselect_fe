@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Modal } from 'react-bootstrap';
+import { useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { EventDetails } from '../../types/types';
 import axios from 'axios';
@@ -35,6 +36,7 @@ interface EventCardsProps {
 const EventCards: React.FC<EventCardsProps> = ({
   API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '',
 }) => {
+  const location = useLocation();
   const [events, setEvents] = useState<EventDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -46,6 +48,8 @@ const EventCards: React.FC<EventCardsProps> = ({
     null,
   );
   const [seasonWeekOffset, setSeasonWeekOffset] = useState(0);
+  const [hasCheckedNavigationState, setHasCheckedNavigationState] =
+    useState(false);
 
   const api = useMemo(() => {
     const instance = axios.create({ baseURL: API_BASE_URL });
@@ -73,6 +77,53 @@ const EventCards: React.FC<EventCardsProps> = ({
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
+
+  // ─── Check for navigation state to auto-open modal ──────────────────────
+  useEffect(() => {
+    // Wait for events to load and only check once
+    if (isLoading || hasCheckedNavigationState) return;
+
+    const state = location.state as {
+      selectedEvent?: EventDetails;
+      openModal?: boolean;
+      selectedDate?: string;
+    } | null;
+
+    console.log('🔍 Checking navigation state:', state);
+
+    if (state?.openModal && state?.selectedEvent) {
+      // Find the full event data from the loaded events list
+      // This ensures we have all the data including any updates
+      const fullEvent = events.find((e) => e._id === state.selectedEvent?._id);
+
+      if (fullEvent) {
+        console.log('✅ Found matching event, opening modal:', fullEvent.title);
+        setSelectedEvent(fullEvent);
+        setShowEventDetailsModal(true);
+
+        // If a specific date was provided, navigate to that week
+        if (state.selectedDate) {
+          const targetDate = dayjs(state.selectedDate);
+          // Calculate which week offset to use
+          // This would need to be implemented based on your season logic
+          // For now, we'll just log it
+          console.log('📅 Target date:', state.selectedDate);
+        }
+      } else {
+        // If the event isn't in the list yet (maybe it was just created),
+        // use the event from state directly
+        console.log('⚠️ Event not found in list, using state data');
+        setSelectedEvent(state.selectedEvent);
+        setShowEventDetailsModal(true);
+      }
+
+      // Mark as checked and clear the state to prevent re-opening on refresh
+      setHasCheckedNavigationState(true);
+      window.history.replaceState({}, document.title);
+    } else {
+      setHasCheckedNavigationState(true);
+    }
+  }, [isLoading, events, location.state, hasCheckedNavigationState]);
 
   const getCategoryColor = (category?: string): string => {
     if (!category) return '#6c757d';
@@ -274,14 +325,17 @@ const EventCards: React.FC<EventCardsProps> = ({
   }, [calendarFilteredEvents]);
 
   const formatTime = (dateString: string) => dayjs(dateString).format('h:mm A');
+
   const handleEventClick = (event: EventDetails) => {
     setSelectedEvent(event);
     setShowEventDetailsModal(true);
   };
+
   const handleCalendarEventClick = (clickInfo: any) => {
     const event = events.find((e) => e._id === clickInfo.event.id);
     if (event) handleEventClick(event);
   };
+
   const handleCloseModal = () => {
     setShowEventDetailsModal(false);
     setSelectedEvent(null);
@@ -299,10 +353,6 @@ const EventCards: React.FC<EventCardsProps> = ({
       </div>
     );
   }
-
-  const weekNumber = weekOffset + 1;
-  const totalWeeks =
-    primaryEvents.length > 0 ? Math.ceil(primaryEvents.length / 7) : 0;
 
   return (
     <div className='events-glass-container'>
