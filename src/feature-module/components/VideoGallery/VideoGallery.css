@@ -1,0 +1,1140 @@
+/* ── Tokens (re-uses HomePage.css custom props if available) ─────── */
+:root {
+  --vg-gold: #d4812a;
+  --vg-gold-bright: #e8a84a;
+  --vg-dark-0: #07080c;
+  --vg-dark-1: #0d0f16;
+  --vg-dark-2: #13151e;
+  --vg-dark-border: rgba(255, 255, 255, 0.07);
+  --vg-text-1: #ffffff;
+  --vg-text-2: rgba(255, 255, 255, 0.65);
+  --vg-text-3: rgba(255, 255, 255, 0.35);
+  --vg-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --vg-tile-w: 320px;
+  --vg-tile-h: 452px; /* matches HomeTileRenderer desktop height */
+  --vg-expanded-w: 820px; /* in-place expanded width, ~2.5x tile width */
+  --vg-radius: 28px;
+}
+
+/* ── Root wrapper ────────────────────────────────────────────────── */
+.vg-root {
+  position: relative;
+  width: 100%;
+  background: var(--vg-dark-0);
+  padding: 0 0 48px;
+  overflow: hidden;
+}
+
+/* ── Spinner ─────────────────────────────────────────────────────── */
+.vg-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+}
+
+.vg-spinner__ring {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--vg-gold);
+  animation: vg-spin 0.7s linear infinite;
+}
+
+@keyframes vg-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Section header ──────────────────────────────────────────────── */
+.vg-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 48px 40px 32px;
+}
+
+.vg-header__label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--vg-gold);
+  margin-bottom: 6px;
+}
+
+.vg-header__title {
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--vg-text-1);
+  line-height: 1.05;
+  margin: 0 0 6px;
+}
+
+.vg-header__sub {
+  font-size: 0.95rem;
+  color: var(--vg-text-2);
+  margin: 0;
+}
+
+/* ── Admin toggle ────────────────────────────────────────────────── */
+.vg-admin-toggle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--vg-dark-border);
+  color: var(--vg-text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    transform 0.3s;
+}
+
+.vg-admin-toggle:hover {
+  color: var(--vg-gold);
+  border-color: rgba(212, 129, 42, 0.4);
+}
+
+.vg-admin-toggle.is-active {
+  transform: rotate(45deg);
+  color: var(--vg-gold);
+  border-color: rgba(212, 129, 42, 0.5);
+}
+
+/* ── Admin panel ─────────────────────────────────────────────────── */
+.vg-admin-panel {
+  max-width: 460px;
+  margin: 0 auto 28px;
+  background: rgba(10, 11, 16, 0.96);
+  border: 1px solid var(--vg-dark-border);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.6);
+  animation: vg-panel-in 0.25s var(--vg-ease);
+}
+
+@keyframes vg-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.vg-admin-panel__header {
+  padding: 14px 20px;
+  background: rgba(212, 129, 42, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.vg-admin-panel__header h4 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vg-text-1);
+}
+
+/* Source tabs */
+.vg-admin-panel__tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--vg-dark-border);
+}
+
+.vg-admin-panel__tab {
+  flex: 1;
+  padding: 10px 8px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--vg-text-3);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.vg-admin-panel__tab:hover {
+  color: var(--vg-text-2);
+}
+
+.vg-admin-panel__tab.is-active {
+  color: var(--vg-gold);
+  border-bottom-color: var(--vg-gold);
+}
+
+.vg-admin-panel__yt-row {
+  display: flex;
+  gap: 8px;
+}
+
+.vg-admin-panel__yt-row .vg-admin-panel__input {
+  flex: 1;
+}
+
+.vg-admin-panel__yt-btn {
+  flex-shrink: 0;
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: none;
+  background: var(--vg-gold);
+  color: var(--vg-dark-0);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.15s;
+}
+
+.vg-admin-panel__yt-btn:hover:not(:disabled) {
+  background: var(--vg-gold-bright);
+  transform: translateY(-1px);
+}
+
+.vg-admin-panel__yt-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vg-admin-panel__body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vg-admin-panel__fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.vg-admin-panel__input {
+  width: 100%;
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: var(--vg-text-1);
+  font-size: 0.85rem;
+  font-family: inherit;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+  grid-column: span 1;
+}
+
+.vg-admin-panel__input:focus {
+  outline: none;
+  border-color: var(--vg-gold);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.vg-admin-panel__input::placeholder {
+  color: var(--vg-text-3);
+}
+
+.vg-admin-panel__textarea {
+  resize: vertical;
+  min-height: 60px;
+  grid-column: span 2;
+}
+
+.vg-admin-panel__dropzone {
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 22px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.2s;
+  color: var(--vg-text-1);
+}
+
+.vg-admin-panel__dropzone i {
+  font-size: 2rem;
+  color: rgba(212, 129, 42, 0.8);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.vg-admin-panel__dropzone p {
+  font-size: 0.9rem;
+  margin: 0 0 4px;
+}
+
+.vg-admin-panel__dropzone small {
+  font-size: 0.75rem;
+  color: var(--vg-text-3);
+}
+
+.vg-admin-panel__dropzone.is-active,
+.vg-admin-panel__dropzone:hover:not(.is-uploading) {
+  border-color: rgba(212, 129, 42, 0.7);
+  background: rgba(212, 129, 42, 0.08);
+  transform: scale(1.01);
+}
+
+.vg-admin-panel__dropzone.is-uploading {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.vg-admin-panel__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.vg-admin-panel__progress-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.vg-admin-panel__progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--vg-gold), var(--vg-gold-bright));
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.vg-admin-panel__progress span {
+  font-size: 0.78rem;
+  color: var(--vg-text-3);
+  text-align: right;
+}
+
+.vg-admin-panel__success {
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.25);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #4ade80;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vg-admin-panel__error {
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #f87171;
+  font-size: 0.83rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vg-admin-panel__error button {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 1.1rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────── */
+.vg-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  color: var(--vg-text-3);
+  gap: 12px;
+}
+
+.vg-empty i {
+  font-size: 3rem;
+  opacity: 0.4;
+}
+
+.vg-empty p {
+  font-size: 0.95rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   HORIZONTAL RAIL
+   ═══════════════════════════════════════════════════════════════════ */
+.vg-rail {
+  overflow-x: auto;
+  overflow-y: visible;
+  cursor: grab;
+  padding: 8px 40px 24px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.vg-rail:active {
+  cursor: grabbing;
+}
+
+.vg-rail::-webkit-scrollbar {
+  height: 4px;
+}
+
+.vg-rail::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.vg-rail::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.vg-rail__track {
+  display: inline-flex;
+  flex-direction: row;
+  gap: 20px;
+  align-items: flex-start;
+  white-space: nowrap;
+  min-width: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   VIDEO TILE — collapsed state (320 x 452, matches HomeTileRenderer)
+   ═══════════════════════════════════════════════════════════════════ */
+.vg-tile {
+  display: inline-block;
+  white-space: normal;
+  vertical-align: top;
+  flex-shrink: 0;
+  transition: width 0.42s var(--vg-ease);
+}
+
+/* The visible card — collapsed sizing */
+.vg-tile__card {
+  position: relative;
+  width: var(--vg-tile-w);
+  height: var(--vg-tile-h);
+  border-radius: var(--vg-radius);
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--vg-dark-2);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition:
+    width 0.42s var(--vg-ease),
+    transform 0.28s var(--vg-ease),
+    box-shadow 0.28s var(--vg-ease),
+    border-color 0.28s;
+  user-select: none;
+}
+
+.vg-tile__card:hover {
+  transform: translateY(-4px) scale(1.015);
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.vg-tile__card:focus-visible {
+  outline: 2px solid var(--vg-gold);
+  outline-offset: 3px;
+}
+
+/* ── EXPANDED state: tile widens in place, pushing siblings right ───── */
+.vg-tile--expanded {
+  width: var(--vg-expanded-w, 820px);
+}
+
+.vg-tile--expanded .vg-tile__card {
+  width: var(--vg-expanded-w, 820px);
+  cursor: default;
+  box-shadow:
+    0 20px 56px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(212, 129, 42, 0.35);
+}
+
+.vg-tile--expanded .vg-tile__card:hover {
+  transform: none;
+}
+
+/* Native video element fills the collapsed tile */
+.vg-tile__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  display: block;
+}
+
+/* YouTube static thumbnail (collapsed, used only as a pre-visible placeholder) */
+.vg-tile__thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  display: block;
+}
+
+/* YouTube autoplay iframe — scaled up to cover-fill the portrait tile.
+   The iframe is first sized to the tile's width with native 16:9 height,
+   then scaled by (tile height / 16:9 height) so it cover-fills with no
+   bars, cropping left/right edges evenly via center transform-origin. */
+.vg-tile__yt-bg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: calc(var(--vg-tile-w) * 9 / 16);
+  transform: translate(-50%, -50%)
+    scale(calc(var(--vg-tile-h) / (var(--vg-tile-w) * 9 / 16)));
+  transform-origin: center center;
+  border: none;
+  border-radius: inherit;
+  pointer-events: none; /* tile click still opens the expanded view */
+}
+
+/* YouTube badge, top-left */
+.vg-tile__yt-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: white;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 4px 9px 4px 7px;
+  backdrop-filter: blur(4px);
+  z-index: 2;
+}
+
+/* Shimmer placeholder */
+.vg-tile__shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    var(--vg-dark-2) 30%,
+    rgba(255, 255, 255, 0.04) 50%,
+    var(--vg-dark-2) 70%
+  );
+  background-size: 200% 100%;
+  animation: vg-shimmer 1.6s infinite;
+  border-radius: inherit;
+}
+
+@keyframes vg-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Gradient overlay with metadata — pinned to bottom (collapsed only) */
+.vg-tile__overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 56px 18px 18px;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.88) 0%,
+    rgba(0, 0, 0, 0.5) 55%,
+    transparent 100%
+  );
+  border-radius: 0 0 var(--vg-radius) var(--vg-radius);
+  pointer-events: none;
+}
+
+.vg-tile__grade {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vg-gold);
+  background: rgba(212, 129, 42, 0.18);
+  border: 1px solid rgba(212, 129, 42, 0.35);
+  border-radius: 20px;
+  padding: 3px 9px;
+  margin-bottom: 5px;
+}
+
+.vg-tile__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--vg-text-1);
+  margin: 0 0 5px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.vg-tile__meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.vg-tile__date {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--vg-text-2);
+}
+
+.vg-tile__dur {
+  font-size: 0.72rem;
+  color: var(--vg-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.vg-tile__desc {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Play hint centred on the card */
+.vg-tile__play-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.85);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.vg-tile__card:hover .vg-tile__play-hint {
+  opacity: 1;
+}
+
+/* Admin action buttons (top-right corner of collapsed card) */
+.vg-tile__admin-btns {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 3;
+}
+
+.vg-tile__card:hover .vg-tile__admin-btns {
+  opacity: 1;
+}
+
+.vg-tile__admin-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.15s;
+}
+
+.vg-tile__admin-btn:hover {
+  transform: scale(1.1);
+}
+
+.vg-tile__admin-btn--edit:hover {
+  background: rgba(212, 129, 42, 0.7);
+}
+
+.vg-tile__admin-btn--del:hover {
+  background: rgba(220, 53, 69, 0.8);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   EXPANDED IN-PLACE PANEL
+   Tile widens to var(--vg-expanded-w) and the player + info stack
+   vertically inside, replacing the cover-video/thumb view entirely.
+   ═══════════════════════════════════════════════════════════════════ */
+.vg-tile__expanded-inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: var(--vg-dark-1);
+  animation: vg-tile-expand 0.4s var(--vg-ease);
+}
+
+@keyframes vg-tile-expand {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.vg-tile__player-wrap {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  background: #000;
+}
+
+.vg-tile__player {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #000;
+  border: none;
+}
+
+.vg-tile__player--yt {
+  aspect-ratio: 16 / 9;
+  height: auto;
+}
+
+.vg-tile__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 4;
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+
+.vg-tile__close:hover {
+  background: rgba(220, 53, 69, 0.75);
+  transform: rotate(90deg);
+}
+
+/* Info panel below player, inside the expanded tile */
+.vg-tile__info-panel {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--vg-dark-1);
+  border-top: 1px solid var(--vg-dark-border);
+  flex-wrap: wrap;
+}
+
+.vg-tile__info-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.vg-tile__info-grade {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vg-gold);
+  background: rgba(212, 129, 42, 0.18);
+  border: 1px solid rgba(212, 129, 42, 0.35);
+  border-radius: 20px;
+  padding: 3px 9px;
+  margin-bottom: 6px;
+}
+
+.vg-tile__info-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--vg-text-1);
+  margin: 0 0 5px;
+  line-height: 1.3;
+}
+
+.vg-tile__info-desc {
+  font-size: 0.82rem;
+  color: var(--vg-text-2);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.vg-tile__info-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.vg-tile__info-date {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: var(--vg-text-2);
+}
+
+.vg-tile__info-dur {
+  font-size: 0.78rem;
+  color: var(--vg-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.vg-tile__edit-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--vg-gold);
+  background: rgba(212, 129, 42, 0.12);
+  border: 1px solid rgba(212, 129, 42, 0.3);
+  border-radius: 20px;
+  padding: 4px 11px;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.vg-tile__edit-trigger:hover {
+  background: rgba(212, 129, 42, 0.22);
+  border-color: rgba(212, 129, 42, 0.5);
+}
+
+/* Edit form inside expanded panel */
+.vg-tile__edit-form {
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border-top: 1px solid var(--vg-dark-border);
+}
+
+.vg-tile__edit-heading {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--vg-text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0 0 12px;
+}
+
+.vg-tile__edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+
+.vg-tile__edit-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--vg-text-3);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.vg-tile__edit-label--full {
+  grid-column: span 2;
+}
+
+.vg-tile__edit-input {
+  padding: 8px 11px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  color: var(--vg-text-1);
+  font-size: 0.85rem;
+  font-family: inherit;
+  width: 100%;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.vg-tile__edit-input:focus {
+  outline: none;
+  border-color: var(--vg-gold);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.vg-tile__edit-textarea {
+  resize: vertical;
+  min-height: 56px;
+}
+
+.vg-tile__edit-actions {
+  display: flex;
+  gap: 9px;
+}
+
+.vg-tile__edit-btn {
+  padding: 7px 18px;
+  border-radius: 40px;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    opacity 0.2s,
+    transform 0.15s;
+}
+
+.vg-tile__edit-btn:hover {
+  transform: translateY(-1px);
+}
+
+.vg-tile__edit-btn--save {
+  background: var(--vg-gold);
+  color: var(--vg-dark-0);
+}
+
+.vg-tile__edit-btn--cancel {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--vg-text-2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* ─── Load more tile ─────────────────────────────────────────────── */
+.vg-load-more-tile {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: var(--vg-tile-w);
+  height: var(--vg-tile-h);
+  border-radius: var(--vg-radius);
+  border: 2px dashed rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--vg-text-3);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    color 0.2s;
+  vertical-align: top;
+}
+
+.vg-load-more-tile:hover:not(:disabled) {
+  border-color: rgba(212, 129, 42, 0.5);
+  background: rgba(212, 129, 42, 0.06);
+  color: var(--vg-gold);
+}
+
+.vg-load-more-tile span {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.vg-load-more-tile small {
+  font-size: 0.72rem;
+  opacity: 0.6;
+}
+
+.vg-load-more-tile.is-loading {
+  cursor: wait;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Tablet */
+@media (max-width: 968px) {
+  :root {
+    --vg-expanded-w: 600px;
+  }
+
+  .vg-header {
+    padding: 36px 24px 24px;
+  }
+
+  .vg-rail {
+    padding: 8px 24px 20px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  :root {
+    --vg-tile-w: 260px;
+    --vg-tile-h: 360px;
+    --vg-expanded-w: 92vw;
+  }
+
+  .vg-header {
+    padding: 28px 16px 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .vg-rail {
+    padding: 8px 16px 16px;
+  }
+
+  .vg-tile--expanded .vg-tile__card {
+    height: auto;
+    min-height: var(--vg-tile-h);
+  }
+
+  .vg-tile__player-wrap {
+    aspect-ratio: 16 / 9;
+    flex: none;
+  }
+
+  .vg-tile__info-panel {
+    flex-direction: column;
+    padding: 14px 16px;
+  }
+
+  .vg-tile__info-right {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .vg-tile__edit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vg-tile__edit-label--full {
+    grid-column: span 1;
+  }
+
+  .vg-admin-panel {
+    margin: 0 16px 24px;
+    max-width: none;
+  }
+
+  .vg-admin-panel__fields {
+    grid-template-columns: 1fr;
+  }
+
+  .vg-admin-panel__textarea {
+    grid-column: span 1;
+  }
+
+  .vg-admin-panel__yt-row {
+    flex-direction: column;
+  }
+}
+
+/* Extra-small mobile */
+@media (max-width: 480px) {
+  :root {
+    --vg-tile-w: 220px;
+    --vg-tile-h: 300px;
+    --vg-expanded-w: 94vw;
+  }
+
+  .vg-tile__play-hint {
+    width: 42px;
+    height: 42px;
+  }
+
+  .vg-header__title {
+    font-size: 1.4rem;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .vg-tile__card,
+  .vg-tile__admin-btn,
+  .vg-tile__play-hint,
+  .vg-admin-panel,
+  .vg-tile__expanded-inner {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .vg-tile__shimmer {
+    animation: none;
+    background: var(--vg-dark-2);
+  }
+}

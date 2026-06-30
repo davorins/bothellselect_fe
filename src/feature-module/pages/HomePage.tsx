@@ -5,6 +5,7 @@ import HomeModals from './homeModals';
 import HomeTileRenderer from './HomeTileRenderer';
 import FormEmbed from '../../components/FormEmbed';
 import TodayEvents from '../components/TodayEvents/TodayEvents';
+import VideoGallery from '../components/VideoGallery/VideoGallery';
 import './HomePage.css';
 
 const API_BASE_URL =
@@ -1083,215 +1084,216 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       <main className='hp-main'>
         <div className='hp-main__content'>
           {showVideoSection && (
-            <section
-              className='hp-section hp-section--video hp-visible'
-              ref={setSectionRef0}
-            >
-              <div className='hp-section__inner'>
-                <header className='hp-section__head'>
-                  <span className='hp-section__label'>Watch</span>
-                  <h2 className='hp-section__title'>Program Highlights</h2>
-                  <p className='hp-section__sub'>
-                    Experience the energy and excellence of Bothell Select
-                    Basketball
-                  </p>
-                </header>
-                <div className='hp-video-wrapper'>
-                  <video
-                    ref={sectionVideoRef}
-                    className={`hp-video__player${videoLoaded ? ' hp-video__player--loaded' : ''}`}
-                    src={promoVideoUrl}
-                    muted
-                    loop
-                    playsInline
-                    preload='metadata'
-                    onLoadedMetadata={handleLoadedMetadata}
-                    onError={handleVideoError}
-                    onTimeUpdate={handleTimeUpdate}
-                  />
+            // <section
+            //   className='hp-section hp-section--video hp-visible'
+            //   ref={setSectionRef0}
+            // >
+            //   <div className='hp-section__inner'>
+            //     <header className='hp-section__head'>
+            //       <span className='hp-section__label'>Watch</span>
+            //       <h2 className='hp-section__title'>Program Highlights</h2>
+            //       <p className='hp-section__sub'>
+            //         Experience the energy and excellence of Bothell Select
+            //         Basketball
+            //       </p>
+            //     </header>
+            //     <div className='hp-video-wrapper'>
+            //       <video
+            //         ref={sectionVideoRef}
+            //         className={`hp-video__player${videoLoaded ? ' hp-video__player--loaded' : ''}`}
+            //         src={promoVideoUrl}
+            //         muted
+            //         loop
+            //         playsInline
+            //         preload='metadata'
+            //         onLoadedMetadata={handleLoadedMetadata}
+            //         onError={handleVideoError}
+            //         onTimeUpdate={handleTimeUpdate}
+            //       />
 
-                  {!showControlsPanel && (
-                    <button
-                      className='hp-controls-open'
-                      onClick={openControlsPanel}
-                      aria-label='Open Video Controls'
-                      title='Video Controls'
-                    >
-                      <svg
-                        width='20'
-                        height='20'
-                        viewBox='0 0 24 24'
-                        fill='currentColor'
-                      >
-                        <path d='M8 5v14l11-7z' />
-                      </svg>
-                    </button>
-                  )}
+            //       {!showControlsPanel && (
+            //         <button
+            //           className='hp-controls-open'
+            //           onClick={openControlsPanel}
+            //           aria-label='Open Video Controls'
+            //           title='Video Controls'
+            //         >
+            //           <svg
+            //             width='20'
+            //             height='20'
+            //             viewBox='0 0 24 24'
+            //             fill='currentColor'
+            //           >
+            //             <path d='M8 5v14l11-7z' />
+            //           </svg>
+            //         </button>
+            //       )}
 
-                  <div
-                    className={`hp-controls${showControlsPanel ? ' hp-controls--visible' : ''}`}
-                  >
-                    <div className='hp-controls__panel'>
-                      <div className='hp-controls__progress'>
-                        <input
-                          type='range'
-                          min='0'
-                          max='100'
-                          value={videoProgress}
-                          onChange={handleProgressChange}
-                          className='hp-controls__slider'
-                          style={{
-                            background: `linear-gradient(to right, rgba(255,255,255,0.95) ${videoProgress}%, rgba(255,255,255,0.2) ${videoProgress}%)`,
-                          }}
-                        />
-                      </div>
-                      <div className='hp-controls__row'>
-                        <div className='hp-controls__left'>
-                          <button
-                            className='hp-ctrl-btn'
-                            onClick={togglePlayPause}
-                            aria-label={
-                              videoControls.isPlaying ? 'Pause' : 'Play'
-                            }
-                          >
-                            {videoControls.isPlaying ? (
-                              <svg
-                                width='16'
-                                height='16'
-                                viewBox='0 0 24 24'
-                                fill='currentColor'
-                              >
-                                <rect
-                                  x='6'
-                                  y='5'
-                                  width='4'
-                                  height='14'
-                                  rx='1'
-                                />
-                                <rect
-                                  x='14'
-                                  y='5'
-                                  width='4'
-                                  height='14'
-                                  rx='1'
-                                />
-                              </svg>
-                            ) : (
-                              <svg
-                                width='16'
-                                height='16'
-                                viewBox='0 0 24 24'
-                                fill='currentColor'
-                              >
-                                <path d='M8 5v14l11-7z' />
-                              </svg>
-                            )}
-                          </button>
-                          <button
-                            className='hp-ctrl-btn'
-                            onClick={toggleMute}
-                            aria-label={
-                              videoControls.isMuted ? 'Unmute' : 'Mute'
-                            }
-                          >
-                            {videoControls.isMuted ? (
-                              <svg
-                                width='16'
-                                height='16'
-                                viewBox='0 0 24 24'
-                                fill='currentColor'
-                              >
-                                <path d='M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zM3 9v6h4l5 5V4L7 9H3z' />
-                              </svg>
-                            ) : (
-                              <svg
-                                width='16'
-                                height='16'
-                                viewBox='0 0 24 24'
-                                fill='currentColor'
-                              >
-                                <path d='M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z' />
-                              </svg>
-                            )}
-                          </button>
-                          <span className='hp-controls__time'>
-                            {formatTime((videoProgress / 100) * videoDuration)}
-                            <span className='hp-controls__sep'>/</span>
-                            {formatTime(videoDuration)}
-                          </span>
-                        </div>
-                        <div className='hp-controls__right'>
-                          <button
-                            className='hp-ctrl-btn'
-                            onClick={openVideoPopup}
-                            aria-label='Open in popup'
-                            title='Expand'
-                          >
-                            <svg
-                              width='16'
-                              height='16'
-                              viewBox='0 0 24 24'
-                              fill='currentColor'
-                            >
-                              <path d='M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z' />
-                            </svg>
-                          </button>
-                          <button
-                            className='hp-ctrl-btn'
-                            onClick={toggleFullscreen}
-                            aria-label={
-                              videoControls.isFullscreen
-                                ? 'Exit fullscreen'
-                                : 'Fullscreen'
-                            }
-                          >
-                            {videoControls.isFullscreen ? (
-                              <svg
-                                width='16'
-                                height='16'
-                                viewBox='0 0 24 24'
-                                fill='currentColor'
-                              >
-                                <path d='M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z' />
-                              </svg>
-                            ) : (
-                              <svg
-                                width='16'
-                                height='16'
-                                viewBox='0 0 24 24'
-                                fill='currentColor'
-                              >
-                                <path d='M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z' />
-                              </svg>
-                            )}
-                          </button>
-                          <button
-                            className='hp-ctrl-btn hp-ctrl-btn--close'
-                            onClick={closeControlsPanel}
-                            aria-label='Close controls'
-                          >
-                            <svg
-                              width='16'
-                              height='16'
-                              viewBox='0 0 24 24'
-                              fill='currentColor'
-                            >
-                              <path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z' />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            //       <div
+            //         className={`hp-controls${showControlsPanel ? ' hp-controls--visible' : ''}`}
+            //       >
+            //         <div className='hp-controls__panel'>
+            //           <div className='hp-controls__progress'>
+            //             <input
+            //               type='range'
+            //               min='0'
+            //               max='100'
+            //               value={videoProgress}
+            //               onChange={handleProgressChange}
+            //               className='hp-controls__slider'
+            //               style={{
+            //                 background: `linear-gradient(to right, rgba(255,255,255,0.95) ${videoProgress}%, rgba(255,255,255,0.2) ${videoProgress}%)`,
+            //               }}
+            //             />
+            //           </div>
+            //           <div className='hp-controls__row'>
+            //             <div className='hp-controls__left'>
+            //               <button
+            //                 className='hp-ctrl-btn'
+            //                 onClick={togglePlayPause}
+            //                 aria-label={
+            //                   videoControls.isPlaying ? 'Pause' : 'Play'
+            //                 }
+            //               >
+            //                 {videoControls.isPlaying ? (
+            //                   <svg
+            //                     width='16'
+            //                     height='16'
+            //                     viewBox='0 0 24 24'
+            //                     fill='currentColor'
+            //                   >
+            //                     <rect
+            //                       x='6'
+            //                       y='5'
+            //                       width='4'
+            //                       height='14'
+            //                       rx='1'
+            //                     />
+            //                     <rect
+            //                       x='14'
+            //                       y='5'
+            //                       width='4'
+            //                       height='14'
+            //                       rx='1'
+            //                     />
+            //                   </svg>
+            //                 ) : (
+            //                   <svg
+            //                     width='16'
+            //                     height='16'
+            //                     viewBox='0 0 24 24'
+            //                     fill='currentColor'
+            //                   >
+            //                     <path d='M8 5v14l11-7z' />
+            //                   </svg>
+            //                 )}
+            //               </button>
+            //               <button
+            //                 className='hp-ctrl-btn'
+            //                 onClick={toggleMute}
+            //                 aria-label={
+            //                   videoControls.isMuted ? 'Unmute' : 'Mute'
+            //                 }
+            //               >
+            //                 {videoControls.isMuted ? (
+            //                   <svg
+            //                     width='16'
+            //                     height='16'
+            //                     viewBox='0 0 24 24'
+            //                     fill='currentColor'
+            //                   >
+            //                     <path d='M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zM3 9v6h4l5 5V4L7 9H3z' />
+            //                   </svg>
+            //                 ) : (
+            //                   <svg
+            //                     width='16'
+            //                     height='16'
+            //                     viewBox='0 0 24 24'
+            //                     fill='currentColor'
+            //                   >
+            //                     <path d='M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z' />
+            //                   </svg>
+            //                 )}
+            //               </button>
+            //               <span className='hp-controls__time'>
+            //                 {formatTime((videoProgress / 100) * videoDuration)}
+            //                 <span className='hp-controls__sep'>/</span>
+            //                 {formatTime(videoDuration)}
+            //               </span>
+            //             </div>
+            //             <div className='hp-controls__right'>
+            //               <button
+            //                 className='hp-ctrl-btn'
+            //                 onClick={openVideoPopup}
+            //                 aria-label='Open in popup'
+            //                 title='Expand'
+            //               >
+            //                 <svg
+            //                   width='16'
+            //                   height='16'
+            //                   viewBox='0 0 24 24'
+            //                   fill='currentColor'
+            //                 >
+            //                   <path d='M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z' />
+            //                 </svg>
+            //               </button>
+            //               <button
+            //                 className='hp-ctrl-btn'
+            //                 onClick={toggleFullscreen}
+            //                 aria-label={
+            //                   videoControls.isFullscreen
+            //                     ? 'Exit fullscreen'
+            //                     : 'Fullscreen'
+            //                 }
+            //               >
+            //                 {videoControls.isFullscreen ? (
+            //                   <svg
+            //                     width='16'
+            //                     height='16'
+            //                     viewBox='0 0 24 24'
+            //                     fill='currentColor'
+            //                   >
+            //                     <path d='M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z' />
+            //                   </svg>
+            //                 ) : (
+            //                   <svg
+            //                     width='16'
+            //                     height='16'
+            //                     viewBox='0 0 24 24'
+            //                     fill='currentColor'
+            //                   >
+            //                     <path d='M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z' />
+            //                   </svg>
+            //                 )}
+            //               </button>
+            //               <button
+            //                 className='hp-ctrl-btn hp-ctrl-btn--close'
+            //                 onClick={closeControlsPanel}
+            //                 aria-label='Close controls'
+            //               >
+            //                 <svg
+            //                   width='16'
+            //                   height='16'
+            //                   viewBox='0 0 24 24'
+            //                   fill='currentColor'
+            //                 >
+            //                   <path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z' />
+            //                 </svg>
+            //               </button>
+            //             </div>
+            //           </div>
+            //         </div>
+            //       </div>
 
-                  {!videoLoaded && (
-                    <div className='hp-video__shimmer'>
-                      <div className='hp-video__shimmer-inner' />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </section>
+            //       {!videoLoaded && (
+            //         <div className='hp-video__shimmer'>
+            //           <div className='hp-video__shimmer-inner' />
+            //         </div>
+            //       )}
+            //     </div>
+            //   </div>
+            // </section>
+            <VideoGallery initialLimit={4} />
           )}
 
           {/* ─── ABOUT SECTION ──────────────────────────────────────────────────── */}
