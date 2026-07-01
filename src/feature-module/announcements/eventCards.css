@@ -410,8 +410,8 @@
   text-overflow: ellipsis;
 }
 .event-location {
-  font-size: 0.68rem; /* fixed: was 1rem — inconsistent with surrounding scale */
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.75);
   display: flex;
   align-items: center;
   gap: 3px;
@@ -421,7 +421,6 @@
   text-overflow: ellipsis;
 }
 .event-location i {
-  font-size: 9px;
   flex-shrink: 0;
 }
 .event-arrow {

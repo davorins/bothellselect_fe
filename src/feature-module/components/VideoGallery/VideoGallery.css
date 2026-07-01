@@ -1,4 +1,4 @@
-/* ── Tokens (re-uses HomePage.css custom props if available) ─────── */
+/* ── Tokens ─────────────────────────────────────────────────────────────────── */
 :root {
   --vg-gold: #d4812a;
   --vg-gold-bright: #e8a84a;
@@ -11,12 +11,12 @@
   --vg-text-3: rgba(255, 255, 255, 0.35);
   --vg-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --vg-tile-w: 320px;
-  --vg-tile-h: 452px; /* matches HomeTileRenderer desktop height */
-  --vg-expanded-w: 820px; /* in-place expanded width, ~2.5x tile width */
+  --vg-tile-h: 452px;
+  --vg-expanded-w: 820px;
   --vg-radius: 28px;
 }
 
-/* ── Root wrapper ────────────────────────────────────────────────── */
+/* ── Root wrapper ───────────────────────────────────────────────────────────── */
 .vg-root {
   position: relative;
   width: 100%;
@@ -25,7 +25,7 @@
   overflow: hidden;
 }
 
-/* ── Spinner ─────────────────────────────────────────────────────── */
+/* ── Spinner ───────────────────────────────────────────────────────────────── */
 .vg-spinner {
   display: flex;
   align-items: center;
@@ -48,7 +48,7 @@
   }
 }
 
-/* ── Section header ──────────────────────────────────────────────── */
+/* ── Section header ────────────────────────────────────────────────────────── */
 .vg-header {
   display: flex;
   align-items: flex-end;
@@ -84,7 +84,7 @@
   margin: 0;
 }
 
-/* ── Admin toggle ────────────────────────────────────────────────── */
+/* ── Admin toggle ──────────────────────────────────────────────────────────── */
 .vg-admin-toggle {
   width: 44px;
   height: 44px;
@@ -115,7 +115,7 @@
   border-color: rgba(212, 129, 42, 0.5);
 }
 
-/* ── Admin panel ─────────────────────────────────────────────────── */
+/* ── Admin panel ───────────────────────────────────────────────────────────── */
 .vg-admin-panel {
   max-width: 460px;
   margin: 0 auto 28px;
@@ -154,7 +154,6 @@
   color: var(--vg-text-1);
 }
 
-/* Source tabs */
 .vg-admin-panel__tabs {
   display: flex;
   gap: 2px;
@@ -181,44 +180,9 @@
 .vg-admin-panel__tab:hover {
   color: var(--vg-text-2);
 }
-
 .vg-admin-panel__tab.is-active {
   color: var(--vg-gold);
   border-bottom-color: var(--vg-gold);
-}
-
-.vg-admin-panel__yt-row {
-  display: flex;
-  gap: 8px;
-}
-
-.vg-admin-panel__yt-row .vg-admin-panel__input {
-  flex: 1;
-}
-
-.vg-admin-panel__yt-btn {
-  flex-shrink: 0;
-  padding: 9px 16px;
-  border-radius: 10px;
-  border: none;
-  background: var(--vg-gold);
-  color: var(--vg-dark-0);
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    background 0.2s,
-    transform 0.15s;
-}
-
-.vg-admin-panel__yt-btn:hover:not(:disabled) {
-  background: var(--vg-gold-bright);
-  transform: translateY(-1px);
-}
-
-.vg-admin-panel__yt-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .vg-admin-panel__body {
@@ -265,6 +229,40 @@
   grid-column: span 2;
 }
 
+.vg-admin-panel__yt-row {
+  display: flex;
+  gap: 8px;
+}
+
+.vg-admin-panel__yt-row .vg-admin-panel__input {
+  flex: 1;
+}
+
+.vg-admin-panel__yt-btn {
+  flex-shrink: 0;
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: none;
+  background: var(--vg-gold);
+  color: var(--vg-dark-0);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.15s;
+}
+
+.vg-admin-panel__yt-btn:hover:not(:disabled) {
+  background: var(--vg-gold-bright);
+  transform: translateY(-1px);
+}
+
+.vg-admin-panel__yt-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .vg-admin-panel__dropzone {
   border: 2px dashed rgba(255, 255, 255, 0.15);
   border-radius: 12px;
@@ -289,7 +287,6 @@
   font-size: 0.9rem;
   margin: 0 0 4px;
 }
-
 .vg-admin-panel__dropzone small {
   font-size: 0.75rem;
   color: var(--vg-text-3);
@@ -367,7 +364,7 @@
   line-height: 1;
 }
 
-/* ── Empty state ─────────────────────────────────────────────────── */
+/* ── Empty state ───────────────────────────────────────────────────────────── */
 .vg-empty {
   display: flex;
   flex-direction: column;
@@ -382,14 +379,11 @@
   font-size: 3rem;
   opacity: 0.4;
 }
-
 .vg-empty p {
   font-size: 0.95rem;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   HORIZONTAL RAIL
-   ═══════════════════════════════════════════════════════════════════ */
+/* ── Horizontal rail ──────────────────────────────────────────────────────── */
 .vg-rail {
   overflow-x: auto;
   overflow-y: visible;
@@ -399,6 +393,24 @@
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
   max-width: 1280px;
   margin: 0 auto;
+
+  /* Prevent overscroll and navigation */
+  overscroll-behavior-x: contain !important;
+  overscroll-behavior-y: contain !important;
+  -webkit-overflow-scrolling: touch;
+
+  /* Prevent touch-based navigation */
+  touch-action: pan-x !important;
+
+  /* Prevent scroll chaining */
+  scroll-chaining: none !important;
+
+  /* For Firefox */
+  scroll-behavior: auto;
+
+  /* Prevent rubber-band effect */
+  overflow: -moz-scrollbars-none;
+  -ms-overflow-style: none;
 }
 
 .vg-rail:active {
@@ -408,11 +420,9 @@
 .vg-rail::-webkit-scrollbar {
   height: 4px;
 }
-
 .vg-rail::-webkit-scrollbar-track {
   background: transparent;
 }
-
 .vg-rail::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 2px;
@@ -425,11 +435,11 @@
   align-items: flex-start;
   white-space: nowrap;
   min-width: 100%;
+  touch-action: pan-x !important;
+  pointer-events: auto;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   VIDEO TILE — collapsed state (320 x 452, matches HomeTileRenderer)
-   ═══════════════════════════════════════════════════════════════════ */
+/* ── Video tile ────────────────────────────────────────────────────────────── */
 .vg-tile {
   display: inline-block;
   white-space: normal;
@@ -438,7 +448,6 @@
   transition: width 0.42s var(--vg-ease);
 }
 
-/* The visible card — collapsed sizing */
 .vg-tile__card {
   position: relative;
   width: var(--vg-tile-w);
@@ -472,7 +481,6 @@
   outline-offset: 3px;
 }
 
-/* ── EXPANDED state: tile widens in place, pushing siblings right ───── */
 .vg-tile--expanded {
   width: var(--vg-expanded-w, 820px);
 }
@@ -490,7 +498,6 @@
   transform: none;
 }
 
-/* Native video element fills the collapsed tile */
 .vg-tile__video {
   position: absolute;
   inset: 0;
@@ -501,7 +508,6 @@
   display: block;
 }
 
-/* YouTube static thumbnail (collapsed, used only as a pre-visible placeholder) */
 .vg-tile__thumb {
   position: absolute;
   inset: 0;
@@ -512,10 +518,6 @@
   display: block;
 }
 
-/* YouTube autoplay iframe — scaled up to cover-fill the portrait tile.
-   The iframe is first sized to the tile's width with native 16:9 height,
-   then scaled by (tile height / 16:9 height) so it cover-fills with no
-   bars, cropping left/right edges evenly via center transform-origin. */
 .vg-tile__yt-bg {
   position: absolute;
   top: 50%;
@@ -527,10 +529,9 @@
   transform-origin: center center;
   border: none;
   border-radius: inherit;
-  pointer-events: none; /* tile click still opens the expanded view */
+  pointer-events: none;
 }
 
-/* YouTube badge, top-left */
 .vg-tile__yt-badge {
   position: absolute;
   top: 12px;
@@ -550,7 +551,6 @@
   z-index: 2;
 }
 
-/* Shimmer placeholder */
 .vg-tile__shimmer {
   position: absolute;
   inset: 0;
@@ -574,7 +574,6 @@
   }
 }
 
-/* Gradient overlay with metadata — pinned to bottom (collapsed only) */
 .vg-tile__overlay {
   position: absolute;
   inset: auto 0 0 0;
@@ -648,7 +647,6 @@
   overflow: hidden;
 }
 
-/* Play hint centred on the card */
 .vg-tile__play-hint {
   position: absolute;
   top: 50%;
@@ -673,7 +671,6 @@
   opacity: 1;
 }
 
-/* Admin action buttons (top-right corner of collapsed card) */
 .vg-tile__admin-btns {
   position: absolute;
   top: 12px;
@@ -709,20 +706,58 @@
 .vg-tile__admin-btn:hover {
   transform: scale(1.1);
 }
-
 .vg-tile__admin-btn--edit:hover {
   background: rgba(212, 129, 42, 0.7);
 }
-
 .vg-tile__admin-btn--del:hover {
   background: rgba(220, 53, 69, 0.8);
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   EXPANDED IN-PLACE PANEL
-   Tile widens to var(--vg-expanded-w) and the player + info stack
-   vertically inside, replacing the cover-video/thumb view entirely.
-   ═══════════════════════════════════════════════════════════════════ */
+.vg-tile__confirm-del {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(6px);
+  padding: 4px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.vg-tile__confirm-del-label {
+  font-size: 0.65rem;
+  color: var(--vg-text-2);
+  margin-right: 2px;
+}
+
+.vg-tile__confirm-del-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.vg-tile__confirm-del-btn--yes {
+  background: rgba(74, 222, 128, 0.3);
+  color: #4ade80;
+}
+.vg-tile__confirm-del-btn--yes:hover {
+  background: rgba(74, 222, 128, 0.5);
+}
+.vg-tile__confirm-del-btn--no {
+  background: rgba(248, 113, 113, 0.3);
+  color: #f87171;
+}
+.vg-tile__confirm-del-btn--no:hover {
+  background: rgba(248, 113, 113, 0.5);
+}
+
+/* ── Expanded panel ────────────────────────────────────────────────────────── */
 .vg-tile__expanded-inner {
   display: flex;
   flex-direction: column;
@@ -791,7 +826,6 @@
   transform: rotate(90deg);
 }
 
-/* Info panel below player, inside the expanded tile */
 .vg-tile__info-panel {
   display: flex;
   align-items: flex-start;
@@ -881,7 +915,6 @@
   border-color: rgba(212, 129, 42, 0.5);
 }
 
-/* Edit form inside expanded panel */
 .vg-tile__edit-form {
   padding: 16px 18px;
   background: rgba(255, 255, 255, 0.03);
@@ -976,68 +1009,30 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-/* ─── Load more tile ─────────────────────────────────────────────── */
-.vg-load-more-tile {
+/* ── Sentinel and loading indicators ──────────────────────────────────────── */
+.vg-sentinel {
+  min-width: 20px;
+  height: var(--vg-tile-h);
+  flex-shrink: 0;
+  vertical-align: top;
   display: inline-flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  width: var(--vg-tile-w);
-  height: var(--vg-tile-h);
-  border-radius: var(--vg-radius);
-  border: 2px dashed rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--vg-text-3);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition:
-    border-color 0.2s,
-    background 0.2s,
-    color 0.2s;
-  vertical-align: top;
 }
 
-.vg-load-more-tile:hover:not(:disabled) {
-  border-color: rgba(212, 129, 42, 0.5);
-  background: rgba(212, 129, 42, 0.06);
-  color: var(--vg-gold);
-}
-
-.vg-load-more-tile span {
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.vg-load-more-tile small {
-  font-size: 0.72rem;
-  opacity: 0.6;
-}
-
-.vg-load-more-tile.is-loading {
-  cursor: wait;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   RESPONSIVE
-   ═══════════════════════════════════════════════════════════════════ */
-
-/* Tablet */
+/* ── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 968px) {
   :root {
     --vg-expanded-w: 600px;
   }
-
   .vg-header {
     padding: 36px 24px 24px;
   }
-
   .vg-rail {
     padding: 8px 24px 20px;
   }
 }
 
-/* Mobile */
 @media (max-width: 768px) {
   :root {
     --vg-tile-w: 260px;
@@ -1081,7 +1076,6 @@
   .vg-tile__edit-grid {
     grid-template-columns: 1fr;
   }
-
   .vg-tile__edit-label--full {
     grid-column: span 1;
   }
@@ -1094,17 +1088,14 @@
   .vg-admin-panel__fields {
     grid-template-columns: 1fr;
   }
-
   .vg-admin-panel__textarea {
     grid-column: span 1;
   }
-
   .vg-admin-panel__yt-row {
     flex-direction: column;
   }
 }
 
-/* Extra-small mobile */
 @media (max-width: 480px) {
   :root {
     --vg-tile-w: 220px;
@@ -1116,13 +1107,11 @@
     width: 42px;
     height: 42px;
   }
-
   .vg-header__title {
     font-size: 1.4rem;
   }
 }
 
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .vg-tile__card,
   .vg-tile__admin-btn,

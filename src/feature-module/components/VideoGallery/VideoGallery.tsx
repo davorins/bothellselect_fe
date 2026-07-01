@@ -59,8 +59,6 @@ function formatDate(iso: string | null): string {
 }
 
 function youtubeThumb(youtubeId: string): string {
-  // maxresdefault is true 16:9 (1280x720) with no letterbox bars baked in.
-  // Not every video has one — onError on the <img> falls back to hqdefault.
   return `https://i.ytimg.com/vi/${youtubeId}/maxresdefault.jpg`;
 }
 
@@ -68,7 +66,7 @@ function youtubeThumbFallback(youtubeId: string): string {
   return `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
 }
 
-// ─── Single video tile (handles both collapsed + expanded states) ────────────
+// ─── Single video tile ────────────────────────────────────────────────────────
 interface VideoTileProps {
   video: VideoEntry;
   isExpanded: boolean;
@@ -107,7 +105,6 @@ const VideoTile: React.FC<VideoTileProps> = ({
 
   const isYouTube = video.sourceType === 'youtube';
 
-  // ── IntersectionObserver: only fetch/play native videos that are visible ──
   useEffect(() => {
     const tile = tileRef.current;
     if (!tile) return;
@@ -121,7 +118,7 @@ const VideoTile: React.FC<VideoTileProps> = ({
   }, []);
 
   useEffect(() => {
-    if (isYouTube) return; // YouTube tiles show a static thumbnail only
+    if (isYouTube) return;
     const vid = videoRef.current;
     if (!vid || !isLoaded) return;
 
@@ -132,15 +129,10 @@ const VideoTile: React.FC<VideoTileProps> = ({
     }
   }, [isVisible, isLoaded, isExpanded, isYouTube]);
 
-  // Reset edit mode whenever the tile collapses, so the next time it's
-  // opened (by clicking the card) it shows the player, not the edit form.
   useEffect(() => {
     if (!isExpanded) setIsEditing(false);
   }, [isExpanded]);
 
-  // Keep the edit form in sync with the latest saved video data (e.g. after
-  // a PATCH response replaces the video prop, or on first load for videos
-  // that arrived after this component mounted).
   useEffect(() => {
     if (!isEditing) {
       setEditForm({
@@ -196,7 +188,6 @@ const VideoTile: React.FC<VideoTileProps> = ({
         aria-expanded={isExpanded}
         aria-label={video.title || (isYouTube ? 'YouTube video' : 'Video clip')}
       >
-        {/* ── Collapsed visual: native video tag, or YouTube static thumb ── */}
         {!isExpanded && (
           <>
             {isYouTube ? (
@@ -402,7 +393,6 @@ const VideoTile: React.FC<VideoTileProps> = ({
           </>
         )}
 
-        {/* ── Expanded: in-place player + info panel ──────────────────────── */}
         {isExpanded && (
           <div className='vg-tile__expanded-inner'>
             <div className='vg-tile__player-wrap'>
@@ -756,7 +746,6 @@ const AdminUploadPanel: React.FC<AdminPanelProps> = ({ onAdded }) => {
         <h4>Video Gallery</h4>
       </div>
 
-      {/* Source toggle */}
       <div className='vg-admin-panel__tabs' role='tablist'>
         <button
           role='tab'
@@ -898,7 +887,6 @@ const AdminUploadPanel: React.FC<AdminPanelProps> = ({ onAdded }) => {
 
 // ─── Main VideoGallery component ──────────────────────────────────────────────
 interface VideoGalleryProps {
-  /** How many videos to fetch on initial load (default 4 to fill the row) */
   initialLimit?: number;
 }
 
@@ -914,8 +902,73 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ initialLimit = 4 }) => {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // ── Drag-scroll on desktop ────────────────────────────────────────────────
+  // ── Disable browser navigation gestures ────────────────────────────────────
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Prevent touch-based navigation (swipe left/right)
+    const preventNavigation = (e: TouchEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target?.closest?.('.vg-rail')) return;
+
+      const touch = e.touches[0];
+      const rail = wrapperRef.current;
+      if (!rail) return;
+
+      const { scrollLeft, scrollWidth, clientWidth } = rail;
+      const atLeft = scrollLeft <= 0;
+      const atRight = scrollLeft + clientWidth >= scrollWidth - 1;
+
+      // If at bounds and trying to swipe further, prevent navigation
+      if (atLeft || atRight) {
+        e.preventDefault();
+      }
+    };
+
+    // Prevent wheel-based navigation
+    const preventWheelNavigation = (e: WheelEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target?.closest?.('.vg-rail')) return;
+
+      const rail = wrapperRef.current;
+      if (!rail) return;
+
+      const { scrollLeft, scrollWidth, clientWidth } = rail;
+      const atLeft = scrollLeft <= 0;
+      const atRight = scrollLeft + clientWidth >= scrollWidth - 1;
+
+      // If at horizontal bounds and trying to scroll vertically (which can trigger navigation)
+      if ((atLeft || atRight) && Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+        e.preventDefault();
+      }
+
+      // If trying to scroll horizontally at bounds
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        if ((e.deltaX < 0 && atLeft) || (e.deltaX > 0 && atRight)) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    // Add event listeners with passive: false to allow preventDefault
+    document.addEventListener('touchmove', preventNavigation, {
+      passive: false,
+    });
+    document.addEventListener('wheel', preventWheelNavigation, {
+      passive: false,
+    });
+
+    return () => {
+      document.removeEventListener('touchmove', preventNavigation);
+      document.removeEventListener('wheel', preventWheelNavigation);
+    };
+  }, []);
+
+  // ── Drag-scroll on desktop ──────────────────────────────────────────────────
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
   const scrollStartX = useRef(0);
@@ -926,20 +979,26 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ initialLimit = 4 }) => {
     dragStartX.current = e.clientX;
     scrollStartX.current = wrapperRef.current.scrollLeft;
     wrapperRef.current.style.cursor = 'grabbing';
+    wrapperRef.current.style.userSelect = 'none';
+    e.preventDefault();
   }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDragging.current || !wrapperRef.current) return;
     const dx = e.clientX - dragStartX.current;
     wrapperRef.current.scrollLeft = scrollStartX.current - dx;
+    e.preventDefault();
   }, []);
 
   const handleMouseUp = useCallback(() => {
     isDragging.current = false;
-    if (wrapperRef.current) wrapperRef.current.style.cursor = 'grab';
+    if (wrapperRef.current) {
+      wrapperRef.current.style.cursor = 'grab';
+      wrapperRef.current.style.userSelect = '';
+    }
   }, []);
 
-  // ── Fetch ─────────────────────────────────────────────────────────────────
+  // ── Fetch videos ────────────────────────────────────────────────────────────
   const fetchVideos = useCallback(
     async (page = 1, append = false) => {
       try {
@@ -968,10 +1027,30 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ initialLimit = 4 }) => {
     fetchVideos(1, false);
   }, [fetchVideos]);
 
+  // ── Infinite scroll with IntersectionObserver ─────────────────────────────
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !pagination?.hasMore || loadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && pagination.hasMore && !loadingMore) {
+          fetchVideos(pagination.page + 1, true);
+        }
+      },
+      { threshold: 0.1, rootMargin: '0px 0px 100px 0px' },
+    );
+
+    observer.observe(sentinel);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [pagination, loadingMore, fetchVideos]);
+
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleExpand = useCallback((id: string) => {
     setExpandedId(id);
-    // Scroll the expanding tile into a comfortable view
     requestAnimationFrame(() => {
       const el = wrapperRef.current?.querySelector(`[data-id="${id}"]`);
       el?.scrollIntoView({
@@ -1043,7 +1122,7 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ initialLimit = 4 }) => {
       prev.map((v) => (v._id === id ? { ...v, duration } : v)),
     );
     const token = localStorage.getItem('token');
-    if (!token) return; // duration persistence is a nice-to-have, admin-only token needed
+    if (!token) return;
     try {
       await fetch(`${API_BASE_URL}/video-gallery/${id}`, {
         method: 'PATCH',
@@ -1063,11 +1142,6 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ initialLimit = 4 }) => {
     setShowAdminPanel(false);
   }, []);
 
-  const handleLoadMore = useCallback(() => {
-    if (!pagination?.hasMore || loadingMore) return;
-    fetchVideos(pagination.page + 1, true);
-  }, [pagination, loadingMore, fetchVideos]);
-
   if (loading) {
     return (
       <div className='vg-root'>
@@ -1081,7 +1155,7 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ initialLimit = 4 }) => {
   if (!loading && videos.length === 0 && !isAdmin) return null;
 
   return (
-    <div className='vg-root'>
+    <div ref={containerRef} className='vg-root'>
       <header className='vg-header'>
         <div className='vg-header__left'>
           <span className='vg-header__label'>Highlights</span>
@@ -1136,32 +1210,26 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ initialLimit = 4 }) => {
             ))}
 
             {pagination?.hasMore && (
-              <button
-                className={`vg-load-more-tile ${loadingMore ? 'is-loading' : ''}`}
-                onClick={handleLoadMore}
-                disabled={loadingMore}
-                aria-label='Load more videos'
+              <div
+                ref={sentinelRef}
+                className='vg-sentinel'
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '60px',
+                  height: 'var(--vg-tile-h)',
+                  flexShrink: 0,
+                  verticalAlign: 'top',
+                }}
               >
-                {loadingMore ? (
-                  <div className='vg-spinner__ring' />
-                ) : (
-                  <>
-                    <svg
-                      width='32'
-                      height='32'
-                      viewBox='0 0 24 24'
-                      fill='none'
-                      stroke='currentColor'
-                      strokeWidth='1.5'
-                    >
-                      <circle cx='12' cy='12' r='10' />
-                      <path d='M12 8v8M8 12h8' />
-                    </svg>
-                    <span>Load more</span>
-                    <small>{pagination.total - videos.length} remaining</small>
-                  </>
+                {loadingMore && (
+                  <div
+                    className='vg-spinner__ring'
+                    style={{ width: '28px', height: '28px' }}
+                  />
                 )}
-              </button>
+              </div>
             )}
           </div>
         </div>
