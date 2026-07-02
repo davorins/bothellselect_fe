@@ -26,6 +26,7 @@ import { Moment } from 'moment';
 import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 import { debounce } from 'lodash';
 import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
+import '../../player-parent-list-mobile.css';
 
 const CoachList = () => {
   const [searchParams] = useSearchParams();
@@ -204,7 +205,7 @@ const CoachList = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
   if (loading && coaches.length === 0) {
     return (
-      <div className='page-wrapper'>
+      <div className='page-wrapper parent-list-page'>
         <div className='content'>
           <div className='card'>
             <div className='card-body'>
@@ -221,7 +222,7 @@ const CoachList = () => {
 
   if (apiError && coaches.length === 0) {
     return (
-      <div className='page-wrapper'>
+      <div className='page-wrapper parent-list-page'>
         <div className='content'>
           <div className='alert alert-danger'>
             <h4>Error Loading Data</h4>
@@ -239,7 +240,7 @@ const CoachList = () => {
   }
 
   return (
-    <div className='page-wrapper'>
+    <div className='page-wrapper parent-list-page'>
       <div className='content'>
         <CoachListHeader
           seasonParam={seasonParam}

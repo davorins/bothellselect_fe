@@ -15,6 +15,7 @@ import GuardianModal from '../guardianModal';
 import { TableData } from '../../../../core/data/interface';
 import Table from '../../../../core/common/dataTable/index';
 import { guardianListData } from '../../../../core/data/json/guardianList';
+import '../../player-parent-list-mobile.css';
 
 const GuardianList = () => {
   const [show, setShow] = useState(false);
@@ -159,7 +160,7 @@ const GuardianList = () => {
   return (
     <>
       {/* Page Wrapper */}
-      <div className='page-wrapper'>
+      <div className='page-wrapper parent-list-page'>
         <div className='content content-two'>
           {/* Page Header */}
           <div className='d-md-flex d-block align-items-center justify-content-between mb-3'>

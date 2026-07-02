@@ -33,6 +33,7 @@ import axios from 'axios';
 import { ExtendedTableRecord } from '../../../../types/table.types';
 import { useActiveSeasonEvents } from '../../../../context/SeasonEventsContext';
 import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
+import '../../player-parent-list-mobile.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -416,7 +417,7 @@ const ParentList = () => {
 
   if (loading && allData.length === 0) {
     return (
-      <div className='page-wrapper'>
+      <div className='page-wrapper parent-list-page'>
         <div className='content'>
           <div className='card'>
             <div className='card-body'>
@@ -435,7 +436,7 @@ const ParentList = () => {
 
   if (apiError && allData.length === 0) {
     return (
-      <div className='page-wrapper'>
+      <div className='page-wrapper parent-list-page'>
         <div className='content'>
           <Alert
             message='Error Loading Data'
@@ -457,7 +458,7 @@ const ParentList = () => {
   }
 
   return (
-    <div className='page-wrapper'>
+    <div className='page-wrapper parent-list-page'>
       <div className='content'>
         <ParentListHeader
           seasonParam={seasonParam}

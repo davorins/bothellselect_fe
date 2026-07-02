@@ -136,7 +136,6 @@ export const all_routes = {
 
   emailSettings: '/system-settings/email-settings',
   emailTemplates: '/system-settings/email-templates',
-  // ✅ ADD THESE - Email Template Builder Routes
   emailTemplatesBuilder: '/system-settings/email-templates/builder',
   emailTemplatesEdit: '/system-settings/email-templates/builder/:id',
   EmailTemplateSelector: '/system-settings/email-campaigns',

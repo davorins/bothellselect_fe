@@ -33,6 +33,7 @@ import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 import { debounce } from 'lodash';
 import { getPlayerStatus } from '../../../../utils/season';
 import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
+import '../../player-parent-list-mobile.css';
 
 interface PlayerData {
   _id?: string;
@@ -612,7 +613,7 @@ const PlayerList = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
   if (loading && players.length === 0 && !currentUser?.isCoach) {
     return (
-      <div className='page-wrapper'>
+      <div className='page-wrapper player-list-page'>
         <div className='content'>
           <div className='card'>
             <div className='card-body'>
@@ -629,7 +630,7 @@ const PlayerList = () => {
 
   if (apiError && players.length === 0) {
     return (
-      <div className='page-wrapper'>
+      <div className='page-wrapper player-list-page'>
         <div className='content'>
           <div className='alert alert-danger'>
             <h4>Error Loading Data</h4>
@@ -647,7 +648,7 @@ const PlayerList = () => {
   }
 
   return (
-    <div className='page-wrapper'>
+    <div className='page-wrapper player-list-page'>
       <div className='content'>
         <PlayerListHeader
           seasonParam={seasonParam}
