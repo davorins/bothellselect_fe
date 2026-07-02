@@ -5,6 +5,8 @@ import ReactSelect, { GroupBase } from 'react-select';
 import { InternalTeamFormData } from '../../../types/teamTypes';
 import { useAuth } from '../../../context/AuthContext';
 import { all_routes } from '../../router/all_routes';
+import './TeamForm.css';
+import './teams-mobile.css';
 
 interface SelectOption {
   value: string;
@@ -358,7 +360,7 @@ const TeamForm: React.FC = () => {
 
   if (loading) {
     return (
-      <div className='page-wrapper'>
+      <div className='page-wrapper team-form-page'>
         <div className='content'>
           <div id='global-loader'>
             <div className='page-loader'></div>
@@ -371,7 +373,7 @@ const TeamForm: React.FC = () => {
   const f = formValues;
 
   return (
-    <div className='page-wrapper'>
+    <div className='page-wrapper team-form-page'>
       <div className='content'>
         {/* Header */}
         <div className='d-md-flex d-block align-items-center justify-content-between mb-3'>

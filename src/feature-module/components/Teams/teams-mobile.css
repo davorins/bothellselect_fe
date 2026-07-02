@@ -1,0 +1,599 @@
+/* teams-mobile.css */
+@media (max-width: 768px) {
+  .team-list-page .card-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 8px;
+    padding: 12px 12px 0 !important;
+  }
+
+  /* The h4 spacer has mb-5 baked in — pull it back on mobile */
+  .team-list-page .card-header h4.mb-5 {
+    margin-bottom: 0 !important;
+  }
+
+  .team-list-page .card-header .d-flex.align-items-center.flex-wrap {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .team-list-page .card-header .mb-3 {
+    margin-bottom: 8px !important;
+  }
+
+  .team-list-page .card-header .me-2 {
+    margin-right: 6px !important;
+  }
+
+  /* Filter dropdown panel */
+  .team-list-page .dropdown-menu.drop-width {
+    width: calc(100vw - 24px) !important;
+    max-width: 360px;
+    left: 0 !important;
+    right: auto !important;
+    max-height: 70vh;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Sort + filter trigger buttons */
+  .team-list-page .card-header .btn.dropdown-toggle {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   2. TEAM LIST — grade filter alert banner
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .team-list-page .alert.alert-info.d-flex {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 8px;
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+
+  .team-list-page .alert.alert-info .btn-sm {
+    align-self: flex-start;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   3. TEAM LIST — Ant Table
+   TeamList already wraps the Table in .table-responsive, but the global
+   overflow:visible in App.css overrides it. Re-assert scroll here.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .team-list-page .table-responsive {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Undo the inline style={{ marginTop: '-28px' }} that creates dead space */
+  .team-list-page .ant-table-wrapper {
+    margin-top: 0 !important;
+  }
+
+  .team-list-page .ant-table,
+  .team-list-page .ant-table-container,
+  .team-list-page .ant-table-content {
+    overflow: auto !important;
+    overflow-x: auto !important;
+  }
+
+  .team-list-page .ant-table-cell {
+    white-space: nowrap;
+    font-size: 13px;
+    padding: 8px 10px !important;
+  }
+
+  .team-list-page .ant-table-thead .ant-table-cell {
+    font-size: 12px;
+    padding: 10px 10px !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   4. TEAM LIST — pagination (single-line nav, size-changer below)
+   Mirrors the same fix applied to PlayerList / ParentList.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .team-list-page .ant-pagination {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin: 10px 8px 8px !important;
+    padding: 0 !important;
+    position: relative !important;
+  }
+
+  .team-list-page .ant-pagination-prev,
+  .team-list-page .ant-pagination-next {
+    flex-shrink: 0;
+    min-width: 28px !important;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    margin: 0 !important;
+    order: 0;
+  }
+
+  .team-list-page .ant-pagination-item {
+    flex-shrink: 0;
+    min-width: 28px !important;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    font-size: 12px;
+    margin: 0 !important;
+    order: 0;
+  }
+
+  .team-list-page .ant-pagination-jump-prev,
+  .team-list-page .ant-pagination-jump-next {
+    flex-shrink: 0;
+    min-width: 28px !important;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    margin: 0 !important;
+    order: 0;
+  }
+
+  .team-list-page .ant-pagination-options {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    order: 10;
+    width: 100%;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .team-list-page .ant-pagination-options::before {
+    content: 'Rows:';
+    font-size: 12px;
+    color: #6f6f6f;
+    white-space: nowrap;
+  }
+
+  .team-list-page .ant-pagination-options-size-changer::before,
+  .team-list-page .ant-pagination-options-size-changer::after {
+    display: none !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .team-list-page
+    .ant-pagination-item:not(.ant-pagination-item-active):not(
+      :first-of-type
+    ):not(:last-of-type) {
+    display: none !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   5. TEAM LIST — empty state + "no teams" message
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .team-list-page .text-center.py-5 {
+    padding: 28px 16px !important;
+  }
+
+  .team-list-page .text-center.py-5 h4 {
+    font-size: 1rem;
+    margin-top: 10px !important;
+  }
+
+  .team-list-page .text-center.py-5 p {
+    font-size: 13px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   6. TEAM FORM — page header (breadcrumb + title)
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .team-form-page .d-md-flex.d-block {
+    margin-bottom: 12px !important;
+  }
+
+  .team-form-page .page-title {
+    font-size: 1.1rem;
+    margin-bottom: 2px !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   7. TEAM FORM — Row 1: Team Name + Team Year
+   Already col-md-6 so they stack on mobile. Just tighten spacing.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .team-form-page .card-body {
+    padding: 16px !important;
+  }
+
+  .team-form-page .card-header h4 {
+    font-size: 1rem;
+  }
+
+  .team-form-page .form-label {
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+
+  .team-form-page .form-control,
+  .team-form-page .form-select {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+
+  .team-form-page .form-text {
+    font-size: 11px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   8. TEAM FORM — Row 2: Grade / Gender / Tryout Season / Tryout Year
+   These are col-md-3 col-6, so they sit 2-per-row on mobile already.
+   Ensure the selects don't clip.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .team-form-page .row .col-md-3.col-6 {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .team-form-page .row .col-md-3.col-6 .form-select {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   9. TEAM FORM — Row 3: Coaches + Players (react-select multi)
+   Stack to full width, make the multi-select usable on touch.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* react-select control */
+  .team-form-page .basic-multi-select .select__control {
+    min-height: 40px;
+    font-size: 13px;
+  }
+
+  /* Selected value tags */
+  .team-form-page .basic-multi-select .select__multi-value {
+    font-size: 12px;
+    max-width: 160px;
+  }
+
+  .team-form-page .basic-multi-select .select__multi-value__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 130px;
+  }
+
+  /* Dropdown menu — full width inside the card */
+  .team-form-page .basic-multi-select .select__menu {
+    font-size: 13px;
+    z-index: 1060 !important;
+  }
+
+  /* Group headers (grade labels) */
+  .team-form-page .basic-multi-select .select__group-heading {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   10. TEAM FORM — Notes textarea + submit row
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .team-form-page textarea.form-control {
+    font-size: 13px;
+    rows: 2;
+  }
+
+  /* Submit + Cancel buttons */
+  .team-form-page .d-flex.align-items-center.gap-2 {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .team-form-page .d-flex.align-items-center.gap-2 .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+    font-size: 14px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   11. TEAM DETAIL — card header action row
+   "Send Acceptance Email" + export menu + "Edit Team" need to wrap cleanly.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .team-detail-page .card-header.d-flex {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px;
+    padding-bottom: 8px !important;
+  }
+
+  /* Team grade/gender title */
+  .team-detail-page .card-header h4 {
+    font-size: 1rem;
+    margin-bottom: 0 !important;
+  }
+
+  /* Action buttons row — wrap and stretch */
+  .team-detail-page .card-header .d-flex.align-items-center.flex-wrap {
+    width: 100%;
+    gap: 8px;
+    flex-wrap: wrap !important;
+  }
+
+  /* "Send Acceptance Email" button */
+  .team-detail-page .card-header .btn.btn-success {
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+    font-size: 13px;
+    padding: 7px 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Edit Team button */
+  .team-detail-page .card-header .btn.btn-primary {
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+
+  /* mb-3 spacing on each button */
+  .team-detail-page .card-header .mb-3 {
+    margin-bottom: 0 !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   12. TEAM DETAIL — Ant Tabs nav
+   Tab labels (Players / Coaches / Team Info) need to be compact on mobile.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .team-detail-page .ant-tabs-nav {
+    margin-bottom: 0;
+  }
+
+  .team-detail-page .ant-tabs-tab {
+    font-size: 12px;
+    padding: 8px 10px !important;
+  }
+
+  /* Hide icon on very narrow screens to save space */
+  .team-detail-page .ant-tabs-tab .anticon,
+  .team-detail-page .ant-tabs-tab .ti {
+    display: none;
+  }
+
+  /* Ensure tabs fill the nav width */
+  .team-detail-page .ant-tabs-nav-wrap {
+    justify-content: flex-start !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   13. TEAM DETAIL — Players/Coaches tables (horizontal scroll)
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .team-detail-page .table-responsive {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .team-detail-page .ant-table,
+  .team-detail-page .ant-table-container,
+  .team-detail-page .ant-table-content {
+    overflow: auto !important;
+    overflow-x: auto !important;
+  }
+
+  .team-detail-page .ant-table-cell {
+    white-space: nowrap;
+    font-size: 13px;
+    padding: 8px 10px !important;
+  }
+
+  .team-detail-page .ant-table-thead .ant-table-cell {
+    font-size: 12px;
+    padding: 10px 10px !important;
+  }
+
+  /* Payment toggle + label inside player table */
+  .team-detail-page .form-check.form-switch {
+    padding-left: 2em !important;
+  }
+
+  .team-detail-page .form-check-input[role='switch'] {
+    width: 1.8em !important;
+    height: 1em !important;
+  }
+
+  /* Action icon buttons in table rows */
+  .team-detail-page .ant-table-cell .btn.btn-icon {
+    width: 28px !important;
+    height: 28px !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   14. TEAM DETAIL — pagination (same single-line fix as other list pages)
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .team-detail-page .ant-pagination {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin: 10px 8px 8px !important;
+    padding: 0 !important;
+    position: relative !important;
+  }
+
+  .team-detail-page .ant-pagination-prev,
+  .team-detail-page .ant-pagination-next {
+    flex-shrink: 0;
+    min-width: 28px !important;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    margin: 0 !important;
+    order: 0;
+  }
+
+  .team-detail-page .ant-pagination-item {
+    flex-shrink: 0;
+    min-width: 28px !important;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    font-size: 12px;
+    margin: 0 !important;
+    order: 0;
+  }
+
+  .team-detail-page .ant-pagination-jump-prev,
+  .team-detail-page .ant-pagination-jump-next {
+    flex-shrink: 0;
+    min-width: 28px !important;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    margin: 0 !important;
+    order: 0;
+  }
+
+  /* TeamDetail.scss sets margin-top:26px on .ant-pagination-options —
+     override that here for mobile */
+  .team-detail-page .ant-pagination-options {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    order: 10;
+    width: 100%;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px !important;
+  }
+
+  .team-detail-page .ant-pagination-options::before {
+    content: 'Rows:';
+    font-size: 12px;
+    color: #6f6f6f;
+    white-space: nowrap;
+  }
+
+  .team-detail-page .ant-pagination-options-size-changer::before,
+  .team-detail-page .ant-pagination-options-size-changer::after {
+    display: none !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .team-detail-page
+    .ant-pagination-item:not(.ant-pagination-item-active):not(
+      :first-of-type
+    ):not(:last-of-type) {
+    display: none !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   15. TEAM DETAIL — Team Info tab (3-column card grid → stacked on mobile)
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* The three info cards sit in col-md-4 columns — they already stack on
+     mobile, but the mx-2 / px-2 gutters create awkward margins. Reset them. */
+  .team-detail-page .team-info-cards .row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .team-detail-page .team-info-cards .col-md-4 {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    margin-bottom: 12px;
+  }
+
+  /* Descriptions inside the info cards */
+  .team-detail-page .team-info-cards .ant-descriptions-item-label,
+  .team-detail-page .team-info-cards .ant-descriptions-item-content {
+    font-size: 13px;
+    padding: 6px 8px !important;
+  }
+
+  /* Status toggle row inside the info card */
+  .team-detail-page .team-info-cards .form-check.form-switch {
+    padding-left: 2em !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   16. TEAM DETAIL — AcceptanceEmailModal
+   The modal is appended to <body> so scope via its presumed wrapper class.
+   If AcceptanceEmailModal uses a custom class, replace .acceptance-email-modal.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .acceptance-email-modal .modal-dialog,
+  /* Fallback: target any modal opened from the team detail page */
+  .team-detail-page ~ .modal .modal-dialog {
+    margin: 8px;
+    max-width: calc(100vw - 16px);
+  }
+
+  .acceptance-email-modal .modal-body {
+    padding: 14px 16px;
+    max-height: 65vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .acceptance-email-modal .modal-footer {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
+  .acceptance-email-modal .modal-footer .btn {
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   17. SHARED — footer clearance for all three pages
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .team-list-page,
+  .team-form-page,
+  .team-detail-page {
+    padding-bottom: 80px;
+  }
+}

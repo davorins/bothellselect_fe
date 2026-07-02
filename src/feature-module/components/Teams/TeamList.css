@@ -1,6 +1,5 @@
-// components/Teams/TeamList.scss
+/* components/Teams/TeamList.css */
 
-// Filter dropdown menu container
 .dropdown-menu {
   &.drop-width {
     overflow: visible !important;
@@ -8,33 +7,25 @@
     position: absolute !important;
     will-change: transform;
 
-    // Inner content should not clip
     .p-3 {
       overflow: visible !important;
     }
   }
 
-  // Ensure dropdown doesn't clip its contents
-  overflow: visible !important;
-
-  // Ant Design Select inside dropdown
   .ant-select {
     position: relative;
     z-index: 1;
 
-    // The dropdown overlay (options list)
     &-dropdown {
       z-index: 1060 !important;
     }
   }
 }
 
-// Global Ant Design Select dropdowns
 .ant-select-dropdown {
   z-index: 1060 !important;
 }
 
-// Sort dropdown menu
 .dropdown-menu {
   .dropdown-item {
     cursor: pointer;
@@ -45,12 +36,10 @@
   }
 }
 
-// Fix for any other potential z-index issues
 .ant-select-dropdown-hidden {
   display: none !important;
 }
 
-// Ensure the filter dropdown is above table content
 .card-header {
   .dropdown {
     position: relative;
@@ -58,7 +47,6 @@
   }
 }
 
-// Loading spinner styles (if not already defined elsewhere)
 .page-loader {
   display: flex;
   justify-content: center;

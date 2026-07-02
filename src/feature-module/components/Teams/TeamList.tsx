@@ -28,7 +28,8 @@ import { TeamListHeader } from '../Headers/TeamListHeader';
 import { TeamFilters } from '../Filters/TeamFilters';
 import { TeamSortOptions } from '../Filters/TeamSortOptions';
 import { Moment } from 'moment';
-import './TeamList.scss';
+import './TeamList.css';
+import './teams-mobile.css';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
@@ -382,7 +383,7 @@ const TeamList: React.FC = () => {
 
   if (loading && teams.length === 0) {
     return (
-      <div className='page-wrapper'>
+      <div className='page-wrapper team-list-page'>
         <div className='content'>
           <div className='card'>
             <div className='card-body'>
@@ -399,7 +400,7 @@ const TeamList: React.FC = () => {
 
   if (error && teams.length === 0) {
     return (
-      <div className='page-wrapper'>
+      <div className='page-wrapper team-list-page'>
         <div className='content'>
           <div className='alert alert-danger'>
             <h4>Error Loading Data</h4>
@@ -418,7 +419,7 @@ const TeamList: React.FC = () => {
   }
 
   return (
-    <div className='page-wrapper'>
+    <div className='page-wrapper team-list-page'>
       <div className='content'>
         <TeamListHeader teamData={teams} onRefresh={handleRefresh} />
         {localFilters.gradeFilter && (

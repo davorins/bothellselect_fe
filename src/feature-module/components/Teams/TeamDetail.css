@@ -1,18 +1,15 @@
-// components/Teams/TeamDetail.scss
+/* components/Teams/TeamDetail.css */
 
-// Move tabs to the right side
 .team-detail-tabs {
   &.ant-tabs {
     .ant-tabs-nav {
       margin-bottom: 0 !important;
       border-bottom: 0 !important;
 
-      // Position tabs on the right
       .ant-tabs-nav-wrap {
         justify-content: flex-end;
       }
 
-      // Style for the tab list
       .ant-tabs-tab {
         padding: 12px 16px;
         transition: all 0.3s;
@@ -29,7 +26,6 @@
         }
       }
 
-      // Active tab indicator
       .ant-tabs-ink-bar {
         background: #506ee4 !important;
       }
@@ -37,7 +33,6 @@
   }
 }
 
-// Team header with row per page and tabs
 .team-header-section {
   display: flex;
   align-items: center;
@@ -46,7 +41,6 @@
   flex-wrap: wrap;
   gap: 16px;
 
-  // Left side - team info and badges
   .team-info-left {
     display: flex;
     align-items: center;
@@ -134,7 +128,6 @@
     }
   }
 
-  // Right side - tabs container (Players, Coaches, Team Info)
   .team-tabs-right {
     display: flex;
     align-items: center;
@@ -174,7 +167,6 @@
   }
 }
 
-// Table row per page fix - moves per page selector to the right
 .ant-table-pagination {
   &.ant-pagination {
     display: flex;
@@ -202,7 +194,6 @@
   }
 }
 
-// Table styling
 .players-table {
   .status-badge {
     display: inline-flex;
@@ -233,7 +224,6 @@
   }
 }
 
-// Team info cards styling
 .team-info-cards {
   .card {
     border-radius: 8px;
@@ -260,7 +250,6 @@
   }
 }
 
-// Action buttons at bottom
 .action-buttons {
   display: flex;
   align-items: center;
@@ -308,7 +297,6 @@
   }
 }
 
-// Avatar hover effects
 .avatar {
   transition: transform 0.3s;
   display: inline-flex;
@@ -321,7 +309,6 @@
   }
 }
 
-// Dropdown menu styling
 .dropdown-menu {
   &.p-3 {
     min-width: 160px;
@@ -344,7 +331,6 @@
   }
 }
 
-// Responsive adjustments
 @media (max-width: 768px) {
   .team-header-section {
     flex-direction: column;

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setDataLayout } from '../../data/redux/themeSettingSlice';
 import {
@@ -20,6 +20,7 @@ const Header = () => {
   const { parent, role, logout } = useAuth();
   const dispatch = useDispatch();
   const routes = all_routes;
+  const location = useLocation(); // ← track route changes
   const dataLayout = useSelector((state: any) => state.themeSetting.dataLayout);
   const mobileSidebar = useSelector(
     (state: any) => state.sidebarSlice.mobileSidebar,
@@ -34,7 +35,13 @@ const Header = () => {
   const DEFAULT_AVATAR =
     'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
-  // ✅ NEW: Determine dashboard route based on role
+  // ── Close sidebar whenever the route changes ──────────────────────────────
+  // This fires whenever a sidebar nav link (or any Link) triggers navigation,
+  // so the user never has to manually tap the hamburger to dismiss the menu.
+  useEffect(() => {
+    dispatch(setMobileSidebar(false));
+  }, [location.pathname, dispatch]);
+
   const getDashboardRoute = () => {
     if (role === 'coach') {
       return routes.coachDashboard || '/coach-dashboard';
@@ -70,7 +77,6 @@ const Header = () => {
   }, [API_BASE_URL]);
 
   useEffect(() => {
-    // Fetch the avatar from the backend when the component mounts
     fetchAvatarUrlFromBackend();
   }, [fetchAvatarUrlFromBackend]);
 
@@ -211,7 +217,6 @@ const Header = () => {
               <i className='ti ti-user-circle me-2' />
               My Profile
             </Link>
-            {/* ADD THIS - My Tickets link */}
             <Link
               className='dropdown-item d-inline-flex align-items-center p-2'
               to={routes.myTickets}
