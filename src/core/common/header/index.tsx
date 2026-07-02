@@ -20,7 +20,7 @@ const Header = () => {
   const { parent, role, logout } = useAuth();
   const dispatch = useDispatch();
   const routes = all_routes;
-  const location = useLocation(); // ← track route changes
+  const location = useLocation();
   const dataLayout = useSelector((state: any) => state.themeSetting.dataLayout);
   const mobileSidebar = useSelector(
     (state: any) => state.sidebarSlice.mobileSidebar,
@@ -35,9 +35,6 @@ const Header = () => {
   const DEFAULT_AVATAR =
     'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
-  // ── Close sidebar whenever the route changes ──────────────────────────────
-  // This fires whenever a sidebar nav link (or any Link) triggers navigation,
-  // so the user never has to manually tap the hamburger to dismiss the menu.
   useEffect(() => {
     dispatch(setMobileSidebar(false));
   }, [location.pathname, dispatch]);
