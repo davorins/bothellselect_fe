@@ -1,0 +1,310 @@
+/* tournament-admin-mobile.css */
+@media (max-width: 768px) {
+  .tournament-admin-page .card-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 8px;
+    padding: 12px 12px 0 !important;
+  }
+
+  /* h4 has mb-5 baked in via Bootstrap — remove the large bottom gap */
+  .tournament-admin-page .card-header h4.mb-5 {
+    margin-bottom: 8px !important;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+
+  /* "Coach View" badge beside the title */
+  .tournament-admin-page .card-header h4 .badge {
+    font-size: 11px;
+    padding: 3px 7px;
+    vertical-align: middle;
+  }
+
+  /* Controls row */
+  .tournament-admin-page .card-header .d-flex.align-items-center.flex-wrap {
+    width: 100%;
+    gap: 8px;
+    flex-wrap: wrap !important;
+  }
+
+  .tournament-admin-page .card-header .mb-3 {
+    margin-bottom: 8px !important;
+  }
+
+  .tournament-admin-page .card-header .me-2 {
+    margin-right: 0 !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   2. TOURNAMENT SELECTOR (Ant Design Select, width:200 inline style)
+   On mobile let it grow to fill the row instead of being fixed 200px.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* The wrapping div */
+  .tournament-admin-page .card-header .mb-3.me-2:first-child {
+    width: 100%;
+  }
+
+  /* Override the inline style={{ width: 200 }} on the Select */
+  .tournament-admin-page .card-header .ant-select {
+    width: 100% !important;
+    font-size: 13px;
+  }
+
+  .tournament-admin-page .card-header .ant-select-selector {
+    font-size: 13px !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   3. FILTER DROPDOWN
+   The inline filter panel contains 5 Ant Select fields.
+   Constrain it to the viewport and make it scrollable.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .tournament-admin-page .dropdown-menu.drop-width {
+    width: calc(100vw - 24px) !important;
+    max-width: 360px;
+    left: 0 !important;
+    right: auto !important;
+    max-height: 72vh;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Filter panel interior */
+  .tournament-admin-page .dropdown-menu.drop-width .p-3 {
+    padding: 12px !important;
+  }
+
+  .tournament-admin-page .dropdown-menu.drop-width h5 {
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+
+  .tournament-admin-page .dropdown-menu.drop-width .form-label {
+    font-size: 12px;
+    margin-bottom: 3px;
+  }
+
+  .tournament-admin-page .dropdown-menu.drop-width .form-control {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+
+  /* All Ant Select dropdowns inside the filter panel */
+  .tournament-admin-page .dropdown-menu.drop-width .ant-select {
+    font-size: 13px;
+  }
+
+  .tournament-admin-page .dropdown-menu.drop-width .btn-outline-secondary {
+    font-size: 13px;
+    padding: 7px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   4. SORT DROPDOWN trigger button
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .tournament-admin-page .card-header .dropdown .btn.dropdown-toggle {
+    font-size: 13px;
+    padding: 6px 10px;
+    white-space: nowrap;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   5. COACH VIEW INFO BANNER
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .tournament-admin-page .alert.alert-info {
+    font-size: 13px;
+    padding: 10px 12px;
+    margin: 8px !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   6. ANT TABLE — horizontal scroll
+   The table has 7 columns (Team Name, Grade, Gender, Level, Parent,
+   Parent Email, Payment Status). These will never fit on a phone screen
+   without horizontal scroll.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .tournament-admin-page .ant-table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tournament-admin-page .ant-table,
+  .tournament-admin-page .ant-table-container,
+  .tournament-admin-page .ant-table-content,
+  .tournament-admin-page .ant-table-body {
+    overflow: auto !important;
+    overflow-x: auto !important;
+  }
+
+  /* Cells — nowrap keeps columns tight so the table stays scrollable */
+  .tournament-admin-page .ant-table-cell {
+    white-space: nowrap;
+    font-size: 13px;
+    padding: 8px 10px !important;
+  }
+
+  .tournament-admin-page .ant-table-thead .ant-table-cell {
+    font-size: 12px;
+    padding: 10px 10px !important;
+    white-space: nowrap;
+  }
+
+  /* Payment status badge — prevent text wrapping inside the cell */
+  .tournament-admin-page .badge {
+    white-space: nowrap;
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  /* Parent email — can be long; truncate gracefully */
+  .tournament-admin-page .ant-table-cell:has(> a),
+  .tournament-admin-page .ant-table-cell:has(> span) {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   7. PAGINATION — single-line nav, size-changer on its own row
+   Identical pattern to PlayerList / ParentList / TeamList fixes.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .tournament-admin-page .ant-pagination {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin: 10px 8px 8px !important;
+    padding: 0 !important;
+    position: relative !important;
+  }
+
+  .tournament-admin-page .ant-pagination-prev,
+  .tournament-admin-page .ant-pagination-next {
+    flex-shrink: 0;
+    min-width: 28px !important;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    margin: 0 !important;
+    order: 0;
+  }
+
+  .tournament-admin-page .ant-pagination-item {
+    flex-shrink: 0;
+    min-width: 28px !important;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    font-size: 12px;
+    margin: 0 !important;
+    order: 0;
+  }
+
+  .tournament-admin-page .ant-pagination-jump-prev,
+  .tournament-admin-page .ant-pagination-jump-next {
+    flex-shrink: 0;
+    min-width: 28px !important;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    margin: 0 !important;
+    order: 0;
+  }
+
+  /* Size changer pushed to its own second row */
+  .tournament-admin-page .ant-pagination-options {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    order: 10;
+    width: 100%;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .tournament-admin-page .ant-pagination-options::before {
+    content: 'Rows:';
+    font-size: 12px;
+    color: #6f6f6f;
+    white-space: nowrap;
+  }
+
+  /* Hide the App.css "Row Per Page" pseudo-element — it uses absolute positioning
+     that breaks on mobile */
+  .tournament-admin-page .ant-pagination-options-size-changer::before,
+  .tournament-admin-page .ant-pagination-options-size-changer::after {
+    display: none !important;
+  }
+}
+
+/* At very narrow widths hide middle page numbers to keep prev/next on one line */
+@media (max-width: 400px) {
+  .tournament-admin-page
+    .ant-pagination-item:not(.ant-pagination-item-active):not(
+      :first-of-type
+    ):not(:last-of-type) {
+    display: none !important;
+  }
+
+  .tournament-admin-page .ant-pagination {
+    gap: 3px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   8. ERROR / UNAUTHORIZED STATES
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .tournament-admin-page .alert.alert-danger {
+    font-size: 13px;
+    padding: 12px;
+  }
+
+  .tournament-admin-page .alert.alert-danger h4 {
+    font-size: 1rem;
+    margin-bottom: 6px;
+  }
+
+  .tournament-admin-page .alert.alert-danger .btn,
+  .tournament-admin-page .alert.alert-danger button {
+    width: 100%;
+    margin-top: 8px;
+    font-size: 13px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   9. CARD BODY — tighten vertical padding
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .tournament-admin-page .card-body.p-0.py-3 {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   10. FOOTER CLEARANCE — fixed footer / ad banner sits at the bottom
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .tournament-admin-page {
+    padding-bottom: 80px;
+  }
+}

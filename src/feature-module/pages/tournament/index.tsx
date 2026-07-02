@@ -5,6 +5,7 @@ import { useAuth } from '../../../context/AuthContext';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import { debounce } from 'lodash';
 import { all_routes } from '../../router/all_routes';
+import './tournament-admin-mobile.css';
 
 interface Tournament {
   _id: string;
@@ -358,7 +359,7 @@ const TournamentAdminPage = () => {
   // Authorization check for admin or coach
   if (!currentUser || !isAdminOrCoachUser(currentUser)) {
     return (
-      <div className='page-wrapper'>
+      <div className='page-wrapper tournament-admin-page'>
         <div className='content'>
           <div className='alert alert-danger'>
             <h4>Unauthorized</h4>
@@ -375,7 +376,7 @@ const TournamentAdminPage = () => {
   if (loading) return <LoadingSpinner />;
   if (error) {
     return (
-      <div className='page-wrapper'>
+      <div className='page-wrapper tournament-admin-page'>
         <div className='content'>
           <div className='alert alert-danger'>
             <h4>Error</h4>
@@ -393,7 +394,7 @@ const TournamentAdminPage = () => {
   }
 
   return (
-    <div className='page-wrapper'>
+    <div className='page-wrapper tournament-admin-page'>
       <div className='content'>
         <div className='card'>
           <div className='card-header d-flex align-items-center justify-content-between flex-wrap pb-0'>
