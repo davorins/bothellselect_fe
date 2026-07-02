@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { all_routes } from '../../router/all_routes';
 import ImageWithBasePath from '../../../core/common/imageWithBasePath';
 import ReactApexChart from 'react-apexcharts';
+import '../adminDashboard/admin-dashboard.css';
+import '../adminDashboard/admin-dashboard-mobile.css';
 
 const ParentDashboard = () => {
   const routes = all_routes;
@@ -87,7 +89,7 @@ const ParentDashboard = () => {
   return (
     <>
       {/* Page Wrapper */}
-      <div className='page-wrapper'>
+      <div className='page-wrapper admin-dashboard-page'>
         <div className='content'>
           {/* Page Header */}
           <div className='d-md-flex d-block align-items-center justify-content-between mb-3'>

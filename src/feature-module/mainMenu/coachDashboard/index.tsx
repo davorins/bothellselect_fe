@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import CountUp from 'react-countup';
 import axios from 'axios';
 import { all_routes } from '../../router/all_routes';
+import '../adminDashboard/admin-dashboard.css';
+import '../adminDashboard/admin-dashboard-mobile.css';
 
 interface DashboardData {
   players: any[];
@@ -168,7 +170,7 @@ const CoachDashboard = () => {
   // Loading State
   if (loading) {
     return (
-      <div className='page-wrapper'>
+      <div className='page-wrapper admin-dashboard-page'>
         <div className='content'>
           <div
             className='d-flex justify-content-center align-items-center'
@@ -187,7 +189,7 @@ const CoachDashboard = () => {
   // Error State
   if (error) {
     return (
-      <div className='page-wrapper'>
+      <div className='page-wrapper admin-dashboard-page'>
         <div className='content'>
           <div className='alert alert-danger'>
             <h5>Error Loading Dashboard</h5>
@@ -204,7 +206,7 @@ const CoachDashboard = () => {
   // No Data State
   if (!dashboardData) {
     return (
-      <div className='page-wrapper'>
+      <div className='page-wrapper admin-dashboard-page'>
         <div className='content'>
           <div className='alert alert-warning'>
             <h5>No Data Available</h5>
@@ -221,7 +223,7 @@ const CoachDashboard = () => {
   const registrationStats = getRegistrationStats();
 
   return (
-    <div className='page-wrapper'>
+    <div className='page-wrapper admin-dashboard-page'>
       <div className='content'>
         {/* Page Header */}
         <div className='d-md-flex d-block align-items-center justify-content-between mb-3'>
