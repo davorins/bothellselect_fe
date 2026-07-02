@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
+import './page-list-mobile.css';
 
 interface Page {
   _id: string;
@@ -170,7 +171,7 @@ const PageList: React.FC = () => {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -204,7 +205,7 @@ const PageList: React.FC = () => {
   const handleDelete = async (
     pageId: string,
     pageTitle: string,
-    pageSlug: string
+    pageSlug: string,
   ) => {
     // Check if it's a system page
     if (systemPages.includes(pageSlug)) {
@@ -246,7 +247,7 @@ const PageList: React.FC = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -298,7 +299,7 @@ const PageList: React.FC = () => {
             newSlug,
             newTitle,
           }),
-        }
+        },
       );
 
       const data = await response.json();
@@ -344,7 +345,7 @@ const PageList: React.FC = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       const data = await response.json();
@@ -396,7 +397,7 @@ const PageList: React.FC = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       const data = await response.json();
@@ -431,7 +432,7 @@ const PageList: React.FC = () => {
 
     if (
       !window.confirm(
-        `Are you sure you want to ${actionText} ${selectedPages.length} selected page(s)?`
+        `Are you sure you want to ${actionText} ${selectedPages.length} selected page(s)?`,
       )
     ) {
       return;
@@ -459,7 +460,7 @@ const PageList: React.FC = () => {
               headers: {
                 Authorization: `Bearer ${token}`,
               },
-            }
+            },
           );
         }
       });
@@ -493,7 +494,7 @@ const PageList: React.FC = () => {
     setSelectedPages((prev) =>
       prev.includes(pageId)
         ? prev.filter((id) => id !== pageId)
-        : [...prev, pageId]
+        : [...prev, pageId],
     );
   };
 
@@ -624,7 +625,7 @@ const PageList: React.FC = () => {
                                   handleDelete(
                                     page._id,
                                     page.pageTitle,
-                                    page.pageSlug
+                                    page.pageSlug,
                                   )
                                 }
                               >
@@ -832,7 +833,7 @@ const PageList: React.FC = () => {
                             handleDelete(
                               page._id,
                               page.pageTitle,
-                              page.pageSlug
+                              page.pageSlug,
                             )
                           }
                           title='Delete'
@@ -981,7 +982,7 @@ const PageList: React.FC = () => {
   const hasPages = filteredPages.length > 0;
 
   return (
-    <div className='page-wrapper'>
+    <div className='page-wrapper page-list-page'>
       <div className='content content-two'>
         <div className='container-fluid'>
           {/* Header */}

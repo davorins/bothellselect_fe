@@ -1,0 +1,392 @@
+/* page-list-mobile.css */
+@media (max-width: 768px) {
+  .page-list-page .d-flex.justify-content-between.align-items-center.mb-4 {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+    margin-bottom: 16px !important;
+  }
+
+  .page-list-page .d-flex.justify-content-between.align-items-center.mb-4 h2 {
+    font-size: 1.2rem;
+    margin-bottom: 2px !important;
+  }
+
+  .page-list-page .d-flex.justify-content-between.align-items-center.mb-4 p {
+    font-size: 13px;
+  }
+
+  /* "Create New Page" button — full width */
+  .page-list-page
+    .d-flex.justify-content-between.align-items-center.mb-4
+    > div:last-child {
+    width: 100%;
+  }
+
+  .page-list-page
+    .d-flex.justify-content-between.align-items-center.mb-4
+    .btn-primary {
+    width: 100%;
+    justify-content: center;
+    font-size: 14px;
+    padding: 9px 12px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   2. SYSTEM PAGES NOTICE (info alert banner)
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .page-list-page .alert.alert-info.mb-4 {
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+
+  .page-list-page .alert.alert-info.mb-4 .d-flex {
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+
+  /* Globe icon */
+  .page-list-page .alert.alert-info.mb-4 svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   3. FILTER CARD — search + type + status selects + view toggle
+   Bootstrap .row.g-3 already stacks cols on mobile.
+   These rules tighten font/padding and fix the view toggle alignment.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .page-list-page .card.mb-4 .card-body {
+    padding: 12px !important;
+  }
+
+  /* Search input */
+  .page-list-page .card.mb-4 .input-group .form-control {
+    font-size: 13px;
+  }
+
+  /* Type + status selects */
+  .page-list-page .card.mb-4 .form-select {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+
+  /* Grid / List toggle — col-md-2 collapses to full row on mobile;
+     align the btn-group to the left */
+  .page-list-page .card.mb-4 .col-md-2 {
+    display: flex;
+    align-items: center;
+  }
+
+  .page-list-page .card.mb-4 .btn-group .btn {
+    padding: 7px 14px;
+    font-size: 13px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   4. BULK ACTIONS BAR
+   "N selected" badge + action select + Apply button + Clear link.
+   On very small screens these need to wrap.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .page-list-page .card.border-primary .card-body {
+    padding: 10px 12px !important;
+  }
+
+  .page-list-page .card.border-primary .d-flex.justify-content-between {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start !important;
+  }
+
+  /* Inner row: badge + select + Apply */
+  .page-list-page .card.border-primary .d-flex.align-items-center {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Bulk action select — expand to fill */
+  .page-list-page .card.border-primary .form-select-sm {
+    width: 100% !important;
+    font-size: 12px;
+  }
+
+  .page-list-page .card.border-primary .btn-sm {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
+
+  /* "Clear Selection" link */
+  .page-list-page .card.border-primary .btn-link {
+    font-size: 12px;
+    padding: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   5. COUNT + PAGE X OF Y header row above the page grid/table
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .page-list-page .d-flex.justify-content-between.align-items-center.mb-3 {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 2px;
+    margin-bottom: 10px !important;
+  }
+
+  .page-list-page .d-flex.justify-content-between.align-items-center.mb-3 span,
+  .page-list-page .d-flex.justify-content-between.align-items-center.mb-3 div {
+    font-size: 12px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   6. GRID VIEW — page cards
+   col-md-6 col-lg-4 col-xl-3 → already 1-per-row on xs.
+   Tighten card internals for touch.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  /* Force 2-per-row on small phones instead of 1-per-row */
+  .page-list-page .row > .col-md-6.col-lg-4.col-xl-3 {
+    flex: 0 0 50%;
+    max-width: 50%;
+    padding-left: 6px;
+    padding-right: 6px;
+    margin-bottom: 12px !important;
+  }
+
+  .page-list-page .row > .col-md-6.col-lg-4.col-xl-3 .card-body {
+    padding: 10px !important;
+  }
+
+  /* Page title inside card */
+  .page-list-page .row > .col-md-6.col-lg-4.col-xl-3 h6 {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
+  }
+
+  /* URL slug */
+  .page-list-page .row > .col-md-6.col-lg-4.col-xl-3 code {
+    font-size: 10px;
+    word-break: break-all;
+  }
+
+  /* Sections count + date row */
+  .page-list-page .row > .col-md-6.col-lg-4.col-xl-3 small {
+    font-size: 11px;
+  }
+
+  /* Badge */
+  .page-list-page .row > .col-md-6.col-lg-4.col-xl-3 .badge {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  /* Card footer checkbox label */
+  .page-list-page .row > .col-md-6.col-lg-4.col-xl-3 .card-footer {
+    padding: 8px 10px !important;
+  }
+
+  .page-list-page .row > .col-md-6.col-lg-4.col-xl-3 .form-check-label {
+    font-size: 11px;
+  }
+}
+
+/* Very small phones: single column */
+@media (max-width: 380px) {
+  .page-list-page .row > .col-md-6.col-lg-4.col-xl-3 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   7. LIST VIEW — table
+   7 columns (checkbox, Page, URL, Type, Status, Updated, Actions) won't
+   fit on mobile — enable horizontal scroll.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .page-list-page .table-responsive {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page-list-page .table-responsive table {
+    min-width: 680px; /* forces scroll before columns collapse */
+  }
+
+  .page-list-page .table-responsive th,
+  .page-list-page .table-responsive td {
+    font-size: 12px;
+    padding: 8px 10px !important;
+    white-space: nowrap;
+  }
+
+  /* Page title cell — allow truncation */
+  .page-list-page .table-responsive td .fw-semibold {
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+  }
+
+  /* URL + "View Live" link cell */
+  .page-list-page .table-responsive td code {
+    font-size: 11px;
+  }
+
+  .page-list-page .table-responsive td a.text-decoration-none.small {
+    font-size: 11px;
+  }
+
+  /* Badge sizing in table */
+  .page-list-page .table-responsive .badge {
+    font-size: 11px;
+    padding: 3px 7px;
+  }
+
+  /* Action button group — shrink icon buttons */
+  .page-list-page .table-responsive .btn-group.btn-group-sm .btn {
+    padding: 4px 7px;
+    font-size: 12px;
+    line-height: 1.2;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   8. BOOTSTRAP PAGINATION
+   This component uses Bootstrap's native pagination (not Ant Design),
+   so the fix is different from the other pages.
+   Keep Prev + page numbers + Next on one line by shrinking page links.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .page-list-page .pagination {
+    flex-wrap: nowrap; /* keep everything on one line */
+    justify-content: center;
+    gap: 2px;
+    overflow-x: auto; /* allow scroll if many pages */
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+
+  .page-list-page .page-item .page-link {
+    padding: 5px 9px;
+    font-size: 12px;
+    min-width: 32px;
+    text-align: center;
+  }
+
+  /* "Previous" / "Next" labels — shorten to arrows on tiny screens */
+  .page-list-page .page-item:first-child .page-link {
+    font-size: 0; /* hide text */
+    padding: 5px 8px;
+  }
+  .page-list-page .page-item:first-child .page-link::before {
+    content: '‹';
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .page-list-page .page-item:last-child .page-link {
+    font-size: 0;
+    padding: 5px 8px;
+  }
+  .page-list-page .page-item:last-child .page-link::after {
+    content: '›';
+    font-size: 16px;
+    line-height: 1;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   9. QUICK STATS CARDS (Total Pages / Published / Drafts)
+   col-md-4 → stacks to 1-per-row on mobile; at xs show 3 in a row instead.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  /* Sit them side-by-side on small screens */
+  .page-list-page .row.mt-4 .col-md-4 {
+    flex: 0 0 33.333%;
+    max-width: 33.333%;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .page-list-page .row.mt-4 .card-body {
+    padding: 10px 8px !important;
+  }
+
+  .page-list-page .row.mt-4 .card-body h3 {
+    font-size: 1.4rem;
+    margin-bottom: 2px;
+  }
+
+  .page-list-page .row.mt-4 .card-body p {
+    font-size: 11px;
+    margin-bottom: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   10. EMPTY STATE
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .page-list-page .text-center.py-5 {
+    padding: 28px 16px !important;
+  }
+
+  .page-list-page .text-center.py-5 h4 {
+    font-size: 1rem;
+  }
+
+  .page-list-page .text-center.py-5 p {
+    font-size: 13px;
+  }
+
+  .page-list-page .text-center.py-5 .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   11. ERROR STATE
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .page-list-page .alert.alert-danger {
+    font-size: 13px;
+    padding: 12px;
+  }
+
+  .page-list-page .alert.alert-danger .d-flex {
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+
+  .page-list-page .alert.alert-danger h4 {
+    font-size: 1rem;
+    margin-bottom: 4px;
+  }
+
+  .page-list-page .alert.alert-danger .btn {
+    width: 100%;
+    margin-top: 8px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   12. FOOTER CLEARANCE
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .page-list-page {
+    padding-bottom: 80px;
+  }
+}
