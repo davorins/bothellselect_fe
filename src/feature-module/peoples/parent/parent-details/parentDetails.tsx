@@ -655,15 +655,21 @@ const ParentDetails = () => {
     amount: number,
     reason: string,
   ): Promise<{ success: boolean }> => {
+    const payment = payments.find((p) => p._id === paymentMongoId);
+
+    if (!payment) {
+      return { success: false };
+    }
+
     try {
-      const token = localStorage.getItem('token');
-      const payment = payments.find((p) => p._id === paymentMongoId);
-      if (!payment) throw new Error('Payment not found in local data');
-      if (!payment.paymentId)
-        throw new Error('No Square payment ID found for this payment');
       const response = await axios.post(
         `${API_BASE_URL}/payment/refund`,
-        { paymentId: payment.paymentId, amount, reason, parentId: parent?._id },
+        {
+          paymentId: paymentMongoId,
+          amount,
+          reason,
+          parentId: parent?._id,
+        },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -672,22 +678,38 @@ const ParentDetails = () => {
           timeout: 30000,
         },
       );
+
+      // Close modal first, then show result
       handleCloseRefundModal();
+
       if (response.data.success) {
-        alert('✅ Refund processed successfully!');
-        setTimeout(() => refreshPayments(), 1000);
+        setTimeout(() => {
+          alert(
+            `✅ Refund of $${amount.toFixed(2)} processed successfully!\n\n` +
+              `Refund ID: ${response.data.refund?.id || 'N/A'}\n` +
+              `New refund status: ${response.data.payment?.refundStatus || 'partial'}`,
+          );
+          refreshPayments();
+        }, 150);
         return { success: true };
       } else {
-        alert(`❌ Refund failed: ${response.data.error || 'Unknown error'}`);
+        setTimeout(() => {
+          alert(`❌ Refund failed: ${response.data.error || 'Unknown error'}`);
+        }, 150);
         return { success: false };
       }
     } catch (error: any) {
       handleCloseRefundModal();
+
       const errorMessage =
         error.response?.data?.error ||
         error.message ||
-        'Failed to process refund request';
-      setTimeout(() => alert(`❌ Refund Error: ${errorMessage}`), 100);
+        'Failed to process refund';
+
+      setTimeout(() => {
+        alert(`❌ Refund Error: ${errorMessage}`);
+      }, 150);
+
       return { success: false };
     }
   };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 interface RefundModalProps {
   payment: {
@@ -10,7 +10,11 @@ interface RefundModalProps {
     totalRefunded?: number;
   };
   maxRefundAmount: number;
-  onRefundSubmit: (paymentId: string, amount: number, reason: string) => void;
+  onRefundSubmit: (
+    paymentId: string,
+    amount: number,
+    reason: string,
+  ) => Promise<{ success: boolean } | void>;
   onClose: () => void;
 }
 
@@ -21,11 +25,12 @@ const RefundModal: React.FC<RefundModalProps> = ({
   onClose,
 }) => {
   const [refundAmount, setRefundAmount] = useState<string>(
-    maxRefundAmount.toFixed(2)
+    maxRefundAmount.toFixed(2),
   );
   const [refundReason, setRefundReason] = useState<string>('Customer request');
   const [customReason, setCustomReason] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
   const reasonOptions = [
     'Customer request',
@@ -39,6 +44,7 @@ const RefundModal: React.FC<RefundModalProps> = ({
     const value = e.target.value;
     if (value === '' || /^\d*\.?\d*$/.test(value)) {
       setRefundAmount(value);
+      setError('');
     }
   };
 
@@ -47,56 +53,53 @@ const RefundModal: React.FC<RefundModalProps> = ({
       setRefundAmount('0.00');
       return;
     }
-
     let amount = parseFloat(refundAmount);
-    if (isNaN(amount)) {
-      amount = 0;
-    }
-
-    // Ensure amount is within bounds
+    if (isNaN(amount)) amount = 0;
     if (amount < 0) amount = 0;
     if (amount > maxRefundAmount) amount = maxRefundAmount;
-
     setRefundAmount(amount.toFixed(2));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
 
     const amount = parseFloat(refundAmount);
     if (isNaN(amount) || amount <= 0) {
-      alert('Please enter a valid refund amount');
+      setError('Please enter a valid refund amount');
       return;
     }
-
     if (amount > maxRefundAmount) {
-      alert(`Refund amount cannot exceed $${maxRefundAmount.toFixed(2)}`);
+      setError(`Refund amount cannot exceed $${maxRefundAmount.toFixed(2)}`);
       return;
     }
 
     const finalReason = refundReason === 'Other' ? customReason : refundReason;
     if (!finalReason.trim()) {
-      alert('Please provide a refund reason');
+      setError('Please provide a refund reason');
       return;
     }
 
     setIsSubmitting(true);
     try {
+      // The parent's onRefundSubmit is responsible for closing the modal.
+      // Do NOT call onClose() here — the parent handles it on both success
+      // and error paths to avoid race conditions with the modal unmounting.
       await onRefundSubmit(payment._id, amount, finalReason);
-      onClose();
-    } catch (error) {
-      console.error('Refund submission error:', error);
-    } finally {
+    } catch (err: any) {
+      // If the parent threw instead of closing the modal, show the error inline.
+      setError(err.message || 'Refund failed. Please try again.');
       setIsSubmitting(false);
     }
+    // Do NOT setIsSubmitting(false) on the success path — the modal will
+    // unmount, and calling setState on an unmounted component causes a warning.
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
-  };
 
   return (
     <div
@@ -120,7 +123,7 @@ const RefundModal: React.FC<RefundModalProps> = ({
 
           <form onSubmit={handleSubmit}>
             <div className='modal-body'>
-              {/* Payment Information */}
+              {/* Payment summary */}
               <div className='card mb-3'>
                 <div className='card-body'>
                   <h6 className='card-title'>Payment Details</h6>
@@ -147,7 +150,7 @@ const RefundModal: React.FC<RefundModalProps> = ({
                 </div>
               </div>
 
-              {/* Refund Amount */}
+              {/* Refund amount */}
               <div className='mb-3'>
                 <label htmlFor='refundAmount' className='form-label'>
                   Refund Amount *
@@ -170,7 +173,7 @@ const RefundModal: React.FC<RefundModalProps> = ({
                 </div>
               </div>
 
-              {/* Refund Reason */}
+              {/* Reason */}
               <div className='mb-3'>
                 <label htmlFor='refundReason' className='form-label'>
                   Refund Reason *
@@ -190,7 +193,6 @@ const RefundModal: React.FC<RefundModalProps> = ({
                 </select>
               </div>
 
-              {/* Custom Reason */}
               {refundReason === 'Other' && (
                 <div className='mb-3'>
                   <label htmlFor='customReason' className='form-label'>
@@ -208,7 +210,15 @@ const RefundModal: React.FC<RefundModalProps> = ({
                 </div>
               )}
 
-              {/* Warning Message */}
+              {/* Inline error — shown when the parent throws instead of
+                  closing the modal (i.e. on recoverable validation errors) */}
+              {error && (
+                <div className='alert alert-danger mt-3'>
+                  <i className='ti ti-alert-circle me-2'></i>
+                  {error}
+                </div>
+              )}
+
               <div className='alert alert-warning mt-3'>
                 <i className='ti ti-alert-triangle me-2'></i>
                 <strong>Warning:</strong> This action cannot be undone. The

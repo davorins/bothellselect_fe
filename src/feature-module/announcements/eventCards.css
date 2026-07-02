@@ -985,3 +985,15 @@
     animation: none;
   }
 }
+
+.bg-purple-transparent {
+  background-color: rgba(155, 37, 183, 0.15) !important;
+}
+
+.text-purple {
+  color: #9b25b7 !important;
+}
+
+.border-purple {
+  border-color: #9b25b7 !important;
+}

@@ -56,6 +56,7 @@ const Events = () => {
   const calendarRef = useRef<FullCalendar>(null);
   const [schools, setSchools] = useState<SchoolInfo[]>([]);
   const [showSchoolFields, setShowSchoolFields] = useState(false);
+  const [showPriceField, setShowPriceField] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [availableForms, setAvailableForms] = useState<Form[]>([]);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
@@ -67,6 +68,8 @@ const Events = () => {
     start: new Date().toISOString(),
     end: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     school: { name: '', address: '', website: '' },
+    category: 'training',
+    description: '',
   };
 
   const [eventDetails, setEventDetails] =
@@ -115,6 +118,25 @@ const Events = () => {
     return () => observer.disconnect();
   }, []);
 
+  // ── Sync field visibility with category ──────────────────────────────────────
+  useEffect(() => {
+    const category = eventDetails.category || '';
+
+    // School fields are shown for game, training, and camp
+    const shouldShowSchoolFields =
+      category === 'game' || category === 'training' || category === 'camp';
+    setShowSchoolFields(shouldShowSchoolFields);
+
+    // Price field is only shown for games
+    const shouldShowPriceField = category === 'game';
+    setShowPriceField(shouldShowPriceField);
+
+    // Load schools if needed
+    if (shouldShowSchoolFields) {
+      loadSchools();
+    }
+  }, [eventDetails.category]);
+
   // ── Filtered + sorted event lists ────────────────────────────────────────────
 
   const filteredEvents = useMemo(() => {
@@ -157,11 +179,16 @@ const Events = () => {
       start: now.toISOString(),
       end: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
       school: { name: '', address: '', website: '' },
+      formId: undefined,
+      category: 'training',
+      description: '',
     });
     setShowAddEventModal(true);
   };
 
   const handleEventClick = (info: any) => {
+    const category = info.event.extendedProps.category || 'training';
+
     setEventDetails({
       _id: info.event.id,
       title: info.event.title,
@@ -171,7 +198,7 @@ const Events = () => {
       end: info.event.endStr,
       backgroundColor: info.event.backgroundColor,
       description: info.event.extendedProps.description || '',
-      category: info.event.extendedProps.category || 'training',
+      category: category,
       school: info.event.extendedProps.school || {
         name: '',
         address: '',
@@ -186,8 +213,13 @@ const Events = () => {
     setShowEventDetailsModal(true);
   };
 
-  const handleAddEventClose = () => setShowAddEventModal(false);
-  const handleEventDetailsClose = () => setShowEventDetailsModal(false);
+  const handleAddEventClose = () => {
+    setShowAddEventModal(false);
+  };
+
+  const handleEventDetailsClose = () => {
+    setShowEventDetailsModal(false);
+  };
 
   const loadSchools = useCallback(async () => {
     try {
@@ -208,12 +240,6 @@ const Events = () => {
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
-    if (category === 'game' || category === 'training') {
-      loadSchools();
-      setShowSchoolFields(true);
-    } else {
-      setShowSchoolFields(false);
-    }
   };
 
   useEffect(() => {
@@ -238,7 +264,7 @@ const Events = () => {
       const price = isGame
         ? typeof eventDetails.price === 'number'
           ? eventDetails.price
-          : parseFloat(eventDetails.price) || 0
+          : parseFloat(String(eventDetails.price)) || 0
         : 0;
 
       const selectedForm = availableForms.find(
@@ -248,23 +274,38 @@ const Events = () => {
         (f) => f.type === 'payment',
       ) as PaymentFormField | undefined;
 
-      const eventToSave = {
+      // Build the event object
+      const eventToSave: any = {
         title: eventDetails.title,
         caption: eventDetails.caption || '',
         price: Math.max(0, price),
-        description: eventDetails.description,
         start: eventDetails.start,
         end: eventDetails.end,
         category,
         backgroundColor: calendarCategoryColorMap[category] || '#adb5bd',
-        school:
-          isGameOrTraining && eventDetails.school?.name
-            ? eventDetails.school
-            : undefined,
-        ...(eventDetails._id && { _id: eventDetails._id }),
-        formId: eventDetails.formId,
-        paymentConfig: paymentField?.paymentConfig,
       };
+
+      // Only add optional fields if they have values
+      if (eventDetails.description) {
+        eventToSave.description = eventDetails.description;
+      }
+
+      if (isGameOrTraining && eventDetails.school?.name) {
+        eventToSave.school = eventDetails.school;
+      }
+
+      if (eventDetails._id) {
+        eventToSave._id = eventDetails._id;
+      }
+
+      // Only include formId if it has a value
+      if (eventDetails.formId && eventDetails.formId.trim() !== '') {
+        eventToSave.formId = eventDetails.formId;
+      }
+
+      if (paymentField?.paymentConfig) {
+        eventToSave.paymentConfig = paymentField.paymentConfig;
+      }
 
       if (
         isGame &&
@@ -436,12 +477,34 @@ const Events = () => {
         event.backgroundColor ||
         (event.category ? calendarCategoryColorMap[event.category] : '#adb5bd'),
       description: event.description,
-      category: event.category,
+      category: event.category || 'training',
       school: event.school,
       attendees: event.attendees,
       attachment: event.attachment,
     });
     setShowEventDetailsModal(true);
+  };
+
+  const handleCategoryChange = (selectedOption: any) => {
+    if (!selectedOption || Array.isArray(selectedOption)) return;
+
+    const category = selectedOption.value.toLowerCase();
+
+    const showFields =
+      category === 'game' || category === 'training' || category === 'camp';
+
+    setEventDetails((prev) => ({
+      ...prev,
+      category: category as EventDetails['category'],
+      school: showFields
+        ? prev.school || { name: '', address: '', website: '' }
+        : undefined,
+      price: category === 'game' ? prev.price : 0,
+    }));
+
+    if (showFields) {
+      loadSchools();
+    }
   };
 
   if (isLoading) {
@@ -820,49 +883,35 @@ const Events = () => {
                         opt.value.toLowerCase() === eventDetails.category,
                     ) || eventCategory[0]
                   }
-                  onChange={(selectedOption) => {
-                    if (!selectedOption || Array.isArray(selectedOption))
-                      return;
-                    const singleOption = selectedOption as Option;
-                    const category = singleOption.value.toLowerCase();
-                    const showFields =
-                      category === 'game' ||
-                      category === 'training' ||
-                      category === 'camp';
-                    setEventDetails((prev) => ({
-                      ...prev,
-                      category: category as EventDetails['category'],
-                      school: showFields
-                        ? prev.school || { name: '', address: '', website: '' }
-                        : undefined,
-                    }));
-                    setShowSchoolFields(showFields);
-                    if (showFields) loadSchools();
-                  }}
+                  onChange={handleCategoryChange}
                 />
               </div>
 
+              {/* Price Field - Only shown for games */}
+              {showPriceField && (
+                <div className='mb-3'>
+                  <label className='form-label'>Price ($)</label>
+                  <input
+                    type='number'
+                    className='form-control'
+                    placeholder='Enter price'
+                    name='price'
+                    value={eventDetails.price || 0}
+                    onChange={(e) =>
+                      setEventDetails((prev) => ({
+                        ...prev,
+                        price: parseFloat(e.target.value) || 0,
+                      }))
+                    }
+                    min='0'
+                    step='0.01'
+                  />
+                </div>
+              )}
+
+              {/* School Fields - Shown for game, training, and camp */}
               {showSchoolFields && (
                 <>
-                  {eventDetails.category === 'game' && (
-                    <div className='mb-3'>
-                      <label className='form-label'>Price ($)</label>
-                      <input
-                        type='number'
-                        className='form-control'
-                        placeholder='Enter price'
-                        name='price'
-                        value={eventDetails.price || 0}
-                        onChange={(e) =>
-                          setEventDetails((prev) => ({
-                            ...prev,
-                            price: parseFloat(e.target.value) || 0,
-                          }))
-                        }
-                      />
-                    </div>
-                  )}
-
                   <div className='col-md-12 mb-3'>
                     <label className='form-label'>School</label>
                     <select
@@ -899,6 +948,7 @@ const Events = () => {
                     </select>
                   </div>
 
+                  {/* School details - shown when a school is selected or being edited */}
                   {eventDetails.school?.name !== undefined && (
                     <>
                       <div className='col-md-12 mb-3'>
@@ -1149,8 +1199,19 @@ const Events = () => {
           <div className='d-flex align-items-center mb-3'>
             <span
               className={`avatar avatar-xl bg-${getCategoryColor(eventDetails.category)}-transparent me-3 flex-shrink-0`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              <i className='ti ti ti-calendar-event fs-30' />
+              <i
+                className='ti ti-calendar-event fs-30'
+                style={{
+                  color:
+                    eventDetails.category === 'camp' ? '#9b25b7' : undefined,
+                }}
+              />
             </span>
             <div>
               <h3 className='mb-1'>{eventDetails.title}</h3>
