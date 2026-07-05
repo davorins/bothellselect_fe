@@ -910,12 +910,10 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ initialLimit = 4 }) => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Prevent touch-based navigation (swipe left/right)
     const preventNavigation = (e: TouchEvent) => {
       const target = e.target as HTMLElement;
       if (!target?.closest?.('.vg-rail')) return;
 
-      const touch = e.touches[0];
       const rail = wrapperRef.current;
       if (!rail) return;
 
@@ -923,13 +921,11 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ initialLimit = 4 }) => {
       const atLeft = scrollLeft <= 0;
       const atRight = scrollLeft + clientWidth >= scrollWidth - 1;
 
-      // If at bounds and trying to swipe further, prevent navigation
       if (atLeft || atRight) {
         e.preventDefault();
       }
     };
 
-    // Prevent wheel-based navigation
     const preventWheelNavigation = (e: WheelEvent) => {
       const target = e.target as HTMLElement;
       if (!target?.closest?.('.vg-rail')) return;
@@ -941,12 +937,10 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ initialLimit = 4 }) => {
       const atLeft = scrollLeft <= 0;
       const atRight = scrollLeft + clientWidth >= scrollWidth - 1;
 
-      // If at horizontal bounds and trying to scroll vertically (which can trigger navigation)
       if ((atLeft || atRight) && Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
         e.preventDefault();
       }
 
-      // If trying to scroll horizontally at bounds
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
         if ((e.deltaX < 0 && atLeft) || (e.deltaX > 0 && atRight)) {
           e.preventDefault();
@@ -954,7 +948,6 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ initialLimit = 4 }) => {
       }
     };
 
-    // Add event listeners with passive: false to allow preventDefault
     document.addEventListener('touchmove', preventNavigation, {
       passive: false,
     });
@@ -1003,13 +996,16 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ initialLimit = 4 }) => {
     async (page = 1, append = false) => {
       try {
         append ? setLoadingMore(true) : setLoading(true);
-        const limit = page === 1 ? initialLimit : 8;
+        const limit = initialLimit;
         const res = await fetch(
           `${API_BASE_URL}/video-gallery?page=${page}&limit=${limit}`,
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (data.success) {
+          console.log(
+            `Page ${page}: Got ${data.data.length} videos, total: ${data.pagination.total}`,
+          );
           setVideos((prev) => (append ? [...prev, ...data.data] : data.data));
           setPagination(data.pagination);
         }
@@ -1032,13 +1028,21 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ initialLimit = 4 }) => {
     const sentinel = sentinelRef.current;
     if (!sentinel || !pagination?.hasMore || loadingMore) return;
 
+    console.log('Setting up observer, hasMore:', pagination.hasMore);
+
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && pagination.hasMore && !loadingMore) {
-          fetchVideos(pagination.page + 1, true);
-        }
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && pagination.hasMore && !loadingMore) {
+            console.log('Sentinel visible, loading page:', pagination.page + 1);
+            fetchVideos(pagination.page + 1, true);
+          }
+        });
       },
-      { threshold: 0.1, rootMargin: '0px 0px 100px 0px' },
+      {
+        threshold: 0.1,
+        rootMargin: '0px 0px 200px 0px',
+      },
     );
 
     observer.observe(sentinel);
@@ -1217,8 +1221,8 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ initialLimit = 4 }) => {
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: '60px',
-                  height: 'var(--vg-tile-h)',
+                  minWidth: '60px',
+                  height: 'var(--vg-tile-h, 200px)',
                   flexShrink: 0,
                   verticalAlign: 'top',
                 }}
