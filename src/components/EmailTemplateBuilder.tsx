@@ -171,7 +171,8 @@ const DEFAULT_STATE: EmailBuilderState = {
     additionalInfo: '',
   },
   globalStyles: {
-    fontFamily: 'system',
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif',
     primaryColor: '#506ee4',
     backgroundColor: '#f6f6f6',
     textColor: '#333333',
