@@ -1599,24 +1599,14 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
         {['heading', 'paragraph', 'button', 'html'].includes(el.type) && (
           <Form.Group className='mb-3'>
             <Form.Label>Content</Form.Label>
-            {el.type === 'html' ? (
-              <Form.Control
-                as='textarea'
-                rows={4}
-                value={el.content || ''}
-                onChange={(e) =>
-                  updateElement(el.id, { content: e.target.value })
-                }
-              />
-            ) : (
-              <Form.Control
-                type='text'
-                value={el.content || ''}
-                onChange={(e) =>
-                  updateElement(el.id, { content: e.target.value })
-                }
-              />
-            )}
+            <Form.Control
+              as='textarea'
+              rows={4}
+              value={el.content || ''}
+              onChange={(e) =>
+                updateElement(el.id, { content: e.target.value })
+              }
+            />
           </Form.Group>
         )}
 
