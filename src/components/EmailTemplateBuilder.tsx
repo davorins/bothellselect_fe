@@ -1071,8 +1071,8 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
           <tr><td style="padding:20px 30px;border-top:1px solid #eaeaea;text-align:center;font-size:12px;color:#999;">
             <p style="margin:0 0 8px;">You're receiving this because you're part of <strong>Bothell Select</strong>.</p>
             <p style="margin:0;">
-              <a href="https://bothellselect.com/unsubscribe" style="color:${globalStyles.linkColor || '#506ee4'};">Unsubscribe</a> •
-              <a href="https://bothellselect.com/contact" style="color:${globalStyles.linkColor || '#506ee4'};">Contact Us</a> •
+              <a href="https://bothellselect.com/general-settings/notifications-settings" style="color:${globalStyles.linkColor || '#506ee4'};">Unsubscribe</a> •
+              <a href="https://bothellselect.com/contact-us" style="color:${globalStyles.linkColor || '#506ee4'};">Contact Us</a> •
               <a href="https://bothellselect.com" style="color:${globalStyles.linkColor || '#506ee4'};">Website</a>
             </p>
           </td></tr>
