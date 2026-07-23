@@ -941,7 +941,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           <div className='hp-value__media'>
             <div className='hp-value__player'>
               <img
-                src='/assets/img/player_2.png'
+                src='/assets/img/players_2.png'
                 alt='Bothell Select Basketball'
                 className='hp-about'
               />
