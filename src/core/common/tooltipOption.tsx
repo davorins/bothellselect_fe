@@ -13,6 +13,7 @@ interface TooltipOptionProps {
   showCopyEmails?: boolean;
   showCalendarHelp?: boolean;
   showRefresh?: boolean;
+  visibleFields?: string[];
 }
 
 const TooltipOption = ({

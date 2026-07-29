@@ -144,6 +144,26 @@ const getParentStatus = <T extends ExtendedTableRecord>(
   return hasPendingPayments ? 'pending' : 'inactive';
 };
 
+const getVisibleFieldsFromConfig = (visibleFields: string[] = []) => {
+  return {
+    showName: true,
+    showEmail: visibleFields.includes('email'),
+    showPhone: visibleFields.includes('phone'),
+    showAddress:
+      visibleFields.includes('address') ||
+      visibleFields.includes('city') ||
+      visibleFields.includes('state') ||
+      visibleFields.includes('zip'),
+    showType: true,
+    showStatus: true,
+    showDateJoined: true,
+  };
+};
+
+const getVisibleFieldNames = (visibleFields: string[] = []): string[] => {
+  return visibleFields;
+};
+
 // Export to PDF
 export const exportParentsToPDF = <T extends ExtendedTableRecord>(
   data: T[],
@@ -153,19 +173,45 @@ export const exportParentsToPDF = <T extends ExtendedTableRecord>(
     state: true,
     zip: true,
   },
+  visibleFields?: string[], // Add this parameter
 ) => {
   const doc = new jsPDF();
   doc.text('Parents List', 14, 15);
 
-  const tableColumn = ['Name', 'Email', 'Phone', 'Address', 'Type', 'Status'];
-  const tableRows = data.map((item) => [
-    item.fullName,
-    item.email || 'N/A',
-    item.phone ? formatPhoneNumber(item.phone) : 'N/A',
-    fmtAddr(item.address, addrShow) || 'N/A',
-    item.isCoach ? 'Coach' : item.type === 'guardian' ? 'Guardian' : 'Parent',
-    getParentStatus(item) === 'active' ? 'Active' : 'Inactive',
-  ]);
+  // Define which fields to show based on visibility
+  const showEmail = !visibleFields || visibleFields.includes('email');
+  const showPhone = !visibleFields || visibleFields.includes('phone');
+  const showAddress =
+    !visibleFields ||
+    visibleFields.includes('address') ||
+    visibleFields.includes('city') ||
+    visibleFields.includes('state') ||
+    visibleFields.includes('zip');
+
+  // Build dynamic columns - always show Name, Type, Status, Date Joined
+  const tableColumn: string[] = ['Name'];
+  const tableRows = data.map((item) => {
+    const row: any[] = [item.fullName];
+
+    if (showEmail) row.push(item.email || 'N/A');
+    if (showPhone) row.push(item.phone ? formatPhoneNumber(item.phone) : 'N/A');
+    if (showAddress) row.push(fmtAddr(item.address, addrShow) || 'N/A');
+
+    // Always show these core fields
+    row.push(
+      item.isCoach ? 'Coach' : item.type === 'guardian' ? 'Guardian' : 'Parent',
+    );
+    row.push(getParentStatus(item) === 'active' ? 'Active' : 'Inactive');
+    row.push(formatDate(item.createdAt));
+
+    return row;
+  });
+
+  // Add headers based on visibility
+  if (showEmail) tableColumn.push('Email');
+  if (showPhone) tableColumn.push('Phone');
+  if (showAddress) tableColumn.push('Address');
+  tableColumn.push('Type', 'Status', 'Date Joined');
 
   autoTable(doc, {
     head: [tableColumn],
@@ -177,20 +223,12 @@ export const exportParentsToPDF = <T extends ExtendedTableRecord>(
       textColor: 255,
       fontStyle: 'bold',
     },
-    columnStyles: {
-      0: { cellWidth: 'auto' },
-      1: { cellWidth: 'auto' },
-      2: { cellWidth: 'auto' },
-      3: { cellWidth: 'auto' },
-      4: { cellWidth: 'auto' },
-      5: { cellWidth: 'auto' },
-    },
   });
 
   doc.save(`parents_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
 
-// Export to Excel
+// exportParentsToExcel
 export const exportParentsToExcel = <T extends ExtendedTableRecord>(
   data: T[],
   addrShow: AddressShowConfig = {
@@ -199,23 +237,40 @@ export const exportParentsToExcel = <T extends ExtendedTableRecord>(
     state: true,
     zip: true,
   },
+  visibleFields?: string[],
 ) => {
-  const worksheet = XLSX.utils.json_to_sheet(
-    data.map((item) => ({
-      Name: item.fullName,
-      Email: item.email || 'N/A',
-      Phone: item.phone ? formatPhoneNumber(item.phone) : 'N/A',
-      Address: fmtAddr(item.address, addrShow) || 'N/A',
-      Type: item.isCoach
-        ? 'Coach'
-        : item.type === 'guardian'
-          ? 'Guardian'
-          : 'Parent',
-      Status: getParentStatus(item) === 'active' ? 'Active' : 'Inactive',
-      'Date Joined': formatDate(item.createdAt),
-    })),
-  );
+  const showEmail = !visibleFields || visibleFields.includes('email');
+  const showPhone = !visibleFields || visibleFields.includes('phone');
+  const showAddress =
+    !visibleFields ||
+    visibleFields.includes('address') ||
+    visibleFields.includes('city') ||
+    visibleFields.includes('state') ||
+    visibleFields.includes('zip');
 
+  const excelData = data.map((item) => {
+    const obj: any = {
+      Name: item.fullName,
+    };
+
+    if (showEmail) obj.Email = item.email || 'N/A';
+    if (showPhone)
+      obj.Phone = item.phone ? formatPhoneNumber(item.phone) : 'N/A';
+    if (showAddress) obj.Address = fmtAddr(item.address, addrShow) || 'N/A';
+
+    // Always show these core fields
+    obj.Type = item.isCoach
+      ? 'Coach'
+      : item.type === 'guardian'
+        ? 'Guardian'
+        : 'Parent';
+    obj.Status = getParentStatus(item) === 'active' ? 'Active' : 'Inactive';
+    obj['Date Joined'] = formatDate(item.createdAt);
+
+    return obj;
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Parents');
   XLSX.writeFile(
@@ -239,7 +294,7 @@ export const exportEmailList = <T extends ExtendedTableRecord>(data: T[]) => {
       icon: 'warning',
       title: 'No Emails Found',
       text: 'No valid email addresses found to export.',
-      confirmButtonColor: '#506ee4',
+      confirmButtonColor: '#594230',
       confirmButtonText: 'OK',
     });
     return;
@@ -262,7 +317,7 @@ export const exportEmailList = <T extends ExtendedTableRecord>(data: T[]) => {
     icon: 'success',
     title: 'Export Complete',
     html: `<p style="color:#555"><strong>${uniqueEmails.length}</strong> email${uniqueEmails.length > 1 ? 's' : ''} exported to CSV.</p>`,
-    confirmButtonColor: '#506ee4',
+    confirmButtonColor: '#594230',
     confirmButtonText: 'Done',
     timer: 3000,
     timerProgressBar: true,
@@ -288,7 +343,7 @@ export const copyEmailListToClipboard = <T extends ExtendedTableRecord>(
       icon: 'warning',
       title: 'No Emails Found',
       text: 'No valid email addresses found to copy.',
-      confirmButtonColor: '#506ee4',
+      confirmButtonColor: '#594230',
       confirmButtonText: 'OK',
     });
     onError?.('No valid email addresses found to copy');
@@ -315,7 +370,7 @@ export const copyEmailListToClipboard = <T extends ExtendedTableRecord>(
             </div>
           </div>
         `,
-        confirmButtonColor: '#506ee4',
+        confirmButtonColor: '#594230',
         confirmButtonText: 'Done',
         showCloseButton: true,
         timer: 5000,
@@ -328,7 +383,7 @@ export const copyEmailListToClipboard = <T extends ExtendedTableRecord>(
         icon: 'error',
         title: 'Copy Failed',
         text: 'Could not copy emails to clipboard. Please try again.',
-        confirmButtonColor: '#506ee4',
+        confirmButtonColor: '#594230',
         confirmButtonText: 'OK',
       });
       onError?.('Failed to copy emails to clipboard');

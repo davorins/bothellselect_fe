@@ -655,6 +655,7 @@ const PlayerList = () => {
           yearParam={yearParam}
           playerData={enhancedPlayers}
           onRefresh={handleRefresh}
+          visibleFields={playerVisibleFieldNames}
         />
 
         {localFilters.schoolFilter && (

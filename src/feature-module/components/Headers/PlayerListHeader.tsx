@@ -16,6 +16,7 @@ interface PlayerListHeaderProps {
   yearParam: string | null;
   playerData: any[];
   onRefresh?: () => void;
+  visibleFields?: string[];
 }
 
 export const PlayerListHeader: React.FC<PlayerListHeaderProps> = ({
@@ -23,15 +24,16 @@ export const PlayerListHeader: React.FC<PlayerListHeaderProps> = ({
   yearParam,
   playerData,
   onRefresh,
+  visibleFields = [],
 }) => {
   const { currentUser } = useAuth();
 
   const handleExportPDF = () => {
-    exportPlayersToPDF(playerData);
+    exportPlayersToPDF(playerData, visibleFields);
   };
 
   const handleExportExcel = () => {
-    exportPlayersToExcel(playerData);
+    exportPlayersToExcel(playerData, visibleFields);
   };
 
   const handleExportEmail = () => {
@@ -42,7 +44,7 @@ export const PlayerListHeader: React.FC<PlayerListHeaderProps> = ({
     copyPlayerParentEmailsToClipboard(
       playerData,
       (msg) => alert(msg),
-      (msg) => alert(msg)
+      (msg) => alert(msg),
     );
   };
 

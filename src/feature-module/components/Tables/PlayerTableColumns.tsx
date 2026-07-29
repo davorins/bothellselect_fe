@@ -258,29 +258,66 @@ const getSeasonsTooltip = (player: PlayerTableData): string => {
     .join('\n\n');
 };
 
-export const exportPlayersToPDF = <T extends PlayerTableData>(data: T[]) => {
+const getPlayerVisibility = (visibleFields: string[] = []) => {
+  return {
+    showName: true,
+    showGender: visibleFields.includes('gender'),
+    showDOB: visibleFields.includes('dob'),
+    showAge: visibleFields.includes('dob'), // Age is derived from DOB
+    showSchool: visibleFields.includes('schoolName'),
+    showGrade: visibleFields.includes('grade'),
+    showSeasons: true,
+    showStatus: true,
+    showAAU: visibleFields.includes('aauNumber'),
+  };
+};
+
+// exportPlayersToPDF
+export const exportPlayersToPDF = <T extends PlayerTableData>(
+  data: T[],
+  visibleFields?: string[],
+) => {
   const doc = new jsPDF();
   doc.text('Players List', 14, 15);
-  const tableColumn = [
-    'Name',
-    'Gender',
-    'Age',
-    'School',
-    'Grade',
-    'AAU#',
-    'Seasons',
-    'Status',
-  ];
-  const tableRows = data.map((item) => [
-    item.name ?? 'N/A',
-    item.gender ?? 'N/A',
-    item.age ?? 'N/A',
-    item.section ?? 'N/A',
-    item.class ?? 'N/A',
-    item.aauNumber ?? 'N/A',
-    getCompactSeasonsDisplay(item),
-    getPlayerStatus(item),
-  ]);
+
+  // Check visibility for each field
+  const showGender = !visibleFields || visibleFields.includes('gender');
+  const showDOB = !visibleFields || visibleFields.includes('dob');
+  const showSchool = !visibleFields || visibleFields.includes('schoolName');
+  const showGrade = !visibleFields || visibleFields.includes('grade');
+  const showAAU = !visibleFields || visibleFields.includes('aauNumber');
+
+  // Build dynamic columns - always show Name, Seasons, Status
+  const tableColumn: string[] = ['Name'];
+  const tableRows = data.map((item) => {
+    const row: any[] = [item.name ?? 'N/A'];
+
+    if (showGender) row.push(item.gender ?? 'N/A');
+    if (showDOB) row.push(item.dob ? formatDOBWithoutShift(item.dob) : 'N/A');
+    // Age is derived from DOB - only show if DOB is shown
+    if (showDOB) row.push(item.age ?? 'N/A');
+    if (showSchool) row.push(item.section ?? 'N/A');
+    if (showGrade) row.push(item.class ?? 'N/A');
+    if (showAAU) row.push(item.aauNumber ?? 'N/A');
+
+    // Always show these core fields
+    row.push(getCompactSeasonsDisplay(item));
+    row.push(getPlayerStatus(item));
+
+    return row;
+  });
+
+  // Add headers based on visibility
+  if (showGender) tableColumn.push('Gender');
+  if (showDOB) {
+    tableColumn.push('DOB');
+    tableColumn.push('Age');
+  }
+  if (showSchool) tableColumn.push('School');
+  if (showGrade) tableColumn.push('Grade');
+  if (showAAU) tableColumn.push('AAU Number');
+  tableColumn.push('Seasons', 'Status');
+
   autoTable(doc, {
     head: [tableColumn],
     body: tableRows as (string | number)[][],
@@ -291,26 +328,44 @@ export const exportPlayersToPDF = <T extends PlayerTableData>(data: T[]) => {
       textColor: 255,
       fontStyle: 'bold',
     },
-    columnStyles: Object.fromEntries(
-      [0, 1, 2, 3, 4, 5, 6, 7].map((i) => [i, { cellWidth: 'auto' }]),
-    ),
   });
+
   doc.save(`players_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
 
-export const exportPlayersToExcel = <T extends PlayerTableData>(data: T[]) => {
-  const worksheet = XLSX.utils.json_to_sheet(
-    data.map((item) => ({
+// exportPlayersToExcel
+export const exportPlayersToExcel = <T extends PlayerTableData>(
+  data: T[],
+  visibleFields?: string[],
+) => {
+  const showGender = !visibleFields || visibleFields.includes('gender');
+  const showDOB = !visibleFields || visibleFields.includes('dob');
+  const showSchool = !visibleFields || visibleFields.includes('schoolName');
+  const showGrade = !visibleFields || visibleFields.includes('grade');
+  const showAAU = !visibleFields || visibleFields.includes('aauNumber');
+
+  const excelData = data.map((item) => {
+    const obj: any = {
       Name: item.name ?? 'N/A',
-      Gender: item.gender ?? 'N/A',
-      Age: item.age ?? 'N/A',
-      School: item.section ?? 'N/A',
-      Grade: item.class ?? 'N/A',
-      AAU: item.aauNumber ?? 'N/A',
-      Seasons: getCompactSeasonsDisplay(item),
-      Status: getPlayerStatus(item),
-    })),
-  );
+    };
+
+    if (showGender) obj.Gender = item.gender ?? 'N/A';
+    if (showDOB) {
+      obj.DOB = item.dob ? formatDOBWithoutShift(item.dob) : 'N/A';
+      obj.Age = item.age ?? 'N/A';
+    }
+    if (showSchool) obj.School = item.section ?? 'N/A';
+    if (showGrade) obj.Grade = item.class ?? 'N/A';
+    if (showAAU) obj['AAU Number'] = item.aauNumber ?? 'N/A';
+
+    // Always show these core fields
+    obj.Seasons = getCompactSeasonsDisplay(item);
+    obj.Status = getPlayerStatus(item);
+
+    return obj;
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Players');
   XLSX.writeFile(
@@ -342,7 +397,7 @@ export const exportPlayerParentEmails = <T extends PlayerTableData>(
       text: hasParents
         ? 'No valid parent email addresses found. Ensure parents have valid emails.'
         : 'No parents associated with the selected players.',
-      confirmButtonColor: '#506ee4',
+      confirmButtonColor: '#594230',
       confirmButtonText: 'OK',
     });
     return;
@@ -365,7 +420,7 @@ export const exportPlayerParentEmails = <T extends PlayerTableData>(
     icon: 'success',
     title: 'Export Complete',
     html: `<p style="color:#555"><strong>${uniqueEmails.length}</strong> email${uniqueEmails.length > 1 ? 's' : ''} exported to CSV.</p>`,
-    confirmButtonColor: '#506ee4',
+    confirmButtonColor: '#594230',
     confirmButtonText: 'Done',
     timer: 3000,
     timerProgressBar: true,
@@ -398,7 +453,7 @@ export const copyPlayerParentEmailsToClipboard = <T extends PlayerTableData>(
       icon: 'warning',
       title: 'No Emails Found',
       text: msg,
-      confirmButtonColor: '#506ee4',
+      confirmButtonColor: '#594230',
       confirmButtonText: 'OK',
     });
     onError?.(msg);
@@ -421,7 +476,7 @@ export const copyPlayerParentEmailsToClipboard = <T extends PlayerTableData>(
             </div>
           </div>
         `,
-        confirmButtonColor: '#506ee4',
+        confirmButtonColor: '#594230',
         confirmButtonText: 'Done',
         showCloseButton: true,
         timer: 5000,
@@ -434,7 +489,7 @@ export const copyPlayerParentEmailsToClipboard = <T extends PlayerTableData>(
         icon: 'error',
         title: 'Copy Failed',
         text: 'Could not copy emails to clipboard. Please try again.',
-        confirmButtonColor: '#506ee4',
+        confirmButtonColor: '#594230',
         confirmButtonText: 'OK',
       });
       onError?.('Failed to copy parent emails to clipboard');

@@ -465,6 +465,7 @@ const ParentList = () => {
           yearParam={yearParam}
           parentData={dataSource}
           onRefresh={handleRefresh}
+          visibleFields={parentVisibleFieldNames}
         />
         <div className='card'>
           <div className='card-header d-flex align-items-center justify-content-between flex-wrap pb-0'>

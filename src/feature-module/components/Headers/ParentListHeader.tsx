@@ -1,3 +1,4 @@
+// components/Headers/ParentListHeader.tsx
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { all_routes } from '../../router/all_routes';
@@ -15,6 +16,7 @@ interface ParentListHeaderProps {
   yearParam: string | null;
   parentData: any[];
   onRefresh?: () => Promise<void>;
+  visibleFields?: string[];
 }
 
 export const ParentListHeader: React.FC<ParentListHeaderProps> = ({
@@ -22,17 +24,18 @@ export const ParentListHeader: React.FC<ParentListHeaderProps> = ({
   yearParam,
   parentData,
   onRefresh,
+  visibleFields = [],
 }) => {
   const { currentUser } = useAuth();
   const location = useLocation();
   const isListView = location.pathname === all_routes.parentList;
 
   const handleExportPDF = () => {
-    exportParentsToPDF(parentData);
+    exportParentsToPDF(parentData, undefined, visibleFields);
   };
 
   const handleExportExcel = () => {
-    exportParentsToExcel(parentData);
+    exportParentsToExcel(parentData, undefined, visibleFields);
   };
 
   const handleExportEmail = () => {

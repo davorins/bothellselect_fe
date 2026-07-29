@@ -37,15 +37,16 @@ const CoachList = () => {
   const { handleCoachClick } = useCoachActions();
 
   // ── Dynamic fields ─────────────────────────────────────────────────────────
-  const { getVisibleFields: getParentVisibleFields } = useDynamicFormFields(
-    'parent',
+  // Use 'parent' type since coaches are stored as parents with isCoach=true
+  const { getVisibleFields: getCoachVisibleFields } = useDynamicFormFields(
+    'parent', // Changed from 'coach' to 'parent'
     { registrationYear: new Date().getFullYear() },
   );
 
-  const visibleFieldNames = useMemo(() => {
-    const fields = getParentVisibleFields({} as any);
+  const coachVisibleFieldNames = useMemo(() => {
+    const fields = getCoachVisibleFields({} as any);
     return fields.map((f) => f.fieldName);
-  }, [getParentVisibleFields]);
+  }, [getCoachVisibleFields]);
 
   // ── Filter state ───────────────────────────────────────────────────────────
   const [filters, setFilters] = useState<CoachFilterParams>({
@@ -197,9 +198,14 @@ const CoachList = () => {
         handleCoachClick,
         currentUser?.role,
         handleRefresh,
-        visibleFieldNames,
+        coachVisibleFieldNames, // Changed from visibleFieldNames
       ),
-    [handleCoachClick, currentUser?.role, handleRefresh, visibleFieldNames],
+    [
+      handleCoachClick,
+      currentUser?.role,
+      handleRefresh,
+      coachVisibleFieldNames,
+    ], // Changed dependency
   );
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -247,6 +253,7 @@ const CoachList = () => {
           yearParam={yearParam}
           coachData={coaches}
           onRefresh={handleRefresh}
+          visibleFields={coachVisibleFieldNames}
         />
         <div className='card'>
           <div className='card-header d-flex align-items-center justify-content-between flex-wrap pb-0'>

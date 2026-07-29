@@ -1,3 +1,4 @@
+// components/Headers/CoachListHeader.tsx
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { all_routes } from '../../router/all_routes';
@@ -17,6 +18,7 @@ interface CoachListHeaderProps {
   onExportExcel?: () => void;
   coachData: any[];
   onRefresh?: () => Promise<void>;
+  visibleFields?: string[];
 }
 
 export const CoachListHeader: React.FC<CoachListHeaderProps> = ({
@@ -24,17 +26,18 @@ export const CoachListHeader: React.FC<CoachListHeaderProps> = ({
   yearParam,
   coachData,
   onRefresh,
+  visibleFields = [],
 }) => {
   const { currentUser } = useAuth();
   const location = useLocation();
   const isListView = location.pathname === all_routes.coachList;
 
   const handleExportPDF = () => {
-    exportCoachesToPDF(coachData);
+    exportCoachesToPDF(coachData, undefined, visibleFields);
   };
 
   const handleExportExcel = () => {
-    exportCoachesToExcel(coachData);
+    exportCoachesToExcel(coachData, undefined, visibleFields);
   };
 
   const handleExportEmail = () => {
@@ -81,12 +84,6 @@ export const CoachListHeader: React.FC<CoachListHeaderProps> = ({
             showRefresh={true}
           />
           <div className='mb-2'>
-            {/*
-              Coaches are parents with isCoach=true.
-              "Add Coach" therefore navigates to the standard Add Parent form —
-              the admin checks "Is Coach" / enters an AAU number there, which
-              marks the new parent account as a coach automatically.
-            */}
             <Link
               to={all_routes.addParent}
               className='btn btn-primary d-flex align-items-center'
