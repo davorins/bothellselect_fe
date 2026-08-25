@@ -1171,17 +1171,51 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
     setState((prev) => ({ ...prev, elements: items }));
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Add a method to handle image uploads properly
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch('/api/email-templates/upload-temp-image', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: formData,
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        return result.data.url;
+      }
+      return null;
+    } catch (error) {
+      console.error('Upload error:', error);
+      return null;
+    }
+  };
+
+  // Update handleImageUpload
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      if (selectedElementId) {
-        updateElement(selectedElementId, { src: dataUrl });
-      }
-    };
-    reader.readAsDataURL(file);
+
+    // Show loading state
+    setIsSaving(true);
+
+    const url = await uploadImage(file);
+    if (url && selectedElementId) {
+      updateElement(selectedElementId, { src: url });
+    } else {
+      setError('Failed to upload image');
+    }
+
+    setIsSaving(false);
+    // Reset the input
+    if (imageFileInputRef.current) {
+      imageFileInputRef.current.value = '';
+    }
   };
 
   // ─── Save ──────────────────────────────────────────────────────────────
