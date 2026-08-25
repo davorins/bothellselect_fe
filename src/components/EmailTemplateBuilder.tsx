@@ -1171,50 +1171,92 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
     setState((prev) => ({ ...prev, elements: items }));
   };
 
-  // Add a method to handle image uploads properly
+  // ─── Image Upload ──────────────────────────────────────────────────────
+
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
       const formData = new FormData();
       formData.append('image', file);
 
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
       const response = await fetch('/api/email-templates/upload-temp-image', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
         },
         body: formData,
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
       const result = await response.json();
-      if (result.success) {
+      if (result.success && result.data?.url) {
         return result.data.url;
       }
       return null;
     } catch (error) {
       console.error('Upload error:', error);
-      return null;
+      throw error;
     }
   };
 
-  // Update handleImageUpload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Show loading state
-    setIsSaving(true);
-
-    const url = await uploadImage(file);
-    if (url && selectedElementId) {
-      updateElement(selectedElementId, { src: url });
-    } else {
-      setError('Failed to upload image');
+    // Validate file type
+    const validTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'image/svg+xml',
+    ];
+    if (!validTypes.includes(file.type)) {
+      setError(
+        'Invalid file type. Please upload a JPEG, PNG, GIF, WEBP, or SVG image.',
+      );
+      if (imageFileInputRef.current) {
+        imageFileInputRef.current.value = '';
+      }
+      return;
     }
 
-    setIsSaving(false);
-    // Reset the input
-    if (imageFileInputRef.current) {
-      imageFileInputRef.current.value = '';
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File is too large. Maximum size is 5MB.');
+      if (imageFileInputRef.current) {
+        imageFileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    setError(null);
+    setIsSaving(true);
+
+    try {
+      const url = await uploadImage(file);
+      if (url && selectedElementId) {
+        updateElement(selectedElementId, { src: url });
+        setSuccess('Image uploaded successfully!');
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError('Failed to upload image');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload image');
+    } finally {
+      setIsSaving(false);
+      if (imageFileInputRef.current) {
+        imageFileInputRef.current.value = '';
+      }
     }
   };
 
@@ -1250,7 +1292,7 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
         includeSignature: state.includeSignature,
         signatureConfig: state.signatureConfig,
         builderConfig: {
-          elements: state.elements,
+          elements: state.elements, // Server will sanitize
           globalStyles: state.globalStyles,
         },
         attachments: state.attachments,
