@@ -18,14 +18,13 @@
 /* ─── Base card ───────────────────────────────────────────────── */
 .ad-banner {
   position: relative;
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
   overflow: hidden;
   box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.06),
     0 1px 2px rgba(0, 0, 0, 0.04);
-  /* Responsive: fills container width, capped at 300px */
   width: 100%;
   max-width: 300px;
   font-family: -apple-system, 'Segoe UI', sans-serif;
@@ -99,7 +98,7 @@
   width: 100%;
   aspect-ratio: 7 / 6;
   overflow: hidden;
-  background: #f0f0f0;
+  background: rgba(240, 240, 240, 0.5);
 }
 .ad-banner__image {
   width: 100%;
@@ -187,12 +186,6 @@
 }
 
 /* ─── Minimized state: compact horizontal pill ────────────────── */
-/*
-  When minimized the banner becomes a slim pill:
-  [thumbnail] [business name]  [expand icon]
-  Height: 48px, width: 100% (up to 280px)
-  No image-wrap, no text block — just the row.
-*/
 .ad-banner.is-minimized-pill {
   display: flex;
   align-items: center;
@@ -258,7 +251,6 @@
 /* ─── Mobile: full-width horizontal card in bottom dock ───────── */
 @media (max-width: 768px) {
   .ad-banner {
-    /* In the bottom dock each card is compact and horizontal */
     max-width: 260px;
     min-width: 220px;
     border-radius: 10px;
@@ -273,7 +265,6 @@
   .ad-banner__description {
     display: none;
   }
-  /* Minimized pill on mobile */
   .ad-banner.is-minimized-pill {
     max-width: 200px;
     min-width: 160px;
@@ -291,14 +282,14 @@
 /* ─── Dark mode ───────────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   .ad-banner {
-    background: #1e1e1e;
-    border-color: #2e2e2e;
+    background: rgba(30, 30, 30, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
     box-shadow:
       0 2px 8px rgba(0, 0, 0, 0.3),
       0 1px 2px rgba(0, 0, 0, 0.2);
   }
   .ad-banner__image-wrap {
-    background: #2a2a2a;
+    background: rgba(42, 42, 42, 0.5);
   }
   .ad-banner__business {
     color: #666;
