@@ -19,7 +19,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
   return (
     <div className='main-layout'>
-      {/* Top header ad banner */}
+      {/* Top Bar - horizontal scrollable ads above header */}
+      <AdManager
+        placement='topbar'
+        pageSlug={pageSlug}
+        showMinimized={true}
+        maxAds={5}
+        className='topbar-ad-container'
+      />
+
+      {/* Header ad banner */}
       <AdManager
         placement='header'
         pageSlug={pageSlug}
@@ -46,7 +55,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         Sidebar ad — fixed-positioned via CSS.
         On desktop (>1100px): floats on the right edge.
         On mobile (≤768px): becomes a horizontal bottom dock.
-        FloatingAd removed — it was duplicating this placement.
       */}
       <AdManager
         placement='sidebar'

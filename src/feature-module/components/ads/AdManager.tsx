@@ -5,7 +5,7 @@ import AdBanner from './AdBanner';
 import './AdManager.css';
 
 interface AdManagerProps {
-  placement?: 'sidebar' | 'header' | 'footer' | 'inline' | 'popup';
+  placement?: 'sidebar' | 'header' | 'footer' | 'inline' | 'popup' | 'topbar';
   pageSlug?: string;
   showMinimized?: boolean;
   className?: string;
@@ -309,11 +309,9 @@ const AdManager: React.FC<AdManagerProps> = ({
         : 'normal';
 
   const allMinimized =
-    placement === 'sidebar' &&
-    adCount > 0 &&
-    displayAds.every((ad) => minimizedAds.has(ad._id));
+    adCount > 0 && displayAds.every((ad) => minimizedAds.has(ad._id));
 
-  // Popup placement
+  // ─── POPUP PLACEMENT ───────────────────────────────────────────
   if (placement === 'popup') {
     if (!showPopup) return null;
     return (
@@ -338,7 +336,97 @@ const AdManager: React.FC<AdManagerProps> = ({
     );
   }
 
-  // Mobile sidebar
+  // ─── TOPBAR PLACEMENT (Desktop horizontal scrollable bar) ────
+  if (placement === 'topbar') {
+    // If all ads are minimized, show compact pill view
+    if (allMinimized && showMinimized) {
+      return (
+        <div
+          className={`ad-manager ad-manager--topbar ad-manager--topbar-minimized ${className}`}
+        >
+          <div className='ad-topbar__minimized'>
+            <span className='ad-topbar__label'>Sponsored</span>
+            <div className='ad-topbar__pills'>
+              {displayAds.map((ad) => (
+                <button
+                  key={ad._id}
+                  className='ad-topbar__pill'
+                  onClick={() => {
+                    const updated = new Set(minimizedAds);
+                    updated.delete(ad._id);
+                    setMinimizedAds(updated);
+                    localStorage.setItem(
+                      getStorageKey(placement, 'minimized'),
+                      JSON.stringify([...updated]),
+                    );
+                  }}
+                >
+                  {ad.desktopImage?.url && (
+                    <img
+                      src={ad.desktopImage.url}
+                      alt={ad.businessName}
+                      className='ad-topbar__pill-img'
+                    />
+                  )}
+                  <span className='ad-topbar__pill-name'>
+                    {ad.businessName}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Full expanded view with horizontal scrolling
+    return (
+      <div className={`ad-manager ad-manager--topbar ${className}`}>
+        <div className='ad-topbar__container'>
+          <span className='ad-topbar__label'>Sponsored</span>
+          <div className='ad-topbar__scroll-wrapper'>
+            <div className='ad-topbar__track'>
+              {displayAds.map((ad) => (
+                <div key={ad._id} className='ad-topbar__slide'>
+                  <AdBanner
+                    ad={ad}
+                    authToken={authToken}
+                    size='small'
+                    minimized={false}
+                    onClose={() => handleClose(ad._id)}
+                    onMinimize={(m) => handleMinimize(ad._id, m)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          {displayAds.length > 1 && (
+            <button
+              className='ad-topbar__minimize-btn'
+              onClick={() => {
+                displayAds.forEach((ad) => handleMinimize(ad._id, true));
+              }}
+              aria-label='Minimize ads'
+              title='Minimize'
+            >
+              <svg
+                width='16'
+                height='16'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+              >
+                <polyline points='18 15 12 9 6 15' />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── MOBILE SIDEBAR ────────────────────────────────────────────
   if (placement === 'sidebar' && isMobile) {
     if (mobileMinimized) {
       return (
@@ -503,7 +591,7 @@ const AdManager: React.FC<AdManagerProps> = ({
     );
   }
 
-  // Desktop sidebar
+  // ─── DESKTOP SIDEBAR ───────────────────────────────────────────
   if (placement === 'sidebar') {
     return (
       <div
@@ -545,7 +633,7 @@ const AdManager: React.FC<AdManagerProps> = ({
     );
   }
 
-  // All other placements
+  // ─── ALL OTHER PLACEMENTS (header, footer, inline) ────────────
   return (
     <div
       className={`ad-manager ad-manager--${placement} ${countClass} ${className}`}

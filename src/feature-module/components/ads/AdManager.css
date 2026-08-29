@@ -517,3 +517,240 @@
     transform: translateY(0);
   }
 }
+
+/* ─── Top Bar (horizontal scrollable ads above header) ────────── */
+.ad-manager--topbar {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.98);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  padding: 6px 0;
+  position: relative;
+  z-index: 50;
+}
+
+.ad-topbar__container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.ad-topbar__label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #999;
+  flex-shrink: 0;
+}
+
+/* Scrollable wrapper */
+.ad-topbar__scroll-wrapper {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #ddd transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ad-topbar__scroll-wrapper::-webkit-scrollbar {
+  height: 4px;
+}
+
+.ad-topbar__scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ad-topbar__scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 4px;
+}
+
+.ad-topbar__track {
+  display: flex;
+  gap: 12px;
+  padding: 4px 0 8px;
+  min-width: max-content;
+  align-items: stretch;
+}
+
+.ad-topbar__slide {
+  flex: 0 0 auto;
+  width: 260px;
+  min-width: 220px;
+}
+
+/* Top bar card overrides */
+.ad-topbar__slide .ad-banner {
+  max-width: none;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.ad-topbar__slide .ad-banner:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.ad-topbar__slide .ad-banner--small .ad-banner__image-wrap {
+  aspect-ratio: 7 / 5;
+}
+
+.ad-topbar__minimize-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ad-topbar__minimize-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #555;
+}
+
+/* ─── Minimized top bar (compact pills) ───────────────────────── */
+.ad-manager--topbar-minimized {
+  padding: 4px 0;
+}
+
+.ad-topbar__minimized {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.ad-topbar__pills {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 2px 0 6px;
+}
+
+.ad-topbar__pills::-webkit-scrollbar {
+  height: 3px;
+}
+
+.ad-topbar__pills::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 4px;
+}
+
+.ad-topbar__pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f4f4f5;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  padding: 4px 10px 4px 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  color: #333;
+}
+
+.ad-topbar__pill:hover {
+  background: #e8e8ea;
+}
+
+.ad-topbar__pill-img {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.ad-topbar__pill-name {
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Dark mode ───────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  .ad-manager--topbar {
+    background: rgba(18, 18, 20, 0.98);
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .ad-topbar__label {
+    color: #666;
+  }
+
+  .ad-topbar__slide .ad-banner {
+    border-color: #2e2e2e;
+  }
+
+  .ad-topbar__minimize-btn {
+    color: #666;
+  }
+
+  .ad-topbar__minimize-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #aaa;
+  }
+
+  .ad-topbar__pill {
+    background: #2a2a2e;
+    border-color: rgba(255, 255, 255, 0.06);
+    color: #e0e0e0;
+  }
+
+  .ad-topbar__pill:hover {
+    background: #333338;
+  }
+
+  .ad-topbar__scroll-wrapper::-webkit-scrollbar-thumb {
+    background: #444;
+  }
+}
+
+/* ─── Mobile: topbar becomes full-width carousel ──────────────── */
+@media (max-width: 768px) {
+  .ad-topbar__container {
+    padding: 0 8px;
+    gap: 8px;
+  }
+
+  .ad-topbar__slide {
+    width: 200px;
+    min-width: 180px;
+  }
+
+  .ad-topbar__slide .ad-banner--small .ad-banner__image-wrap {
+    aspect-ratio: 7 / 5;
+  }
+
+  .ad-topbar__label {
+    font-size: 9px;
+  }
+
+  .ad-topbar__minimized {
+    padding: 0 8px;
+    gap: 8px;
+  }
+}
