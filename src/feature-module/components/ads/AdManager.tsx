@@ -85,7 +85,6 @@ const AdManager: React.FC<AdManagerProps> = ({
   const [authToken, setAuthToken] = useState<string | undefined>();
   const [showPopup, setShowPopup] = useState(false);
 
-  // Sidebar hidden state - initialize from localStorage
   const [isSidebarHidden, setIsSidebarHidden] = useState<boolean>(() => {
     if (placement === 'sidebar') {
       return isSidebarDismissed();
@@ -93,12 +92,10 @@ const AdManager: React.FC<AdManagerProps> = ({
     return false;
   });
 
-  // Mobile carousel state
   const [isMobile, setIsMobile] = useState(false);
   const [mobileMinimized, setMobileMinimized] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // Touch/swipe state
   const touchStartX = useRef<number>(0);
   const touchStartY = useRef<number>(0);
   const isDragging = useRef(false);
@@ -110,7 +107,6 @@ const AdManager: React.FC<AdManagerProps> = ({
     window.location.hostname === '127.0.0.1';
   const previewMode = isLocalDev;
 
-  // Listen for storage changes (in case another tab changes it)
   useEffect(() => {
     if (placement === 'sidebar') {
       const handleStorageChange = (e: StorageEvent) => {
@@ -124,7 +120,6 @@ const AdManager: React.FC<AdManagerProps> = ({
     }
   }, [placement]);
 
-  // Detect mobile
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
     check();
@@ -132,7 +127,6 @@ const AdManager: React.FC<AdManagerProps> = ({
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // On mobile, reset to minimized whenever ads reload
   useEffect(() => {
     if (isMobile && placement === 'sidebar') {
       setMobileMinimized(true);
@@ -197,7 +191,6 @@ const AdManager: React.FC<AdManagerProps> = ({
     return () => controller.abort();
   }, [fetchAds]);
 
-  // Popup timer
   useEffect(() => {
     if (placement !== 'popup') return;
     const displayAdsList = previewMode
@@ -248,7 +241,6 @@ const AdManager: React.FC<AdManagerProps> = ({
     [minimizedAds, previewMode],
   );
 
-  // Dismiss the entire sidebar for 45 days
   const handleSidebarDismiss = useCallback(() => {
     console.log('Dismiss button clicked!');
     dismissSidebar();
@@ -256,7 +248,6 @@ const AdManager: React.FC<AdManagerProps> = ({
     console.log('Sidebar should now be hidden - state updated to true');
   }, []);
 
-  // Swipe handlers
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
@@ -283,7 +274,6 @@ const AdManager: React.FC<AdManagerProps> = ({
 
   const displayAds = previewMode ? ads : ads.filter((ad) => !closedAds[ad._id]);
 
-  // EARLY RETURN - Hide sidebar if dismissed (must be before any other conditional returns)
   if (placement === 'sidebar' && isSidebarHidden && !previewMode) {
     console.log('Sidebar is hidden - returning null');
     return null;
@@ -306,9 +296,7 @@ const AdManager: React.FC<AdManagerProps> = ({
       ? 'mini'
       : placement === 'sidebar' && adCount === 2
         ? 'small'
-        : placement === 'footer'
-          ? 'small' // Make footer ads use small size
-          : 'normal';
+        : 'normal';
 
   const allMinimized =
     adCount > 0 && displayAds.every((ad) => minimizedAds.has(ad._id));
@@ -338,9 +326,8 @@ const AdManager: React.FC<AdManagerProps> = ({
     );
   }
 
-  // ─── TOPBAR PLACEMENT (Desktop horizontal scrollable bar) ────
+  // ─── TOPBAR PLACEMENT ──────────────────────────────────────────
   if (placement === 'topbar') {
-    // If all ads are minimized, show compact pill view
     if (allMinimized && showMinimized) {
       return (
         <div
@@ -381,7 +368,6 @@ const AdManager: React.FC<AdManagerProps> = ({
       );
     }
 
-    // Full expanded view with horizontal scrolling
     return (
       <div className={`ad-manager ad-manager--topbar ${className}`}>
         <div className='ad-topbar__container'>
@@ -635,10 +621,8 @@ const AdManager: React.FC<AdManagerProps> = ({
     );
   }
 
-  // ─── ALL OTHER PLACEMENTS (header, footer, inline) ────────────
-  // For footer, we want to use a different rendering approach
+  // ─── FOOTER PLACEMENT (Skinny horizontal scrollable ads) ──────
   if (placement === 'footer') {
-    // If all ads are minimized, show compact pill view
     if (allMinimized && showMinimized) {
       return (
         <div
@@ -679,7 +663,6 @@ const AdManager: React.FC<AdManagerProps> = ({
       );
     }
 
-    // Full expanded view with horizontal scrolling - skinny style like mobile
     return (
       <div className={`ad-manager ad-manager--footer ${className}`}>
         <div className='ad-footer__container'>
@@ -691,7 +674,7 @@ const AdManager: React.FC<AdManagerProps> = ({
                   <AdBanner
                     ad={ad}
                     authToken={authToken}
-                    size='small'
+                    size='normal'
                     minimized={false}
                     onClose={() => handleClose(ad._id)}
                     onMinimize={(m) => handleMinimize(ad._id, m)}
@@ -726,7 +709,7 @@ const AdManager: React.FC<AdManagerProps> = ({
     );
   }
 
-  // Header and inline placements - standard rendering
+  // ─── ALL OTHER PLACEMENTS (header, inline) ────────────────────
   return (
     <div
       className={`ad-manager ad-manager--${placement} ${countClass} ${className}`}

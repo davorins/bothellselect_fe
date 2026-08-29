@@ -28,21 +28,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         className='topbar-ad-container'
       />
 
-      {/* Header ad banner */}
-      <AdManager
-        placement='header'
-        pageSlug={pageSlug}
-        className='header-ad-container'
-      />
-
       <Header showSponsorLogo={showSponsorLogo || false} />
 
       <div className='main-content-wrapper'>
-        {/* Main content — full width, sidebar ad is fixed-positioned so no aside needed */}
         <main className='main-content'>{children}</main>
       </div>
 
-      {/* Footer ad banner - Skinny horizontal scrollable ads above footer */}
+      {/* Footer ads - skinny horizontal scrollable ads above footer */}
       <AdManager
         placement='footer'
         pageSlug={pageSlug}
@@ -53,11 +45,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
       <Footer />
 
-      {/*
-        Sidebar ad — fixed-positioned via CSS.
-        On desktop (>1100px): floats on the right edge.
-        On mobile (≤768px): becomes a horizontal bottom dock.
-      */}
       <AdManager
         placement='sidebar'
         pageSlug={pageSlug}
@@ -65,7 +52,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         maxAds={3}
       />
 
-      {/* Popup ad — modal overlay, appears after 2s */}
       <AdManager
         placement='popup'
         pageSlug={pageSlug}
