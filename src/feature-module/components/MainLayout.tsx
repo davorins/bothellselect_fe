@@ -19,6 +19,15 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
   return (
     <div className='main-layout'>
+      {/* Top Bar - horizontal scrollable ads above header */}
+      <AdManager
+        placement='topbar'
+        pageSlug={pageSlug}
+        showMinimized={true}
+        maxAds={5}
+        className='topbar-ad-container'
+      />
+
       {/* Header ad banner */}
       <AdManager
         placement='header'
@@ -33,23 +42,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         <main className='main-content'>{children}</main>
       </div>
 
-      {/* Top Bar - horizontal scrollable ads above footer */}
-      <AdManager
-        placement='topbar'
-        pageSlug={pageSlug}
-        showMinimized={true}
-        maxAds={5}
-        className='topbar-ad-container'
-      />
-
-      <Footer />
-
-      {/* Footer ad banner */}
+      {/* Footer ad banner - Skinny horizontal scrollable ads above footer */}
       <AdManager
         placement='footer'
         pageSlug={pageSlug}
+        showMinimized={true}
+        maxAds={5}
         className='footer-ad-container'
       />
+
+      <Footer />
 
       {/*
         Sidebar ad — fixed-positioned via CSS.

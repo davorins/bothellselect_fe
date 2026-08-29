@@ -81,6 +81,406 @@
   padding: 4px;
 }
 
+/* ─── Top Bar ──────────────────────────────────────────────────── */
+.ad-manager--topbar {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.98);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  padding: 6px 0;
+  position: relative;
+  z-index: 50;
+  /* Add padding top to account for header height */
+  padding-top: 80px;
+  margin-top: -80px;
+}
+
+.ad-topbar__container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.ad-topbar__label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #999;
+  flex-shrink: 0;
+}
+
+/* Scrollable wrapper */
+.ad-topbar__scroll-wrapper {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #ddd transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ad-topbar__scroll-wrapper::-webkit-scrollbar {
+  height: 4px;
+}
+
+.ad-topbar__scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ad-topbar__scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 4px;
+}
+
+.ad-topbar__track {
+  display: flex;
+  gap: 12px;
+  padding: 4px 0 8px;
+  min-width: max-content;
+  align-items: stretch;
+}
+
+.ad-topbar__slide {
+  flex: 0 0 auto;
+  width: 260px;
+  min-width: 220px;
+}
+
+/* Top bar card overrides */
+.ad-topbar__slide .ad-banner {
+  max-width: none;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.ad-topbar__slide .ad-banner:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.ad-topbar__slide .ad-banner--small .ad-banner__image-wrap {
+  aspect-ratio: 7 / 5;
+}
+
+.ad-topbar__minimize-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ad-topbar__minimize-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #555;
+}
+
+/* ─── Minimized top bar (compact pills) ───────────────────────── */
+.ad-manager--topbar-minimized {
+  padding: 4px 0;
+  padding-top: 80px;
+  margin-top: -80px;
+}
+
+.ad-topbar__minimized {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.ad-topbar__pills {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 2px 0 6px;
+}
+
+.ad-topbar__pills::-webkit-scrollbar {
+  height: 3px;
+}
+
+.ad-topbar__pills::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 4px;
+}
+
+.ad-topbar__pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f4f4f5;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  padding: 4px 10px 4px 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  color: #333;
+}
+
+.ad-topbar__pill:hover {
+  background: #e8e8ea;
+}
+
+.ad-topbar__pill-img {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.ad-topbar__pill-name {
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Footer (skinny horizontal scrollable ads) ──────────────── */
+.ad-manager--footer {
+  width: 100%;
+  background: transparent;
+  padding: 4px 0 8px 0;
+  position: relative;
+  z-index: 50;
+  flex-direction: row;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ad-footer__container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.ad-footer__label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #aaa;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* Scrollable wrapper - skinny */
+.ad-footer__scroll-wrapper {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 0;
+}
+
+.ad-footer__scroll-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.ad-footer__track {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0 4px 0;
+  min-width: max-content;
+  align-items: center;
+}
+
+.ad-footer__slide {
+  flex: 0 0 auto;
+  width: 200px;
+  min-width: 160px;
+}
+
+/* Skinny card for footer */
+.ad-footer__slide .ad-banner {
+  max-width: none;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+
+.ad-footer__slide .ad-banner:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+/* Override banner internal styles for footer */
+.ad-footer__slide .ad-banner .ad-banner__body {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  padding: 0 4px;
+}
+
+.ad-footer__slide .ad-banner .ad-banner__image-wrap {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(240, 240, 240, 0.5);
+  aspect-ratio: unset;
+}
+
+.ad-footer__slide .ad-banner .ad-banner__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ad-footer__slide .ad-banner .ad-banner__info {
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.ad-footer__slide .ad-banner .ad-banner__business {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 1px 0;
+}
+
+.ad-footer__slide .ad-banner .ad-banner__title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.ad-footer__slide .ad-banner .ad-banner__description,
+.ad-footer__slide .ad-banner .ad-banner__cta {
+  display: none;
+}
+
+.ad-footer__minimize-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ad-footer__minimize-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #555;
+}
+
+/* ─── Minimized footer (compact pills) ───────────────────────── */
+.ad-manager--footer-minimized {
+  padding: 2px 0 4px 0;
+}
+
+.ad-footer__minimized {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.ad-footer__pills {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 0 4px 0;
+}
+
+.ad-footer__pills::-webkit-scrollbar {
+  display: none;
+}
+
+.ad-footer__pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(244, 244, 245, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  padding: 3px 8px 3px 3px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  color: #333;
+  height: 28px;
+}
+
+.ad-footer__pill:hover {
+  background: rgba(232, 232, 234, 0.9);
+}
+
+.ad-footer__pill-img {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.ad-footer__pill-name {
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ─── Header ──────────────────────────────────────────────────── */
 .ad-manager--header {
   flex-direction: row;
@@ -95,22 +495,6 @@
 .ad-manager--header .ad-banner {
   max-width: 480px;
   flex: 1 1 320px;
-}
-
-/* ─── Footer ──────────────────────────────────────────────────── */
-.ad-manager--footer {
-  flex-direction: row;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  width: 100%;
-  padding: 6px 16px;
-  background: transparent;
-  border-top: none;
-}
-.ad-manager--footer .ad-banner {
-  max-width: 480px;
-  flex: 1 1 300px;
 }
 
 /* ─── Inline ──────────────────────────────────────────────────── */
@@ -156,7 +540,6 @@
 }
 
 /* ─── Narrow desktop / large tablet: hide sidebar ────────────── */
-/* Only hides between 769px–1100px; mobile gets its own layout    */
 @media (min-width: 769px) and (max-width: 1100px) {
   .ad-manager--sidebar {
     display: none;
@@ -433,60 +816,141 @@
     animation: adSlideUpMobile 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     padding-bottom: env(safe-area-inset-bottom);
   }
+
+  /* Mobile footer adjustments */
+  .ad-footer__slide {
+    width: 160px;
+    min-width: 140px;
+  }
+
+  .ad-footer__slide .ad-banner {
+    height: 48px;
+  }
+
+  .ad-footer__slide .ad-banner .ad-banner__image-wrap {
+    width: 34px;
+    height: 34px;
+  }
+
+  .ad-footer__slide .ad-banner .ad-banner__title {
+    font-size: 10px;
+  }
+
+  .ad-footer__label {
+    font-size: 8px;
+  }
+
+  .ad-footer__minimized {
+    padding: 0 8px;
+    gap: 8px;
+  }
+
+  /* Mobile topbar adjustments */
+  .ad-topbar__container {
+    padding: 0 8px;
+    gap: 8px;
+  }
+
+  .ad-topbar__slide {
+    width: 200px;
+    min-width: 180px;
+  }
+
+  .ad-topbar__slide .ad-banner--small .ad-banner__image-wrap {
+    aspect-ratio: 7 / 5;
+  }
+
+  .ad-topbar__label {
+    font-size: 9px;
+  }
+
+  .ad-topbar__minimized {
+    padding: 0 8px;
+    gap: 8px;
+  }
 }
 
 /* ─── Dark mode ───────────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
-  .ad-manager--header,
-  .ad-manager--footer {
+  .ad-manager--header {
     background: transparent;
     border-color: transparent;
   }
-}
 
-@media (prefers-color-scheme: dark) and (max-width: 768px) {
-  .ad-manager--mobile-minimized,
-  .ad-manager--mobile-expanded {
+  .ad-manager--topbar {
     background: rgba(18, 18, 20, 0.98);
-    border-top-color: rgba(255, 255, 255, 0.08);
-  }
-  .ad-mobile-dock__label,
-  .ad-carousel__title {
-    color: #555;
-  }
-  .ad-mobile-pill {
-    background: #2a2a2e;
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-  .ad-mobile-pill:hover,
-  .ad-mobile-pill:active {
-    background: #333338;
-  }
-  .ad-mobile-pill__name {
-    color: #e0e0e0;
-  }
-  .ad-carousel__header {
     border-bottom-color: rgba(255, 255, 255, 0.06);
   }
-  .ad-carousel__collapse {
-    color: #888;
+
+  .ad-topbar__label {
+    color: #666;
   }
-  .ad-carousel__collapse:hover {
+
+  .ad-topbar__slide .ad-banner {
+    border-color: #2e2e2e;
+  }
+
+  .ad-topbar__minimize-btn {
+    color: #666;
+  }
+
+  .ad-topbar__minimize-btn:hover {
     background: rgba(255, 255, 255, 0.06);
+    color: #aaa;
   }
-  .ad-mobile-dock__close,
-  .ad-carousel__dismiss {
-    background: rgba(255, 255, 255, 0.1);
+
+  .ad-topbar__pill {
+    background: #2a2a2e;
+    border-color: rgba(255, 255, 255, 0.06);
+    color: #e0e0e0;
   }
-  .ad-mobile-dock__close:hover,
-  .ad-carousel__dismiss:hover {
-    background: rgba(255, 255, 255, 0.2);
+
+  .ad-topbar__pill:hover {
+    background: #333338;
   }
-  .ad-carousel__dot {
+
+  .ad-topbar__scroll-wrapper::-webkit-scrollbar-thumb {
     background: #444;
   }
-  .ad-carousel__dot.is-active {
-    background: #aaa;
+
+  .ad-footer__label {
+    color: #555;
+  }
+
+  .ad-footer__slide .ad-banner {
+    background: rgba(30, 30, 30, 0.92);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .ad-footer__slide .ad-banner:hover {
+    background: rgba(40, 40, 40, 0.95);
+  }
+
+  .ad-footer__slide .ad-banner .ad-banner__title {
+    color: #e0e0e0;
+  }
+
+  .ad-footer__slide .ad-banner .ad-banner__business {
+    color: #666;
+  }
+
+  .ad-footer__pill {
+    background: rgba(42, 42, 46, 0.9);
+    border-color: rgba(255, 255, 255, 0.06);
+    color: #ccc;
+  }
+
+  .ad-footer__pill:hover {
+    background: rgba(51, 51, 56, 0.9);
+  }
+
+  .ad-footer__minimize-btn {
+    color: #666;
+  }
+
+  .ad-footer__minimize-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #aaa;
   }
 }
 
@@ -515,250 +979,5 @@
   }
   to {
     transform: translateY(0);
-  }
-}
-
-/* ─── Top Bar (horizontal scrollable ads above footer) ────────── */
-.ad-manager--topbar {
-  width: 100%;
-  background: transparent;
-  border-bottom: none;
-  border-top: none;
-  box-shadow: none;
-  padding: 12px 0 8px 0;
-  position: relative;
-  z-index: 50;
-}
-
-.ad-topbar__container {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 16px;
-  max-width: 1440px;
-  margin: 0 auto;
-}
-
-.ad-topbar__label {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: #999;
-  flex-shrink: 0;
-}
-
-/* Scrollable wrapper */
-.ad-topbar__scroll-wrapper {
-  flex: 1;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: #ddd transparent;
-  -webkit-overflow-scrolling: touch;
-}
-
-.ad-topbar__scroll-wrapper::-webkit-scrollbar {
-  height: 4px;
-}
-
-.ad-topbar__scroll-wrapper::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.ad-topbar__scroll-wrapper::-webkit-scrollbar-thumb {
-  background: #ddd;
-  border-radius: 4px;
-}
-
-.ad-topbar__track {
-  display: flex;
-  gap: 12px;
-  padding: 4px 0 8px;
-  min-width: max-content;
-  align-items: stretch;
-}
-
-.ad-topbar__slide {
-  flex: 0 0 auto;
-  width: 260px;
-  min-width: 220px;
-}
-
-/* Top bar card overrides */
-.ad-topbar__slide .ad-banner {
-  max-width: none;
-  width: 100%;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  background: rgba(255, 255, 255, 0.95);
-}
-
-.ad-topbar__slide .ad-banner:hover {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-}
-
-.ad-topbar__slide .ad-banner--small .ad-banner__image-wrap {
-  aspect-ratio: 7 / 5;
-}
-
-.ad-topbar__minimize-btn {
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  color: #999;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 4px;
-  transition:
-    background 0.15s,
-    color 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ad-topbar__minimize-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: #555;
-}
-
-/* ─── Minimized top bar (compact pills) ───────────────────────── */
-.ad-manager--topbar-minimized {
-  padding: 4px 0;
-}
-
-.ad-topbar__minimized {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 16px;
-  max-width: 1440px;
-  margin: 0 auto;
-}
-
-.ad-topbar__pills {
-  display: flex;
-  gap: 8px;
-  flex: 1;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  padding: 2px 0 6px;
-}
-
-.ad-topbar__pills::-webkit-scrollbar {
-  height: 3px;
-}
-
-.ad-topbar__pills::-webkit-scrollbar-thumb {
-  background: #ddd;
-  border-radius: 4px;
-}
-
-.ad-topbar__pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(244, 244, 245, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 16px;
-  padding: 4px 10px 4px 4px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 500;
-  color: #333;
-}
-
-.ad-topbar__pill:hover {
-  background: rgba(232, 232, 234, 0.9);
-}
-
-.ad-topbar__pill-img {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.ad-topbar__pill-name {
-  white-space: nowrap;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ─── Dark mode ───────────────────────────────────────────────── */
-@media (prefers-color-scheme: dark) {
-  .ad-manager--topbar {
-    background: transparent;
-    border-bottom-color: transparent;
-    border-top-color: transparent;
-  }
-
-  .ad-topbar__label {
-    color: #666;
-  }
-
-  .ad-topbar__slide .ad-banner {
-    border-color: rgba(255, 255, 255, 0.1);
-    background: rgba(30, 30, 30, 0.95);
-  }
-
-  .ad-topbar__minimize-btn {
-    color: #666;
-  }
-
-  .ad-topbar__minimize-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #aaa;
-  }
-
-  .ad-topbar__pill {
-    background: rgba(42, 42, 46, 0.9);
-    border-color: rgba(255, 255, 255, 0.06);
-    color: #e0e0e0;
-  }
-
-  .ad-topbar__pill:hover {
-    background: rgba(51, 51, 56, 0.9);
-  }
-
-  .ad-topbar__scroll-wrapper::-webkit-scrollbar-thumb {
-    background: #444;
-  }
-}
-
-/* ─── Mobile: topbar becomes full-width carousel ──────────────── */
-@media (max-width: 768px) {
-  .ad-manager--topbar {
-    padding: 8px 0 4px 0;
-  }
-
-  .ad-topbar__container {
-    padding: 0 8px;
-    gap: 8px;
-  }
-
-  .ad-topbar__slide {
-    width: 200px;
-    min-width: 180px;
-  }
-
-  .ad-topbar__slide .ad-banner--small .ad-banner__image-wrap {
-    aspect-ratio: 7 / 5;
-  }
-
-  .ad-topbar__label {
-    font-size: 9px;
-  }
-
-  .ad-topbar__minimized {
-    padding: 0 8px;
-    gap: 8px;
   }
 }

@@ -9,7 +9,7 @@ interface AdBannerProps {
   minimized?: boolean;
   className?: string;
   authToken?: string;
-  size?: 'normal' | 'small' | 'mini' | 'footerbar'; // Add 'footerbar' here
+  size?: 'normal' | 'small' | 'mini';
 }
 
 const AdBanner: React.FC<AdBannerProps> = ({
@@ -77,47 +77,6 @@ const AdBanner: React.FC<AdBannerProps> = ({
   const hasContent = ad.title || ad.businessName || ad.description;
 
   if (!hasImage && !hasContent) return null;
-
-  // ── Footerbar size (skinny horizontal card) ──────────────────────────────
-  if (size === 'footerbar') {
-    return (
-      <div
-        className={`ad-banner ad-banner--footerbar ${isVisible ? 'ad-banner--visible' : ''} ${className}`}
-        role='complementary'
-        aria-label={`Advertisement: ${ad.businessName}`}
-      >
-        <div
-          className='ad-banner__body ad-banner__body--horizontal'
-          onClick={handleClick}
-          role='button'
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && handleClick()}
-          aria-label={`Visit ${ad.businessName}`}
-        >
-          {hasImage && (
-            <div className='ad-banner__image-wrap--small'>
-              <img
-                src={imageUrl!}
-                alt={altText}
-                className='ad-banner__image'
-                onError={() => setImageError(true)}
-                loading='lazy'
-              />
-            </div>
-          )}
-          <div className='ad-banner__info--horizontal'>
-            <p className='ad-banner__business'>{ad.businessName}</p>
-            {ad.title && ad.title !== ad.businessName && (
-              <h3 className='ad-banner__title--horizontal'>{ad.title}</h3>
-            )}
-          </div>
-          <span className='ad-banner__cta--horizontal'>
-            {ad.ctaText || 'Learn More'}
-          </span>
-        </div>
-      </div>
-    );
-  }
 
   // ── Minimized pill ──────────────────────────────────────────────
   if (isMinimized) {
@@ -200,6 +159,26 @@ const AdBanner: React.FC<AdBannerProps> = ({
             <line x1='5' y1='12' x2='19' y2='12' />
           </svg>
         </button>
+        {onClose && (
+          <button
+            className='ad-btn ad-btn--icon'
+            onClick={onClose}
+            aria-label='Close advertisement'
+            title='Close'
+          >
+            <svg
+              width='13'
+              height='13'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2.5'
+            >
+              <line x1='18' y1='6' x2='6' y2='18' />
+              <line x1='6' y1='6' x2='18' y2='18' />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div
