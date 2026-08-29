@@ -5,7 +5,14 @@ import AdBanner from './AdBanner';
 import './AdManager.css';
 
 interface AdManagerProps {
-  placement?: 'sidebar' | 'header' | 'footer' | 'inline' | 'popup' | 'topbar';
+  placement?:
+    | 'sidebar'
+    | 'header'
+    | 'footer'
+    | 'inline'
+    | 'popup'
+    | 'topbar'
+    | 'footerbar';
   pageSlug?: string;
   showMinimized?: boolean;
   className?: string;
@@ -412,6 +419,96 @@ const AdManager: React.FC<AdManagerProps> = ({
               <svg
                 width='16'
                 height='16'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+              >
+                <polyline points='18 15 12 9 6 15' />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── FOOTERBAR PLACEMENT (Skinny horizontal scrollable ads above footer) ────
+  if (placement === 'footerbar') {
+    // If all ads are minimized, show compact pill view
+    if (allMinimized && showMinimized) {
+      return (
+        <div
+          className={`ad-manager ad-manager--footerbar ad-manager--footerbar-minimized ${className}`}
+        >
+          <div className='ad-footerbar__minimized'>
+            <span className='ad-footerbar__label'>Sponsored</span>
+            <div className='ad-footerbar__pills'>
+              {displayAds.map((ad) => (
+                <button
+                  key={ad._id}
+                  className='ad-footerbar__pill'
+                  onClick={() => {
+                    const updated = new Set(minimizedAds);
+                    updated.delete(ad._id);
+                    setMinimizedAds(updated);
+                    localStorage.setItem(
+                      getStorageKey(placement, 'minimized'),
+                      JSON.stringify([...updated]),
+                    );
+                  }}
+                >
+                  {ad.desktopImage?.url && (
+                    <img
+                      src={ad.desktopImage.url}
+                      alt={ad.businessName}
+                      className='ad-footerbar__pill-img'
+                    />
+                  )}
+                  <span className='ad-footerbar__pill-name'>
+                    {ad.businessName}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Full expanded view with horizontal scrolling - skinny style
+    return (
+      <div className={`ad-manager ad-manager--footerbar ${className}`}>
+        <div className='ad-footerbar__container'>
+          <span className='ad-footerbar__label'>Sponsored</span>
+          <div className='ad-footerbar__scroll-wrapper'>
+            <div className='ad-footerbar__track'>
+              {displayAds.map((ad) => (
+                <div key={ad._id} className='ad-footerbar__slide'>
+                  <AdBanner
+                    ad={ad}
+                    authToken={authToken}
+                    size='footerbar'
+                    minimized={false}
+                    onClose={() => handleClose(ad._id)}
+                    onMinimize={(m) => handleMinimize(ad._id, m)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          {displayAds.length > 1 && (
+            <button
+              className='ad-footerbar__minimize-btn'
+              onClick={() => {
+                displayAds.forEach((ad) => handleMinimize(ad._id, true));
+              }}
+              aria-label='Minimize ads'
+              title='Minimize'
+            >
+              <svg
+                width='14'
+                height='14'
                 viewBox='0 0 24 24'
                 fill='none'
                 stroke='currentColor'
