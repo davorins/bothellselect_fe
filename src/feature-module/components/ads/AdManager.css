@@ -251,7 +251,7 @@
 /* ─── Footer (skinny horizontal scrollable ads) ──────────────── */
 .ad-manager--footer {
   width: 100%;
-  max-width: 1200px;
+  /* max-width: 1200px; */
   margin: 0 auto;
   background: transparent;
   padding: 16px 20px 12px 20px;
