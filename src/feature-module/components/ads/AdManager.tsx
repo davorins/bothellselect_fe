@@ -629,7 +629,6 @@ const AdManager: React.FC<AdManagerProps> = ({
           className={`ad-manager ad-manager--footer ad-manager--footer-minimized ${className}`}
         >
           <div className='ad-footer__minimized'>
-            <span className='ad-footer__label'>Sponsored</span>
             <div className='ad-footer__pills'>
               {displayAds.map((ad) => (
                 <button
