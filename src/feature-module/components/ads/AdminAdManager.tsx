@@ -645,6 +645,7 @@ const AdminAdManager: React.FC = () => {
                     <Option value='footer'>Footer</Option>
                     <Option value='inline'>Inline</Option>
                     <Option value='popup'>Popup</Option>
+                    <Option value='topbar'>Top Bar</Option>
                   </Select>
                 </Form.Item>
               </Col>
