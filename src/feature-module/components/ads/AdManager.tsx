@@ -665,7 +665,6 @@ const AdManager: React.FC<AdManagerProps> = ({
     return (
       <div className={`ad-manager ad-manager--footer ${className}`}>
         <div className='ad-footer__container'>
-          <span className='ad-footer__label'>Sponsored</span>
           <div className='ad-footer__scroll-wrapper'>
             <div className='ad-footer__track'>
               {displayAds.map((ad) => (
