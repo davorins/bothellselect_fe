@@ -139,8 +139,6 @@ const AdBanner: React.FC<AdBannerProps> = ({
       role='complementary'
       aria-label={`Advertisement: ${ad.businessName}`}
     >
-      <span className='ad-label'>Sponsored</span>
-
       <div className='ad-banner__controls'>
         <button
           className='ad-btn ad-btn--icon'
