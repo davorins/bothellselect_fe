@@ -1,6 +1,6 @@
 .header-ad-container {
   position: sticky;
-  top: 0;
+  top: 64px;
   z-index: 1000;
   background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);

@@ -860,14 +860,14 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         className={`hp-hero ${arcDone && isMobile ? 'hp-hero--hidden' : ''}`}
         ref={heroRef}
       >
-        <div className='hp-hero__bg-wrapper'>
+        {/* <div className='hp-hero__bg-wrapper'>
           <img
             src='/assets/img/theme/bg-main.png'
             alt='Basketball court background'
             className='hp-hero__bg'
           />
         </div>
-        <div className='hp-hero__overlay' />
+        <div className='hp-hero__overlay' /> */}
 
         <canvas
           ref={canvasRef}
