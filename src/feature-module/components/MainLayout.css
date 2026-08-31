@@ -11,8 +11,8 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding: 8px;
   background: #0a0a0f;
-  min-height: 10vh;
   width: 100%;
+  bottom: 50px;
 }
 
 .sidebar-left,
