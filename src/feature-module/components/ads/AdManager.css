@@ -131,10 +131,21 @@
 }
 
 .ad-banner--footerbar:hover {
-  transform: scale(1.45);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   background: rgba(255, 255, 255, 0.98);
-  z-index: 60;
+}
+
+/* Only the image scales on hover, not the whole card */
+.ad-banner--footerbar .ad-banner__image-wrap {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+  transform-origin: center;
+}
+
+.ad-banner--footerbar:hover .ad-banner__image-wrap {
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Close button pinned to the upper-right corner, overlaid on the
@@ -144,20 +155,49 @@
   top: 4px;
   right: 4px;
   z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .ad-banner--footerbar .ad-banner__controls .ad-btn {
   background: rgba(255, 255, 255, 0.85);
+  border: none;
   border-radius: 50%;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   padding: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #999;
 }
 
 .ad-banner--footerbar .ad-banner__controls .ad-btn:hover {
-  background: rgba(239, 68, 68, 0.9);
-  color: #fff;
+  background: rgba(0, 0, 0, 0.08);
+  color: #666;
+  transform: scale(1.05);
+}
+
+.ad-banner--footerbar .ad-banner__controls .ad-btn--close:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+}
+
+.ad-banner--footerbar .ad-banner__controls .ad-btn svg {
+  width: 11px;
+  height: 11px;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  fill: none;
+}
+
+/* Hide minimize button in footerbar */
+.ad-banner--footerbar .ad-banner__controls .ad-btn--minimize {
+  display: none;
 }
 
 .ad-banner--footerbar .ad-banner__body {
@@ -177,6 +217,7 @@
   overflow: hidden;
   background: rgba(240, 240, 240, 0.5);
   aspect-ratio: unset;
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .ad-banner--footerbar .ad-banner__image {
@@ -226,20 +267,16 @@
   font-weight: 600;
   color: #2563eb;
   flex-shrink: 0;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 2px 10px;
+  border-radius: 20px;
   background: rgba(37, 99, 235, 0.08);
   white-space: nowrap;
   gap: 4px;
+  transition: all 0.2s ease;
 }
 
 .ad-banner--footerbar:hover .ad-banner__cta {
   background: rgba(37, 99, 235, 0.15);
-}
-
-.ad-banner--footerbar .ad-banner__controls .ad-btn svg {
-  width: 11px;
-  height: 11px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -263,6 +300,18 @@
   .ad-banner--footerbar:hover .ad-banner__cta {
     background: rgba(96, 165, 250, 0.2);
   }
+  .ad-banner--footerbar .ad-banner__controls .ad-btn {
+    background: rgba(40, 40, 40, 0.85);
+    color: #888;
+  }
+  .ad-banner--footerbar .ad-banner__controls .ad-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #bbb;
+  }
+  .ad-banner--footerbar .ad-banner__controls .ad-btn--close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
 }
 
 @media (max-width: 768px) {
@@ -279,7 +328,7 @@
   }
   .ad-banner--footerbar .ad-banner__cta {
     font-size: 9px;
-    padding: 1px 6px;
+    padding: 1px 8px;
   }
 }
 
