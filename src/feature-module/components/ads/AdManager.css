@@ -38,22 +38,26 @@
 /* ============================================================
    Generic minimized pill — base styles that work in ANY container
    (sidebar, footer, topbar, header, inline), not just the sidebar.
+   FIXED: Dark text on light background for readability
    ============================================================ */
 .ad-banner.is-minimized-pill {
   display: inline-flex;
   align-items: center;
   width: auto;
+  max-width: 220px;
   padding: 4px 10px 4px 4px;
   border-radius: 20px;
-  background: rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .ad-banner.is-minimized-pill:hover {
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 1);
   transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 .ad-banner.is-minimized-pill .ad-banner__minimized-body {
@@ -64,17 +68,17 @@
 }
 
 .ad-banner.is-minimized-pill .ad-banner__minimized-img {
-  width: 56px;
-  height: 56px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
 }
 
 .ad-banner.is-minimized-pill .ad-banner__minimized-label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: #fff;
+  color: #1a1a1a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -86,7 +90,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #999;
+  color: #888;
   background: rgba(0, 0, 0, 0.06);
   padding: 2px 6px;
   border-radius: 4px;
@@ -103,6 +107,7 @@
 /* ============================================================
    "footerbar" size — the compact horizontal card used by footer,
    header and topbar so all three share one look.
+   FIXED: Now matches sidebar colors/styles
    ============================================================ */
 .ad-banner--footerbar {
   position: relative;
@@ -111,25 +116,33 @@
   border-radius: 40px;
   border: 1px solid rgba(0, 0, 0, 0.06);
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   display: flex;
   align-items: center;
-  padding: 8px;
+  padding: 6px 10px 6px 6px;
   cursor: pointer;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
+  transition: all 0.25s ease;
   transform-origin: center;
+  height: 56px;
 }
 
 .ad-banner--footerbar:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   background: rgba(255, 255, 255, 0.98);
+  transform: translateY(-2px);
+  border-color: rgba(0, 0, 0, 0.12);
 }
 
 /* Only the image scales on hover, not the whole card */
 .ad-banner--footerbar .ad-banner__image-wrap {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(240, 240, 240, 0.5);
+  aspect-ratio: unset;
+  border: 1px solid rgba(0, 0, 0, 0.04);
   transition:
     transform 0.25s ease,
     box-shadow 0.25s ease;
@@ -141,60 +154,6 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Close button pinned to the upper-right corner */
-.ad-banner--footerbar .ad-banner__controls {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.ad-banner--footerbar .ad-banner__controls .ad-btn {
-  background: rgba(255, 255, 255, 0);
-  border: 1px solid #999;
-  position: relative;
-  top: 5px;
-  right: 5px;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  color: #999;
-}
-
-.ad-banner--footerbar .ad-banner__controls .ad-btn:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: #666;
-  transform: scale(1.05);
-}
-
-.ad-banner--footerbar .ad-banner__controls .ad-btn--close:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: #dc2626;
-}
-
-.ad-banner--footerbar .ad-banner__controls .ad-btn svg {
-  width: 11px;
-  height: 11px;
-  stroke: currentColor;
-  stroke-width: 2.5;
-  fill: none;
-}
-
-/* Hide minimize button in footerbar */
-.ad-banner--footerbar .ad-banner__controls .ad-btn--minimize {
-  display: none;
-}
-
 .ad-banner--footerbar .ad-banner__body {
   display: flex;
   align-items: center;
@@ -202,17 +161,6 @@
   width: 100%;
   height: 100%;
   padding: 0 4px;
-}
-
-.ad-banner--footerbar .ad-banner__image-wrap {
-  width: 56px;
-  height: 56px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  overflow: hidden;
-  background: rgba(240, 240, 240, 0.5);
-  aspect-ratio: unset;
-  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .ad-banner--footerbar .ad-banner__image {
@@ -235,13 +183,13 @@
   font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: #888;
-  margin: 0 0 1px 0;
+  margin: 0;
 }
 
 .ad-banner--footerbar .ad-banner__title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: #1a1a1a;
   margin: 0;
@@ -249,7 +197,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.2;
-  -webkit-line-clamp: unset;
   display: block;
 }
 
@@ -262,33 +209,82 @@
   font-weight: 600;
   color: #2563eb;
   flex-shrink: 0;
-  padding: 2px 10px;
+  padding: 4px 12px;
   border-radius: 20px;
   background: rgba(37, 99, 235, 0.08);
   white-space: nowrap;
-  gap: 4px;
   transition: all 0.2s ease;
-  width: 80px;
-  margin-top: 5px;
 }
 
 .ad-banner--footerbar:hover .ad-banner__cta {
   background: rgba(37, 99, 235, 0.15);
 }
 
+/* Close button for footerbar - matches sidebar style */
+.ad-banner--footerbar .ad-banner__controls {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  padding: 2px;
+  backdrop-filter: blur(4px);
+}
+
+.ad-banner--footerbar .ad-banner__controls .ad-btn {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ad-banner--footerbar .ad-banner__controls .ad-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #666;
+}
+
+.ad-banner--footerbar .ad-banner__controls .ad-btn--close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.ad-banner--footerbar .ad-banner__controls .ad-btn svg {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+/* Hide minimize button in footerbar */
+.ad-banner--footerbar .ad-banner__controls .ad-btn--minimize {
+  display: none;
+}
+
 @media (prefers-color-scheme: dark) {
   .ad-banner--footerbar {
-    background: rgba(30, 30, 30, 0.92);
+    background: rgba(40, 40, 45, 0.9);
     border-color: rgba(255, 255, 255, 0.06);
   }
   .ad-banner--footerbar:hover {
-    background: rgba(40, 40, 40, 0.95);
+    background: rgba(50, 50, 55, 0.95);
+    border-color: rgba(255, 255, 255, 0.12);
   }
   .ad-banner--footerbar .ad-banner__title {
-    color: #e0e0e0;
+    color: #e8e8e8;
   }
   .ad-banner--footerbar .ad-banner__business {
-    color: #666;
+    color: #777;
   }
   .ad-banner--footerbar .ad-banner__cta {
     color: #60a5fa;
@@ -297,12 +293,14 @@
   .ad-banner--footerbar:hover .ad-banner__cta {
     background: rgba(96, 165, 250, 0.2);
   }
+  .ad-banner--footerbar .ad-banner__controls {
+    background: rgba(40, 40, 45, 0.9);
+  }
   .ad-banner--footerbar .ad-banner__controls .ad-btn {
-    background: rgba(40, 40, 40, 0.85);
     color: #888;
   }
   .ad-banner--footerbar .ad-banner__controls .ad-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.06);
     color: #bbb;
   }
   .ad-banner--footerbar .ad-banner__controls .ad-btn--close:hover {
@@ -314,7 +312,7 @@
 @media (max-width: 768px) {
   .ad-banner--footerbar {
     height: 48px;
-    padding: 3px;
+    padding: 4px 8px 4px 4px;
   }
   .ad-banner--footerbar .ad-banner__image-wrap {
     width: 34px;
@@ -325,7 +323,7 @@
   }
   .ad-banner--footerbar .ad-banner__cta {
     font-size: 9px;
-    padding: 1px 8px;
+    padding: 2px 10px;
   }
 }
 
@@ -583,9 +581,7 @@
 }
 
 /* ============================================================
-   SIDEBAR TO FOOTER CONVERSION
-   When screen is small, sidebar ads automatically convert to
-   footer-style horizontal scrollable ads.
+   SIDEBAR TO FOOTER CONVERSION - Now matches sidebar colors
    ============================================================ */
 @media (max-width: 1100px) {
   .ad-manager--sidebar {
@@ -600,8 +596,9 @@
     max-height: none;
     padding: 8px 12px;
     border-radius: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(255, 255, 255, 0.95);
     border: none;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     flex-direction: row;
@@ -611,7 +608,7 @@
     overflow-x: auto;
     scrollbar-width: none;
     z-index: 200;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
     min-height: 60px;
   }
 
@@ -624,34 +621,34 @@
     top: auto;
     right: auto;
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow: none;
   }
 
   .ad-manager--sidebar .ad-sidebar__master-btn {
-    color: rgba(255, 255, 255, 0.7);
+    color: #4a4a4a;
   }
 
   .ad-manager--sidebar .ad-sidebar__master-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
+    background: rgba(0, 0, 0, 0.1);
+    color: #1a1a1a;
   }
 
   .ad-manager--sidebar .ad-sidebar__master-btn--close:hover {
-    background: rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
+    color: #dc2626;
   }
 
   .ad-manager--sidebar .ad-banner {
     flex: 0 0 auto;
     width: 220px;
     min-width: 180px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.06);
     border-radius: 40px;
     padding: 4px 8px 4px 4px;
-    box-shadow: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     display: flex;
     align-items: center;
     height: 44px;
@@ -660,7 +657,8 @@
 
   .ad-manager--sidebar .ad-banner:hover {
     transform: none !important;
-    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.98);
   }
 
   .ad-manager--sidebar .ad-banner .ad-banner__body {
@@ -689,13 +687,13 @@
 
   .ad-manager--sidebar .ad-banner .ad-banner__business {
     font-size: 7px;
-    color: rgba(255, 255, 255, 0.4);
+    color: #888;
     margin: 0;
   }
 
   .ad-manager--sidebar .ad-banner .ad-banner__title {
     font-size: 10px;
-    color: rgba(255, 255, 255, 0.9);
+    color: #1a1a1a;
     margin: 0;
     -webkit-line-clamp: 1;
     line-height: 1.2;
@@ -708,35 +706,36 @@
   .ad-manager--sidebar .ad-banner .ad-banner__cta {
     font-size: 8px;
     padding: 2px 8px;
-    background: rgba(96, 165, 250, 0.15);
-    color: #60a5fa;
+    background: rgba(37, 99, 235, 0.08);
+    color: #2563eb;
     flex-shrink: 0;
     white-space: nowrap;
   }
 
   .ad-manager--sidebar .ad-banner .ad-banner__controls {
     position: absolute;
-    top: -6px;
-    right: -6px;
-    background: rgba(0, 0, 0, 0.6);
+    top: -4px;
+    right: -4px;
+    background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(4px);
     border-radius: 50%;
     padding: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
   .ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn {
-    color: rgba(255, 255, 255, 0.5);
+    color: #999;
     padding: 2px;
   }
 
   .ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
+    background: rgba(0, 0, 0, 0.06);
+    color: #666;
   }
 
   .ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn--close:hover {
-    background: rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
   }
 
   .ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn svg {
@@ -753,23 +752,23 @@
   .ad-manager--sidebar.is-minimized .ad-banner.is-minimized-pill {
     width: auto;
     max-width: 180px;
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.08);
   }
 
   .ad-manager--sidebar.is-minimized
     .ad-banner.is-minimized-pill
     .ad-banner__minimized-label {
-    color: rgba(255, 255, 255, 0.8);
+    color: #1a1a1a;
   }
 
   .ad-manager--sidebar.is-minimized .ad-banner.is-minimized-pill .ad-label {
-    color: rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.06);
+    color: #888;
+    background: rgba(0, 0, 0, 0.06);
   }
 
   .ad-manager--sidebar.is-minimized .ad-banner.is-minimized-pill:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 1);
   }
 
   .ad-manager--sidebar .ad-banner .ad-btn--minimize {
@@ -779,7 +778,7 @@
 
 /* ============================================================
    Shared master-controls pill used by header/inline (and the
-   fallback path).
+   fallback path). Now matches sidebar colors.
    ============================================================ */
 .ad-manager__master-controls {
   display: flex;
@@ -822,9 +821,7 @@
 }
 
 /* ============================================================
-   Top Bar — in normal document flow, directly under the fixed
-   header, and scrolls away with the rest of the page (it is NOT
-   fixed). Styled as a frosted glass bar to match sidebar/footer.
+   Top Bar — now matches sidebar colors
    ============================================================ */
 .ad-manager--topbar {
   width: 100%;
@@ -935,8 +932,7 @@
 }
 
 /* ============================================================
-   Footer — fixed to the bottom of the viewport, same frosted-pill
-   treatment.
+   Footer — now matches sidebar colors
    ============================================================ */
 .ad-manager--footer {
   position: fixed;
@@ -955,23 +951,27 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 12px 0 16px;
+  padding: 6px 12px 6px 16px;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 60px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   transition: all 0.3s ease;
+  min-height: 72px;
 }
 
 .ad-footer__container:hover {
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.98);
 }
 
 .ad-footer__label {
@@ -979,12 +979,12 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.4);
+  color: #999;
   flex-shrink: 0;
   opacity: 0.7;
   padding-right: 12px;
   margin-right: 4px;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .ad-footer__scroll-wrapper {
@@ -992,7 +992,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scrollbar-color: #ddd transparent;
   -webkit-overflow-scrolling: touch;
   padding: 4px 0;
   margin: 0 4px;
@@ -1005,14 +1005,14 @@
   background: transparent;
 }
 .ad-footer__scroll-wrapper::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: #ddd;
   border-radius: 20px;
 }
 
 .ad-footer__track {
   display: flex;
-  gap: 8px;
-  padding: 0;
+  gap: 10px;
+  padding: 4px 0;
   min-width: max-content;
   align-items: center;
 }
@@ -1022,46 +1022,23 @@
   width: 320px;
 }
 
-/* On dark footer glass, the footerbar card reads better in its dark
-   variant — override just within the footer track. */
-.ad-footer__slide .ad-banner--footerbar {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.06);
-}
-.ad-footer__slide .ad-banner--footerbar:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-.ad-footer__slide .ad-banner--footerbar .ad-banner__title {
-  color: rgba(255, 255, 255, 0.9);
-}
-.ad-footer__slide .ad-banner--footerbar .ad-banner__business {
-  color: rgba(255, 255, 255, 0.35);
-}
-.ad-footer__slide .ad-banner--footerbar .ad-banner__cta {
-  color: #60a5fa;
-  background: rgba(96, 165, 250, 0.12);
-}
-.ad-footer__slide .ad-banner--footerbar:hover .ad-banner__cta {
-  background: rgba(96, 165, 250, 0.2);
-}
-
 /* ─── Footer Master Controls ──────────────────────────────────── */
 .ad-footer__master-controls {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   flex-shrink: 0;
   padding-left: 8px;
-  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .ad-footer__master-btn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.35);
+  color: #999;
   cursor: pointer;
   padding: 4px 6px;
-  border-radius: 6px;
+  border-radius: 4px;
   transition: all 0.15s ease;
   display: flex;
   align-items: center;
@@ -1070,12 +1047,12 @@
 }
 
 .ad-footer__master-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.6);
+  background: rgba(0, 0, 0, 0.06);
+  color: #555;
 }
 
 .ad-footer__master-btn--close:hover {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
 }
 
@@ -1087,8 +1064,103 @@
   fill: none;
 }
 
+/* ─── Footer Minimized State ──────────────────────────────────── */
+.ad-manager--footer-minimized {
+  padding: 12px 16px;
+}
+
+.ad-footer__minimized {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px 6px 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 60px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  min-height: 72px;
+  transition: all 0.3s ease;
+}
+
+.ad-footer__minimized:hover {
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.ad-footer__pills {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 4px 0;
+}
+
+.ad-footer__pills::-webkit-scrollbar {
+  height: 3px;
+}
+.ad-footer__pills::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 20px;
+}
+
+.ad-footer__pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 30px;
+  padding: 6px 14px 6px 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1a1a1a;
+  height: 44px;
+}
+
+.ad-footer__pill:hover {
+  background: rgba(0, 0, 0, 0.08);
+  transform: scale(1.02);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.ad-footer__pill-img {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.ad-footer__pill-name {
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+}
+
+.ad-footer__minimized .ad-footer__master-controls {
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+  padding-left: 10px;
+}
+
 /* ============================================================
-   Header — fixed to the top of the viewport.
+   Header — now matches sidebar colors
    ============================================================ */
 .ad-manager--header {
   position: fixed;
@@ -1249,18 +1321,19 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    background: #f4f4f5;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.06);
     border-radius: 20px;
     padding: 5px 10px 5px 5px;
     cursor: pointer;
     flex-shrink: 0;
     transition: background 0.15s;
     font-family: inherit;
+    color: #1a1a1a;
   }
   .ad-mobile-pill:hover,
   .ad-mobile-pill:active {
-    background: #e8e8ea;
+    background: rgba(0, 0, 0, 0.08);
   }
 
   .ad-mobile-pill__img {
@@ -1274,7 +1347,7 @@
   .ad-mobile-pill__name {
     font-size: 12px;
     font-weight: 600;
-    color: #222;
+    color: #1a1a1a;
     white-space: nowrap;
     max-width: 120px;
     overflow: hidden;
@@ -1282,7 +1355,7 @@
   }
 
   .ad-mobile-dock__close {
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.06);
     border: none;
     border-radius: 50%;
     width: 28px;
@@ -1293,10 +1366,11 @@
     cursor: pointer;
     flex-shrink: 0;
     transition: background 0.2s;
+    color: #999;
   }
 
   .ad-mobile-dock__close:hover {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.12);
   }
 
   .ad-mobile-dock__master-controls {
@@ -1426,7 +1500,7 @@
   }
 
   .ad-carousel__dismiss {
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.06);
     border: none;
     border-radius: 50%;
     width: 28px;
@@ -1436,10 +1510,11 @@
     justify-content: center;
     cursor: pointer;
     transition: background 0.2s;
+    color: #999;
   }
 
   .ad-carousel__dismiss:hover {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.12);
   }
 
   .ad-carousel__track-wrap {
@@ -1523,7 +1598,7 @@
   .ad-footer__container {
     padding: 4px 8px 4px 12px;
     border-radius: 40px;
-    min-height: 44px;
+    min-height: 56px;
     gap: 8px;
   }
 
@@ -1534,11 +1609,118 @@
   }
 
   .ad-footer__slide {
-    width: 160px;
+    width: 200px;
+  }
+
+  .ad-footer__slide .ad-banner--footerbar {
+    height: 44px;
+    padding: 4px 8px 4px 4px;
+  }
+
+  .ad-footer__slide .ad-banner--footerbar .ad-banner__image-wrap {
+    width: 34px;
+    height: 34px;
+  }
+
+  .ad-footer__slide .ad-banner--footerbar .ad-banner__title {
+    font-size: 10px;
+  }
+
+  .ad-footer__slide .ad-banner--footerbar .ad-banner__cta {
+    font-size: 8px;
+    padding: 2px 8px;
+  }
+
+  .ad-footer__minimized {
+    padding: 4px 8px 4px 12px;
+    border-radius: 40px;
+    min-height: 56px;
+    gap: 8px;
+  }
+
+  .ad-footer__pill {
+    height: 36px;
+    font-size: 10px;
+    padding: 4px 10px 4px 4px;
+  }
+
+  .ad-footer__pill-img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .ad-footer__pill-name {
+    max-width: 80px;
+    font-size: 10px;
+  }
+
+  .ad-manager--footer-minimized {
+    padding: 8px 10px;
+  }
+
+  .ad-footer__minimized .ad-footer__master-controls {
+    padding-left: 6px;
   }
 
   .ad-manager--sidebar {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .ad-footer__slide {
+    width: 160px;
+  }
+
+  .ad-footer__slide .ad-banner--footerbar {
+    height: 38px;
+    padding: 3px 6px 3px 3px;
+  }
+
+  .ad-footer__slide .ad-banner--footerbar .ad-banner__image-wrap {
+    width: 28px;
+    height: 28px;
+  }
+
+  .ad-footer__slide .ad-banner--footerbar .ad-banner__title {
+    font-size: 9px;
+  }
+
+  .ad-footer__slide .ad-banner--footerbar .ad-banner__business {
+    font-size: 7px;
+  }
+
+  .ad-footer__slide .ad-banner--footerbar .ad-banner__cta {
+    font-size: 7px;
+    padding: 1px 6px;
+  }
+
+  .ad-footer__container {
+    min-height: 48px;
+    padding: 3px 6px 3px 10px;
+    border-radius: 30px;
+  }
+
+  .ad-footer__minimized {
+    min-height: 48px;
+    padding: 3px 6px 3px 10px;
+    border-radius: 30px;
+  }
+
+  .ad-footer__pill {
+    height: 30px;
+    font-size: 9px;
+    padding: 3px 8px 3px 3px;
+  }
+
+  .ad-footer__pill-img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .ad-footer__pill-name {
+    max-width: 60px;
+    font-size: 9px;
   }
 }
 
@@ -1620,19 +1802,20 @@
     color: #ef4444;
   }
 
+  /* Dark mode minimized pill - now has light background with dark text */
   .ad-banner.is-minimized-pill {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(255, 255, 255, 0.15);
   }
   .ad-banner.is-minimized-pill:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 1);
   }
   .ad-banner.is-minimized-pill .ad-banner__minimized-label {
-    color: #d0d0d0;
+    color: #1a1a1a;
   }
   .ad-banner.is-minimized-pill .ad-label {
-    color: #666;
-    background: rgba(255, 255, 255, 0.06);
+    color: #888;
+    background: rgba(0, 0, 0, 0.06);
   }
 
   .ad-manager--header {
@@ -1660,29 +1843,32 @@
   }
 
   .ad-footer__container {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.06);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    background: rgba(30, 30, 35, 0.95);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 8px 40px rgba(0, 0, 0, 0.4),
+      0 2px 8px rgba(0, 0, 0, 0.2);
   }
 
   .ad-footer__container:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    box-shadow:
+      0 8px 40px rgba(0, 0, 0, 0.5),
+      0 2px 8px rgba(0, 0, 0, 0.25);
+    background: rgba(40, 40, 45, 0.95);
   }
 
   .ad-footer__label {
-    color: rgba(255, 255, 255, 0.4);
-    border-right-color: rgba(255, 255, 255, 0.06);
+    color: #888;
+    border-right-color: rgba(255, 255, 255, 0.08);
   }
 
   .ad-footer__master-btn {
-    color: rgba(255, 255, 255, 0.35);
+    color: #888;
   }
 
   .ad-footer__master-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.06);
+    color: #aaa;
   }
 
   .ad-footer__master-btn--close:hover {
@@ -1691,7 +1877,37 @@
   }
 
   .ad-footer__master-controls {
-    border-left-color: rgba(255, 255, 255, 0.06);
+    border-left-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .ad-footer__minimized {
+    background: rgba(30, 30, 35, 0.95);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 8px 40px rgba(0, 0, 0, 0.4),
+      0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .ad-footer__minimized:hover {
+    box-shadow:
+      0 8px 40px rgba(0, 0, 0, 0.5),
+      0 2px 8px rgba(0, 0, 0, 0.25);
+    background: rgba(40, 40, 45, 0.95);
+  }
+
+  .ad-footer__pill {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #d0d0d0;
+  }
+
+  .ad-footer__pill:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .ad-footer__minimized .ad-footer__master-controls {
+    border-left-color: rgba(255, 255, 255, 0.08);
   }
 
   .ad-manager__master-btn {
@@ -1711,116 +1927,99 @@
     border-color: rgba(255, 255, 255, 0.06);
   }
 
-  .ad-mobile-dock__master-btn {
-    color: #888;
-    background: rgba(255, 255, 255, 0.06);
-  }
-  .ad-mobile-dock__master-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: #bbb;
-  }
-  .ad-mobile-dock__master-btn--close:hover {
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-  }
+  /* Dark mode sidebar to footer conversion */
+  @media (max-width: 1100px) {
+    .ad-manager--sidebar {
+      background: rgba(30, 30, 35, 0.95);
+      border-top-color: rgba(255, 255, 255, 0.08);
+    }
 
-  .ad-carousel__master-minimize {
-    color: #888;
-  }
-  .ad-carousel__master-minimize:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #bbb;
-  }
+    .ad-manager--sidebar .ad-sidebar__master-controls {
+      background: rgba(40, 40, 45, 0.98);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
 
-  .ad-manager--mobile-minimized {
-    background: rgba(30, 30, 35, 0.98);
-    border-top-color: rgba(255, 255, 255, 0.06);
-  }
+    .ad-manager--sidebar .ad-sidebar__master-btn {
+      color: #b0b0b0;
+    }
 
-  .ad-manager--mobile-expanded {
-    background: rgba(30, 30, 35, 0.98);
-    border-top-color: rgba(255, 255, 255, 0.06);
+    .ad-manager--sidebar .ad-sidebar__master-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e0e0e0;
+    }
+
+    .ad-manager--sidebar .ad-sidebar__master-btn--close:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    .ad-manager--sidebar .ad-banner {
+      background: rgba(40, 40, 45, 0.9);
+      border-color: rgba(255, 255, 255, 0.06);
+    }
+
+    .ad-manager--sidebar .ad-banner:hover {
+      background: rgba(50, 50, 55, 0.95);
+    }
+
+    .ad-manager--sidebar .ad-banner .ad-banner__title {
+      color: #e8e8e8;
+    }
+
+    .ad-manager--sidebar .ad-banner .ad-banner__business {
+      color: #777;
+    }
+
+    .ad-manager--sidebar .ad-banner .ad-banner__cta {
+      color: #60a5fa;
+      background: rgba(96, 165, 250, 0.12);
+    }
+
+    .ad-manager--sidebar .ad-banner .ad-banner__controls {
+      background: rgba(40, 40, 45, 0.9);
+    }
+
+    .ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn {
+      color: #888;
+    }
+
+    .ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #bbb;
+    }
+
+    .ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn--close:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
   }
 
   .ad-mobile-pill {
-    background: #2a2a2e;
-    border-color: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.08);
     color: #d0d0d0;
   }
   .ad-mobile-pill:hover {
-    background: #333338;
+    background: rgba(255, 255, 255, 0.1);
   }
   .ad-mobile-pill__name {
     color: #d0d0d0;
   }
-  .ad-mobile-dock__label {
-    color: #666;
-  }
+
   .ad-mobile-dock__close {
     background: rgba(255, 255, 255, 0.06);
+    color: #888;
   }
   .ad-mobile-dock__close:hover {
     background: rgba(255, 255, 255, 0.12);
   }
 
-  .ad-carousel__header {
-    border-bottom-color: rgba(255, 255, 255, 0.06);
-  }
-  .ad-carousel__title {
-    color: #666;
-  }
-  .ad-carousel__count {
-    color: #555;
-  }
-  .ad-carousel__collapse {
-    color: #888;
-  }
-  .ad-carousel__collapse:hover {
-    background: rgba(255, 255, 255, 0.06);
-  }
   .ad-carousel__dismiss {
     background: rgba(255, 255, 255, 0.06);
+    color: #888;
   }
   .ad-carousel__dismiss:hover {
     background: rgba(255, 255, 255, 0.12);
-  }
-  .ad-carousel__dot {
-    background: #444;
-  }
-  .ad-carousel__dot.is-active {
-    background: #888;
-  }
-
-  .ad-manager--popup .ad-banner {
-    background: rgba(30, 30, 35, 0.98);
-  }
-
-  /* Dark mode for sidebar converted to footer */
-  @media (max-width: 1100px) {
-    .ad-manager--sidebar {
-      background: rgba(0, 0, 0, 0.85);
-    }
-
-    .ad-manager--sidebar .ad-banner {
-      background: rgba(255, 255, 255, 0.06);
-      border-color: rgba(255, 255, 255, 0.06);
-    }
-
-    .ad-manager--sidebar .ad-banner:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .ad-manager--sidebar .ad-banner .ad-banner__title {
-      color: rgba(255, 255, 255, 0.9);
-    }
-
-    .ad-manager--sidebar .ad-banner .ad-banner__business {
-      color: rgba(255, 255, 255, 0.4);
-    }
-
-    .ad-manager--sidebar .ad-banner .ad-banner__cta {
-      color: #60a5fa;
-    }
   }
 }
 
