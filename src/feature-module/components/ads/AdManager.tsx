@@ -257,6 +257,24 @@ const AdManager: React.FC<AdManagerProps> = ({
     [minimizedAds, previewMode, placement],
   );
 
+  // Expand every currently-displayed ad out of the minimized state.
+  // The master "minimize all" button used to always call
+  // handleMasterMinimize, even once every ad was already minimized —
+  // so it had no way to bring them back. It now toggles to this once
+  // everything is minimized.
+  const handleExpandAll = useCallback(() => {
+    const updated = new Set(minimizedAds);
+    displayAds.forEach((ad) => updated.delete(ad._id));
+    setMinimizedAds(updated);
+    if (previewMode) return;
+    try {
+      localStorage.setItem(
+        getStorageKey(placement, 'minimized'),
+        JSON.stringify([...updated]),
+      );
+    } catch {}
+  }, [displayAds, minimizedAds, previewMode, placement]);
+
   // Master close all ads
   const handleMasterClose = useCallback(() => {
     if (previewMode) return;
@@ -342,6 +360,18 @@ const AdManager: React.FC<AdManagerProps> = ({
         <polyline points='18 15 12 9 6 15' />
       </svg>
     ),
+    expand: (
+      <svg
+        width='14'
+        height='14'
+        viewBox='0 0 24 24'
+        fill='none'
+        stroke='currentColor'
+        strokeWidth='2'
+      >
+        <polyline points='6 9 12 15 18 9' />
+      </svg>
+    ),
     close: (
       <svg
         width='14'
@@ -355,6 +385,15 @@ const AdManager: React.FC<AdManagerProps> = ({
         <line x1='6' y1='6' x2='18' y2='18' />
       </svg>
     ),
+  };
+
+  // The minimize/collapse button in every placement's master controls
+  // toggles between "minimize all" and "expand all" depending on
+  // whether everything is already minimized.
+  const minimizeToggle = {
+    handler: allMinimized ? handleExpandAll : handleMasterMinimize,
+    label: allMinimized ? 'Expand all ads' : 'Minimize all ads',
+    icon: allMinimized ? masterControlsSvg.expand : masterControlsSvg.minimize,
   };
 
   // ─── POPUP PLACEMENT ───────────────────────────────────────────
@@ -382,6 +421,11 @@ const AdManager: React.FC<AdManagerProps> = ({
   }
 
   // ─── TOPBAR PLACEMENT ──────────────────────────────────────────
+  // Sits in normal document flow directly under the (fixed) header
+  // and scrolls away with the rest of the page. Each ad is wired
+  // through the same minimize/expand mechanism as every other
+  // placement, and uses the compact "footerbar" card style to match
+  // the sidebar/footer aesthetic.
   if (placement === 'topbar') {
     return (
       <div className={`ad-manager ad-manager--topbar ${className}`}>
@@ -406,11 +450,11 @@ const AdManager: React.FC<AdManagerProps> = ({
           <div className='ad-topbar__master-controls'>
             <button
               className='ad-topbar__master-btn'
-              onClick={handleMasterMinimize}
-              aria-label='Minimize all ads'
-              title='Minimize all'
+              onClick={minimizeToggle.handler}
+              aria-label={minimizeToggle.label}
+              title={minimizeToggle.label}
             >
-              {masterControlsSvg.minimize}
+              {minimizeToggle.icon}
             </button>
             <button
               className='ad-topbar__master-btn ad-topbar__master-btn--close'
@@ -475,20 +519,11 @@ const AdManager: React.FC<AdManagerProps> = ({
             <div className='ad-mobile-dock__master-controls'>
               <button
                 className='ad-mobile-dock__master-btn'
-                onClick={handleMasterMinimize}
-                aria-label='Minimize all ads'
-                title='Minimize all'
+                onClick={minimizeToggle.handler}
+                aria-label={minimizeToggle.label}
+                title={minimizeToggle.label}
               >
-                <svg
-                  width='14'
-                  height='14'
-                  viewBox='0 0 24 24'
-                  fill='none'
-                  stroke='currentColor'
-                  strokeWidth='2.5'
-                >
-                  <polyline points='18 15 12 9 6 15' />
-                </svg>
+                {minimizeToggle.icon}
               </button>
               <button
                 className='ad-mobile-dock__master-btn ad-mobile-dock__master-btn--close'
@@ -566,21 +601,11 @@ const AdManager: React.FC<AdManagerProps> = ({
             </button>
             <button
               className='ad-carousel__master-minimize'
-              onClick={handleMasterMinimize}
-              aria-label='Minimize all ads'
-              title='Minimize all'
+              onClick={minimizeToggle.handler}
+              aria-label={minimizeToggle.label}
+              title={minimizeToggle.label}
             >
-              <svg
-                width='14'
-                height='14'
-                viewBox='0 0 24 24'
-                fill='none'
-                stroke='currentColor'
-                strokeWidth='2.5'
-                aria-hidden='true'
-              >
-                <polyline points='18 15 12 9 6 15' />
-              </svg>
+              {minimizeToggle.icon}
             </button>
             <button
               className='ad-carousel__dismiss'
@@ -656,11 +681,11 @@ const AdManager: React.FC<AdManagerProps> = ({
         <div className='ad-sidebar__master-controls'>
           <button
             className='ad-sidebar__master-btn'
-            onClick={handleMasterMinimize}
-            aria-label='Minimize all ads'
-            title='Minimize all'
+            onClick={minimizeToggle.handler}
+            aria-label={minimizeToggle.label}
+            title={minimizeToggle.label}
           >
-            {masterControlsSvg.minimize}
+            {minimizeToggle.icon}
           </button>
           <button
             className='ad-sidebar__master-btn ad-sidebar__master-btn--close'
@@ -715,11 +740,11 @@ const AdManager: React.FC<AdManagerProps> = ({
           <div className='ad-footer__master-controls'>
             <button
               className='ad-footer__master-btn'
-              onClick={handleMasterMinimize}
-              aria-label='Minimize all ads'
-              title='Minimize all'
+              onClick={minimizeToggle.handler}
+              aria-label={minimizeToggle.label}
+              title={minimizeToggle.label}
             >
-              {masterControlsSvg.minimize}
+              {minimizeToggle.icon}
             </button>
             <button
               className='ad-footer__master-btn ad-footer__master-btn--close'
@@ -750,11 +775,11 @@ const AdManager: React.FC<AdManagerProps> = ({
       <div className='ad-manager__master-controls'>
         <button
           className='ad-manager__master-btn'
-          onClick={handleMasterMinimize}
-          aria-label='Minimize all ads'
-          title='Minimize all'
+          onClick={minimizeToggle.handler}
+          aria-label={minimizeToggle.label}
+          title={minimizeToggle.label}
         >
-          {masterControlsSvg.minimize}
+          {minimizeToggle.icon}
         </button>
         <button
           className='ad-manager__master-btn ad-manager__master-btn--close'
