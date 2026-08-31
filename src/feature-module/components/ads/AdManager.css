@@ -31,34 +31,9 @@
   display: none;
 }
 
+/* Remove old dismiss button */
 .ad-sidebar__dismiss {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  z-index: 102;
-  color: white;
-  transition: all 0.2s ease;
-  pointer-events: auto;
-}
-
-.ad-sidebar__dismiss:hover {
-  background: rgba(0, 0, 0, 0.8);
-  transform: scale(1.05);
-}
-
-.ad-sidebar__dismiss svg {
-  width: 14px;
-  height: 14px;
-  stroke: white;
+  display: none;
 }
 
 .ad-manager--sidebar.ads-count-1 {
@@ -251,7 +226,6 @@
 /* ─── Footer (skinny horizontal scrollable ads) ──────────────── */
 .ad-manager--footer {
   width: 100%;
-  /* max-width: 1200px; */
   margin: 0 auto;
   background: transparent;
   padding: 16px 20px 12px 20px;
@@ -260,7 +234,6 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* justify-content: center; */
 }
 
 .ad-footer__container {
@@ -315,8 +288,6 @@
 
 .ad-footer__slide {
   flex: 0 0 auto;
-  /* width: 280px;
-  min-width: 240px; */
 }
 
 .ad-footer__slide .ad-banner {
@@ -550,6 +521,167 @@
     0 4px 16px rgba(0, 0, 0, 0.2);
   animation: adSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+}
+
+/* ─── Master Controls ───────────────────────────────────────────── */
+
+.ad-sidebar__master-controls,
+.ad-topbar__master-controls,
+.ad-footer__master-controls,
+.ad-manager__master-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ad-sidebar__master-btn,
+.ad-topbar__master-btn,
+.ad-footer__master-btn,
+.ad-manager__master-btn,
+.ad-mobile-dock__master-btn,
+.ad-carousel__master-minimize {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.ad-sidebar__master-btn:hover,
+.ad-topbar__master-btn:hover,
+.ad-footer__master-btn:hover,
+.ad-manager__master-btn:hover,
+.ad-mobile-dock__master-btn:hover,
+.ad-carousel__master-minimize:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: #555;
+}
+
+.ad-sidebar__master-btn--close:hover,
+.ad-topbar__master-btn--close:hover,
+.ad-footer__master-btn--close:hover,
+.ad-manager__master-btn--close:hover,
+.ad-mobile-dock__master-btn--close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+/* Sidebar master controls - positioned at top-right */
+.ad-manager--sidebar .ad-sidebar__master-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 102;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 6px;
+  padding: 2px 4px;
+  backdrop-filter: blur(4px);
+}
+
+.ad-manager--sidebar .ad-sidebar__master-btn {
+  color: rgba(255, 255, 255, 0.7);
+  padding: 3px 5px;
+}
+
+.ad-manager--sidebar .ad-sidebar__master-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.ad-manager--sidebar .ad-sidebar__master-btn--close:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+/* Topbar master controls */
+.ad-topbar__master-controls {
+  gap: 2px;
+}
+
+.ad-topbar__master-btn {
+  color: #999;
+  padding: 4px 6px;
+}
+
+.ad-topbar__master-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #555;
+}
+
+/* Footer master controls */
+.ad-footer__master-controls {
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ad-footer__master-btn {
+  color: #999;
+  padding: 4px 6px;
+}
+
+.ad-footer__master-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #555;
+}
+
+/* Mobile dock master controls */
+.ad-mobile-dock__master-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ad-mobile-dock__master-btn {
+  color: #999;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+}
+
+.ad-mobile-dock__master-btn:hover {
+  background: rgba(0, 0, 0, 0.12);
+  color: #555;
+}
+
+.ad-mobile-dock__master-btn--close:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* Carousel master minimize */
+.ad-carousel__master-minimize {
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+  padding: 4px 6px;
+  color: #666;
+}
+
+.ad-carousel__master-minimize:hover {
+  background: rgba(0, 0, 0, 0.12);
+  color: #333;
+}
+
+/* General ad manager master controls */
+.ad-manager__master-controls {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  padding: 4px 8px;
+}
+
+/* ─── Remove individual minimize from AdBanner ─────────────────── */
+.ad-banner .ad-btn--minimize {
+  display: none;
 }
 
 /* ─── Tablet: sidebar shifts left slightly ───────────────────── */
@@ -916,6 +1048,33 @@
     padding: 0 8px;
     gap: 8px;
   }
+
+  .ad-sidebar__master-controls {
+    top: 6px;
+    right: 6px;
+    padding: 2px 3px;
+  }
+
+  .ad-sidebar__master-btn {
+    padding: 2px 4px;
+    font-size: 10px;
+  }
+
+  .ad-mobile-dock__master-btn {
+    padding: 3px 5px;
+    font-size: 11px;
+  }
+
+  .ad-carousel__master-minimize {
+    padding: 3px 5px;
+    font-size: 11px;
+  }
+
+  .ad-topbar__master-btn,
+  .ad-footer__master-btn {
+    padding: 3px 5px;
+    font-size: 11px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1038,199 +1197,7 @@
   .ad-footer__pills::-webkit-scrollbar-thumb {
     background: #444;
   }
-}
 
-/* ─── Animations ──────────────────────────────────────────────── */
-@keyframes adFadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes adSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(32px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-@keyframes adSlideUpMobile {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
-/* ─── Master Controls ───────────────────────────────────────────── */
-
-.ad-sidebar__master-controls,
-.ad-topbar__master-controls,
-.ad-footer__master-controls,
-.ad-manager__master-controls {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.ad-sidebar__master-btn,
-.ad-topbar__master-btn,
-.ad-footer__master-btn,
-.ad-manager__master-btn,
-.ad-mobile-dock__master-btn,
-.ad-carousel__master-minimize {
-  background: none;
-  border: none;
-  color: #999;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 4px;
-  transition:
-    background 0.15s,
-    color 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-}
-
-.ad-sidebar__master-btn:hover,
-.ad-topbar__master-btn:hover,
-.ad-footer__master-btn:hover,
-.ad-manager__master-btn:hover,
-.ad-mobile-dock__master-btn:hover,
-.ad-carousel__master-minimize:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: #555;
-}
-
-.ad-sidebar__master-btn--close:hover,
-.ad-topbar__master-btn--close:hover,
-.ad-footer__master-btn--close:hover,
-.ad-manager__master-btn--close:hover,
-.ad-mobile-dock__master-btn--close:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-}
-
-/* Sidebar master controls position */
-.ad-manager--sidebar .ad-sidebar__master-controls {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 102;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 6px;
-  padding: 2px 4px;
-  backdrop-filter: blur(4px);
-}
-
-.ad-manager--sidebar .ad-sidebar__master-btn {
-  color: rgba(255, 255, 255, 0.7);
-  padding: 3px 5px;
-}
-
-.ad-manager--sidebar .ad-sidebar__master-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-}
-
-.ad-manager--sidebar .ad-sidebar__master-btn--close:hover {
-  background: rgba(239, 68, 68, 0.3);
-  color: #ef4444;
-}
-
-/* Topbar master controls */
-.ad-topbar__master-controls {
-  gap: 2px;
-}
-
-.ad-topbar__master-btn {
-  color: #999;
-  padding: 4px 6px;
-}
-
-.ad-topbar__master-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: #555;
-}
-
-/* Footer master controls */
-.ad-footer__master-controls {
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.ad-footer__master-btn {
-  color: #999;
-  padding: 4px 6px;
-}
-
-.ad-footer__master-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: #555;
-}
-
-/* Mobile dock master controls */
-.ad-mobile-dock__master-controls {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.ad-mobile-dock__master-btn {
-  color: #999;
-  padding: 4px 6px;
-  background: rgba(0, 0, 0, 0.06);
-  border-radius: 4px;
-}
-
-.ad-mobile-dock__master-btn:hover {
-  background: rgba(0, 0, 0, 0.12);
-  color: #555;
-}
-
-.ad-mobile-dock__master-btn--close:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-}
-
-/* Carousel master minimize */
-.ad-carousel__master-minimize {
-  background: rgba(0, 0, 0, 0.06);
-  border-radius: 4px;
-  padding: 4px 6px;
-  color: #666;
-}
-
-.ad-carousel__master-minimize:hover {
-  background: rgba(0, 0, 0, 0.12);
-  color: #333;
-}
-
-/* General ad manager master controls */
-.ad-manager__master-controls {
-  display: flex;
-  gap: 4px;
-  justify-content: flex-end;
-  padding: 4px 8px;
-}
-
-/* ─── Remove individual minimize from AdBanner ─────────────────── */
-.ad-banner .ad-btn--minimize {
-  display: none;
-}
-
-/* ─── Dark mode master controls ───────────────────────────────── */
-@media (prefers-color-scheme: dark) {
   .ad-sidebar__master-btn,
   .ad-topbar__master-btn,
   .ad-footer__master-btn,
@@ -1264,32 +1231,30 @@
   }
 }
 
-/* ─── Mobile responsive for master controls ────────────────────── */
-@media (max-width: 768px) {
-  .ad-sidebar__master-controls {
-    top: 6px;
-    left: 6px;
-    padding: 2px 3px;
+/* ─── Animations ──────────────────────────────────────────────── */
+@keyframes adFadeIn {
+  from {
+    opacity: 0;
   }
-
-  .ad-sidebar__master-btn {
-    padding: 2px 4px;
-    font-size: 10px;
+  to {
+    opacity: 1;
   }
-
-  .ad-mobile-dock__master-btn {
-    padding: 3px 5px;
-    font-size: 11px;
+}
+@keyframes adSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(32px) scale(0.97);
   }
-
-  .ad-carousel__master-minimize {
-    padding: 3px 5px;
-    font-size: 11px;
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
-
-  .ad-topbar__master-btn,
-  .ad-footer__master-btn {
-    padding: 3px 5px;
-    font-size: 11px;
+}
+@keyframes adSlideUpMobile {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
   }
 }

@@ -714,7 +714,7 @@ const AdManager: React.FC<AdManagerProps> = ({
         className={`ad-manager ad-manager--sidebar ${countClass} ${allMinimized ? 'is-minimized' : ''} ${className}`}
         aria-label='Advertisements'
       >
-        {/* Master controls at top of sidebar */}
+        {/* Master controls at top-right of sidebar */}
         <div className='ad-sidebar__master-controls'>
           <button
             className='ad-sidebar__master-btn'
@@ -752,26 +752,6 @@ const AdManager: React.FC<AdManagerProps> = ({
             </svg>
           </button>
         </div>
-
-        <button
-          className='ad-sidebar__dismiss'
-          onClick={handleSidebarDismiss}
-          aria-label='Close sponsor ads for 45 days'
-          title='Hide for 45 days'
-        >
-          <svg
-            width='14'
-            height='14'
-            viewBox='0 0 24 24'
-            fill='none'
-            stroke='currentColor'
-            strokeWidth='2'
-            aria-hidden='true'
-          >
-            <line x1='18' y1='6' x2='6' y2='18' />
-            <line x1='6' y1='6' x2='18' y2='18' />
-          </svg>
-        </button>
 
         {displayAds.map((ad) => (
           <AdBanner
