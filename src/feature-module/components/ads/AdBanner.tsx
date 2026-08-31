@@ -5,6 +5,7 @@ import './AdBanner.css';
 interface AdBannerProps {
   ad: Advertisement;
   onClose?: () => void;
+  onExpand?: () => void;
   minimized?: boolean;
   className?: string;
   authToken?: string;
@@ -14,6 +15,7 @@ interface AdBannerProps {
 const AdBanner: React.FC<AdBannerProps> = ({
   ad,
   onClose,
+  onExpand,
   minimized = false,
   className = '',
   authToken,
@@ -77,14 +79,14 @@ const AdBanner: React.FC<AdBannerProps> = ({
         className={`ad-banner is-minimized-pill ${isVisible ? 'ad-banner--visible' : ''} ${className}`}
         role='complementary'
         aria-label={`Advertisement: ${ad.businessName}`}
+        onClick={onExpand}
       >
         <div
           className='ad-banner__minimized-body'
-          onClick={handleClick}
           role='button'
           tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && handleClick()}
-          aria-label={`Visit ${ad.businessName}`}
+          onKeyDown={(e) => e.key === 'Enter' && onExpand?.()}
+          aria-label={`Expand ${ad.businessName} ad`}
         >
           {hasImage && (
             <img
@@ -112,7 +114,10 @@ const AdBanner: React.FC<AdBannerProps> = ({
         {onClose && (
           <button
             className='ad-btn ad-btn--icon ad-btn--close'
-            onClick={onClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
             aria-label='Close advertisement'
             title='Close'
           >

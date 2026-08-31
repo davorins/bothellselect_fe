@@ -561,9 +561,9 @@
 /* ─── Footer (skinny horizontal scrollable ads) ──────────────── */
 .ad-manager--footer {
   width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
-  background: transparent;
-  padding: 16px 20px 12px 20px;
+  padding: 12px 16px;
   position: relative;
   z-index: 50;
   display: flex;
@@ -574,22 +574,41 @@
 .ad-footer__container {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0;
+  gap: 12px;
+  padding: 6px 12px 6px 16px;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 60px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.06),
+    0 1px 4px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+  min-height: 56px;
+}
+
+.ad-footer__container:hover {
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 1px 4px rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.98);
 }
 
 .ad-footer__label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 9px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: #999;
   flex-shrink: 0;
-  opacity: 0.8;
-  padding-right: 4px;
+  opacity: 0.7;
+  padding-right: 12px;
+  margin-right: 4px;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .ad-footer__scroll-wrapper {
@@ -600,25 +619,26 @@
   scrollbar-color: #ddd transparent;
   -webkit-overflow-scrolling: touch;
   padding: 4px 0;
+  margin: 0 4px;
 }
 
 .ad-footer__scroll-wrapper::-webkit-scrollbar {
-  height: 5px;
+  height: 4px;
 }
 .ad-footer__scroll-wrapper::-webkit-scrollbar-track {
   background: transparent;
 }
 .ad-footer__scroll-wrapper::-webkit-scrollbar-thumb {
   background: #ddd;
-  border-radius: 6px;
+  border-radius: 20px;
 }
 
 .ad-footer__track {
   display: flex;
-  gap: 12px;
-  padding: 4px 0 8px 0;
+  gap: 8px;
+  padding: 4px 0 6px 0;
   min-width: max-content;
-  align-items: stretch;
+  align-items: center;
 }
 
 .ad-footer__slide {
@@ -628,40 +648,44 @@
 .ad-footer__slide .ad-banner {
   max-width: none;
   width: 100%;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  height: 72px;
+  border-radius: 40px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  height: 44px;
   display: flex;
   align-items: center;
-  padding: 8px 12px 8px 8px;
+  padding: 4px 8px 4px 4px;
   transition: all 0.25s ease;
+  cursor: pointer;
+  min-width: 160px;
 }
 
 .ad-footer__slide .ad-banner:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  background: rgba(255, 255, 255, 0.98);
-  transform: translateY(-2px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
 .ad-footer__slide .ad-banner .ad-banner__body {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
   height: 100%;
-  padding: 0;
+  padding: 0 4px;
 }
 
 .ad-footer__slide .ad-banner .ad-banner__image-wrap {
-  width: 52px;
-  height: 52px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
-  border-radius: 8px;
+  border-radius: 50%;
   overflow: hidden;
   background: rgba(240, 240, 240, 0.5);
   aspect-ratio: unset;
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .ad-footer__slide .ad-banner .ad-banner__image {
@@ -675,26 +699,29 @@
   padding: 0;
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .ad-footer__slide .ad-banner .ad-banner__business {
-  font-size: 11px;
+  font-size: 8px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #888;
-  margin: 0 0 2px 0;
+  color: #999;
+  margin: 0;
 }
 
 .ad-footer__slide .ad-banner .ad-banner__title {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: #1a1a1a;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 .ad-footer__slide .ad-banner .ad-banner__description {
@@ -705,125 +732,82 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 600;
   color: #2563eb;
   flex-shrink: 0;
-  padding: 4px 12px;
-  border-radius: 6px;
+  padding: 2px 10px;
+  border-radius: 20px;
   background: rgba(37, 99, 235, 0.08);
   white-space: nowrap;
   border-bottom: none;
+  transition: all 0.2s ease;
 }
 
 .ad-footer__slide .ad-banner:hover .ad-banner__cta {
   background: rgba(37, 99, 235, 0.15);
 }
 
-.ad-footer__minimize-btn {
+.ad-footer__slide .ad-banner .ad-banner__controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   flex-shrink: 0;
+}
+
+.ad-footer__slide .ad-banner .ad-banner__controls .ad-btn {
   background: none;
   border: none;
-  color: #999;
+  color: #ccc;
   cursor: pointer;
-  padding: 6px 8px;
-  border-radius: 6px;
-  transition:
-    background 0.15s,
-    color 0.15s;
+  padding: 2px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.ad-footer__minimize-btn:hover {
+.ad-footer__slide .ad-banner .ad-banner__controls .ad-btn:hover {
   background: rgba(0, 0, 0, 0.06);
-  color: #555;
+  color: #999;
 }
 
-.ad-manager--footer-minimized {
-  padding: 8px 20px 12px 20px;
+.ad-footer__slide .ad-banner .ad-banner__controls .ad-btn--close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
 }
 
-.ad-footer__minimized {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0;
-  max-width: 1100px;
-  margin: 0 auto;
-  width: 100%;
+.ad-footer__slide .ad-banner .ad-banner__controls .ad-btn svg {
+  width: 10px;
+  height: 10px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
 }
 
-.ad-footer__pills {
-  display: flex;
-  gap: 8px;
-  flex: 1;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  padding: 4px 0 8px 0;
-}
-
-.ad-footer__pills::-webkit-scrollbar {
-  height: 4px;
-}
-.ad-footer__pills::-webkit-scrollbar-thumb {
-  background: #ddd;
-  border-radius: 6px;
-}
-
-.ad-footer__pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(244, 244, 245, 0.95);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 20px;
-  padding: 6px 14px 6px 6px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  color: #333;
-  height: 36px;
-}
-
-.ad-footer__pill:hover {
-  background: rgba(232, 232, 234, 0.95);
-}
-
-.ad-footer__pill-img {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.ad-footer__pill-name {
-  white-space: nowrap;
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Hide minimize button on footer ads */
+.ad-footer__slide .ad-banner .ad-btn--minimize {
+  display: none;
 }
 
 /* ─── Footer Master Controls ──────────────────────────────────── */
 .ad-footer__master-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex-shrink: 0;
+  padding-left: 8px;
+  border-left: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .ad-footer__master-btn {
   background: none;
   border: none;
-  color: #999;
+  color: #bbb;
   cursor: pointer;
   padding: 4px 6px;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.15s ease;
   display: flex;
   align-items: center;
@@ -833,12 +817,12 @@
 
 .ad-footer__master-btn:hover {
   background: rgba(0, 0, 0, 0.06);
-  color: #555;
+  color: #666;
 }
 
 .ad-footer__master-btn--close:hover {
   background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  color: #dc2626;
 }
 
 .ad-footer__master-btn svg {
@@ -847,6 +831,101 @@
   stroke: currentColor;
   stroke-width: 2;
   fill: none;
+}
+
+/* ─── Footer Minimized State ──────────────────────────────────── */
+.ad-manager--footer-minimized {
+  padding: 12px 16px;
+}
+
+.ad-footer__minimized {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px 6px 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 60px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.06),
+    0 1px 4px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  min-height: 48px;
+  transition: all 0.3s ease;
+}
+
+.ad-footer__minimized:hover {
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 1px 4px rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.ad-footer__pills {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 2px 0 4px 0;
+}
+
+.ad-footer__pills::-webkit-scrollbar {
+  height: 3px;
+}
+.ad-footer__pills::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 20px;
+}
+
+.ad-footer__pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(244, 244, 245, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 30px;
+  padding: 4px 12px 4px 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  color: #333;
+  height: 32px;
+}
+
+.ad-footer__pill:hover {
+  background: rgba(232, 232, 234, 0.9);
+  transform: scale(1.02);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.ad-footer__pill-img {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.ad-footer__pill-name {
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+}
+
+.ad-footer__minimized .ad-footer__master-controls {
+  border-left: 1px solid rgba(0, 0, 0, 0.06);
+  padding-left: 10px;
 }
 
 /* ─── Header ──────────────────────────────────────────────────── */
@@ -1288,51 +1367,69 @@
   }
 
   .ad-footer__container {
-    gap: 10px;
-  }
-
-  .ad-footer__slide {
-    width: 220px;
-    min-width: 180px;
-  }
-
-  .ad-footer__slide .ad-banner {
-    height: 60px;
-    padding: 6px 10px 6px 6px;
-    border-radius: 8px;
-  }
-
-  .ad-footer__slide .ad-banner .ad-banner__image-wrap {
-    width: 42px;
-    height: 42px;
-  }
-
-  .ad-footer__slide .ad-banner .ad-banner__title {
-    font-size: 12px;
-  }
-
-  .ad-footer__slide .ad-banner .ad-banner__business {
-    font-size: 9px;
-  }
-
-  .ad-footer__slide .ad-banner .ad-banner__cta {
-    font-size: 10px;
-    padding: 3px 10px;
+    padding: 4px 8px 4px 12px;
+    border-radius: 40px;
+    min-height: 44px;
+    gap: 8px;
   }
 
   .ad-footer__label {
-    font-size: 9px;
+    font-size: 7px;
+    letter-spacing: 0.08em;
+    padding-right: 8px;
+  }
+
+  .ad-footer__slide .ad-banner {
+    height: 36px;
+    padding: 3px 6px 3px 3px;
+    border-radius: 30px;
+    min-width: 120px;
+  }
+
+  .ad-footer__slide .ad-banner .ad-banner__image-wrap {
+    width: 28px;
+    height: 28px;
+  }
+
+  .ad-footer__slide .ad-banner .ad-banner__title {
+    font-size: 10px;
+  }
+
+  .ad-footer__slide .ad-banner .ad-banner__business {
+    font-size: 7px;
+  }
+
+  .ad-footer__slide .ad-banner .ad-banner__cta {
+    font-size: 8px;
+    padding: 1px 8px;
+  }
+
+  .ad-footer__slide .ad-banner .ad-banner__controls .ad-btn svg {
+    width: 8px;
+    height: 8px;
+  }
+
+  .ad-footer__master-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .ad-footer__master-controls {
+    padding-left: 6px;
+    gap: 1px;
   }
 
   .ad-footer__minimized {
-    padding: 0;
-    gap: 10px;
+    padding: 4px 8px 4px 12px;
+    border-radius: 40px;
+    min-height: 40px;
+    gap: 8px;
   }
 
   .ad-footer__pill {
-    height: 32px;
-    font-size: 11px;
-    padding: 4px 10px 4px 4px;
+    height: 28px;
+    font-size: 10px;
+    padding: 3px 10px 3px 3px;
   }
 
   .ad-footer__pill-img {
@@ -1341,15 +1438,16 @@
   }
 
   .ad-footer__pill-name {
-    max-width: 100px;
+    max-width: 80px;
+    font-size: 10px;
   }
 
   .ad-manager--footer-minimized {
-    padding: 8px 12px 8px 12px;
+    padding: 8px 10px;
   }
 
-  .ad-manager--footer {
-    padding: 12px 12px 8px 12px;
+  .ad-footer__minimized .ad-footer__master-controls {
+    padding-left: 6px;
   }
 
   .ad-topbar__container {
@@ -1381,28 +1479,56 @@
 }
 
 @media (max-width: 480px) {
-  .ad-footer__slide {
-    width: 180px;
-    min-width: 150px;
-  }
-
   .ad-footer__slide .ad-banner {
-    height: 52px;
-    padding: 4px 8px 4px 4px;
+    min-width: 100px;
+    height: 32px;
   }
 
   .ad-footer__slide .ad-banner .ad-banner__image-wrap {
-    width: 36px;
-    height: 36px;
+    width: 24px;
+    height: 24px;
   }
 
   .ad-footer__slide .ad-banner .ad-banner__title {
-    font-size: 11px;
+    font-size: 9px;
   }
 
   .ad-footer__slide .ad-banner .ad-banner__cta {
+    font-size: 7px;
+    padding: 1px 6px;
+  }
+
+  .ad-footer__pill {
+    height: 24px;
     font-size: 9px;
-    padding: 2px 8px;
+    padding: 2px 8px 2px 2px;
+  }
+
+  .ad-footer__pill-img {
+    width: 18px;
+    height: 18px;
+  }
+
+  .ad-footer__pill-name {
+    max-width: 60px;
+    font-size: 9px;
+  }
+
+  .ad-footer__container {
+    min-height: 38px;
+    padding: 3px 6px 3px 10px;
+    border-radius: 30px;
+  }
+
+  .ad-footer__minimized {
+    min-height: 34px;
+    padding: 3px 6px 3px 10px;
+    border-radius: 30px;
+  }
+
+  .ad-footer__master-btn svg {
+    width: 10px;
+    height: 10px;
   }
 }
 
@@ -1550,19 +1676,36 @@
     color: #ef4444;
   }
 
+  .ad-footer__container {
+    background: rgba(30, 30, 35, 0.92);
+    border-color: rgba(255, 255, 255, 0.06);
+    box-shadow:
+      0 2px 12px rgba(0, 0, 0, 0.3),
+      0 1px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .ad-footer__container:hover {
+    background: rgba(40, 40, 45, 0.95);
+    box-shadow:
+      0 4px 20px rgba(0, 0, 0, 0.4),
+      0 1px 4px rgba(0, 0, 0, 0.2);
+  }
+
   .ad-footer__label {
     color: #666;
+    border-right-color: rgba(255, 255, 255, 0.06);
   }
 
   .ad-footer__slide .ad-banner {
-    background: rgba(30, 30, 30, 0.95);
-    border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    background: rgba(40, 40, 45, 0.8);
+    border-color: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   }
 
   .ad-footer__slide .ad-banner:hover {
-    background: rgba(40, 40, 40, 0.98);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    background: rgba(50, 50, 55, 0.9);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
   }
 
   .ad-footer__slide .ad-banner .ad-banner__title {
@@ -1582,23 +1725,65 @@
     background: rgba(96, 165, 250, 0.2);
   }
 
+  .ad-footer__slide .ad-banner .ad-banner__controls .ad-btn {
+    color: #666;
+  }
+
+  .ad-footer__slide .ad-banner .ad-banner__controls .ad-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #999;
+  }
+
+  .ad-footer__slide .ad-banner .ad-banner__controls .ad-btn--close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+
+  .ad-footer__master-btn {
+    color: #666;
+  }
+
+  .ad-footer__master-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #aaa;
+  }
+
+  .ad-footer__master-btn--close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+
+  .ad-footer__master-controls {
+    border-left-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .ad-footer__minimized {
+    background: rgba(30, 30, 35, 0.92);
+    border-color: rgba(255, 255, 255, 0.06);
+    box-shadow:
+      0 2px 12px rgba(0, 0, 0, 0.3),
+      0 1px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .ad-footer__minimized:hover {
+    background: rgba(40, 40, 45, 0.95);
+    box-shadow:
+      0 4px 20px rgba(0, 0, 0, 0.4),
+      0 1px 4px rgba(0, 0, 0, 0.2);
+  }
+
   .ad-footer__pill {
-    background: rgba(42, 42, 46, 0.95);
-    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(42, 42, 46, 0.8);
+    border-color: rgba(255, 255, 255, 0.06);
     color: #d0d0d0;
   }
 
   .ad-footer__pill:hover {
-    background: rgba(51, 51, 56, 0.95);
+    background: rgba(51, 51, 56, 0.9);
   }
 
-  .ad-footer__minimize-btn {
-    color: #666;
-  }
-
-  .ad-footer__minimize-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #aaa;
+  .ad-footer__minimized .ad-footer__master-controls {
+    border-left-color: rgba(255, 255, 255, 0.06);
   }
 
   .ad-footer__scroll-wrapper::-webkit-scrollbar-thumb {
@@ -1606,18 +1791,6 @@
   }
   .ad-footer__pills::-webkit-scrollbar-thumb {
     background: #444;
-  }
-
-  .ad-footer__master-btn {
-    color: #666;
-  }
-  .ad-footer__master-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #aaa;
-  }
-  .ad-footer__master-btn--close:hover {
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
   }
 
   .ad-manager__master-btn {

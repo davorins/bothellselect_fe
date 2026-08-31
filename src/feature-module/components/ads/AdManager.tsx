@@ -701,6 +701,7 @@ const AdManager: React.FC<AdManagerProps> = ({
                   size='normal'
                   minimized={false}
                   onClose={() => handleClose(ad._id)}
+                  onExpand={() => handleExpandAd(ad._id)}
                 />
               </div>
             ))}
@@ -792,6 +793,7 @@ const AdManager: React.FC<AdManagerProps> = ({
           className={`ad-manager ad-manager--footer ad-manager--footer-minimized ${className}`}
         >
           <div className='ad-footer__minimized'>
+            <span className='ad-footer__label'>Sponsored</span>
             <div className='ad-footer__pills'>
               {displayAds.map((ad) => (
                 <button
@@ -866,6 +868,7 @@ const AdManager: React.FC<AdManagerProps> = ({
     return (
       <div className={`ad-manager ad-manager--footer ${className}`}>
         <div className='ad-footer__container'>
+          <span className='ad-footer__label'>Sponsored</span>
           <div className='ad-footer__scroll-wrapper'>
             <div className='ad-footer__track'>
               {displayAds.map((ad) => (
@@ -980,6 +983,7 @@ const AdManager: React.FC<AdManagerProps> = ({
           size={adSize}
           minimized={showMinimized && minimizedAds.has(ad._id)}
           onClose={() => handleClose(ad._id)}
+          onExpand={() => handleExpandAd(ad._id)}
         />
       ))}
     </div>
