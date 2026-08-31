@@ -44,7 +44,6 @@
   display: inline-flex;
   align-items: center;
   width: auto;
-  max-width: 220px;
   padding: 4px 10px 4px 4px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.95);
@@ -68,8 +67,8 @@
 }
 
 .ad-banner.is-minimized-pill .ad-banner__minimized-img {
-  width: 28px;
-  height: 28px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
