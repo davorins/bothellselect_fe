@@ -23,10 +23,20 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 4px 2px;
+  padding: 44px 8px 12px 8px;
   scrollbar-width: none;
   pointer-events: auto;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
 }
+
 .ad-manager--sidebar::-webkit-scrollbar {
   display: none;
 }
@@ -49,8 +59,59 @@
 
 .ad-manager--sidebar.is-minimized {
   width: auto;
-  gap: 6px;
-  padding: 4px;
+  gap: 8px;
+  padding: 44px 8px 12px 8px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* ─── Sidebar Master Controls ─────────────────────────────────── */
+.ad-manager--sidebar .ad-sidebar__master-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 102;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 10px;
+  padding: 4px 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.ad-manager--sidebar .ad-sidebar__master-btn {
+  background: none;
+  border: none;
+  color: #4a4a4a;
+  cursor: pointer;
+  padding: 5px 7px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.ad-manager--sidebar .ad-sidebar__master-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #1a1a1a;
+  transform: scale(1.05);
+}
+
+.ad-manager--sidebar .ad-sidebar__master-btn--close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.ad-manager--sidebar .ad-sidebar__master-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
 }
 
 /* ─── Top Bar ──────────────────────────────────────────────────── */
@@ -221,6 +282,46 @@
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ─── Topbar Master Controls ──────────────────────────────────── */
+.ad-topbar__master-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ad-topbar__master-btn {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.ad-topbar__master-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #555;
+}
+
+.ad-topbar__master-btn--close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.ad-topbar__master-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
 }
 
 /* ─── Footer (skinny horizontal scrollable ads) ──────────────── */
@@ -474,6 +575,46 @@
   text-overflow: ellipsis;
 }
 
+/* ─── Footer Master Controls ──────────────────────────────────── */
+.ad-footer__master-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ad-footer__master-btn {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.ad-footer__master-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #555;
+}
+
+.ad-footer__master-btn--close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.ad-footer__master-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
 /* ─── Header ──────────────────────────────────────────────────── */
 .ad-manager--header {
   flex-direction: row;
@@ -488,6 +629,47 @@
 .ad-manager--header .ad-banner {
   max-width: 480px;
   flex: 1 1 320px;
+}
+
+/* ─── Header Master Controls ──────────────────────────────────── */
+.ad-manager__master-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+  padding: 4px 8px;
+}
+
+.ad-manager__master-btn {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.ad-manager__master-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #555;
+}
+
+.ad-manager__master-btn--close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.ad-manager__master-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
 }
 
 /* ─── Inline ──────────────────────────────────────────────────── */
@@ -521,162 +703,6 @@
     0 4px 16px rgba(0, 0, 0, 0.2);
   animation: adSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
-}
-
-/* ─── Master Controls ───────────────────────────────────────────── */
-
-.ad-sidebar__master-controls,
-.ad-topbar__master-controls,
-.ad-footer__master-controls,
-.ad-manager__master-controls {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.ad-sidebar__master-btn,
-.ad-topbar__master-btn,
-.ad-footer__master-btn,
-.ad-manager__master-btn,
-.ad-mobile-dock__master-btn,
-.ad-carousel__master-minimize {
-  background: none;
-  border: none;
-  color: #999;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 4px;
-  transition:
-    background 0.15s,
-    color 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-}
-
-.ad-sidebar__master-btn:hover,
-.ad-topbar__master-btn:hover,
-.ad-footer__master-btn:hover,
-.ad-manager__master-btn:hover,
-.ad-mobile-dock__master-btn:hover,
-.ad-carousel__master-minimize:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: #555;
-}
-
-.ad-sidebar__master-btn--close:hover,
-.ad-topbar__master-btn--close:hover,
-.ad-footer__master-btn--close:hover,
-.ad-manager__master-btn--close:hover,
-.ad-mobile-dock__master-btn--close:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-}
-
-/* Sidebar master controls - positioned at top-right */
-.ad-manager--sidebar .ad-sidebar__master-controls {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 102;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 6px;
-  padding: 2px 4px;
-  backdrop-filter: blur(4px);
-}
-
-.ad-manager--sidebar .ad-sidebar__master-btn {
-  color: rgba(255, 255, 255, 0.7);
-  padding: 3px 5px;
-}
-
-.ad-manager--sidebar .ad-sidebar__master-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-}
-
-.ad-manager--sidebar .ad-sidebar__master-btn--close:hover {
-  background: rgba(239, 68, 68, 0.3);
-  color: #ef4444;
-}
-
-/* Topbar master controls */
-.ad-topbar__master-controls {
-  gap: 2px;
-}
-
-.ad-topbar__master-btn {
-  color: #999;
-  padding: 4px 6px;
-}
-
-.ad-topbar__master-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: #555;
-}
-
-/* Footer master controls */
-.ad-footer__master-controls {
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.ad-footer__master-btn {
-  color: #999;
-  padding: 4px 6px;
-}
-
-.ad-footer__master-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: #555;
-}
-
-/* Mobile dock master controls */
-.ad-mobile-dock__master-controls {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.ad-mobile-dock__master-btn {
-  color: #999;
-  padding: 4px 6px;
-  background: rgba(0, 0, 0, 0.06);
-  border-radius: 4px;
-}
-
-.ad-mobile-dock__master-btn:hover {
-  background: rgba(0, 0, 0, 0.12);
-  color: #555;
-}
-
-.ad-mobile-dock__master-btn--close:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-}
-
-/* Carousel master minimize */
-.ad-carousel__master-minimize {
-  background: rgba(0, 0, 0, 0.06);
-  border-radius: 4px;
-  padding: 4px 6px;
-  color: #666;
-}
-
-.ad-carousel__master-minimize:hover {
-  background: rgba(0, 0, 0, 0.12);
-  color: #333;
-}
-
-/* General ad manager master controls */
-.ad-manager__master-controls {
-  display: flex;
-  gap: 4px;
-  justify-content: flex-end;
-  padding: 4px 8px;
 }
 
 /* ─── Remove individual minimize from AdBanner ─────────────────── */
@@ -812,6 +838,46 @@
     background: rgba(0, 0, 0, 0.2);
   }
 
+  /* Mobile Master Controls */
+  .ad-mobile-dock__master-controls {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .ad-mobile-dock__master-btn {
+    background: rgba(0, 0, 0, 0.06);
+    border: none;
+    border-radius: 4px;
+    color: #666;
+    cursor: pointer;
+    padding: 4px 6px;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+  }
+
+  .ad-mobile-dock__master-btn:hover {
+    background: rgba(0, 0, 0, 0.12);
+    color: #333;
+  }
+
+  .ad-mobile-dock__master-btn--close:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+  }
+
+  .ad-mobile-dock__master-btn svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    stroke-width: 2.5;
+    fill: none;
+  }
+
   .ad-manager--mobile-expanded {
     background: rgba(255, 255, 255, 0.98);
     border-top: 1px solid rgba(0, 0, 0, 0.08);
@@ -871,6 +937,32 @@
   }
   .ad-carousel__collapse:hover {
     background: rgba(0, 0, 0, 0.05);
+  }
+
+  .ad-carousel__master-minimize {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ad-carousel__master-minimize:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #333;
+  }
+
+  .ad-carousel__master-minimize svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    stroke-width: 2.5;
+    fill: none;
   }
 
   .ad-carousel__dismiss {
@@ -1049,31 +1141,8 @@
     gap: 8px;
   }
 
-  .ad-sidebar__master-controls {
-    top: 6px;
-    right: 6px;
-    padding: 2px 3px;
-  }
-
-  .ad-sidebar__master-btn {
-    padding: 2px 4px;
-    font-size: 10px;
-  }
-
-  .ad-mobile-dock__master-btn {
-    padding: 3px 5px;
-    font-size: 11px;
-  }
-
-  .ad-carousel__master-minimize {
-    padding: 3px 5px;
-    font-size: 11px;
-  }
-
-  .ad-topbar__master-btn,
-  .ad-footer__master-btn {
-    padding: 3px 5px;
-    font-size: 11px;
+  .ad-manager--sidebar {
+    display: none;
   }
 }
 
@@ -1105,6 +1174,34 @@
 
 /* ─── Dark mode ───────────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
+  .ad-manager--sidebar {
+    background: rgba(30, 30, 35, 0.95);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 8px 40px rgba(0, 0, 0, 0.4),
+      0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .ad-manager--sidebar .ad-sidebar__master-controls {
+    background: rgba(40, 40, 45, 0.98);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .ad-manager--sidebar .ad-sidebar__master-btn {
+    color: #b0b0b0;
+  }
+
+  .ad-manager--sidebar .ad-sidebar__master-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e0e0e0;
+  }
+
+  .ad-manager--sidebar .ad-sidebar__master-btn--close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+
   .ad-manager--header {
     background: transparent;
     border-color: transparent;
@@ -1138,6 +1235,17 @@
   }
   .ad-topbar__scroll-wrapper::-webkit-scrollbar-thumb {
     background: #444;
+  }
+  .ad-topbar__master-btn {
+    color: #666;
+  }
+  .ad-topbar__master-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #aaa;
+  }
+  .ad-topbar__master-btn--close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
   }
 
   .ad-footer__label {
@@ -1198,36 +1306,108 @@
     background: #444;
   }
 
-  .ad-sidebar__master-btn,
-  .ad-topbar__master-btn,
-  .ad-footer__master-btn,
-  .ad-manager__master-btn,
-  .ad-mobile-dock__master-btn,
-  .ad-carousel__master-minimize {
+  .ad-footer__master-btn {
     color: #666;
   }
-
-  .ad-sidebar__master-btn:hover,
-  .ad-topbar__master-btn:hover,
-  .ad-footer__master-btn:hover,
-  .ad-manager__master-btn:hover,
-  .ad-mobile-dock__master-btn:hover,
-  .ad-carousel__master-minimize:hover {
-    background: rgba(255, 255, 255, 0.08);
+  .ad-footer__master-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
     color: #aaa;
   }
+  .ad-footer__master-btn--close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
 
-  .ad-sidebar__master-btn--close:hover,
-  .ad-topbar__master-btn--close:hover,
-  .ad-footer__master-btn--close:hover,
-  .ad-manager__master-btn--close:hover,
+  .ad-manager__master-btn {
+    color: #666;
+  }
+  .ad-manager__master-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #aaa;
+  }
+  .ad-manager__master-btn--close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+
+  .ad-mobile-dock__master-btn {
+    color: #888;
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .ad-mobile-dock__master-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #bbb;
+  }
   .ad-mobile-dock__master-btn--close:hover {
     background: rgba(239, 68, 68, 0.2);
     color: #ef4444;
   }
 
-  .ad-manager--sidebar .ad-sidebar__master-controls {
-    background: rgba(0, 0, 0, 0.7);
+  .ad-carousel__master-minimize {
+    color: #888;
+  }
+  .ad-carousel__master-minimize:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #bbb;
+  }
+
+  .ad-manager--mobile-minimized {
+    background: rgba(30, 30, 35, 0.98);
+    border-top-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .ad-manager--mobile-expanded {
+    background: rgba(30, 30, 35, 0.98);
+    border-top-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .ad-mobile-pill {
+    background: #2a2a2e;
+    border-color: rgba(255, 255, 255, 0.06);
+    color: #d0d0d0;
+  }
+  .ad-mobile-pill:hover {
+    background: #333338;
+  }
+  .ad-mobile-pill__name {
+    color: #d0d0d0;
+  }
+  .ad-mobile-dock__label {
+    color: #666;
+  }
+  .ad-mobile-dock__close {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .ad-mobile-dock__close:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .ad-carousel__header {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+  }
+  .ad-carousel__title {
+    color: #666;
+  }
+  .ad-carousel__count {
+    color: #555;
+  }
+  .ad-carousel__collapse {
+    color: #888;
+  }
+  .ad-carousel__collapse:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .ad-carousel__dismiss {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .ad-carousel__dismiss:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .ad-carousel__dot {
+    background: #444;
+  }
+  .ad-carousel__dot.is-active {
+    background: #888;
   }
 }
 
