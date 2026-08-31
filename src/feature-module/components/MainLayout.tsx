@@ -19,6 +19,15 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
   return (
     <div className='main-layout'>
+      {/* Header Ads - horizontal scrollable ads right below the main header */}
+      <AdManager
+        placement='header'
+        pageSlug={pageSlug}
+        showMinimized={true}
+        maxAds={5}
+        className='header-ad-container'
+      />
+
       {/* Top Bar - horizontal scrollable ads above header */}
       <AdManager
         placement='topbar'

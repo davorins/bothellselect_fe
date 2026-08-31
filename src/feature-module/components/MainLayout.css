@@ -1,20 +1,123 @@
+/* ============================================================
+   MainLayout - Main application layout
+   ============================================================ */
+
+.main-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  background: #0a0a0f;
+}
+
+/* ============================================================
+   HEADER ADS - Fixed right below the main header
+   ============================================================ */
 .header-ad-container {
+  position: fixed;
+  top: 64px; /* Match your main header height */
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 149;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.header-ad-container > * {
+  pointer-events: auto;
+}
+
+/* ============================================================
+   TOP BAR ADS - Sticky above header (deprecated, use header-ad-container)
+   ============================================================ */
+.topbar-ad-container {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  padding: 0;
+  margin: 0;
 }
 
-.footer-ad-container {
-  margin-top: auto;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 8px;
-  background: #0a0a0f;
+/* ============================================================
+   HEADER - Fixed at top
+   ============================================================ */
+.main-layout .header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 150;
+  background: rgba(10, 10, 15, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  height: 64px;
+}
+
+/* ============================================================
+   MAIN CONTENT WRAPPER
+   ============================================================ */
+.main-content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+  padding-top: 120px; /* Header (64px) + Header Ads (~56px) */
+  min-height: 0;
+}
+
+.main-content {
+  flex: 1;
   width: 100%;
-  bottom: 50px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 24px 40px;
+  position: relative;
+  z-index: 1;
 }
 
+/* ============================================================
+   FOOTER ADS - Fixed at bottom above footer
+   ============================================================ */
+.footer-ad-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 149;
+  padding: 8px 0;
+  background: transparent;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+}
+
+.footer-ad-container > * {
+  pointer-events: auto;
+}
+
+/* ============================================================
+   FOOTER - At bottom
+   ============================================================ */
+.main-layout .footer {
+  position: relative;
+  z-index: 50;
+  background: rgba(10, 10, 15, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: auto;
+  padding-bottom: 72px; /* Space for fixed footer ads */
+}
+
+/* ============================================================
+   SIDEBAR ADS - Fixed position
+   ============================================================ */
 .sidebar-left,
 .sidebar-right {
   width: 100%;
@@ -25,22 +128,9 @@
   position: fixed;
 }
 
-/* Mobile responsive */
-@media (max-width: 1024px) {
-  .sidebar-left,
-  .sidebar-right {
-    width: 100%;
-  }
-}
-
-@media (max-width: 768px) {
-  .sidebar-left,
-  .sidebar-right {
-    display: none;
-  }
-}
-
-/* Popup Ad Container */
+/* ============================================================
+   POPUP AD CONTAINER
+   ============================================================ */
 .popup-ad-container {
   position: fixed;
   top: 50%;
@@ -49,6 +139,11 @@
   z-index: 9999;
   animation: popupFadeIn 0.3s ease-out;
   width: 430px;
+  pointer-events: none;
+}
+
+.popup-ad-container > * {
+  pointer-events: auto;
 }
 
 @keyframes popupFadeIn {
@@ -70,8 +165,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  /* background: rgba(0, 0, 0, 0.75); */
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: -1;
   animation: backdropFadeIn 0.3s ease-out;
 }
@@ -101,4 +197,131 @@
 /* Ensure main content doesn't scroll when popup is open */
 body.popup-open {
   overflow: hidden;
+}
+
+/* ============================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================ */
+
+/* Tablet: sidebar shifts left slightly */
+@media (min-width: 769px) and (max-width: 1280px) {
+  .ad-manager--sidebar {
+    right: 10px;
+    width: 260px;
+    max-width: 260px;
+  }
+}
+
+/* Narrow desktop / large tablet: hide sidebar */
+@media (min-width: 769px) and (max-width: 1100px) {
+  .ad-manager--sidebar {
+    display: none;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .main-content-wrapper {
+    padding-top: 100px; /* Reduced for mobile */
+  }
+
+  .main-content {
+    padding: 16px;
+    padding-bottom: 80px; /* Space for fixed footer ads on mobile */
+  }
+
+  .popup-ad-container {
+    width: 95%;
+  }
+
+  /* Sidebar is hidden on mobile - uses mobile footer bar */
+  .ad-manager--sidebar {
+    display: none;
+  }
+
+  .header-ad-container {
+    top: 56px; /* Smaller header on mobile */
+  }
+
+  .main-layout .header {
+    height: 56px;
+  }
+
+  .main-layout .footer {
+    padding-bottom: 64px; /* Reduced space for footer ads on mobile */
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .main-content-wrapper {
+    padding-top: 90px;
+  }
+
+  .main-content {
+    padding: 12px;
+    padding-bottom: 70px;
+  }
+
+  .header-ad-container {
+    top: 48px;
+  }
+
+  .main-layout .header {
+    height: 48px;
+  }
+}
+
+/* ============================================================
+   DARK MODE
+   ============================================================ */
+@media (prefers-color-scheme: dark) {
+  .main-layout {
+    background: #0a0a0f;
+  }
+
+  .main-content {
+    background: transparent;
+  }
+
+  .main-layout .header {
+    background: rgba(10, 10, 15, 0.95);
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .main-layout .footer {
+    background: rgba(10, 10, 15, 0.95);
+    border-top-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .footer-ad-container {
+    border-top-color: rgba(255, 255, 255, 0.04);
+  }
+}
+
+/* ============================================================
+   LIGHT MODE
+   ============================================================ */
+@media (prefers-color-scheme: light) {
+  .main-layout {
+    background: #f8f9fa;
+  }
+
+  .main-content {
+    background: transparent;
+  }
+
+  .main-layout .header {
+    background: rgba(255, 255, 255, 0.95);
+    border-bottom-color: rgba(0, 0, 0, 0.06);
+  }
+
+  .main-layout .footer {
+    background: rgba(255, 255, 255, 0.95);
+    border-top-color: rgba(0, 0, 0, 0.06);
+  }
+
+  .footer-ad-container {
+    border-top-color: rgba(0, 0, 0, 0.04);
+  }
 }
