@@ -106,6 +106,19 @@ const AdManager: React.FC<AdManagerProps> = ({
   // --- Calculate displayAds BEFORE using it in callbacks ---
   const displayAds = previewMode ? ads : ads.filter((ad) => !closedAds[ad._id]);
 
+  const [isSidebarToFooter, setIsSidebarToFooter] = useState(false);
+  useEffect(() => {
+    if (placement === 'sidebar') {
+      const checkScreenSize = () => {
+        const breakpoint = 1100; // Match the CSS breakpoint
+        setIsSidebarToFooter(window.innerWidth <= breakpoint);
+      };
+      checkScreenSize();
+      window.addEventListener('resize', checkScreenSize);
+      return () => window.removeEventListener('resize', checkScreenSize);
+    }
+  }, [placement]);
+
   useEffect(() => {
     if (placement === 'sidebar') {
       const handleStorageChange = (e: StorageEvent) => {
@@ -673,19 +686,102 @@ const AdManager: React.FC<AdManagerProps> = ({
 
   // ─── DESKTOP SIDEBAR ───────────────────────────────────────────
   if (placement === 'sidebar') {
+    // If screen is small, render as footer-style horizontal bar
+    if (isSidebarToFooter) {
+      return (
+        <div
+          className={`ad-manager ad-manager--sidebar ${countClass} ${allMinimized ? 'is-minimized' : ''} ${className}`}
+          aria-label='Advertisements'
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '8px 12px',
+            overflowX: 'auto',
+            flexDirection: 'row',
+          }}
+        >
+          {/* Master controls at start */}
+          <div
+            className='ad-sidebar__master-controls'
+            style={{ flexShrink: 0 }}
+          >
+            <button
+              className='ad-sidebar__master-btn'
+              onClick={handleMasterMinimize}
+              aria-label='Minimize all ads'
+              title='Minimize all'
+            >
+              <svg
+                width='14'
+                height='14'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+              >
+                <polyline points='18 15 12 9 6 15' />
+              </svg>
+            </button>
+            <button
+              className='ad-sidebar__master-btn ad-sidebar__master-btn--close'
+              onClick={handleMasterClose}
+              aria-label='Close all ads'
+              title='Close all'
+            >
+              <svg
+                width='14'
+                height='14'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+              >
+                <line x1='18' y1='6' x2='6' y2='18' />
+                <line x1='6' y1='6' x2='18' y2='18' />
+              </svg>
+            </button>
+          </div>
+
+          {displayAds.map((ad) => (
+            <AdBanner
+              key={ad._id}
+              ad={ad}
+              authToken={authToken}
+              size='normal'
+              minimized={showMinimized && minimizedAds.has(ad._id)}
+              onClose={() => handleClose(ad._id)}
+              onExpand={() => handleExpandAd(ad._id)}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    // Regular desktop sidebar rendering
     return (
       <div
         className={`ad-manager ad-manager--sidebar ${countClass} ${allMinimized ? 'is-minimized' : ''} ${className}`}
         aria-label='Advertisements'
       >
+        {/* Master controls at top-right of sidebar */}
         <div className='ad-sidebar__master-controls'>
           <button
             className='ad-sidebar__master-btn'
-            onClick={minimizeToggle.handler}
-            aria-label={minimizeToggle.label}
-            title={minimizeToggle.label}
+            onClick={handleMasterMinimize}
+            aria-label='Minimize all ads'
+            title='Minimize all'
           >
-            {minimizeToggle.icon}
+            <svg
+              width='14'
+              height='14'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+            >
+              <polyline points='18 15 12 9 6 15' />
+            </svg>
           </button>
           <button
             className='ad-sidebar__master-btn ad-sidebar__master-btn--close'
@@ -693,7 +789,17 @@ const AdManager: React.FC<AdManagerProps> = ({
             aria-label='Close all ads'
             title='Close all'
           >
-            {masterControlsSvg.close}
+            <svg
+              width='14'
+              height='14'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+            >
+              <line x1='18' y1='6' x2='6' y2='18' />
+              <line x1='6' y1='6' x2='18' y2='18' />
+            </svg>
           </button>
         </div>
 
@@ -713,9 +819,6 @@ const AdManager: React.FC<AdManagerProps> = ({
   }
 
   // ─── FOOTER PLACEMENT ──────────────────────────────────────────
-  // Fixed to the bottom of the viewport (like the sidebar is fixed
-  // to the side). Same minimize/expand wiring as every other
-  // placement now.
   if (placement === 'footer') {
     return (
       <div className={`ad-manager ad-manager--footer ${className}`}>

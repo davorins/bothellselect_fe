@@ -7,6 +7,9 @@
      uses this to sit visually right underneath it. Adjust to match
      the real rendered height of .ad-manager--header in your app. */
   --ad-header-offset: 76px;
+
+  /* Breakpoint for sidebar to footer conversion */
+  --sidebar-to-footer-breakpoint: 1100px;
 }
 
 .ad-manager {
@@ -35,16 +38,11 @@
 /* ============================================================
    Generic minimized pill — base styles that work in ANY container
    (sidebar, footer, topbar, header, inline), not just the sidebar.
-   Previously this only had rules scoped under
-   `.ad-manager--sidebar.is-minimized`, so a minimized pill rendered
-   anywhere else had no layout/hover/click affordance at all, which
-   is a big part of why "expand" looked broken outside the sidebar.
    ============================================================ */
 .ad-banner.is-minimized-pill {
   display: inline-flex;
   align-items: center;
   width: auto;
-  max-width: 220px;
   padding: 4px 10px 4px 4px;
   border-radius: 20px;
   background: rgba(0, 0, 0, 0.04);
@@ -63,21 +61,20 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 2px 4px;
 }
 
 .ad-banner.is-minimized-pill .ad-banner__minimized-img {
-  width: 26px;
-  height: 26px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
 }
 
 .ad-banner.is-minimized-pill .ad-banner__minimized-label {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
-  color: #333;
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -105,10 +102,7 @@
 
 /* ============================================================
    "footerbar" size — the compact horizontal card used by footer,
-   header and topbar so all three share one look. Class names map
-   to the real markup AdBanner renders (ad-banner__body,
-   ad-banner__image-wrap, ad-banner__info, etc.) rather than the
-   `--horizontal` suffixed names, which AdBanner doesn't emit.
+   header and topbar so all three share one look.
    ============================================================ */
 .ad-banner--footerbar {
   position: relative;
@@ -118,10 +112,9 @@
   border: 1px solid rgba(0, 0, 0, 0.06);
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  height: 56px;
   display: flex;
   align-items: center;
-  padding: 4px;
+  padding: 8px;
   cursor: pointer;
   transition:
     transform 0.2s ease,
@@ -148,8 +141,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Close button pinned to the upper-right corner, overlaid on the
-   card, instead of sitting inline at the start of the flex row. */
+/* Close button pinned to the upper-right corner */
 .ad-banner--footerbar .ad-banner__controls {
   position: absolute;
   top: 4px;
@@ -163,6 +155,9 @@
 .ad-banner--footerbar .ad-banner__controls .ad-btn {
   background: rgba(255, 255, 255, 0.85);
   border: none;
+  position: relative;
+  top: 5px;
+  right: 5px;
   border-radius: 50%;
   width: 20px;
   height: 20px;
@@ -586,9 +581,203 @@
 }
 
 /* ============================================================
+   SIDEBAR TO FOOTER CONVERSION
+   When screen is small, sidebar ads automatically convert to
+   footer-style horizontal scrollable ads.
+   ============================================================ */
+@media (max-width: 1100px) {
+  .ad-manager--sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    transform: none;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none;
+    padding: 8px 12px;
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    overflow-y: visible;
+    overflow-x: auto;
+    scrollbar-width: none;
+    z-index: 200;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    min-height: 60px;
+  }
+
+  .ad-manager--sidebar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ad-manager--sidebar .ad-sidebar__master-controls {
+    position: relative;
+    top: auto;
+    right: auto;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+  }
+
+  .ad-manager--sidebar .ad-sidebar__master-btn {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .ad-manager--sidebar .ad-sidebar__master-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+  }
+
+  .ad-manager--sidebar .ad-sidebar__master-btn--close:hover {
+    background: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+  }
+
+  .ad-manager--sidebar .ad-banner {
+    flex: 0 0 auto;
+    width: 220px;
+    min-width: 180px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 40px;
+    padding: 4px 8px 4px 4px;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    height: 44px;
+    transform: none !important;
+  }
+
+  .ad-manager--sidebar .ad-banner:hover {
+    transform: none !important;
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__body {
+    flex-direction: row;
+    padding-right: 4px;
+    gap: 8px;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__image-wrap {
+    width: 32px;
+    height: 32px;
+    aspect-ratio: unset;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__business {
+    font-size: 7px;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__title {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+    -webkit-line-clamp: 1;
+    line-height: 1.2;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__description {
+    display: none;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__cta {
+    font-size: 8px;
+    padding: 2px 8px;
+    background: rgba(96, 165, 250, 0.15);
+    color: #60a5fa;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__controls {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    border-radius: 50%;
+    padding: 0;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn {
+    color: rgba(255, 255, 255, 0.5);
+    padding: 2px;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn--close:hover {
+    background: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .ad-manager--sidebar.is-minimized {
+    padding: 6px 12px;
+    min-height: 44px;
+    gap: 6px;
+  }
+
+  .ad-manager--sidebar.is-minimized .ad-banner.is-minimized-pill {
+    width: auto;
+    max-width: 180px;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .ad-manager--sidebar.is-minimized
+    .ad-banner.is-minimized-pill
+    .ad-banner__minimized-label {
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .ad-manager--sidebar.is-minimized .ad-banner.is-minimized-pill .ad-label {
+    color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .ad-manager--sidebar.is-minimized .ad-banner.is-minimized-pill:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-btn--minimize {
+    display: none !important;
+  }
+}
+
+/* ============================================================
    Shared master-controls pill used by header/inline (and the
-   fallback path). Same visual language as the sidebar/footer/topbar
-   master controls above.
+   fallback path).
    ============================================================ */
 .ad-manager__master-controls {
   display: flex;
@@ -745,7 +934,7 @@
 
 /* ============================================================
    Footer — fixed to the bottom of the viewport, same frosted-pill
-   treatment as before, now paired with header at the top.
+   treatment.
    ============================================================ */
 .ad-manager--footer {
   position: fixed;
@@ -764,7 +953,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 12px 6px 16px;
+  padding: 0 12px 0 16px;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
@@ -775,7 +964,6 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   transition: all 0.3s ease;
-  min-height: 56px;
 }
 
 .ad-footer__container:hover {
@@ -829,7 +1017,7 @@
 
 .ad-footer__slide {
   flex: 0 0 auto;
-  width: 220px;
+  width: 320px;
 }
 
 /* On dark footer glass, the footerbar card reads better in its dark
@@ -898,9 +1086,7 @@
 }
 
 /* ============================================================
-   Header — fixed to the top of the viewport, mirrors the footer
-   treatment (light theme, matching sidebar). The topbar sits right
-   underneath it via --ad-header-offset above.
+   Header — fixed to the top of the viewport.
    ============================================================ */
 .ad-manager--header {
   position: fixed;
@@ -996,13 +1182,6 @@
     right: 10px;
     width: 260px;
     max-width: 260px;
-  }
-}
-
-/* ─── Narrow desktop / large tablet: hide sidebar ────────────── */
-@media (min-width: 769px) and (max-width: 1100px) {
-  .ad-manager--sidebar {
-    display: none;
   }
 }
 
@@ -1612,6 +1791,34 @@
 
   .ad-manager--popup .ad-banner {
     background: rgba(30, 30, 35, 0.98);
+  }
+
+  /* Dark mode for sidebar converted to footer */
+  @media (max-width: 1100px) {
+    .ad-manager--sidebar {
+      background: rgba(0, 0, 0, 0.85);
+    }
+
+    .ad-manager--sidebar .ad-banner {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.06);
+    }
+
+    .ad-manager--sidebar .ad-banner:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .ad-manager--sidebar .ad-banner .ad-banner__title {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .ad-manager--sidebar .ad-banner .ad-banner__business {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .ad-manager--sidebar .ad-banner .ad-banner__cta {
+      color: #60a5fa;
+    }
   }
 }
 
