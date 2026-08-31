@@ -243,6 +243,7 @@ const AdManager: React.FC<AdManagerProps> = ({
     } catch {}
   }, [displayAds, minimizedAds, previewMode, placement]);
 
+  // Handle expanding a single ad from minimized state
   const handleExpandAd = useCallback(
     (adId: string) => {
       const updated = new Set(minimizedAds);
@@ -395,7 +396,6 @@ const AdManager: React.FC<AdManagerProps> = ({
                 </button>
               ))}
             </div>
-            {/* Master controls for topbar */}
             <div className='ad-topbar__master-controls'>
               <button
                 className='ad-topbar__master-btn'
@@ -457,7 +457,6 @@ const AdManager: React.FC<AdManagerProps> = ({
               ))}
             </div>
           </div>
-          {/* Master controls for topbar */}
           {displayAds.length > 0 && (
             <div className='ad-topbar__master-controls'>
               <button
@@ -548,7 +547,6 @@ const AdManager: React.FC<AdManagerProps> = ({
                 );
               })}
             </div>
-            {/* Master controls for mobile */}
             <div className='ad-mobile-dock__master-controls'>
               <button
                 className='ad-mobile-dock__master-btn'
@@ -641,7 +639,6 @@ const AdManager: React.FC<AdManagerProps> = ({
               </svg>
               Collapse
             </button>
-            {/* Master controls for mobile expanded */}
             <button
               className='ad-carousel__master-minimize'
               onClick={handleMasterMinimize}
@@ -785,7 +782,7 @@ const AdManager: React.FC<AdManagerProps> = ({
     );
   }
 
-  // ─── FOOTER PLACEMENT (Skinny horizontal scrollable ads) ──────
+  // ─── FOOTER PLACEMENT ──────────────────────────────────────────
   if (placement === 'footer') {
     if (allMinimized && showMinimized) {
       return (
@@ -822,7 +819,6 @@ const AdManager: React.FC<AdManagerProps> = ({
                 </button>
               ))}
             </div>
-            {/* Master controls for footer minimized */}
             <div className='ad-footer__master-controls'>
               <button
                 className='ad-footer__master-btn'
@@ -884,7 +880,6 @@ const AdManager: React.FC<AdManagerProps> = ({
               ))}
             </div>
           </div>
-          {/* Master controls for footer */}
           {displayAds.length > 0 && (
             <div className='ad-footer__master-controls'>
               <button
@@ -935,7 +930,6 @@ const AdManager: React.FC<AdManagerProps> = ({
       className={`ad-manager ad-manager--${placement} ${countClass} ${className}`}
       aria-label='Advertisements'
     >
-      {/* Master controls for header/inline */}
       {displayAds.length > 0 && (
         <div className='ad-manager__master-controls'>
           <button
