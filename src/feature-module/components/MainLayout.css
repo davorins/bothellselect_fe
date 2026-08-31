@@ -12,6 +12,7 @@
   padding: 16px 0;
   background: #0a0a0f;
   min-height: 12vh;
+  width: 100%;
 }
 
 .sidebar-left,
