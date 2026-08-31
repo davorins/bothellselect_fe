@@ -10,6 +10,9 @@
 
   /* Breakpoint for sidebar to footer conversion */
   --sidebar-to-footer-breakpoint: 1100px;
+
+  /* Main header height - adjust to match your header */
+  --main-header-height: 64px;
 }
 
 .ad-manager {
@@ -325,6 +328,297 @@
   .ad-banner--footerbar .ad-banner__cta {
     font-size: 9px;
     padding: 2px 10px;
+  }
+}
+
+/* ============================================================
+   Header — fixed to the top of the viewport, right below the main header
+   Mirrors the footer treatment (fixed bottom) but at the top
+   ============================================================ */
+.ad-manager--header {
+  position: fixed;
+  top: var(--main-header-height, 64px);
+  left: 0;
+  width: 100%;
+  z-index: 149;
+  padding: 6px 16px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-height: 56px;
+  transition: all 0.3s ease;
+}
+
+.ad-manager--header::-webkit-scrollbar {
+  display: none;
+}
+
+.ad-manager--header .ad-banner {
+  flex: 0 0 auto;
+  width: 240px;
+  min-width: 180px;
+  height: 44px;
+  padding: 4px 8px 4px 4px;
+  border-radius: 40px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  transition: all 0.25s ease;
+}
+
+.ad-manager--header .ad-banner:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+  border-color: rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.ad-manager--header .ad-banner .ad-banner__body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  padding: 0 4px;
+}
+
+.ad-manager--header .ad-banner .ad-banner__image-wrap {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(240, 240, 240, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+  transform-origin: center;
+}
+
+.ad-manager--header .ad-banner:hover .ad-banner__image-wrap {
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.ad-manager--header .ad-banner .ad-banner__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ad-manager--header .ad-banner .ad-banner__info {
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ad-manager--header .ad-banner .ad-banner__business {
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+  margin: 0;
+}
+
+.ad-manager--header .ad-banner .ad-banner__title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.ad-manager--header .ad-banner .ad-banner__description {
+  display: none;
+}
+
+.ad-manager--header .ad-banner .ad-banner__cta {
+  font-size: 9px;
+  font-weight: 600;
+  color: #2563eb;
+  flex-shrink: 0;
+  padding: 2px 10px;
+  border-radius: 20px;
+  background: rgba(37, 99, 235, 0.08);
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.ad-manager--header .ad-banner:hover .ad-banner__cta {
+  background: rgba(37, 99, 235, 0.15);
+}
+
+/* Close button for header ads - matches sidebar style */
+.ad-manager--header .ad-banner .ad-banner__controls {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  padding: 2px;
+  backdrop-filter: blur(4px);
+}
+
+.ad-manager--header .ad-banner .ad-banner__controls .ad-btn {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ad-manager--header .ad-banner .ad-banner__controls .ad-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #666;
+}
+
+.ad-manager--header .ad-banner .ad-banner__controls .ad-btn--close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.ad-manager--header .ad-banner .ad-banner__controls .ad-btn svg {
+  width: 10px;
+  height: 10px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+/* Header Master Controls */
+.ad-manager--header .ad-manager__master-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+
+.ad-manager--header .ad-manager__master-btn {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.ad-manager--header .ad-manager__master-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #555;
+}
+
+.ad-manager--header .ad-manager__master-btn--close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.ad-manager--header .ad-manager__master-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ad-manager--header {
+    background: rgba(20, 20, 24, 0.95);
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .ad-manager--header .ad-banner {
+    background: rgba(40, 40, 45, 0.9);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .ad-manager--header .ad-banner:hover {
+    background: rgba(50, 50, 55, 0.95);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .ad-manager--header .ad-banner .ad-banner__title {
+    color: #e8e8e8;
+  }
+
+  .ad-manager--header .ad-banner .ad-banner__business {
+    color: #777;
+  }
+
+  .ad-manager--header .ad-banner .ad-banner__cta {
+    color: #60a5fa;
+    background: rgba(96, 165, 250, 0.12);
+  }
+
+  .ad-manager--header .ad-banner:hover .ad-banner__cta {
+    background: rgba(96, 165, 250, 0.2);
+  }
+
+  .ad-manager--header .ad-banner .ad-banner__controls {
+    background: rgba(40, 40, 45, 0.9);
+  }
+
+  .ad-manager--header .ad-banner .ad-banner__controls .ad-btn {
+    color: #888;
+  }
+
+  .ad-manager--header .ad-banner .ad-banner__controls .ad-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #bbb;
+  }
+
+  .ad-manager--header .ad-banner .ad-banner__controls .ad-btn--close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+
+  .ad-manager--header .ad-manager__master-btn {
+    color: #666;
+  }
+
+  .ad-manager--header .ad-manager__master-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #aaa;
+  }
+
+  .ad-manager--header .ad-manager__master-btn--close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
   }
 }
 
@@ -1160,38 +1454,6 @@
   padding-left: 10px;
 }
 
-/* ============================================================
-   Header — now matches sidebar colors
-   ============================================================ */
-.ad-manager--header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  z-index: 150;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: nowrap;
-  gap: 10px;
-  padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.95);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.ad-manager--header::-webkit-scrollbar {
-  display: none;
-}
-
-.ad-manager--header .ad-banner {
-  flex: 0 0 auto;
-  width: 260px;
-}
-
 /* ─── Inline ──────────────────────────────────────────────────── */
 .ad-manager--inline {
   align-items: center;
@@ -1567,10 +1829,41 @@
   }
 
   .ad-manager--header {
-    padding: 6px 10px;
+    position: fixed;
+    top: var(--main-header-height, 64px);
+    padding: 4px 10px;
+    min-height: 44px;
+    gap: 6px;
   }
+
   .ad-manager--header .ad-banner {
-    width: 220px;
+    width: 180px;
+    min-width: 140px;
+    height: 36px;
+    padding: 3px 6px 3px 3px;
+  }
+
+  .ad-manager--header .ad-banner .ad-banner__image-wrap {
+    width: 26px;
+    height: 26px;
+  }
+
+  .ad-manager--header .ad-banner .ad-banner__title {
+    font-size: 9px;
+  }
+
+  .ad-manager--header .ad-banner .ad-banner__business {
+    font-size: 7px;
+  }
+
+  .ad-manager--header .ad-banner .ad-banner__cta {
+    font-size: 7px;
+    padding: 1px 6px;
+  }
+
+  .ad-manager--header .ad-banner .ad-banner__controls .ad-btn svg {
+    width: 8px;
+    height: 8px;
   }
 
   .ad-manager--topbar {
@@ -1669,6 +1962,21 @@
 }
 
 @media (max-width: 480px) {
+  .ad-manager--header .ad-banner {
+    width: 150px;
+    min-width: 120px;
+    height: 32px;
+  }
+
+  .ad-manager--header .ad-banner .ad-banner__image-wrap {
+    width: 22px;
+    height: 22px;
+  }
+
+  .ad-manager--header .ad-banner .ad-banner__title {
+    font-size: 8px;
+  }
+
   .ad-footer__slide {
     width: 160px;
   }
@@ -1817,11 +2125,6 @@
   .ad-banner.is-minimized-pill .ad-label {
     color: #888;
     background: rgba(0, 0, 0, 0.06);
-  }
-
-  .ad-manager--header {
-    background: rgba(20, 20, 24, 0.95);
-    border-bottom-color: rgba(255, 255, 255, 0.06);
   }
 
   .ad-manager--topbar .ad-topbar__container {
