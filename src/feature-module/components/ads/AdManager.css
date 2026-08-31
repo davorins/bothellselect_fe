@@ -57,11 +57,91 @@
   width: 300px;
 }
 
+/* ─── Minimized Sidebar State ──────────────────────────────────── */
 .ad-manager--sidebar.is-minimized {
-  width: auto;
-  gap: 8px;
-  padding: 44px 8px 12px 8px;
+  width: auto !important;
+  min-width: 48px;
+  max-width: 300px;
+  padding: 44px 6px 12px 6px;
   background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.ad-manager--sidebar.is-minimized:hover {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* When minimized, show pills and allow expansion */
+.ad-manager--sidebar.is-minimized .ad-banner.is-minimized-pill {
+  display: flex;
+  width: 100%;
+  min-width: 36px;
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.ad-manager--sidebar.is-minimized .ad-banner.is-minimized-pill:hover {
+  background: rgba(0, 0, 0, 0.08);
+  transform: scale(1.02);
+}
+
+.ad-manager--sidebar.is-minimized
+  .ad-banner.is-minimized-pill
+  .ad-banner__minimized-body {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 4px;
+}
+
+.ad-manager--sidebar.is-minimized
+  .ad-banner.is-minimized-pill
+  .ad-banner__minimized-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.ad-manager--sidebar.is-minimized
+  .ad-banner.is-minimized-pill
+  .ad-banner__minimized-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.ad-manager--sidebar.is-minimized .ad-banner.is-minimized-pill .ad-label {
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #999;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* Hide controls in minimized state */
+.ad-manager--sidebar.is-minimized .ad-banner__controls {
+  display: none;
 }
 
 /* ─── Sidebar Master Controls ─────────────────────────────────── */
@@ -112,6 +192,160 @@
   stroke: currentColor;
   stroke-width: 2;
   fill: none;
+}
+
+/* ─── Ad Banner Styling for Sidebar ───────────────────────────── */
+.ad-manager--sidebar .ad-banner {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 12px;
+  transition: all 0.25s ease;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.ad-manager--sidebar .ad-banner:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.ad-manager--sidebar .ad-banner .ad-banner__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  padding-right: 24px;
+}
+
+.ad-manager--sidebar .ad-banner .ad-banner__image-wrap {
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(240, 240, 240, 0.5);
+}
+
+.ad-manager--sidebar .ad-banner .ad-banner__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ad-manager--sidebar .ad-banner .ad-banner__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ad-manager--sidebar .ad-banner .ad-banner__business {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+  margin: 0 0 2px 0;
+}
+
+.ad-manager--sidebar .ad-banner .ad-banner__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ad-manager--sidebar .ad-banner .ad-banner__description {
+  font-size: 11px;
+  color: #666;
+  margin: 0 0 6px 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ad-manager--sidebar .ad-banner .ad-banner__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #2563eb;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(37, 99, 235, 0.08);
+  white-space: nowrap;
+  border-bottom: none;
+  transition: all 0.2s ease;
+}
+
+.ad-manager--sidebar .ad-banner:hover .ad-banner__cta {
+  background: rgba(37, 99, 235, 0.15);
+}
+
+.ad-manager--sidebar .ad-banner .ad-banner__cta svg {
+  width: 10px;
+  height: 10px;
+  stroke: currentColor;
+  stroke-width: 2.5;
+}
+
+/* ─── Individual Ad Close Button ──────────────────────────────── */
+.ad-manager--sidebar .ad-banner .ad-banner__controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 5;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  padding: 2px;
+  backdrop-filter: blur(4px);
+}
+
+.ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #666;
+}
+
+.ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn--close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn svg {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+/* Hide minimize button on individual ads */
+.ad-manager--sidebar .ad-banner .ad-btn--minimize {
+  display: none;
 }
 
 /* ─── Top Bar ──────────────────────────────────────────────────── */
@@ -1200,6 +1434,74 @@
   .ad-manager--sidebar .ad-sidebar__master-btn--close:hover {
     background: rgba(239, 68, 68, 0.2);
     color: #ef4444;
+  }
+
+  .ad-manager--sidebar .ad-banner {
+    background: rgba(40, 40, 45, 0.9);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .ad-manager--sidebar .ad-banner:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__title {
+    color: #e8e8e8;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__description {
+    color: #999;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__business {
+    color: #777;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__cta {
+    color: #60a5fa;
+    background: rgba(96, 165, 250, 0.12);
+  }
+
+  .ad-manager--sidebar .ad-banner:hover .ad-banner__cta {
+    background: rgba(96, 165, 250, 0.2);
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__controls {
+    background: rgba(40, 40, 45, 0.9);
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn {
+    color: #888;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #bbb;
+  }
+
+  .ad-manager--sidebar .ad-banner .ad-banner__controls .ad-btn--close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+
+  .ad-manager--sidebar.is-minimized .ad-banner.is-minimized-pill {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .ad-manager--sidebar.is-minimized .ad-banner.is-minimized-pill:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .ad-manager--sidebar.is-minimized
+    .ad-banner.is-minimized-pill
+    .ad-banner__minimized-label {
+    color: #d0d0d0;
+  }
+
+  .ad-manager--sidebar.is-minimized .ad-banner.is-minimized-pill .ad-label {
+    color: #666;
+    background: rgba(255, 255, 255, 0.06);
   }
 
   .ad-manager--header {

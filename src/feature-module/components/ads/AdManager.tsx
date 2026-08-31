@@ -243,6 +243,22 @@ const AdManager: React.FC<AdManagerProps> = ({
     } catch {}
   }, [displayAds, minimizedAds, previewMode, placement]);
 
+  const handleExpandAd = useCallback(
+    (adId: string) => {
+      const updated = new Set(minimizedAds);
+      updated.delete(adId);
+      setMinimizedAds(updated);
+      if (previewMode) return;
+      try {
+        localStorage.setItem(
+          getStorageKey(placement, 'minimized'),
+          JSON.stringify([...updated]),
+        );
+      } catch {}
+    },
+    [minimizedAds, previewMode, placement],
+  );
+
   // Master close all ads
   const handleMasterClose = useCallback(() => {
     if (previewMode) return;
@@ -761,6 +777,7 @@ const AdManager: React.FC<AdManagerProps> = ({
             size={adSize}
             minimized={showMinimized && minimizedAds.has(ad._id)}
             onClose={() => handleClose(ad._id)}
+            onExpand={() => handleExpandAd(ad._id)}
           />
         ))}
       </div>
