@@ -111,6 +111,7 @@
    `--horizontal` suffixed names, which AdBanner doesn't emit.
    ============================================================ */
 .ad-banner--footerbar {
+  position: relative;
   max-width: none;
   width: 100%;
   border-radius: 40px;
@@ -122,13 +123,41 @@
   align-items: center;
   padding: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  overflow: hidden;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+  transform-origin: center;
 }
 
 .ad-banner--footerbar:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: scale(1.45);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
   background: rgba(255, 255, 255, 0.98);
+  z-index: 60;
+}
+
+/* Close button pinned to the upper-right corner, overlaid on the
+   card, instead of sitting inline at the start of the flex row. */
+.ad-banner--footerbar .ad-banner__controls {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 2;
+}
+
+.ad-banner--footerbar .ad-banner__controls .ad-btn {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.ad-banner--footerbar .ad-banner__controls .ad-btn:hover {
+  background: rgba(239, 68, 68, 0.9);
+  color: #fff;
 }
 
 .ad-banner--footerbar .ad-banner__body {
