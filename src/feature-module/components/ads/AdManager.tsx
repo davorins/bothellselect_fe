@@ -107,6 +107,9 @@ const AdManager: React.FC<AdManagerProps> = ({
     window.location.hostname === '127.0.0.1';
   const previewMode = isLocalDev;
 
+  // --- Calculate displayAds BEFORE using it in callbacks ---
+  const displayAds = previewMode ? ads : ads.filter((ad) => !closedAds[ad._id]);
+
   useEffect(() => {
     if (placement === 'sidebar') {
       const handleStorageChange = (e: StorageEvent) => {
@@ -224,22 +227,38 @@ const AdManager: React.FC<AdManagerProps> = ({
     [placement, previewMode, closedAds],
   );
 
-  const handleMinimize = useCallback(
-    (adId: string, minimized: boolean) => {
-      const updated = new Set(minimizedAds);
-      if (minimized) updated.add(adId);
-      else updated.delete(adId);
-      setMinimizedAds(updated);
-      if (previewMode) return;
-      try {
-        localStorage.setItem(
-          getStorageKey(placement, 'minimized'),
-          JSON.stringify([...updated]),
-        );
-      } catch {}
-    },
-    [minimizedAds, previewMode],
-  );
+  // Master minimize all ads
+  const handleMasterMinimize = useCallback(() => {
+    const allAdIds = displayAds.map((ad) => ad._id);
+    const updated = new Set(minimizedAds);
+    // Add all current ads to minimized set
+    allAdIds.forEach((id) => updated.add(id));
+    setMinimizedAds(updated);
+    if (previewMode) return;
+    try {
+      localStorage.setItem(
+        getStorageKey(placement, 'minimized'),
+        JSON.stringify([...updated]),
+      );
+    } catch {}
+  }, [displayAds, minimizedAds, previewMode, placement]);
+
+  // Master close all ads
+  const handleMasterClose = useCallback(() => {
+    if (previewMode) return;
+    const now = Date.now();
+    const updated = { ...closedAds };
+    displayAds.forEach((ad) => {
+      updated[ad._id] = { closedAt: now };
+    });
+    setClosedAds(updated);
+    try {
+      localStorage.setItem(
+        getStorageKey(placement, 'closed'),
+        JSON.stringify(updated),
+      );
+    } catch {}
+  }, [displayAds, closedAds, previewMode, placement]);
 
   const handleSidebarDismiss = useCallback(() => {
     console.log('Dismiss button clicked!');
@@ -271,8 +290,6 @@ const AdManager: React.FC<AdManagerProps> = ({
     else setActiveIndex((i) => Math.max(i - 1, 0));
     isDragging.current = false;
   }, []);
-
-  const displayAds = previewMode ? ads : ads.filter((ad) => !closedAds[ad._id]);
 
   if (placement === 'sidebar' && isSidebarHidden && !previewMode) {
     console.log('Sidebar is hidden - returning null');
@@ -319,7 +336,6 @@ const AdManager: React.FC<AdManagerProps> = ({
             authToken={authToken}
             minimized={false}
             onClose={() => handleClose(ad._id)}
-            onMinimize={(m) => handleMinimize(ad._id, m)}
           />
         ))}
       </div>
@@ -363,6 +379,44 @@ const AdManager: React.FC<AdManagerProps> = ({
                 </button>
               ))}
             </div>
+            {/* Master controls for topbar */}
+            <div className='ad-topbar__master-controls'>
+              <button
+                className='ad-topbar__master-btn'
+                onClick={handleMasterMinimize}
+                aria-label='Minimize all ads'
+                title='Minimize all'
+              >
+                <svg
+                  width='16'
+                  height='16'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2'
+                >
+                  <polyline points='18 15 12 9 6 15' />
+                </svg>
+              </button>
+              <button
+                className='ad-topbar__master-btn ad-topbar__master-btn--close'
+                onClick={handleMasterClose}
+                aria-label='Close all ads'
+                title='Close all'
+              >
+                <svg
+                  width='16'
+                  height='16'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2'
+                >
+                  <line x1='18' y1='6' x2='6' y2='18' />
+                  <line x1='6' y1='6' x2='18' y2='18' />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       );
@@ -382,32 +436,50 @@ const AdManager: React.FC<AdManagerProps> = ({
                     size='small'
                     minimized={false}
                     onClose={() => handleClose(ad._id)}
-                    onMinimize={(m) => handleMinimize(ad._id, m)}
                   />
                 </div>
               ))}
             </div>
           </div>
-          {displayAds.length > 1 && (
-            <button
-              className='ad-topbar__minimize-btn'
-              onClick={() => {
-                displayAds.forEach((ad) => handleMinimize(ad._id, true));
-              }}
-              aria-label='Minimize ads'
-              title='Minimize'
-            >
-              <svg
-                width='16'
-                height='16'
-                viewBox='0 0 24 24'
-                fill='none'
-                stroke='currentColor'
-                strokeWidth='2'
+          {/* Master controls for topbar */}
+          {displayAds.length > 0 && (
+            <div className='ad-topbar__master-controls'>
+              <button
+                className='ad-topbar__master-btn'
+                onClick={handleMasterMinimize}
+                aria-label='Minimize all ads'
+                title='Minimize all'
               >
-                <polyline points='18 15 12 9 6 15' />
-              </svg>
-            </button>
+                <svg
+                  width='16'
+                  height='16'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2'
+                >
+                  <polyline points='18 15 12 9 6 15' />
+                </svg>
+              </button>
+              <button
+                className='ad-topbar__master-btn ad-topbar__master-btn--close'
+                onClick={handleMasterClose}
+                aria-label='Close all ads'
+                title='Close all'
+              >
+                <svg
+                  width='16'
+                  height='16'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2'
+                >
+                  <line x1='18' y1='6' x2='6' y2='18' />
+                  <line x1='6' y1='6' x2='18' y2='18' />
+                </svg>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -459,6 +531,44 @@ const AdManager: React.FC<AdManagerProps> = ({
                   </button>
                 );
               })}
+            </div>
+            {/* Master controls for mobile */}
+            <div className='ad-mobile-dock__master-controls'>
+              <button
+                className='ad-mobile-dock__master-btn'
+                onClick={handleMasterMinimize}
+                aria-label='Minimize all ads'
+                title='Minimize all'
+              >
+                <svg
+                  width='14'
+                  height='14'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2.5'
+                >
+                  <polyline points='18 15 12 9 6 15' />
+                </svg>
+              </button>
+              <button
+                className='ad-mobile-dock__master-btn ad-mobile-dock__master-btn--close'
+                onClick={handleMasterClose}
+                aria-label='Close all ads'
+                title='Close all'
+              >
+                <svg
+                  width='14'
+                  height='14'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2.5'
+                >
+                  <line x1='18' y1='6' x2='6' y2='18' />
+                  <line x1='6' y1='6' x2='18' y2='18' />
+                </svg>
+              </button>
             </div>
             <button
               className='ad-mobile-dock__close'
@@ -515,6 +625,25 @@ const AdManager: React.FC<AdManagerProps> = ({
               </svg>
               Collapse
             </button>
+            {/* Master controls for mobile expanded */}
+            <button
+              className='ad-carousel__master-minimize'
+              onClick={handleMasterMinimize}
+              aria-label='Minimize all ads'
+              title='Minimize all'
+            >
+              <svg
+                width='14'
+                height='14'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2.5'
+                aria-hidden='true'
+              >
+                <polyline points='18 15 12 9 6 15' />
+              </svg>
+            </button>
             <button
               className='ad-carousel__dismiss'
               onClick={handleSidebarDismiss}
@@ -556,7 +685,6 @@ const AdManager: React.FC<AdManagerProps> = ({
                   size='normal'
                   minimized={false}
                   onClose={() => handleClose(ad._id)}
-                  onMinimize={() => setMobileMinimized(true)}
                 />
               </div>
             ))}
@@ -586,6 +714,45 @@ const AdManager: React.FC<AdManagerProps> = ({
         className={`ad-manager ad-manager--sidebar ${countClass} ${allMinimized ? 'is-minimized' : ''} ${className}`}
         aria-label='Advertisements'
       >
+        {/* Master controls at top of sidebar */}
+        <div className='ad-sidebar__master-controls'>
+          <button
+            className='ad-sidebar__master-btn'
+            onClick={handleMasterMinimize}
+            aria-label='Minimize all ads'
+            title='Minimize all'
+          >
+            <svg
+              width='14'
+              height='14'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+            >
+              <polyline points='18 15 12 9 6 15' />
+            </svg>
+          </button>
+          <button
+            className='ad-sidebar__master-btn ad-sidebar__master-btn--close'
+            onClick={handleMasterClose}
+            aria-label='Close all ads'
+            title='Close all'
+          >
+            <svg
+              width='14'
+              height='14'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+            >
+              <line x1='18' y1='6' x2='6' y2='18' />
+              <line x1='6' y1='6' x2='18' y2='18' />
+            </svg>
+          </button>
+        </div>
+
         <button
           className='ad-sidebar__dismiss'
           onClick={handleSidebarDismiss}
@@ -614,7 +781,6 @@ const AdManager: React.FC<AdManagerProps> = ({
             size={adSize}
             minimized={showMinimized && minimizedAds.has(ad._id)}
             onClose={() => handleClose(ad._id)}
-            onMinimize={(m) => handleMinimize(ad._id, m)}
           />
         ))}
       </div>
@@ -657,6 +823,44 @@ const AdManager: React.FC<AdManagerProps> = ({
                 </button>
               ))}
             </div>
+            {/* Master controls for footer minimized */}
+            <div className='ad-footer__master-controls'>
+              <button
+                className='ad-footer__master-btn'
+                onClick={handleMasterMinimize}
+                aria-label='Minimize all ads'
+                title='Minimize all'
+              >
+                <svg
+                  width='14'
+                  height='14'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2'
+                >
+                  <polyline points='18 15 12 9 6 15' />
+                </svg>
+              </button>
+              <button
+                className='ad-footer__master-btn ad-footer__master-btn--close'
+                onClick={handleMasterClose}
+                aria-label='Close all ads'
+                title='Close all'
+              >
+                <svg
+                  width='14'
+                  height='14'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2'
+                >
+                  <line x1='18' y1='6' x2='6' y2='18' />
+                  <line x1='6' y1='6' x2='18' y2='18' />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       );
@@ -675,32 +879,50 @@ const AdManager: React.FC<AdManagerProps> = ({
                     size='normal'
                     minimized={false}
                     onClose={() => handleClose(ad._id)}
-                    onMinimize={(m) => handleMinimize(ad._id, m)}
                   />
                 </div>
               ))}
             </div>
           </div>
-          {displayAds.length > 1 && (
-            <button
-              className='ad-footer__minimize-btn'
-              onClick={() => {
-                displayAds.forEach((ad) => handleMinimize(ad._id, true));
-              }}
-              aria-label='Minimize ads'
-              title='Minimize'
-            >
-              <svg
-                width='14'
-                height='14'
-                viewBox='0 0 24 24'
-                fill='none'
-                stroke='currentColor'
-                strokeWidth='2'
+          {/* Master controls for footer */}
+          {displayAds.length > 0 && (
+            <div className='ad-footer__master-controls'>
+              <button
+                className='ad-footer__master-btn'
+                onClick={handleMasterMinimize}
+                aria-label='Minimize all ads'
+                title='Minimize all'
               >
-                <polyline points='18 15 12 9 6 15' />
-              </svg>
-            </button>
+                <svg
+                  width='14'
+                  height='14'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2'
+                >
+                  <polyline points='18 15 12 9 6 15' />
+                </svg>
+              </button>
+              <button
+                className='ad-footer__master-btn ad-footer__master-btn--close'
+                onClick={handleMasterClose}
+                aria-label='Close all ads'
+                title='Close all'
+              >
+                <svg
+                  width='14'
+                  height='14'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2'
+                >
+                  <line x1='18' y1='6' x2='6' y2='18' />
+                  <line x1='6' y1='6' x2='18' y2='18' />
+                </svg>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -713,6 +935,46 @@ const AdManager: React.FC<AdManagerProps> = ({
       className={`ad-manager ad-manager--${placement} ${countClass} ${className}`}
       aria-label='Advertisements'
     >
+      {/* Master controls for header/inline */}
+      {displayAds.length > 0 && (
+        <div className='ad-manager__master-controls'>
+          <button
+            className='ad-manager__master-btn'
+            onClick={handleMasterMinimize}
+            aria-label='Minimize all ads'
+            title='Minimize all'
+          >
+            <svg
+              width='14'
+              height='14'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+            >
+              <polyline points='18 15 12 9 6 15' />
+            </svg>
+          </button>
+          <button
+            className='ad-manager__master-btn ad-manager__master-btn--close'
+            onClick={handleMasterClose}
+            aria-label='Close all ads'
+            title='Close all'
+          >
+            <svg
+              width='14'
+              height='14'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+            >
+              <line x1='18' y1='6' x2='6' y2='18' />
+              <line x1='6' y1='6' x2='18' y2='18' />
+            </svg>
+          </button>
+        </div>
+      )}
       {displayAds.map((ad) => (
         <AdBanner
           key={ad._id}
@@ -721,7 +983,6 @@ const AdManager: React.FC<AdManagerProps> = ({
           size={adSize}
           minimized={showMinimized && minimizedAds.has(ad._id)}
           onClose={() => handleClose(ad._id)}
-          onMinimize={(m) => handleMinimize(ad._id, m)}
         />
       ))}
     </div>

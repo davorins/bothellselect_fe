@@ -5,7 +5,6 @@ import './AdBanner.css';
 interface AdBannerProps {
   ad: Advertisement;
   onClose?: () => void;
-  onMinimize?: (minimized: boolean) => void;
   minimized?: boolean;
   className?: string;
   authToken?: string;
@@ -15,7 +14,6 @@ interface AdBannerProps {
 const AdBanner: React.FC<AdBannerProps> = ({
   ad,
   onClose,
-  onMinimize,
   minimized = false,
   className = '',
   authToken,
@@ -59,12 +57,6 @@ const AdBanner: React.FC<AdBannerProps> = ({
     window.open(destination, '_blank', 'noopener,noreferrer');
   };
 
-  const handleMinimizeToggle = () => {
-    const next = !isMinimized;
-    setIsMinimized(next);
-    onMinimize?.(next);
-  };
-
   const getImageUrl = (): string | null => {
     if (isMobile && ad.mobileImage?.url) return ad.mobileImage.url;
     return ad.desktopImage?.url || ad.mobileImage?.url || null;
@@ -105,29 +97,6 @@ const AdBanner: React.FC<AdBannerProps> = ({
           <span className='ad-banner__minimized-label'>{ad.businessName}</span>
           <span className='ad-label'>Ad</span>
         </div>
-
-        <div className='ad-banner__controls'>
-          <button
-            className='ad-btn ad-btn--icon'
-            onClick={handleMinimizeToggle}
-            aria-label='Expand advertisement'
-            title='Expand'
-          >
-            <svg
-              width='13'
-              height='13'
-              viewBox='0 0 24 24'
-              fill='none'
-              stroke='currentColor'
-              strokeWidth='2'
-            >
-              <polyline points='15 3 21 3 21 9' />
-              <polyline points='9 21 3 21 3 15' />
-              <line x1='21' y1='3' x2='14' y2='10' />
-              <line x1='3' y1='21' x2='10' y2='14' />
-            </svg>
-          </button>
-        </div>
       </div>
     );
   }
@@ -140,26 +109,9 @@ const AdBanner: React.FC<AdBannerProps> = ({
       aria-label={`Advertisement: ${ad.businessName}`}
     >
       <div className='ad-banner__controls'>
-        <button
-          className='ad-btn ad-btn--icon'
-          onClick={handleMinimizeToggle}
-          aria-label='Minimize advertisement'
-          title='Minimize'
-        >
-          <svg
-            width='13'
-            height='13'
-            viewBox='0 0 24 24'
-            fill='none'
-            stroke='currentColor'
-            strokeWidth='2.5'
-          >
-            <line x1='5' y1='12' x2='19' y2='12' />
-          </svg>
-        </button>
         {onClose && (
           <button
-            className='ad-btn ad-btn--icon'
+            className='ad-btn ad-btn--icon ad-btn--close'
             onClick={onClose}
             aria-label='Close advertisement'
             title='Close'
