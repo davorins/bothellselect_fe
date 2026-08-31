@@ -214,6 +214,8 @@
   background: rgba(37, 99, 235, 0.08);
   white-space: nowrap;
   transition: all 0.2s ease;
+  width: 80px;
+  margin: 5px 0;
 }
 
 .ad-banner--footerbar:hover .ad-banner__cta {
