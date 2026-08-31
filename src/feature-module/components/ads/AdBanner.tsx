@@ -9,7 +9,7 @@ interface AdBannerProps {
   minimized?: boolean;
   className?: string;
   authToken?: string;
-  size?: 'normal' | 'small' | 'mini';
+  size?: 'normal' | 'small' | 'mini' | 'footerbar';
 }
 
 const AdBanner: React.FC<AdBannerProps> = ({
@@ -22,7 +22,6 @@ const AdBanner: React.FC<AdBannerProps> = ({
   size = 'normal',
 }) => {
   const [imageError, setImageError] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(minimized);
   const [isVisible, setIsVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -37,10 +36,6 @@ const AdBanner: React.FC<AdBannerProps> = ({
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
-
-  useEffect(() => {
-    setIsMinimized(minimized);
-  }, [minimized]);
 
   const handleClick = async () => {
     const destination = ad.clickUrl || ad.website;
@@ -73,7 +68,14 @@ const AdBanner: React.FC<AdBannerProps> = ({
   if (!hasImage && !hasContent) return null;
 
   // ── Minimized pill ──────────────────────────────────────────────
-  if (isMinimized) {
+  // `minimized` is read straight from props now (no local mirror
+  // state). Previously this component kept its own `isMinimized`
+  // state synced via a useEffect, which meant the pill briefly kept
+  // rendering with the *old* value for a render pass after the
+  // parent had already flipped it back to expanded — that's what
+  // made "tap to expand" feel like it wasn't working in some
+  // placements. Reading the prop directly removes that lag entirely.
+  if (minimized) {
     return (
       <div
         className={`ad-banner is-minimized-pill ${isVisible ? 'ad-banner--visible' : ''} ${className}`}
