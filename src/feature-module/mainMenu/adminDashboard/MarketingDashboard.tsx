@@ -33,8 +33,8 @@ const MarketingDashboard: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const url = selectedCampaign
-        ? `${API_BASE_URL}/api/marketing/attribution/stats?campaign=${selectedCampaign}`
-        : `${API_BASE_URL}/api/marketing/attribution/stats`;
+        ? `${API_BASE_URL}/marketing/attribution/stats?campaign=${selectedCampaign}`
+        : `${API_BASE_URL}/marketing/attribution/stats`;
 
       const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
