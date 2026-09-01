@@ -84,6 +84,7 @@ import PaymentConfiguration from '../../components/admin/paymentSettings/Payment
 import FormFieldConfigPage from '../settings/systemSettings/formFieldConfig/FormFieldConfig';
 import CloverReceiptPage from '../peoples/parent/receipts/CloverReceiptPage';
 import AdminAdManager from '../components/ads/AdminAdManager';
+import TryoutPage from '../pages/TryoutPage';
 
 const routes = all_routes;
 
@@ -496,6 +497,11 @@ export const publicRoutes = [
   {
     path: routes.findTickets,
     element: <PublicTicketLookup />,
+    route: Route,
+  },
+  {
+    path: '/tryouts',
+    element: <TryoutPage />,
     route: Route,
   },
 ];
