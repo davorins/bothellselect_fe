@@ -3,12 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useMarketing } from '../../context/MarketingContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import RegistrationHub from '../components/registration/RegistrationHub';
 import RegistrationWizard from '../components/registration/RegistrationWizard';
-import {
-  RegistrationFormConfig,
-  TryoutSpecificConfig,
-} from '../../types/registration-types';
+import { TryoutSpecificConfig } from '../../types/registration-types';
 import './TryoutPage.css';
 
 interface TryoutEvent {
@@ -72,7 +68,6 @@ const TryoutPage: React.FC = () => {
     event: TryoutEvent,
     formConfig: FormConfig | null,
   ): TryoutSpecificConfig => {
-    // Get tryout details from event
     const tryoutName = event.title || 'Tryout';
     const tryoutYear =
       new Date(event.start).getFullYear() || new Date().getFullYear();
@@ -153,7 +148,6 @@ const TryoutPage: React.FC = () => {
 
       // Create tryout config - ALWAYS set isActive to true for the public page
       const tryoutConfigData = convertToTryoutConfig(activeTryout, config);
-      // Force isActive to true regardless of admin settings
       tryoutConfigData.isActive = true;
       setTryoutConfig(tryoutConfigData);
 
@@ -170,24 +164,13 @@ const TryoutPage: React.FC = () => {
     }
   };
 
-  // Helper for images with fallback
-  const getImageSrc = (path: string) => {
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
-    if (path.startsWith('/assets')) {
-      return path;
-    }
-    return `/assets/${path}`;
-  };
-
   if (loading) {
     return (
       <div className='tryout-root'>
         <div className='tryout-wrap'>
-          <div className='text-center py-5'>
+          <div className='tryout-status'>
             <LoadingSpinner />
-            <p className='mt-3 text-muted'>Loading tryout information...</p>
+            <p>Loading tryout information…</p>
           </div>
         </div>
       </div>
@@ -198,14 +181,13 @@ const TryoutPage: React.FC = () => {
     return (
       <div className='tryout-root'>
         <div className='tryout-wrap'>
-          <div className='text-center py-5'>
-            <div className='display-1 text-muted mb-4'>🏀</div>
-            <h3 className='text-white'>No Active Tryouts</h3>
-            <p className='text-muted'>
+          <div className='tryout-status'>
+            <h1 className='status-title'>No tryouts scheduled</h1>
+            <p className='status-body'>
               {error || 'Check back soon for upcoming tryout dates.'}
             </p>
-            <Link to='/' className='btn-primary-glass mt-3'>
-              Return Home <i className='ti ti-arrow-right' />
+            <Link to='/' className='btn-primary'>
+              Return home
             </Link>
           </div>
         </div>
@@ -227,154 +209,77 @@ const TryoutPage: React.FC = () => {
 
   return (
     <div className='tryout-root'>
-      {/* Background Effects */}
-      <div className='tryout-bg' />
-      <div className='tryout-orb tryout-orb-1' />
-      <div className='tryout-orb tryout-orb-2' />
-      <div className='tryout-orb tryout-orb-3' />
+      <div className='tryout-glow' />
 
       <div className='tryout-wrap'>
-        {/* ─── HERO SECTION ──────────────────────────────────────── */}
+        {/* ─── HERO ───────────────────────────────────────────── */}
         <section className='tryout-hero'>
-          <div className='hero-grid'>
-            <div className='hero-text'>
-              <div className='hero-eyebrow'>
-                <span className='eyebrow-dot' />
-                {event.category || 'Tryout'} • {new Date().getFullYear()}
-              </div>
-              <h1 className='hero-title'>
-                <span className='hero-accent'>{event.title}</span>
-              </h1>
-              <p className='hero-lead'>
-                {event.description ||
-                  'Join Bothell Select Basketball for the upcoming season'}
-              </p>
+          <p className='hero-meta'>
+            {event.category || 'Tryouts'} ·{' '}
+            {new Date(event.start).getFullYear()}
+          </p>
+          <h1 className='hero-title'>{event.title}</h1>
+          <p className='hero-lead'>
+            {event.description ||
+              'Join Bothell Select Basketball for the upcoming season.'}
+          </p>
 
-              <div className='hero-info-grid'>
-                <div className='hero-info-item'>
-                  <i className='ti ti-calendar-event' />
-                  <div>
-                    <span className='label'>Date</span>
-                    <span className='value'>{formattedDate}</span>
-                  </div>
-                </div>
-                <div className='hero-info-item'>
-                  <i className='ti ti-clock' />
-                  <div>
-                    <span className='label'>Time</span>
-                    <span className='value'>{formattedTime}</span>
-                  </div>
-                </div>
-                <div className='hero-info-item'>
-                  <i className='ti ti-map-pin' />
-                  <div>
-                    <span className='label'>Location</span>
-                    <span className='value'>
-                      {event.school?.name || 'Bothell High School'}
-                    </span>
-                  </div>
-                </div>
-              </div>
+          <dl className='hero-facts'>
+            <div className='fact'>
+              <dt>Date</dt>
+              <dd>{formattedDate}</dd>
             </div>
+            <div className='fact'>
+              <dt>Time</dt>
+              <dd>{formattedTime}</dd>
+            </div>
+            <div className='fact'>
+              <dt>Where</dt>
+              <dd>{event.school?.name || 'Bothell High School'}</dd>
+            </div>
+          </dl>
 
-            <div className='hero-img-col'>
-              <div className='hero-img-glass'>
-                <div className='hero-glow' />
-                <img
-                  src={getImageSrc('assets/img/tryout-hero.png')}
-                  alt='Bothell Select Tryouts'
-                  className='hero-img'
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"%3E%3Crect width="400" height="300" fill="%231a1a2e"/%3E%3Ctext x="200" y="150" text-anchor="middle" fill="%23506ee4" font-size="24" font-family="Arial"%3E🏀 Tryouts%3C/text%3E%3C/svg%3E';
-                  }}
-                />
-              </div>
-              <div className='hero-badge'>
-                <i className='ti ti-award' />
-                <span>
-                  Limited Spots
-                  <br />
-                  Available
-                </span>
-              </div>
-            </div>
-          </div>
+          <a href='#registration' className='hero-cta'>
+            Register for tryouts
+          </a>
         </section>
 
-        {/* ─── DETAILS SECTION ────────────────────────────────────── */}
+        {/* ─── DETAILS ────────────────────────────────────────── */}
         <section className='tryout-details' id='details'>
-          <div className='section-hdr'>
-            <div className='section-tag'>Everything You Need to Know</div>
-            <h2 className='section-title'>Tryout Details</h2>
-            <p className='section-sub'>
-              Come prepared and ready to showcase your skills
-            </p>
-          </div>
+          <h2 className='details-heading'>Tryout details</h2>
 
-          <div className='details-grid'>
-            {/* What to Bring */}
-            <div className='details-card'>
-              <div className='details-icon'>
-                <i className='ti ti-package' />
-              </div>
-              <h3 className='details-title'>What to Bring</h3>
-              <ul className='details-list'>
-                <li>
-                  <i className='ti ti-check' /> Basketball shoes
-                </li>
-                <li>
-                  <i className='ti ti-check' /> Water bottle
-                </li>
-                <li>
-                  <i className='ti ti-check' /> Athletic wear
-                </li>
-                <li>
-                  <i className='ti ti-check' /> Completed waiver
-                </li>
+          <div className='details-columns'>
+            <div className='details-col'>
+              <h3>What to bring</h3>
+              <ul>
+                <li>Basketball shoes</li>
+                <li>Water bottle</li>
+                <li>Athletic wear</li>
+                <li>Completed waiver</li>
               </ul>
             </div>
 
-            {/* What to Expect */}
-            <div className='details-card'>
-              <div className='details-icon'>
-                <i className='ti ti-info-circle' />
-              </div>
-              <h3 className='details-title'>What to Expect</h3>
-              <p className='details-body'>
-                Tryouts will consist of skill demonstrations, drills, and
-                scrimmages. Players will be evaluated on their basketball
-                fundamentals, athleticism, and teamwork.
+            <div className='details-col'>
+              <h3>What to expect</h3>
+              <p>
+                Skill demonstrations, drills, and scrimmages. Players are
+                evaluated on fundamentals, athleticism, and teamwork.
               </p>
             </div>
 
-            {/* Who Can Tryout */}
-            <div className='details-card'>
-              <div className='details-icon'>
-                <i className='ti ti-users' />
-              </div>
-              <h3 className='details-title'>Who Can Tryout</h3>
-              <ul className='details-list'>
-                <li>
-                  <i className='ti ti-check' /> Boys &amp; Girls
-                </li>
-                <li>
-                  <i className='ti ti-check' /> Grades 3-8
-                </li>
-                <li>
-                  <i className='ti ti-check' /> All skill levels welcome
-                </li>
+            <div className='details-col'>
+              <h3>Who can try out</h3>
+              <ul>
+                <li>Boys &amp; girls</li>
+                <li>Grades 3–8</li>
+                <li>All skill levels welcome</li>
               </ul>
             </div>
 
-            {/* Location */}
-            <div className='details-card'>
-              <div className='details-icon'>
-                <i className='ti ti-map-pin' />
-              </div>
-              <h3 className='details-title'>Location</h3>
-              <p className='details-body'>
-                <strong>{event.school?.name || 'Bothell High School'}</strong>
+            <div className='details-col'>
+              <h3>Location</h3>
+              <p>
+                {event.school?.name || 'Bothell High School'}
                 <br />
                 {event.school?.address || '18100 92nd Ave NE'}
                 <br />
@@ -382,26 +287,20 @@ const TryoutPage: React.FC = () => {
                 {event.school?.zip || '98011'}
               </p>
               <p className='details-note'>
-                <i className='ti ti-clock' /> Please arrive 30 minutes early for
-                check-in
+                Arrive 30 minutes early for check-in.
               </p>
             </div>
           </div>
         </section>
 
-        {/* ─── REGISTRATION FORM ────────────────────────────────── */}
-        {/* This is the key change - always show the form, always active */}
-        <section className='tryout-registration-section'>
-          <div className='section-hdr'>
-            <div className='section-tag'>Register Now</div>
-            <h2 className='section-title'>Secure Your Spot</h2>
-            <p className='section-sub'>
-              Complete the form below to register for tryouts
-            </p>
+        {/* ─── REGISTRATION ───────────────────────────────────── */}
+        <section className='tryout-registration' id='registration'>
+          <div className='registration-heading'>
+            <h2>Secure your spot</h2>
+            <p>Complete the form below to register for tryouts.</p>
           </div>
 
           <div className='registration-container'>
-            {/* Use RegistrationWizard directly with the tryout config */}
             <RegistrationWizard
               registrationType='tryout'
               eventData={{
@@ -419,20 +318,17 @@ const TryoutPage: React.FC = () => {
               formConfig={tryoutConfig}
               onSuccess={() => {
                 console.log('🎉 Tryout registration successful!');
-                // Scroll to top or show success message
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
             />
           </div>
         </section>
 
-        {/* ─── UTM Debug (Development Only) ────────────────────── */}
+        {/* ─── UTM Debug (Development Only) ──────────────────── */}
         {process.env.NODE_ENV === 'development' && (
           <div className='tryout-debug'>
-            <div className='debug-card'>
-              <strong>🔍 UTM Debug:</strong>
-              <pre>{JSON.stringify(getMarketingAttribution(), null, 2)}</pre>
-            </div>
+            <strong>UTM debug</strong>
+            <pre>{JSON.stringify(getMarketingAttribution(), null, 2)}</pre>
           </div>
         )}
       </div>
