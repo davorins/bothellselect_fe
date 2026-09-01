@@ -27,6 +27,21 @@ interface TryoutEvent {
   isActive?: boolean;
 }
 
+// Matches the shape AutoGridFromDescription reads location data from —
+// this lives on the form config's tryoutDetails, not on the event itself.
+interface TryoutLocation {
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+interface TryoutDetailsConfig {
+  locations?: TryoutLocation[];
+  location?: TryoutLocation;
+}
+
 interface FormConfig {
   _id: string;
   fields: any[];
@@ -36,9 +51,25 @@ interface FormConfig {
     packages: any[];
   };
   isActive: boolean;
+  tryoutDetails?: TryoutDetailsConfig;
 }
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+// Same fallback logic AutoGridFromDescription uses: prefer the new
+// `locations` array, fall back to the legacy single `location`.
+const getTryoutLocations = (
+  details?: TryoutDetailsConfig,
+): TryoutLocation[] => {
+  if (!details) return [];
+  if (details.locations && details.locations.length > 0) {
+    return details.locations;
+  }
+  if (details.location && details.location.name) {
+    return [details.location];
+  }
+  return [];
+};
 
 const TryoutPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -72,23 +103,21 @@ const TryoutPage: React.FC = () => {
     const tryoutYear =
       new Date(event.start).getFullYear() || new Date().getFullYear();
 
+    const tryoutLocations = getTryoutLocations(formConfig?.tryoutDetails);
+
     return {
       tryoutName: tryoutName,
       tryoutYear: tryoutYear,
       displayName: tryoutName,
       registrationDeadline: '', // Can be configured separately
       tryoutDates: [event.start],
-      locations: event.school
-        ? [
-            {
-              name: event.school.name,
-              address: event.school.address,
-              city: event.school.city,
-              state: event.school.state,
-              zipCode: event.school.zip,
-            },
-          ]
-        : [],
+      locations: tryoutLocations.map((loc) => ({
+        name: loc.name,
+        address: loc.address,
+        city: loc.city,
+        state: loc.state,
+        zipCode: loc.zipCode,
+      })),
       divisions: [],
       ageGroups: [],
       requiresPayment: formConfig?.requiresPayment ?? true,
@@ -132,7 +161,8 @@ const TryoutPage: React.FC = () => {
 
       setEvent(activeTryout);
 
-      // Fetch form config for this event
+      // Fetch form config for this event — this is where the real
+      // location data (tryoutDetails.locations) lives.
       let config = null;
       if (activeTryout.formId) {
         try {
@@ -155,6 +185,7 @@ const TryoutPage: React.FC = () => {
         tryoutName: tryoutConfigData.tryoutName,
         isActive: tryoutConfigData.isActive,
         hasFormConfig: !!config,
+        locationCount: tryoutConfigData.locations?.length ?? 0,
       });
     } catch (err) {
       console.error('Error fetching tryout:', err);
@@ -207,6 +238,9 @@ const TryoutPage: React.FC = () => {
     minute: '2-digit',
   });
 
+  const tryoutLocations = tryoutConfig.locations ?? [];
+  const primaryLocation = tryoutLocations[0];
+
   return (
     <div className='tryout-root'>
       <div className='tryout-glow' />
@@ -214,7 +248,11 @@ const TryoutPage: React.FC = () => {
       <div className='tryout-wrap'>
         {/* ─── HERO ───────────────────────────────────────────── */}
         <section className='tryout-hero'>
-          <p className='hero-meta'>Bothell Select Tryouts</p>
+          <p className='hero-meta'>
+            {event.category || 'Tryouts'} ·{' '}
+            {new Date(event.start).getFullYear()}
+          </p>
+          <h1 className='hero-title'>{event.title}</h1>
           <p className='hero-lead'>
             {event.description ||
               'Join Bothell Select Basketball for the upcoming season.'}
@@ -231,7 +269,7 @@ const TryoutPage: React.FC = () => {
             </div>
             <div className='fact'>
               <dt>Where</dt>
-              <dd>{event.school?.name || 'Bothell High School'}</dd>
+              <dd>{primaryLocation?.name || 'Location TBA'}</dd>
             </div>
           </dl>
 
@@ -267,21 +305,26 @@ const TryoutPage: React.FC = () => {
               <h3>Who can try out</h3>
               <ul>
                 <li>Boys &amp; girls</li>
-                <li>Grades 4–8</li>
+                <li>Grades 3–8</li>
                 <li>All skill levels welcome</li>
               </ul>
             </div>
 
             <div className='details-col'>
-              <h3>Location</h3>
-              <p>
-                {event.school?.name || ''}
-                <br />
-                {event.school?.address || ''}
-                <br />
-                {event.school?.city || ''}, {event.school?.state || ''}{' '}
-                {event.school?.zip || ''}
-              </p>
+              <h3>{tryoutLocations.length > 1 ? 'Locations' : 'Location'}</h3>
+              {tryoutLocations.length > 0 ? (
+                tryoutLocations.map((loc, idx) => (
+                  <p key={idx}>
+                    {loc.name}
+                    <br />
+                    {loc.address}
+                    <br />
+                    {loc.city}, {loc.state} {loc.zipCode}
+                  </p>
+                ))
+              ) : (
+                <p>Location details coming soon.</p>
+              )}
               <p className='details-note'>
                 Arrive 30 minutes early for check-in.
               </p>

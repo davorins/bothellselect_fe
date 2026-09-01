@@ -194,10 +194,9 @@
 /* ── Details ─────────────────────────────────────────────── */
 .details-heading {
   font-family: 'Roboto', sans-serif;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 800;
-  margin: 0 0 24px;
-  color: #e9edf4;
+  margin: 0 0 32px;
 }
 
 .details-columns {
@@ -234,6 +233,9 @@
   line-height: 1.65;
   color: var(--paper-dim);
   margin: 0;
+}
+.details-col p + p {
+  margin-top: 12px;
 }
 
 .details-note {
