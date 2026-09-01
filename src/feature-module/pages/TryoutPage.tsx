@@ -3,7 +3,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useMarketing } from '../../context/MarketingContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import ImageWithBasePath from '../../core/common/imageWithBasePath';
 
 interface TryoutEvent {
   _id: string;
@@ -110,6 +109,20 @@ const TryoutPage: React.FC = () => {
     document
       .getElementById('registration-section')
       ?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Helper for images with fallback
+  const getImageSrc = (path: string) => {
+    // If path already starts with http, return as-is
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    // If path starts with /assets, use as-is (public folder)
+    if (path.startsWith('/assets')) {
+      return path;
+    }
+    // Otherwise, assume it's relative to public/assets
+    return `/assets/${path}`;
   };
 
   if (loading) {
@@ -220,8 +233,8 @@ const TryoutPage: React.FC = () => {
             <div className='hero-img-col'>
               <div className='hero-img-glass'>
                 <div className='hero-glow' />
-                <ImageWithBasePath
-                  src='assets/img/tryout-hero.png'
+                <img
+                  src={getImageSrc('assets/img/tryout-hero.png')}
                   alt='Bothell Select Tryouts'
                   className='hero-img'
                   onError={(e) => {
