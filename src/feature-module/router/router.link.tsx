@@ -12,6 +12,7 @@ import ResetPassword from '../auth/resetPassword/resetPassword';
 import ForgotPassword from '../auth/forgotPassword/forgotPassword';
 import Pages from '../content/pages';
 import AdminDashboard from '../mainMenu/adminDashboard';
+import MarketingDashboard from '../mainMenu/adminDashboard/MarketingDashboard';
 import AlertUi from '../uiInterface/base-ui/alert-ui';
 import CoachDashboard from '../mainMenu/coachDashboard';
 import ParentDashboard from '../mainMenu/parentDashboard';
@@ -556,6 +557,15 @@ export const protectedRoutes = [
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
         <AdminRefundsPanel />
+      </ProtectedRoute>
+    ),
+    route: Route,
+  },
+  {
+    path: '/admin/ticket-dashboard',
+    element: (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <TicketList />
       </ProtectedRoute>
     ),
     route: Route,

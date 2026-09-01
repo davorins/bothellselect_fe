@@ -8,6 +8,7 @@ export const all_routes = {
   parentDashboard: '/parent-dashboard',
   studentDashboard: '/student-dashboard',
   coachDashboard: '/coach-dashboard',
+  adminMarketing: '/admin/marketing',
 
   blankPage: '/blank-page',
   calendar: '/calendar',
