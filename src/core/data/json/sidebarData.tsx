@@ -291,6 +291,14 @@ export const SidebarData = [
         link: '/admin/advertisements',
         roles: ['admin'],
       },
+      {
+        label: 'Marketing Dashboard',
+        icon: 'ti ti-chart-bar',
+        submenu: false,
+        showSubRoute: false,
+        link: '/admin/marketing',
+        roles: ['admin'],
+      },
     ],
   },
   {
