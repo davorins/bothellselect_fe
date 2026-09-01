@@ -214,10 +214,7 @@ const TryoutPage: React.FC = () => {
       <div className='tryout-wrap'>
         {/* ─── HERO ───────────────────────────────────────────── */}
         <section className='tryout-hero'>
-          <p className='hero-meta'>
-            {event.category || 'Tryouts'} ·{' '}
-            {new Date(event.start).getFullYear()}
-          </p>
+          <p className='hero-meta'>Bothell Select Tryouts</p>
           <h1 className='hero-title'>{event.title}</h1>
           <p className='hero-lead'>
             {event.description ||
