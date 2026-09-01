@@ -185,7 +185,7 @@ const TryoutPage: React.FC = () => {
         tryoutName: tryoutConfigData.tryoutName,
         isActive: tryoutConfigData.isActive,
         hasFormConfig: !!config,
-        locationCount: tryoutConfigData.locations?.length ?? 0,
+        locationCount: tryoutConfigData.locations.length,
       });
     } catch (err) {
       console.error('Error fetching tryout:', err);
@@ -238,7 +238,7 @@ const TryoutPage: React.FC = () => {
     minute: '2-digit',
   });
 
-  const tryoutLocations = tryoutConfig.locations ?? [];
+  const tryoutLocations = tryoutConfig.locations;
   const primaryLocation = tryoutLocations[0];
 
   return (
