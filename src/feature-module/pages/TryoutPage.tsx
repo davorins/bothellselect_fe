@@ -215,7 +215,6 @@ const TryoutPage: React.FC = () => {
         {/* ─── HERO ───────────────────────────────────────────── */}
         <section className='tryout-hero'>
           <p className='hero-meta'>Bothell Select Tryouts</p>
-          <h1 className='hero-title'>{event.title}</h1>
           <p className='hero-lead'>
             {event.description ||
               'Join Bothell Select Basketball for the upcoming season.'}
@@ -268,7 +267,7 @@ const TryoutPage: React.FC = () => {
               <h3>Who can try out</h3>
               <ul>
                 <li>Boys &amp; girls</li>
-                <li>Grades 3–8</li>
+                <li>Grades 4–8</li>
                 <li>All skill levels welcome</li>
               </ul>
             </div>
@@ -276,12 +275,12 @@ const TryoutPage: React.FC = () => {
             <div className='details-col'>
               <h3>Location</h3>
               <p>
-                {event.school?.name || 'Bothell High School'}
+                {event.school?.name || ''}
                 <br />
-                {event.school?.address || '18100 92nd Ave NE'}
+                {event.school?.address || ''}
                 <br />
-                {event.school?.city || 'Bothell'}, {event.school?.state || 'WA'}{' '}
-                {event.school?.zip || '98011'}
+                {event.school?.city || ''}, {event.school?.state || ''}{' '}
+                {event.school?.zip || ''}
               </p>
               <p className='details-note'>
                 Arrive 30 minutes early for check-in.
