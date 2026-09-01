@@ -21,6 +21,7 @@ import InTheSpotlight from '../pages/InTheSpotlight';
 import PublicTicketLookup from '../../components/PublicTicketLookup';
 import PublicTournamentPage from '../pages/tournament/PublicTournamentPage';
 import PublicTournamentsListPage from '../pages/tournament/PublicTournamentsListPage';
+import TryoutPage from '../pages/TryoutPage';
 
 interface ALLRoutesProps {
   showSponsorLogo: boolean;
@@ -34,20 +35,29 @@ const ALLRoutes = ({ showSponsorLogo, onSplashClose }: ALLRoutesProps) => {
     return <LoadingSpinner />;
   }
 
-  // Fetch parentId from the authenticated user
-  const parentId = user?._id || 'defaultParentId';
-
   return (
     <Routes>
+      {/* ─── HOMEPAGE ─── */}
       <Route
         path='/'
         element={
           <MainLayout showSponsorLogo={showSponsorLogo}>
-            <HomePage onSplashClose={onSplashClose} />{' '}
-            {/* Pass onSplashClose */}
+            <HomePage onSplashClose={onSplashClose} />
           </MainLayout>
         }
       />
+
+      {/* ─── TRYOUT PAGE ─── (Uses MainLayout like HomePage) */}
+      <Route
+        path='/tryouts'
+        element={
+          <MainLayout showSponsorLogo={showSponsorLogo}>
+            <TryoutPage />
+          </MainLayout>
+        }
+      />
+
+      {/* ─── OTHER PUBLIC PAGES ─── */}
       <Route
         path='/contact-us'
         element={
@@ -128,7 +138,6 @@ const ALLRoutes = ({ showSponsorLogo, onSplashClose }: ALLRoutesProps) => {
           </MainLayout>
         }
       />
-
       <Route
         path='/tournaments'
         element={
@@ -146,21 +155,24 @@ const ALLRoutes = ({ showSponsorLogo, onSplashClose }: ALLRoutesProps) => {
         }
       />
 
-      {/* Public routes */}
+      {/* ─── FEATURE WRAPPER ─── */}
       <Route element={<Feature />}>
-        {publicRoutes.map((route, idx) => (
-          <Route key={idx} path={route.path} element={route.element} />
-        ))}
+        {publicRoutes.map(
+          (route, idx) =>
+            route.path !== '/tryouts' && (
+              <Route key={idx} path={route.path} element={route.element} />
+            ),
+        )}
       </Route>
 
-      {/* Protected routes (for authenticated users with specific roles) */}
+      {/* Protected routes */}
       <Route element={<Feature />}>
         {protectedRoutes.map((route, idx) => (
           <Route key={idx} path={route.path} element={route.element} />
         ))}
       </Route>
 
-      {/* Auth routes (only for unauthenticated users) */}
+      {/* Auth routes */}
       <Route element={<AuthFeature />}>
         {authRoutes.map((route, idx) => (
           <Route
@@ -172,6 +184,7 @@ const ALLRoutes = ({ showSponsorLogo, onSplashClose }: ALLRoutesProps) => {
           />
         ))}
       </Route>
+
       {/* Fallback route */}
       <Route path='*' element={<Navigate to='/' replace />} />
     </Routes>
