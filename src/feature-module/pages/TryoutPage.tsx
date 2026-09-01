@@ -25,21 +25,7 @@ interface TryoutEvent {
   };
   backgroundColor?: string;
   isActive?: boolean;
-}
-
-// Matches the shape AutoGridFromDescription reads location data from —
-// this lives on the form config's tryoutDetails, not on the event itself.
-interface TryoutLocation {
-  name: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-}
-
-interface TryoutDetailsConfig {
-  locations?: TryoutLocation[];
-  location?: TryoutLocation;
+  registrationOpen?: boolean; // New field to control if registration is open
 }
 
 interface FormConfig {
@@ -51,25 +37,9 @@ interface FormConfig {
     packages: any[];
   };
   isActive: boolean;
-  tryoutDetails?: TryoutDetailsConfig;
 }
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-
-// Same fallback logic AutoGridFromDescription uses: prefer the new
-// `locations` array, fall back to the legacy single `location`.
-const getTryoutLocations = (
-  details?: TryoutDetailsConfig,
-): TryoutLocation[] => {
-  if (!details) return [];
-  if (details.locations && details.locations.length > 0) {
-    return details.locations;
-  }
-  if (details.location && details.location.name) {
-    return [details.location];
-  }
-  return [];
-};
 
 const TryoutPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -80,6 +50,9 @@ const TryoutPage: React.FC = () => {
   const [tryoutConfig, setTryoutConfig] = useState<TryoutSpecificConfig | null>(
     null,
   );
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
+  const [emailForNotification, setEmailForNotification] = useState('');
+  const [notificationSubmitted, setNotificationSubmitted] = useState(false);
 
   const { getMarketingAttribution } = useMarketing();
 
@@ -103,21 +76,23 @@ const TryoutPage: React.FC = () => {
     const tryoutYear =
       new Date(event.start).getFullYear() || new Date().getFullYear();
 
-    const tryoutLocations = getTryoutLocations(formConfig?.tryoutDetails);
-
     return {
       tryoutName: tryoutName,
       tryoutYear: tryoutYear,
       displayName: tryoutName,
-      registrationDeadline: '', // Can be configured separately
+      registrationDeadline: '',
       tryoutDates: [event.start],
-      locations: tryoutLocations.map((loc) => ({
-        name: loc.name,
-        address: loc.address,
-        city: loc.city,
-        state: loc.state,
-        zipCode: loc.zipCode,
-      })),
+      locations: event.school
+        ? [
+            {
+              name: event.school.name,
+              address: event.school.address,
+              city: event.school.city,
+              state: event.school.state,
+              zipCode: event.school.zip,
+            },
+          ]
+        : [],
       divisions: [],
       ageGroups: [],
       requiresPayment: formConfig?.requiresPayment ?? true,
@@ -126,7 +101,7 @@ const TryoutPage: React.FC = () => {
       paymentDeadline: '',
       refundPolicy: 'No refunds after tryout registration deadline',
       tryoutFee: event.price || 50,
-      isActive: true, // ALWAYS active for the public page
+      isActive: isRegistrationOpen, // Use the state variable
       description: event.description || '',
       eventId: event._id,
     };
@@ -161,10 +136,14 @@ const TryoutPage: React.FC = () => {
 
       setEvent(activeTryout);
 
-      // Fetch form config for this event — this is where the real
-      // location data (tryoutDetails.locations) lives.
+      // Check if registration is open
+      // You can control this via a flag in the event or by checking if formId exists and is active
+      const isOpen = activeTryout.registrationOpen === true;
+      setIsRegistrationOpen(isOpen);
+
+      // Fetch form config for this event (only if registration is open)
       let config = null;
-      if (activeTryout.formId) {
+      if (isOpen && activeTryout.formId) {
         try {
           const formResponse = await axios.get(
             `${API_BASE_URL}/events/forms/${activeTryout.formId}`,
@@ -176,22 +155,40 @@ const TryoutPage: React.FC = () => {
         }
       }
 
-      // Create tryout config - ALWAYS set isActive to true for the public page
+      // Create tryout config - only active if registration is open
       const tryoutConfigData = convertToTryoutConfig(activeTryout, config);
-      tryoutConfigData.isActive = true;
+      tryoutConfigData.isActive = isOpen;
       setTryoutConfig(tryoutConfigData);
 
-      console.log('🎯 Tryout config loaded (forced active):', {
+      console.log('🎯 Tryout config loaded:', {
         tryoutName: tryoutConfigData.tryoutName,
         isActive: tryoutConfigData.isActive,
         hasFormConfig: !!config,
-        locationCount: tryoutConfigData.locations.length,
+        registrationOpen: isOpen,
       });
     } catch (err) {
       console.error('Error fetching tryout:', err);
       setError('Failed to load tryout information');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle email notification signup
+  const handleNotificationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailForNotification) return;
+
+    try {
+      // You can implement this endpoint to collect emails
+      // For now, we'll just show success
+      setNotificationSubmitted(true);
+      console.log('📧 Email collected for notification:', emailForNotification);
+
+      // Optionally, send to backend
+      // await axios.post(`${API_BASE_URL}/tryout/notify`, { email: emailForNotification });
+    } catch (error) {
+      console.error('Error submitting notification email:', error);
     }
   };
 
@@ -238,9 +235,6 @@ const TryoutPage: React.FC = () => {
     minute: '2-digit',
   });
 
-  const tryoutLocations = tryoutConfig.locations;
-  const primaryLocation = tryoutLocations[0];
-
   return (
     <div className='tryout-root'>
       <div className='tryout-glow' />
@@ -248,10 +242,7 @@ const TryoutPage: React.FC = () => {
       <div className='tryout-wrap'>
         {/* ─── HERO ───────────────────────────────────────────── */}
         <section className='tryout-hero'>
-          <p className='hero-meta'>
-            {event.category || 'Tryouts'} ·{' '}
-            {new Date(event.start).getFullYear()}
-          </p>
+          <p className='hero-meta'>Bothell Select Tryouts</p>
           <h1 className='hero-title'>{event.title}</h1>
           <p className='hero-lead'>
             {event.description ||
@@ -269,13 +260,28 @@ const TryoutPage: React.FC = () => {
             </div>
             <div className='fact'>
               <dt>Where</dt>
-              <dd>{primaryLocation?.name || 'Location TBA'}</dd>
+              <dd>{event.school?.name || 'Bothell High School'}</dd>
+            </div>
+            <div className='fact'>
+              <dt>Status</dt>
+              <dd>
+                {isRegistrationOpen ? (
+                  <span className='badge-open'>✅ Registration Open</span>
+                ) : (
+                  <span className='badge-coming'>📋 Coming Soon</span>
+                )}
+              </dd>
             </div>
           </dl>
 
-          <a href='#registration' className='hero-cta'>
-            Register for tryouts
-          </a>
+          {!isRegistrationOpen && (
+            <div className='hero-cta-container'>
+              <p className='hero-cta-note'>
+                Registration is coming soon! Sign up below to be notified when
+                it opens.
+              </p>
+            </div>
+          )}
         </section>
 
         {/* ─── DETAILS ────────────────────────────────────────── */}
@@ -305,26 +311,21 @@ const TryoutPage: React.FC = () => {
               <h3>Who can try out</h3>
               <ul>
                 <li>Boys &amp; girls</li>
-                <li>Grades 3–8</li>
+                <li>Grades 4–8</li>
                 <li>All skill levels welcome</li>
               </ul>
             </div>
 
             <div className='details-col'>
-              <h3>{tryoutLocations.length > 1 ? 'Locations' : 'Location'}</h3>
-              {tryoutLocations.length > 0 ? (
-                tryoutLocations.map((loc, idx) => (
-                  <p key={idx}>
-                    {loc.name}
-                    <br />
-                    {loc.address}
-                    <br />
-                    {loc.city}, {loc.state} {loc.zipCode}
-                  </p>
-                ))
-              ) : (
-                <p>Location details coming soon.</p>
-              )}
+              <h3>Location</h3>
+              <p>
+                {event.school?.name || ''}
+                <br />
+                {event.school?.address || ''}
+                <br />
+                {event.school?.city || ''}, {event.school?.state || ''}{' '}
+                {event.school?.zip || ''}
+              </p>
               <p className='details-note'>
                 Arrive 30 minutes early for check-in.
               </p>
@@ -334,33 +335,100 @@ const TryoutPage: React.FC = () => {
 
         {/* ─── REGISTRATION ───────────────────────────────────── */}
         <section className='tryout-registration' id='registration'>
-          <div className='registration-heading'>
-            <h2>Secure your spot</h2>
-            <p>Complete the form below to register for tryouts.</p>
-          </div>
+          {isRegistrationOpen ? (
+            // Phase 2: Registration is OPEN - Show full form
+            <>
+              <div className='registration-heading'>
+                <h2>Secure your spot</h2>
+                <p>Complete the form below to register for tryouts.</p>
+              </div>
 
-          <div className='registration-container'>
-            <RegistrationWizard
-              registrationType='tryout'
-              eventData={{
-                season: tryoutConfig.tryoutName,
-                year: tryoutConfig.tryoutYear,
-                eventId: event._id,
-                tryoutId: event._id,
-              }}
-              seasonEvent={{
-                season: tryoutConfig.tryoutName,
-                year: tryoutConfig.tryoutYear,
-                eventId: event._id,
-                registrationOpen: true,
-              }}
-              formConfig={tryoutConfig}
-              onSuccess={() => {
-                console.log('🎉 Tryout registration successful!');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
-          </div>
+              <div className='registration-container'>
+                <RegistrationWizard
+                  registrationType='tryout'
+                  eventData={{
+                    season: tryoutConfig.tryoutName,
+                    year: tryoutConfig.tryoutYear,
+                    eventId: event._id,
+                    tryoutId: event._id,
+                  }}
+                  seasonEvent={{
+                    season: tryoutConfig.tryoutName,
+                    year: tryoutConfig.tryoutYear,
+                    eventId: event._id,
+                    registrationOpen: true,
+                  }}
+                  formConfig={tryoutConfig}
+                  onSuccess={() => {
+                    console.log('🎉 Tryout registration successful!');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            // Phase 1: Registration is CLOSED - Show "Coming Soon" with email notification
+            <div className='registration-coming-soon'>
+              <div className='coming-soon-card'>
+                <div className='coming-soon-icon'>🏀</div>
+                <h2>Tryouts Announced!</h2>
+                <p className='coming-soon-text'>
+                  Registration for the <strong>{event.title}</strong> tryouts
+                  will open soon. We're finalizing the details and can't wait to
+                  see you there.
+                </p>
+                <div className='coming-soon-details'>
+                  <div className='coming-soon-detail'>
+                    <span className='detail-label'>Date</span>
+                    <span className='detail-value'>{formattedDate}</span>
+                  </div>
+                  <div className='coming-soon-detail'>
+                    <span className='detail-label'>Location</span>
+                    <span className='detail-value'>
+                      {event.school?.name || 'Bothell High School'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className='coming-soon-notify'>
+                  <p className='notify-text'>
+                    <i className='ti ti-bell-ringing'></i>
+                    Get notified when registration opens:
+                  </p>
+                  {notificationSubmitted ? (
+                    <div className='notify-success'>
+                      <i className='ti ti-circle-check'></i>
+                      You're on the list! We'll notify you when registration
+                      opens.
+                    </div>
+                  ) : (
+                    <form
+                      onSubmit={handleNotificationSubmit}
+                      className='notify-form'
+                    >
+                      <input
+                        type='email'
+                        value={emailForNotification}
+                        onChange={(e) =>
+                          setEmailForNotification(e.target.value)
+                        }
+                        placeholder='Enter your email'
+                        required
+                        className='notify-input'
+                      />
+                      <button type='submit' className='notify-button'>
+                        Notify Me
+                      </button>
+                    </form>
+                  )}
+                </div>
+
+                <p className='coming-soon-footer'>
+                  Follow us on social media for updates!
+                </p>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* ─── UTM Debug (Development Only) ──────────────────── */}
