@@ -3,6 +3,13 @@ import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useMarketing } from '../../context/MarketingContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import RegistrationHub from '../components/registration/RegistrationHub';
+import RegistrationWizard from '../components/registration/RegistrationWizard';
+import {
+  RegistrationFormConfig,
+  TryoutSpecificConfig,
+} from '../../types/registration-types';
+import './TryoutPage.css';
 
 interface TryoutEvent {
   _id: string;
@@ -21,6 +28,7 @@ interface TryoutEvent {
     zip: string;
   };
   backgroundColor?: string;
+  isActive?: boolean;
 }
 
 interface FormConfig {
@@ -31,6 +39,7 @@ interface FormConfig {
     basePrice: number;
     packages: any[];
   };
+  isActive: boolean;
 }
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
@@ -41,7 +50,9 @@ const TryoutPage: React.FC = () => {
   const [formConfig, setFormConfig] = useState<FormConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showRegistration, setShowRegistration] = useState(false);
+  const [tryoutConfig, setTryoutConfig] = useState<TryoutSpecificConfig | null>(
+    null,
+  );
 
   const { getMarketingAttribution } = useMarketing();
 
@@ -56,10 +67,52 @@ const TryoutPage: React.FC = () => {
     }
   }, [searchParams, getMarketingAttribution]);
 
+  // Helper to convert tryout event to TryoutSpecificConfig
+  const convertToTryoutConfig = (
+    event: TryoutEvent,
+    formConfig: FormConfig | null,
+  ): TryoutSpecificConfig => {
+    // Get tryout details from event
+    const tryoutName = event.title || 'Tryout';
+    const tryoutYear =
+      new Date(event.start).getFullYear() || new Date().getFullYear();
+
+    return {
+      tryoutName: tryoutName,
+      tryoutYear: tryoutYear,
+      displayName: tryoutName,
+      registrationDeadline: '', // Can be configured separately
+      tryoutDates: [event.start],
+      locations: event.school
+        ? [
+            {
+              name: event.school.name,
+              address: event.school.address,
+              city: event.school.city,
+              state: event.school.state,
+              zipCode: event.school.zip,
+            },
+          ]
+        : [],
+      divisions: [],
+      ageGroups: [],
+      requiresPayment: formConfig?.requiresPayment ?? true,
+      requiresRoster: false,
+      requiresInsurance: true,
+      paymentDeadline: '',
+      refundPolicy: 'No refunds after tryout registration deadline',
+      tryoutFee: event.price || 50,
+      isActive: true, // ALWAYS active for the public page
+      description: event.description || '',
+      eventId: event._id,
+    };
+  };
+
   const fetchActiveTryout = async () => {
     try {
       setLoading(true);
 
+      // Fetch active tryout events
       const eventsResponse = await axios.get(
         `${API_BASE_URL}/events?category=tryout`,
       );
@@ -84,16 +137,31 @@ const TryoutPage: React.FC = () => {
 
       setEvent(activeTryout);
 
+      // Fetch form config for this event
+      let config = null;
       if (activeTryout.formId) {
         try {
           const formResponse = await axios.get(
             `${API_BASE_URL}/events/forms/${activeTryout.formId}`,
           );
-          setFormConfig(formResponse.data);
+          config = formResponse.data;
+          setFormConfig(config);
         } catch (formErr) {
           console.warn('No form config found for this event');
         }
       }
+
+      // Create tryout config - ALWAYS set isActive to true for the public page
+      const tryoutConfigData = convertToTryoutConfig(activeTryout, config);
+      // Force isActive to true regardless of admin settings
+      tryoutConfigData.isActive = true;
+      setTryoutConfig(tryoutConfigData);
+
+      console.log('🎯 Tryout config loaded (forced active):', {
+        tryoutName: tryoutConfigData.tryoutName,
+        isActive: tryoutConfigData.isActive,
+        hasFormConfig: !!config,
+      });
     } catch (err) {
       console.error('Error fetching tryout:', err);
       setError('Failed to load tryout information');
@@ -102,26 +170,14 @@ const TryoutPage: React.FC = () => {
     }
   };
 
-  const handleRegister = () => {
-    const marketing = getMarketingAttribution();
-    console.log('📝 Registration started with:', marketing);
-    setShowRegistration(true);
-    document
-      .getElementById('registration-section')
-      ?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   // Helper for images with fallback
   const getImageSrc = (path: string) => {
-    // If path already starts with http, return as-is
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
     }
-    // If path starts with /assets, use as-is (public folder)
     if (path.startsWith('/assets')) {
       return path;
     }
-    // Otherwise, assume it's relative to public/assets
     return `/assets/${path}`;
   };
 
@@ -138,7 +194,7 @@ const TryoutPage: React.FC = () => {
     );
   }
 
-  if (error || !event) {
+  if (error || !event || !tryoutConfig) {
     return (
       <div className='tryout-root'>
         <div className='tryout-wrap'>
@@ -171,7 +227,7 @@ const TryoutPage: React.FC = () => {
 
   return (
     <div className='tryout-root'>
-      {/* Background Effects - Matches AboutUsPage */}
+      {/* Background Effects */}
       <div className='tryout-bg' />
       <div className='tryout-orb tryout-orb-1' />
       <div className='tryout-orb tryout-orb-2' />
@@ -218,15 +274,6 @@ const TryoutPage: React.FC = () => {
                     </span>
                   </div>
                 </div>
-              </div>
-
-              <div className='hero-actions'>
-                <button className='btn-primary-glass' onClick={handleRegister}>
-                  Register Now <i className='ti ti-arrow-right' />
-                </button>
-                <a href='#details' className='btn-ghost-glass'>
-                  Learn More <i className='ti ti-chevron-down' />
-                </a>
               </div>
             </div>
 
@@ -342,46 +389,40 @@ const TryoutPage: React.FC = () => {
           </div>
         </section>
 
-        {/* ─── PRICING / CTA SECTION ────────────────────────────── */}
-        <section className='tryout-cta'>
-          <div className='cta-card'>
-            <div className='cta-glow' />
-            <div className='section-tag'>Secure Your Spot</div>
-            <h2 className='cta-title'>
-              ${event.price || 50}{' '}
-              <span className='cta-subtitle'>per player</span>
-            </h2>
-            <p className='cta-body'>
-              Registration closes 24 hours before tryouts. Don't miss your
-              chance to join Bothell Select Basketball.
+        {/* ─── REGISTRATION FORM ────────────────────────────────── */}
+        {/* This is the key change - always show the form, always active */}
+        <section className='tryout-registration-section'>
+          <div className='section-hdr'>
+            <div className='section-tag'>Register Now</div>
+            <h2 className='section-title'>Secure Your Spot</h2>
+            <p className='section-sub'>
+              Complete the form below to register for tryouts
             </p>
+          </div>
 
-            <div className='cta-features'>
-              <div className='cta-feature'>
-                <i className='ti ti-check-circle' />
-                <span>Expert Coaching</span>
-              </div>
-              <div className='cta-feature'>
-                <i className='ti ti-check-circle' />
-                <span>Skill Development</span>
-              </div>
-              <div className='cta-feature'>
-                <i className='ti ti-check-circle' />
-                <span>Competitive Play</span>
-              </div>
-            </div>
-
-            <div className='cta-actions'>
-              <button
-                className='btn-primary-glass btn-large'
-                onClick={handleRegister}
-              >
-                Register Now <i className='ti ti-arrow-right' />
-              </button>
-              <p className='cta-note'>
-                <i className='ti ti-info-circle' /> Limited spots available
-              </p>
-            </div>
+          <div className='registration-container'>
+            {/* Use RegistrationWizard directly with the tryout config */}
+            <RegistrationWizard
+              registrationType='tryout'
+              eventData={{
+                season: tryoutConfig.tryoutName,
+                year: tryoutConfig.tryoutYear,
+                eventId: event._id,
+                tryoutId: event._id,
+              }}
+              seasonEvent={{
+                season: tryoutConfig.tryoutName,
+                year: tryoutConfig.tryoutYear,
+                eventId: event._id,
+                registrationOpen: true,
+              }}
+              formConfig={tryoutConfig}
+              onSuccess={() => {
+                console.log('🎉 Tryout registration successful!');
+                // Scroll to top or show success message
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
           </div>
         </section>
 
@@ -395,371 +436,6 @@ const TryoutPage: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* ─── STYLES ────────────────────────────────────────────────── */}
-      <style>{`
-        /* ── Root & Background ──────────────────────────────────── */
-        .tryout-root {
-          min-height: 100vh;
-          background: #000;
-          position: relative;
-          overflow-x: hidden;
-          font-family: 'DM Sans', sans-serif;
-          color: #fff;
-        }
-
-        .tryout-bg {
-          position: fixed; inset: 0;
-          background:
-            radial-gradient(circle at 15% 40%, rgba(80,110,228,.18) 0%, transparent 55%),
-            radial-gradient(circle at 85% 70%, rgba(120,140,255,.12) 0%, transparent 55%);
-          pointer-events: none; z-index: 0;
-        }
-
-        .tryout-orb {
-          position: fixed; border-radius: 50%;
-          filter: blur(90px); pointer-events: none;
-          animation: tryoutOrbFloat 22s ease-in-out infinite; z-index: 0;
-        }
-        .tryout-orb-1 { width:420px; height:420px; background:rgba(80,110,228,.18); top:-120px; left:-120px; animation-delay:0s; }
-        .tryout-orb-2 { width:520px; height:520px; background:rgba(120,140,255,.13); bottom:-160px; right:-160px; animation-delay:6s; }
-        .tryout-orb-3 { width:320px; height:320px; background:rgba(80,110,228,.13); top:45%; left:42%; animation-delay:12s; }
-
-        @keyframes tryoutOrbFloat {
-          0%,100% { transform: translate(0,0) rotate(0deg); }
-          33%      { transform: translate(28px,-28px) rotate(120deg); }
-          66%      { transform: translate(-18px,18px) rotate(240deg); }
-        }
-
-        /* ── Wrapper ──────────────────────────────────────────── */
-        .tryout-wrap {
-          position: relative; z-index: 1;
-          max-width: 1200px; margin: 0 auto;
-          padding: 60px 24px 80px;
-          display: flex; flex-direction: column; gap: 80px;
-        }
-
-        /* ── Shared Components ────────────────────────────────── */
-        .section-tag {
-          display: inline-block;
-          font-size: .73rem; font-weight: 700;
-          letter-spacing: .12em; text-transform: uppercase;
-          color: #506ee4;
-          background: rgba(80,110,228,.12);
-          border: 1px solid rgba(80,110,228,.28);
-          padding: 4px 14px; border-radius: 40px; margin-bottom: 12px;
-        }
-
-        .section-title {
-          font-size: clamp(1.8rem, 3.5vw, 2.5rem);
-          font-weight: 800; letter-spacing: -.025em; line-height: 1.15;
-          margin: 0 0 12px;
-          background: linear-gradient(135deg, #fff 40%, rgba(255,255,255,.55));
-          -webkit-background-clip: text; background-clip: text; color: transparent;
-        }
-
-        .section-sub {
-          font-size: 1rem; color: rgba(255,255,255,.6);
-          line-height: 1.65; max-width: 520px; margin: 0;
-        }
-
-        .section-hdr { text-align: center; margin-bottom: 48px; }
-        .section-hdr .section-sub { margin: 0 auto; }
-
-        /* ── Buttons ──────────────────────────────────────────── */
-        .btn-primary-glass {
-          display: inline-flex; align-items: center; gap: 8px;
-          background: linear-gradient(135deg, #506ee4, #3f5cd6);
-          color: #fff; padding: 13px 28px; border-radius: 40px;
-          font-size: .95rem; font-weight: 600; text-decoration: none;
-          border: none; cursor: pointer;
-          transition: all .25s ease;
-        }
-        .btn-primary-glass:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 28px rgba(80,110,228,.45);
-          color: #fff;
-        }
-        .btn-primary-glass.btn-large {
-          padding: 16px 40px;
-          font-size: 1.05rem;
-        }
-
-        .btn-ghost-glass {
-          display: inline-flex; align-items: center; gap: 8px;
-          background: rgba(255,255,255,.07); color: rgba(255,255,255,.85);
-          padding: 13px 28px; border-radius: 40px;
-          font-size: .95rem; font-weight: 600; text-decoration: none;
-          border: 1px solid rgba(255,255,255,.15);
-          transition: all .25s ease;
-        }
-        .btn-ghost-glass:hover {
-          background: rgba(255,255,255,.12);
-          border-color: rgba(255,255,255,.3);
-          color: #fff; transform: translateY(-2px);
-        }
-
-        /* ─── HERO ─────────────────────────────────────────────── */
-        .hero-grid {
-          display: grid; grid-template-columns: 1fr 1fr;
-          gap: 56px; align-items: center;
-        }
-
-        .hero-eyebrow {
-          display: flex; align-items: center; gap: 8px;
-          font-size: .78rem; font-weight: 600; letter-spacing: .1em;
-          text-transform: uppercase; color: rgba(255,255,255,.5);
-          margin-bottom: 18px;
-        }
-        .eyebrow-dot {
-          width: 6px; height: 6px; border-radius: 50%;
-          background: #506ee4; box-shadow: 0 0 8px #506ee4; flex-shrink: 0;
-        }
-
-        .hero-title {
-          font-size: clamp(2.2rem, 4.5vw, 3.6rem);
-          font-weight: 900; letter-spacing: -.035em; line-height: 1.1;
-          margin: 0 0 18px; color: #fff;
-        }
-        .hero-accent {
-          background: linear-gradient(135deg, #506ee4, #7b94f5);
-          -webkit-background-clip: text; background-clip: text; color: transparent;
-        }
-
-        .hero-lead {
-          font-size: 1rem; color: rgba(255,255,255,.65);
-          line-height: 1.72; margin-bottom: 32px;
-        }
-
-        .hero-info-grid {
-          display: grid; grid-template-columns: repeat(3, 1fr);
-          gap: 16px; margin-bottom: 32px;
-        }
-
-        .hero-info-item {
-          display: flex; align-items: center; gap: 12px;
-          background: rgba(255,255,255,.05);
-          border: 1px solid rgba(255,255,255,.08);
-          border-radius: 12px;
-          padding: 12px 16px;
-        }
-        .hero-info-item i {
-          color: #506ee4; font-size: 1.2rem;
-          flex-shrink: 0;
-        }
-        .hero-info-item .label {
-          font-size: .7rem; font-weight: 600;
-          text-transform: uppercase; letter-spacing: .06em;
-          color: rgba(255,255,255,.4);
-          display: block;
-        }
-        .hero-info-item .value {
-          font-size: .85rem; font-weight: 600;
-          color: #fff;
-          display: block;
-        }
-
-        .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
-
-        .hero-img-col { position: relative; }
-
-        .hero-img-glass {
-          background: rgba(255,255,255,.05); backdrop-filter: blur(20px);
-          border: 1px solid rgba(255,255,255,.12); border-radius: 36px;
-          padding: 40px 32px; text-align: center;
-          position: relative; overflow: hidden;
-          box-shadow: 0 8px 40px rgba(0,0,0,.35);
-          transition: transform .3s ease, box-shadow .3s ease;
-        }
-        .hero-img-glass:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 20px 56px rgba(0,0,0,.45);
-        }
-
-        .hero-glow {
-          position: absolute; top: -60px; left: 50%;
-          transform: translateX(-50%);
-          width: 300px; height: 300px;
-          background: rgba(80,110,228,.2); filter: blur(80px);
-          pointer-events: none; border-radius: 50%;
-        }
-
-        .hero-img {
-          max-width: 100%; height: auto; position: relative; z-index: 1;
-          filter: drop-shadow(0 12px 32px rgba(0,0,0,.4));
-        }
-
-        .hero-badge {
-          position: absolute; bottom: -20px; right: 20px;
-          background: rgba(255,255,255,.08); backdrop-filter: blur(16px);
-          border: 1px solid rgba(255,255,255,.18); border-radius: 18px;
-          padding: 12px 18px; display: flex; align-items: center; gap: 10px;
-          font-size: .78rem; font-weight: 600; line-height: 1.3;
-          color: rgba(255,255,255,.9); box-shadow: 0 4px 20px rgba(0,0,0,.3);
-        }
-        .hero-badge i { font-size: 1.4rem; color: #f59e0b; flex-shrink: 0; }
-
-        /* ─── DETAILS ───────────────────────────────────────────── */
-        .details-grid {
-          display: grid; grid-template-columns: repeat(2, 1fr);
-          gap: 20px;
-        }
-
-        .details-card {
-          background: rgba(255,255,255,.05); backdrop-filter: blur(16px);
-          border: 1px solid rgba(255,255,255,.1); border-radius: 28px;
-          padding: 32px 28px;
-          transition: all .25s ease;
-        }
-        .details-card:hover {
-          background: rgba(255,255,255,.08);
-          border-color: rgba(80,110,228,.35);
-          transform: translateY(-4px);
-          box-shadow: 0 12px 32px rgba(0,0,0,.3);
-        }
-
-        .details-icon {
-          width: 52px; height: 52px;
-          background: rgba(80,110,228,.15);
-          border: 1px solid rgba(80,110,228,.25);
-          border-radius: 16px;
-          display: flex; align-items: center; justify-content: center;
-          margin-bottom: 16px;
-        }
-        .details-icon i { font-size: 1.5rem; color: #506ee4; }
-
-        .details-title {
-          font-size: 1.12rem; font-weight: 700;
-          color: #fff; margin: 0 0 12px;
-        }
-
-        .details-body {
-          font-size: .9rem; color: rgba(255,255,255,.6);
-          line-height: 1.65; margin: 0;
-        }
-
-        .details-list {
-          list-style: none; padding: 0; margin: 0;
-        }
-        .details-list li {
-          display: flex; align-items: center; gap: 10px;
-          font-size: .9rem; color: rgba(255,255,255,.6);
-          padding: 4px 0;
-        }
-        .details-list li i {
-          color: #4ade80; font-size: 1rem;
-        }
-
-        .details-note {
-          font-size: .8rem; color: rgba(255,255,255,.4);
-          margin: 12px 0 0;
-          display: flex; align-items: center; gap: 6px;
-        }
-        .details-note i { color: #506ee4; }
-
-        /* ─── CTA ────────────────────────────────────────────────── */
-        .cta-card {
-          background: rgba(80,110,228,.08); backdrop-filter: blur(20px);
-          border: 1px solid rgba(80,110,228,.25); border-radius: 36px;
-          padding: 64px 80px; text-align: center;
-          position: relative; overflow: hidden;
-          box-shadow: 0 8px 40px rgba(0,0,0,.3);
-        }
-
-        .cta-glow {
-          position: absolute; top: 50%; left: 50%;
-          transform: translate(-50%,-50%);
-          width: 500px; height: 300px;
-          background: rgba(80,110,228,.15); filter: blur(80px);
-          pointer-events: none; border-radius: 50%;
-        }
-
-        .cta-title {
-          font-size: clamp(2.5rem, 4vw, 3.5rem);
-          font-weight: 900; letter-spacing: -.025em;
-          color: #fff; margin: 0 0 8px; position: relative;
-        }
-        .cta-subtitle {
-          font-size: 1.2rem; font-weight: 400;
-          color: rgba(255,255,255,.5);
-        }
-
-        .cta-body {
-          font-size: 1rem; color: rgba(255,255,255,.65);
-          line-height: 1.75; max-width: 520px;
-          margin: 0 auto 24px; position: relative;
-        }
-
-        .cta-features {
-          display: flex; justify-content: center;
-          gap: 24px; margin-bottom: 32px;
-          flex-wrap: wrap;
-        }
-        .cta-feature {
-          display: flex; align-items: center; gap: 8px;
-          font-size: .9rem; color: rgba(255,255,255,.7);
-        }
-        .cta-feature i {
-          color: #4ade80; font-size: 1.1rem;
-        }
-
-        .cta-actions {
-          position: relative;
-        }
-
-        .cta-note {
-          font-size: .8rem; color: rgba(255,255,255,.4);
-          margin: 12px 0 0;
-        }
-        .cta-note i { color: #506ee4; }
-
-        /* ─── DEBUG ────────────────────────────────────────────── */
-        .tryout-debug {
-          margin-top: 40px;
-        }
-        .debug-card {
-          background: rgba(255,255,255,.05);
-          border: 1px solid rgba(255,255,255,.1);
-          border-radius: 12px;
-          padding: 16px 20px;
-        }
-        .debug-card pre {
-          margin: 8px 0 0;
-          font-size: 11px;
-          color: rgba(255,255,255,.5);
-          overflow: auto;
-        }
-
-        /* ─── Responsive ───────────────────────────────────────── */
-        @media (max-width: 1024px) {
-          .details-grid { grid-template-columns: repeat(2,1fr); }
-          .cta-card { padding: 48px 40px; }
-        }
-
-        @media (max-width: 768px) {
-          .tryout-wrap { gap: 56px; padding: 40px 16px 60px; }
-          .hero-grid { grid-template-columns: 1fr; gap: 40px; }
-          .hero-img-col { order: -1; }
-          .hero-badge { bottom: -14px; right: 12px; font-size: .72rem; }
-          .hero-info-grid { grid-template-columns: 1fr; }
-          .details-grid { grid-template-columns: 1fr; }
-          .cta-card { padding: 40px 24px; }
-          .cta-features { flex-direction: column; align-items: center; }
-        }
-
-        @media (max-width: 480px) {
-          .hero-actions { flex-direction: column; }
-          .btn-primary-glass,
-          .btn-ghost-glass { justify-content: center; }
-          .btn-primary-glass.btn-large { padding: 14px 28px; font-size: .95rem; }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .tryout-orb { animation: none; }
-          .hero-img-glass { transition: none; }
-          .details-card { transition: none; }
-        }
-      `}</style>
     </div>
   );
 };
