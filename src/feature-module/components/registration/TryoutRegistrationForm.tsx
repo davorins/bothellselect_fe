@@ -19,6 +19,7 @@ import {
 import { useAuth } from '../../../context/AuthContext';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import axios from 'axios';
+import { useMarketing } from '../../../context/MarketingContext';
 
 interface TryoutRegistrationFormProps {
   onSuccess?: (data?: any) => void;
@@ -87,6 +88,7 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
   const [registrationTimestamp, setRegistrationTimestamp] =
     useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { getMarketingAttribution } = useMarketing();
 
   const defaultSeasonEvent = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -368,6 +370,8 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
         zip: userData.address?.zip?.trim() || '',
       };
 
+      const marketing = getMarketingAttribution();
+
       const registrationData: any = {
         email: userData.email.toLowerCase().trim(),
         password: password?.trim(),
@@ -379,6 +383,9 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
         aauNumber: userData.aauNumber?.trim() || '',
         agreeToTerms: userData.agreeToTerms,
         registerType: 'self',
+        registrationType: 'tryout',
+        marketing,
+        eventId: defaultSeasonEvent.eventId,
         additionalGuardians:
           userData.additionalGuardians?.map((guardian: any) => ({
             fullName: guardian.fullName.trim(),

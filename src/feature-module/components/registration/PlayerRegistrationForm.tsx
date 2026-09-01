@@ -20,6 +20,7 @@ import { useAuth } from '../../../context/AuthContext';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import axios from 'axios';
 import { all_routes } from '../../router/all_routes';
+import { useMarketing } from '../../../context/MarketingContext';
 
 interface PlayerRegistrationFormProps {
   onSuccess?: (data?: any) => void;
@@ -107,11 +108,9 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   const [registrationCompleted, setRegistrationCompleted] = useState(false);
   const [registrationTimestamp, setRegistrationTimestamp] =
     useState<string>('');
+  const { getMarketingAttribution } = useMarketing();
 
   // ── Player state ──────────────────────────────────────────────────────────────
-  // Seed one blank player immediately for brand-new users so
-  // DynamicPlayerRegistrationModule never receives an empty array on first
-  // render (which would hide the form because showNewPlayerForm starts false).
   const [players, setPlayers] = useState<Player[]>(() => {
     if (savedPlayers && savedPlayers.length > 0) return savedPlayers;
     // Only pre-seed for genuinely new users who are not returning with
@@ -320,6 +319,9 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
         zip: userData.address?.zip?.trim() || '',
       };
 
+      // Get marketing attribution
+      const marketing = getMarketingAttribution();
+
       const registrationData: any = {
         email: userData.email.toLowerCase().trim(),
         password: password?.trim(),
@@ -331,6 +333,8 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
         aauNumber: userData.aauNumber?.trim() || '',
         agreeToTerms: userData.agreeToTerms,
         registerType: 'self',
+        registrationType: 'player',
+        marketing,
         additionalGuardians:
           userData.additionalGuardians?.map((guardian) => ({
             fullName: guardian.fullName.trim(),

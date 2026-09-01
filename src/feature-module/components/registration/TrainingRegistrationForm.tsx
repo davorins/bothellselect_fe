@@ -26,6 +26,7 @@ import { useAuth } from '../../../context/AuthContext';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import axios from 'axios';
 import { all_routes } from '../../router/all_routes';
+import { useMarketing } from '../../../context/MarketingContext';
 
 interface TrainingRegistrationFormProps {
   onSuccess?: (data?: any) => void;
@@ -210,6 +211,7 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [playerValidation, setPlayerValidation] = useState(false);
   const [playersForTraining, setPlayersForTraining] = useState<Player[]>([]);
+  const { getMarketingAttribution } = useMarketing();
 
   // Define all possible steps
   const allSteps = [
@@ -419,6 +421,8 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
         zip: userData.address?.zip?.trim() || '',
       };
 
+      const marketing = getMarketingAttribution();
+
       const registrationData: any = {
         email: userData.email.toLowerCase().trim(),
         password: password?.trim(),
@@ -430,6 +434,9 @@ const TrainingRegistrationForm: React.FC<TrainingRegistrationFormProps> = ({
         aauNumber: userData.aauNumber?.trim() || '',
         agreeToTerms: userData.agreeToTerms,
         registerType: 'self',
+        registrationType: 'training',
+        marketing,
+        eventId: dynamicSeasonEvent.eventId,
         additionalGuardians:
           userData.additionalGuardians?.map((guardian) => ({
             fullName: guardian.fullName.trim(),

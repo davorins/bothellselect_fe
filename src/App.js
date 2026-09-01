@@ -6,6 +6,7 @@ import { RegistrationProvider } from './context/RegistrationContext';
 import { PageProvider } from './context/PageContext';
 import { SeasonEventsProvider } from './context/SeasonEventsContext';
 import { AdProvider } from './context/AdContext';
+import { MarketingProvider } from './context/MarketingContext';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
 const App = () => {
@@ -21,20 +22,22 @@ const App = () => {
   }
 
   return (
-    <AdProvider>
-      <SeasonEventsProvider>
-        <TournamentEventProvider>
-          <RegistrationProvider>
-            <PageProvider>
-              <ALLRoutes
-                showSponsorLogo={showSponsorLogo}
-                onSplashClose={handleSplashClose}
-              />
-            </PageProvider>
-          </RegistrationProvider>
-        </TournamentEventProvider>
-      </SeasonEventsProvider>
-    </AdProvider>
+    <MarketingProvider>
+      <AdProvider>
+        <SeasonEventsProvider>
+          <TournamentEventProvider>
+            <RegistrationProvider>
+              <PageProvider>
+                <ALLRoutes
+                  showSponsorLogo={showSponsorLogo}
+                  onSplashClose={handleSplashClose}
+                />
+              </PageProvider>
+            </RegistrationProvider>
+          </TournamentEventProvider>
+        </SeasonEventsProvider>
+      </AdProvider>
+    </MarketingProvider>
   );
 };
 
