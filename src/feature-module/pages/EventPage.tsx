@@ -7,10 +7,9 @@ import RegistrationWizard from '../components/registration/RegistrationWizard';
 import {
   TryoutSpecificConfig,
   RegistrationFormConfig,
-} from '../../types/registration-types';
+} from '../../../types/registration-types';
 import { formatDate } from '../../utils/dateFormatter';
 import ReactPixel from 'react-facebook-pixel';
-import AutoGridFromDescription from '../components/registration/AutoGridFromDescription';
 import './EventPage.css';
 
 interface EventConfig {
@@ -75,9 +74,6 @@ const EventPage: React.FC<EventPageProps> = ({
   const [eventConfig, setEventConfig] = useState<TryoutSpecificConfig | null>(
     null,
   );
-  const [fullConfig, setFullConfig] = useState<RegistrationFormConfig | null>(
-    null,
-  );
   const [detailsExpanded, setDetailsExpanded] = useState(false);
 
   const { getMarketingAttribution } = useMarketing();
@@ -112,47 +108,53 @@ const EventPage: React.FC<EventPageProps> = ({
     try {
       setLoading(true);
 
-      // Fetch from both endpoints to get complete data
-      const [eventResponse, formResponse] = await Promise.all([
-        axios.get(`${API_BASE_URL}/event-config/public/${eventType}`),
-        axios.get(`${API_BASE_URL}/registration-config/event/${eventType}`),
-      ]);
+      // Fetch from event-config endpoint
+      const response = await axios.get(
+        `${API_BASE_URL}/event-config/public/${eventType}`,
+      );
 
-      // Process event config
-      if (!eventResponse.data.success || !eventResponse.data.config) {
+      if (!response.data.success || !response.data.config) {
         setError(`No ${eventType} configuration found`);
         setLoading(false);
         return;
       }
 
-      const configData = eventResponse.data.config;
+      const configData = response.data.config;
 
-      // Merge with form config data if available
-      if (formResponse.data.success && formResponse.data.config) {
-        const formData = formResponse.data.config;
-        setFullConfig(formData);
+      // Try to fetch additional form config data for more details
+      try {
+        const formResponse = await axios.get(
+          `${API_BASE_URL}/registration-config/event/${eventType}`,
+        );
 
-        // Merge additional fields from form config
-        configData.registrationDeadline =
-          formData.registrationDeadline || configData.registrationDeadline;
-        configData.insuranceRequired = formData.requiresInsurance || false;
-        configData.refundPolicy =
-          formData.refundPolicy || 'No refunds after registration deadline';
-        configData.tryoutFee =
-          formData.tryoutFee || formData.pricing?.basePrice || configData.price;
-        configData.tryoutName = formData.tryoutName || configData.title;
-        configData.tryoutYear =
-          formData.tryoutYear || new Date(configData.startDate).getFullYear();
-        configData.displayName = formData.displayName || configData.title;
-        configData.whatToBring =
-          formData.whatToBring || configData.whatToBring || [];
-        configData.importantNotes =
-          formData.importantNotes || configData.importantNotes || [];
-        configData.description = formData.description || configData.description;
-        configData.price =
-          formData.tryoutFee || formData.pricing?.basePrice || configData.price;
+        if (formResponse.data.success && formResponse.data.config) {
+          const formData = formResponse.data.config;
 
-        console.log('📦 Merged config data:', configData);
+          // Merge additional fields from form config (without TypeScript errors)
+          configData.registrationDeadline =
+            formData.registrationDeadline || configData.registrationDeadline;
+          configData.insuranceRequired = formData.requiresInsurance || false;
+          configData.refundPolicy =
+            formData.refundPolicy || 'No refunds after registration deadline';
+          configData.tryoutFee =
+            formData.tryoutFee ||
+            formData.pricing?.basePrice ||
+            configData.price;
+          configData.tryoutName = formData.tryoutName || configData.title;
+          configData.tryoutYear =
+            formData.tryoutYear || new Date(configData.startDate).getFullYear();
+          configData.displayName = formData.displayName || configData.title;
+          configData.price =
+            formData.tryoutFee ||
+            formData.pricing?.basePrice ||
+            configData.price;
+
+          console.log('📦 Merged config data:', configData);
+        }
+      } catch (formError) {
+        console.log(
+          'ℹ️ No additional form config found, using event config only',
+        );
       }
 
       setConfig(configData);
@@ -207,8 +209,6 @@ const EventPage: React.FC<EventPageProps> = ({
       isActive: config.registrationOpen,
       description: config.description || '',
       eventId: config._id,
-      whatToBring: config.whatToBring || [],
-      importantNotes: config.importantNotes || [],
     };
   };
 
@@ -234,16 +234,6 @@ const EventPage: React.FC<EventPageProps> = ({
 
   const toggleDetails = () => {
     setDetailsExpanded(!detailsExpanded);
-  };
-
-  const handleScrollToRegistration = () => {
-    const registrationSection = document.getElementById('registration-section');
-    if (registrationSection) {
-      registrationSection.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }
   };
 
   if (loading) {
@@ -393,7 +383,7 @@ const EventPage: React.FC<EventPageProps> = ({
         </section>
 
         {/* ─── MAIN SECTION - Image Left | Form Right ──────── */}
-        <section className='event-main-section' id='registration-section'>
+        <section className='event-main-section'>
           <div className='event-main-grid'>
             {/* Left - Image */}
             <div className='event-image-wrapper'>
@@ -426,15 +416,29 @@ const EventPage: React.FC<EventPageProps> = ({
                         Complete the form below to register for{' '}
                         {config.displayName || config.title}.
                       </p>
-                      {config.tryoutFee !== undefined &&
-                        config.tryoutFee > 0 && (
-                          <p className='event-form-price'>
-                            Tryout Fee: <strong>${config.tryoutFee}</strong> per
-                            player
+                      {(config.tryoutFee || config.price) !== undefined &&
+                        (config.tryoutFee || config.price) > 0 && (
+                          <p
+                            className='event-form-price'
+                            style={{
+                              color: '#4ade80',
+                              fontWeight: '600',
+                              marginTop: '8px',
+                            }}
+                          >
+                            Tryout Fee:{' '}
+                            <strong>${config.tryoutFee || config.price}</strong>{' '}
+                            per player
                           </p>
                         )}
                       {config.registrationDeadline && (
-                        <p className='event-form-deadline'>
+                        <p
+                          className='event-form-deadline'
+                          style={{
+                            color: 'rgba(255,255,255,0.8)',
+                            marginTop: '4px',
+                          }}
+                        >
                           Registration Deadline:{' '}
                           <strong>{config.registrationDeadline}</strong>
                         </p>
@@ -442,7 +446,7 @@ const EventPage: React.FC<EventPageProps> = ({
                       {config.insuranceRequired && (
                         <p
                           className='event-form-insurance'
-                          style={{ color: '#fbbf24' }}
+                          style={{ color: '#fbbf24', marginTop: '4px' }}
                         >
                           ⚠️ Insurance Required: Players must provide proof of
                           insurance.
@@ -452,8 +456,9 @@ const EventPage: React.FC<EventPageProps> = ({
                         <p
                           className='event-form-refund'
                           style={{
-                            color: 'rgba(255,255,255,0.6)',
+                            color: 'rgba(255,255,255,0.5)',
                             fontSize: '0.85rem',
+                            marginTop: '4px',
                           }}
                         >
                           {config.refundPolicy}
@@ -569,113 +574,103 @@ const EventPage: React.FC<EventPageProps> = ({
           </div>
         </section>
 
-        {/* ─── DETAILS SECTION - Using AutoGridFromDescription ── */}
+        {/* ─── DETAILS SECTION - Collapsible ────────────────── */}
         <section className='event-details-section'>
-          {fullConfig ? (
-            <AutoGridFromDescription
-              config={fullConfig}
-              onRegister={handleScrollToRegistration}
-            />
-          ) : (
-            <div className='event-details-glass'>
-              <div className='event-details-header' onClick={toggleDetails}>
-                <div className='event-details-header-left'>
-                  <i className={`ti ti-info-circle`} style={{ color }} />
-                  <h2 className='event-details-title' style={{ color }}>
-                    {title} Details
-                  </h2>
-                </div>
-                <button className='event-details-toggle' style={{ color }}>
-                  <i
-                    className={`ti ${detailsExpanded ? 'ti-chevron-up' : 'ti-chevron-down'}`}
-                  />
-                  <span>
-                    {detailsExpanded ? 'Hide Details' : 'Show Details'}
-                  </span>
-                </button>
+          <div className='event-details-glass'>
+            <div className='event-details-header' onClick={toggleDetails}>
+              <div className='event-details-header-left'>
+                <i className={`ti ti-info-circle`} style={{ color }} />
+                <h2 className='event-details-title' style={{ color }}>
+                  {title} Details
+                </h2>
               </div>
+              <button className='event-details-toggle' style={{ color }}>
+                <i
+                  className={`ti ${detailsExpanded ? 'ti-chevron-up' : 'ti-chevron-down'}`}
+                />
+                <span>{detailsExpanded ? 'Hide Details' : 'Show Details'}</span>
+              </button>
+            </div>
 
-              <div
-                className={`event-details-body ${detailsExpanded ? 'expanded' : ''}`}
-              >
-                <div className='event-details-content'>
-                  <div className='details-grid'>
-                    {config.whatToBring && config.whatToBring.length > 0 && (
-                      <div className='details-card'>
-                        <h3 className='details-card-title' style={{ color }}>
-                          <i className='ti ti-backpack' /> What to Bring
-                        </h3>
-                        <ul className='details-list'>
-                          {config.whatToBring.map((item, index) => (
-                            <li key={index}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {config.whatToExpect && (
-                      <div className='details-card'>
-                        <h3 className='details-card-title' style={{ color }}>
-                          <i className='ti ti-eye' /> What to Expect
-                        </h3>
-                        <p className='details-text'>{config.whatToExpect}</p>
-                      </div>
-                    )}
-
+            <div
+              className={`event-details-body ${detailsExpanded ? 'expanded' : ''}`}
+            >
+              <div className='event-details-content'>
+                <div className='details-grid'>
+                  {config.whatToBring && config.whatToBring.length > 0 && (
                     <div className='details-card'>
                       <h3 className='details-card-title' style={{ color }}>
-                        <i className='ti ti-users' /> Who Can Participate
+                        <i className='ti ti-backpack' /> What to Bring
                       </h3>
                       <ul className='details-list'>
-                        {config.gender && <li>{config.gender}</li>}
-                        {config.grades && <li>Grades: {config.grades}</li>}
-                        <li>All skill levels welcome</li>
+                        {config.whatToBring.map((item, index) => (
+                          <li key={index}>{item}</li>
+                        ))}
                       </ul>
                     </div>
+                  )}
 
+                  {config.whatToExpect && (
                     <div className='details-card'>
                       <h3 className='details-card-title' style={{ color }}>
-                        <i className='ti ti-map-pin' /> Location
+                        <i className='ti ti-eye' /> What to Expect
                       </h3>
-                      <p className='details-text'>
-                        {config.location?.name}
-                        {config.location?.address && (
-                          <>
-                            <br />
-                            {config.location.address}
-                          </>
-                        )}
-                        {config.location?.city && (
-                          <>
-                            <br />
-                            {config.location.city}, {config.location.state}{' '}
-                            {config.location.zip}
-                          </>
-                        )}
-                      </p>
-                      <p className='details-note'>
-                        Arrive 30 minutes early for check-in.
-                      </p>
+                      <p className='details-text'>{config.whatToExpect}</p>
                     </div>
+                  )}
+
+                  <div className='details-card'>
+                    <h3 className='details-card-title' style={{ color }}>
+                      <i className='ti ti-users' /> Who Can Participate
+                    </h3>
+                    <ul className='details-list'>
+                      {config.gender && <li>{config.gender}</li>}
+                      {config.grades && <li>Grades: {config.grades}</li>}
+                      <li>All skill levels welcome</li>
+                    </ul>
                   </div>
 
-                  {config.importantNotes &&
-                    config.importantNotes.length > 0 && (
-                      <div className='important-notes'>
-                        <h3 className='important-notes-title' style={{ color }}>
-                          <i className='ti ti-alert-circle' /> Important Notes
-                        </h3>
-                        <ul className='important-notes-list'>
-                          {config.importantNotes.map((note, index) => (
-                            <li key={index}>{note}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                  <div className='details-card'>
+                    <h3 className='details-card-title' style={{ color }}>
+                      <i className='ti ti-map-pin' /> Location
+                    </h3>
+                    <p className='details-text'>
+                      {config.location?.name}
+                      {config.location?.address && (
+                        <>
+                          <br />
+                          {config.location.address}
+                        </>
+                      )}
+                      {config.location?.city && (
+                        <>
+                          <br />
+                          {config.location.city}, {config.location.state}{' '}
+                          {config.location.zip}
+                        </>
+                      )}
+                    </p>
+                    <p className='details-note'>
+                      Arrive 30 minutes early for check-in.
+                    </p>
+                  </div>
                 </div>
+
+                {config.importantNotes && config.importantNotes.length > 0 && (
+                  <div className='important-notes'>
+                    <h3 className='important-notes-title' style={{ color }}>
+                      <i className='ti ti-alert-circle' /> Important Notes
+                    </h3>
+                    <ul className='important-notes-list'>
+                      {config.importantNotes.map((note, index) => (
+                        <li key={index}>{note}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          </div>
         </section>
 
         {/* ─── UTM Debug (Development Only) ──────────────────── */}
