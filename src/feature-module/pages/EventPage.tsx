@@ -532,12 +532,6 @@ const EventPage: React.FC<EventPageProps> = ({
         {/* ─── HERO SECTION - Full Width ────────────────────── */}
         <section className='event-hero-section'>
           <div className='event-hero-content'>
-            <div className='event-hero-icon' style={{ color }}>
-              <i className={`ti ${icon}`} />
-            </div>
-            <h1 className='event-hero-title' style={{ color }}>
-              {title}
-            </h1>
             <h2 className='event-hero-subtitle'>
               {config.displayName || config.title}
             </h2>
@@ -610,7 +604,7 @@ const EventPage: React.FC<EventPageProps> = ({
             <div className='event-image-wrapper'>
               <div className='event-image-container'>
                 <img
-                  src='/assets/img/theme/player_1.png'
+                  src='/assets/img/bg/bg_login.png'
                   alt={`${title} - Bothell Select`}
                   className='event-image'
                 />
