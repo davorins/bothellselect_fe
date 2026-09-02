@@ -666,7 +666,7 @@ const EventPage: React.FC<EventPageProps> = ({
                     <div className='event-form-footer'>
                       <p className='event-form-footer-text'>
                         Questions?{' '}
-                        <Link to='/contact' className='event-footer-link'>
+                        <Link to='/contact-us' className='event-footer-link'>
                           Contact us
                         </Link>
                       </p>
