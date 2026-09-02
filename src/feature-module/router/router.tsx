@@ -22,6 +22,8 @@ import PublicTicketLookup from '../../components/PublicTicketLookup';
 import PublicTournamentPage from '../pages/tournament/PublicTournamentPage';
 import PublicTournamentsListPage from '../pages/tournament/PublicTournamentsListPage';
 import TryoutPage from '../pages/TryoutPage';
+import TrainingPage from '../pages/TrainingPage';
+import TournamentPage from '../pages/TournamentPage';
 
 interface ALLRoutesProps {
   showSponsorLogo: boolean;
@@ -47,12 +49,27 @@ const ALLRoutes = ({ showSponsorLogo, onSplashClose }: ALLRoutesProps) => {
         }
       />
 
-      {/* ─── TRYOUT PAGE ─── (Uses MainLayout like HomePage) */}
       <Route
         path='/tryouts'
         element={
           <MainLayout showSponsorLogo={showSponsorLogo}>
             <TryoutPage />
+          </MainLayout>
+        }
+      />
+      <Route
+        path='/training'
+        element={
+          <MainLayout showSponsorLogo={showSponsorLogo}>
+            <TrainingPage />
+          </MainLayout>
+        }
+      />
+      <Route
+        path='/tournaments'
+        element={
+          <MainLayout showSponsorLogo={showSponsorLogo}>
+            <TournamentPage />
           </MainLayout>
         }
       />

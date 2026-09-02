@@ -302,6 +302,38 @@ export const SidebarData = [
     ],
   },
   {
+    label: 'Event Configurations',
+    submenuOpen: true,
+    showSubRoute: false,
+    submenuHdr: 'Event Configs',
+    submenuItems: [
+      {
+        label: 'Tryouts',
+        icon: 'ti ti-target-arrow',
+        submenu: false,
+        showSubRoute: false,
+        link: '/admin/tryout-config',
+        roles: ['admin'],
+      },
+      {
+        label: 'Training',
+        icon: 'ti ti-ball-basketball',
+        submenu: false,
+        showSubRoute: false,
+        link: '/admin/training-config',
+        roles: ['admin'],
+      },
+      {
+        label: 'Tournaments',
+        icon: 'ti ti-trophy',
+        submenu: false,
+        showSubRoute: false,
+        link: '/admin/tournament-config',
+        roles: ['admin'],
+      },
+    ],
+  },
+  {
     label: 'FAQ',
     submenu: true,
     showSubRoute: false,

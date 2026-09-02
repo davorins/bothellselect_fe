@@ -1,0 +1,529 @@
+/* EventPage.css - Unified styling for all event pages */
+
+/* ── Root & tokens ──────────────────────────────────────── */
+.event-root {
+  --court-black: #07080c;
+  --court-line: rgba(255, 255, 255, 0.07);
+  --paper: #ffffff;
+  --paper-dim: rgba(255, 255, 255, 0.65);
+  --paper-faint: rgba(255, 255, 255, 0.35);
+  --card-bg: #ffffff;
+  --card-border: #e9edf4;
+  --card-text: #262a2a;
+
+  min-height: 100vh;
+  background: var(--court-black);
+  color: var(--paper);
+  font-family:
+    'Roboto',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.event-glow {
+  position: fixed;
+  top: -220px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 640px;
+  height: 640px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+.event-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 72px 24px 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 72px;
+}
+
+/* ── Status (loading / empty) ───────────────────────────── */
+.event-status {
+  padding: 120px 0;
+  text-align: center;
+}
+.event-status p {
+  margin-top: 16px;
+  color: var(--paper-dim);
+}
+.status-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+.status-body {
+  color: var(--paper-dim);
+  margin: 0 0 24px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #506ee4, #3f5cd6);
+  color: #fff;
+  padding: 12px 26px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(80, 110, 228, 0.45);
+}
+.btn-primary:focus-visible {
+  outline: 2px solid #3f5cd6;
+  outline-offset: 3px;
+}
+
+/* ── Hero ────────────────────────────────────────────────── */
+.event-hero {
+  padding-top: 8px;
+}
+.hero-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+.hero-meta {
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin: 0 0 14px;
+}
+.hero-title {
+  font-size: clamp(2.1rem, 5vw, 3.25rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin: 0 0 16px;
+  max-width: 14ch;
+}
+.hero-lead {
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--paper-dim);
+  max-width: 52ch;
+  margin: 0 0 36px;
+}
+
+.hero-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  margin: 0 0 36px;
+  padding: 24px 0;
+  border-top: 1px solid var(--court-line);
+  border-bottom: 1px solid var(--court-line);
+}
+.hero-facts .fact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hero-facts dt {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--paper-faint);
+}
+.hero-facts dd {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--paper);
+}
+
+.hero-cta-container {
+  margin-top: 8px;
+}
+.hero-cta-note {
+  color: var(--paper-faint);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* ── Details ─────────────────────────────────────────────── */
+.details-heading {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 0 32px;
+}
+
+.details-columns {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 36px 48px;
+}
+
+.details-col h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 14px;
+  padding-top: 14px;
+  border-top: 2px solid #506ee4;
+}
+
+.details-col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.details-col li {
+  font-size: 0.92rem;
+  color: var(--paper-dim);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--court-line);
+}
+.details-col li:last-child {
+  border-bottom: none;
+}
+
+.details-col p {
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--paper-dim);
+  margin: 0;
+}
+.details-col p + p {
+  margin-top: 12px;
+}
+
+.details-note {
+  margin-top: 10px !important;
+  color: var(--paper-faint) !important;
+  font-size: 0.82rem !important;
+}
+
+.important-notes {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--court-line);
+}
+.important-notes h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+.important-notes ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.important-notes li {
+  font-size: 0.88rem;
+  color: var(--paper-dim);
+  padding: 4px 0;
+  padding-left: 20px;
+  position: relative;
+}
+.important-notes li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #f59e0b;
+}
+
+/* ── Registration ────────────────────────────────────────── */
+.event-registration {
+  scroll-margin-top: 24px;
+}
+
+.registration-heading {
+  margin-bottom: 28px;
+}
+.registration-heading h2 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin: 0 0 8px;
+  color: var(--paper);
+}
+.registration-heading p {
+  color: var(--paper-dim);
+  margin: 0;
+}
+
+.registration-container {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-top: 4px solid #506ee4;
+  border-radius: 16px;
+  padding: 32px;
+  color: var(--card-text);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+/* ─── Coming Soon ────────────────────────────────────────── */
+.registration-coming-soon {
+  margin-top: 8px;
+}
+
+.coming-soon-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--court-line);
+  border-radius: 16px;
+  padding: 48px 40px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.coming-soon-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.coming-soon-card h2 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--paper);
+  margin: 0 0 12px;
+}
+
+.coming-soon-text {
+  color: var(--paper-dim);
+  font-size: 1rem;
+  line-height: 1.6;
+  max-width: 480px;
+  margin: 0 auto 28px;
+}
+.coming-soon-text strong {
+  color: var(--paper);
+}
+
+.coming-soon-details {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin: 24px 0 32px;
+  padding: 20px 0;
+  border-top: 1px solid var(--court-line);
+  border-bottom: 1px solid var(--court-line);
+}
+
+.coming-soon-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.detail-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--paper-faint);
+}
+.detail-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--paper);
+}
+
+.coming-soon-notify {
+  margin: 24px 0 16px;
+}
+
+.notify-text {
+  color: var(--paper-dim);
+  font-size: 0.9rem;
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.notify-form {
+  display: flex;
+  gap: 12px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.notify-input {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--court-line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--paper);
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease;
+}
+.notify-input:focus {
+  outline: none;
+  border-color: #506ee4;
+}
+.notify-input::placeholder {
+  color: var(--paper-faint);
+}
+
+.notify-button {
+  padding: 12px 24px;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+  white-space: nowrap;
+}
+.notify-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(80, 110, 228, 0.45);
+}
+
+.notify-success {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 8px;
+  color: #4ade80;
+  font-weight: 500;
+  max-width: 400px;
+  margin: 0 auto;
+}
+.notify-success i {
+  font-size: 1.2rem;
+}
+
+.coming-soon-footer {
+  color: var(--paper-faint);
+  font-size: 0.85rem;
+  margin: 16px 0 0;
+}
+
+/* ── Badges ──────────────────────────────────────────────── */
+.badge-open {
+  color: #4ade80;
+  font-weight: 600;
+}
+.badge-coming {
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+/* ── Debug ───────────────────────────────────────────────── */
+.event-debug {
+  border: 1px dashed var(--court-line);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 0.8rem;
+  color: var(--paper-faint);
+}
+.event-debug pre {
+  margin: 8px 0 0;
+  font-size: 11px;
+  overflow: auto;
+}
+
+/* ─── Registration Wizard Overrides ────────────────────── */
+.registration-container .registration-wizard {
+  max-width: 100%;
+  padding: 0;
+}
+.registration-container .wizard-content {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+.registration-container .card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+}
+.registration-container .card-header {
+  background: rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.registration-container .form-label {
+  color: #374151;
+}
+.registration-container .form-control {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  color: #1f2937;
+}
+.registration-container .form-control:focus {
+  border-color: #506ee4;
+  box-shadow: 0 0 0 3px rgba(80, 110, 228, 0.1);
+}
+.registration-container .btn-primary {
+  background: linear-gradient(135deg, #506ee4, #3f5cd6);
+  border: none;
+  color: #fff;
+}
+.registration-container .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(80, 110, 228, 0.45);
+}
+.registration-container .text-muted {
+  color: #6b7280 !important;
+}
+.registration-container .bg-light {
+  background: #f9fafb !important;
+}
+
+/* ─── Responsive ────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .event-wrap {
+    padding: 48px 18px 64px;
+    gap: 56px;
+  }
+  .details-columns {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .registration-container {
+    padding: 20px;
+    border-radius: 12px;
+  }
+  .hero-facts {
+    gap: 20px;
+  }
+  .coming-soon-card {
+    padding: 32px 20px;
+  }
+  .coming-soon-details {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .notify-form {
+    flex-direction: column;
+  }
+  .notify-button {
+    width: 100%;
+    justify-content: center;
+  }
+  .coming-soon-card h2 {
+    font-size: 1.4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary,
+  .notify-button {
+    transition: none;
+  }
+}
