@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PlayerRegistrationForm from './PlayerRegistrationForm';
 import TournamentRegistrationForm from './TournamentRegistrationForm';
 import TrainingRegistrationForm from './TrainingRegistrationForm';
@@ -291,6 +291,27 @@ const RegistrationWizard: React.FC<RegistrationWizardProps> = ({
     // Store in localStorage
     localStorage.setItem('pendingRegistrationPlayers', JSON.stringify(players));
   };
+
+  // ✅ TRACKING: Lead event when registration starts
+  const handleRegistrationStart = useCallback(() => {
+    ReactPixel.track('Lead', {
+      content_name: `${registrationType} Registration Started`,
+      content_category: 'Sports Registration',
+      content_type: 'registration_form',
+      registration_type: registrationType,
+    });
+    console.log(
+      `✅ Facebook Pixel - Lead tracked for ${registrationType} registration start`,
+    );
+  }, [registrationType]);
+
+  // ✅ TRACKING: Track Lead when registration form loads
+  useEffect(() => {
+    // Only track once when form loads and user hasn't completed registration yet
+    if (!userRegistrationComplete && !hasSavedInitialData) {
+      handleRegistrationStart();
+    }
+  }, [userRegistrationComplete, hasSavedInitialData, handleRegistrationStart]);
 
   // Handle full registration success
   const handleSuccess = (data?: any) => {
