@@ -909,7 +909,7 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
               <div className='col-md-6'>
                 <p className='mb-2'>
                   <strong>Tryout Fee:</strong> $
-                  <span className='text-white'>
+                  <span className='text-dark'>
                     {effectiveTryoutConfig.tryoutFee} per player
                   </span>
                 </p>
