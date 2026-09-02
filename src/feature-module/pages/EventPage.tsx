@@ -46,6 +46,10 @@ interface EventConfig {
   tryoutName?: string;
   tryoutYear?: number;
   displayName?: string;
+  // Store full tryoutDetails for better data access
+  tryoutDetails?: any;
+  // Store sessions for display
+  tryoutSessions?: any[];
 }
 
 interface EventPageProps {
@@ -78,14 +82,14 @@ const EventPage: React.FC<EventPageProps> = ({
 
   const { getMarketingAttribution } = useMarketing();
 
-  // ✅ Helper function to safely get location name
+  // Helper function to safely get location name
   const getLocationName = (location: any): string => {
     if (!location) return 'TBD';
     if (typeof location === 'string') return location;
     return location.name || 'TBD';
   };
 
-  // ✅ Helper function to safely get location display string
+  // Helper function to safely get location display string
   const getLocationDisplay = (location: any): string => {
     if (!location) return '';
     if (typeof location === 'string') return location;
@@ -99,6 +103,71 @@ const EventPage: React.FC<EventPageProps> = ({
     ].filter((part: string) => part && part.trim && part.trim() !== '');
 
     return parts.length > 0 ? parts.join(', ') : '';
+  };
+
+  // Helper function to get location from tryoutDetails
+  const getLocationFromDetails = (config: any): string => {
+    // Check tryoutDetails.tryoutSessions first
+    if (config?.tryoutDetails?.tryoutSessions?.length > 0) {
+      const session = config.tryoutDetails.tryoutSessions[0];
+      if (session?.location?.name && session.location.name.trim() !== '') {
+        return session.location.name;
+      }
+    }
+
+    // Check tryoutDetails.location
+    if (
+      config?.tryoutDetails?.location?.name &&
+      config.tryoutDetails.location.name.trim() !== ''
+    ) {
+      return config.tryoutDetails.location.name;
+    }
+
+    // Check config.location
+    if (config?.location?.name && config.location.name.trim() !== '') {
+      return config.location.name;
+    }
+
+    return 'TBD';
+  };
+
+  // Helper function to get tryout dates as formatted string
+  const getTryoutDatesDisplay = (config: any): string => {
+    if (config?.tryoutDetails?.tryoutSessions?.length > 0) {
+      const dates = config.tryoutDetails.tryoutSessions
+        .filter((s: any) => s.date)
+        .map((s: any) => s.date);
+      if (dates.length > 0) {
+        return dates.join(', ');
+      }
+    }
+
+    if (config?.tryoutDetails?.startDate) {
+      return config.tryoutDetails.startDate;
+    }
+
+    if (config?.startDate) {
+      return formatDate(config.startDate);
+    }
+
+    return 'TBD';
+  };
+
+  // Helper function to get tryout fee
+  const getTryoutFee = (config: any): number => {
+    if (
+      config?.tryoutDetails?.tryoutFee !== undefined &&
+      config.tryoutDetails.tryoutFee > 0
+    ) {
+      return config.tryoutDetails.tryoutFee;
+    }
+    if (config?.tryoutFee && config.tryoutFee > 0) {
+      return config.tryoutFee;
+    }
+    if (config?.price && config.price > 0) {
+      return config.price;
+    }
+    return 0;
   };
 
   // ✅ Track ViewContent event
@@ -171,12 +240,28 @@ const EventPage: React.FC<EventPageProps> = ({
             formData.tryoutFee ||
             formData.pricing?.basePrice ||
             configData.price;
-          // Fix: Use location from form config if available
-          if (formData.location && formData.location.name) {
+          // Store the full tryoutDetails
+          if (formData.tryoutDetails) {
+            configData.tryoutDetails = formData.tryoutDetails;
+          }
+          // Store whatToBring and importantNotes from formData
+          if (formData.whatToBring) {
+            configData.whatToBring = formData.whatToBring;
+          }
+          if (formData.importantNotes) {
+            configData.importantNotes = formData.importantNotes;
+          }
+          // If location is empty in event config but has data in form config
+          if (
+            formData.location &&
+            formData.location.name &&
+            !configData.location?.name
+          ) {
             configData.location = formData.location;
           }
 
           console.log('📦 Merged config data:', configData);
+          console.log('📦 tryoutDetails:', configData.tryoutDetails);
         }
       } catch (formError) {
         console.log(
@@ -198,6 +283,7 @@ const EventPage: React.FC<EventPageProps> = ({
         insuranceRequired: configData.insuranceRequired,
         refundPolicy: configData.refundPolicy,
         locationName: configData.location?.name,
+        tryoutDetails: configData.tryoutDetails ? 'present' : 'not present',
       });
     } catch (err) {
       console.error(`Error fetching ${eventType} config:`, err);
@@ -301,6 +387,9 @@ const EventPage: React.FC<EventPageProps> = ({
   }
 
   const formattedDate = formatDate(config.startDate);
+  const tryoutFee = getTryoutFee(config);
+  const locationDisplay = getLocationFromDetails(config);
+  const tryoutDatesDisplay = getTryoutDatesDisplay(config);
 
   return (
     <div className='event-page-container'>
@@ -339,7 +428,7 @@ const EventPage: React.FC<EventPageProps> = ({
               <div className='event-hero-facts'>
                 <div className='hero-fact'>
                   <span className='hero-fact-label'>Date</span>
-                  <span className='hero-fact-value'>{formattedDate}</span>
+                  <span className='hero-fact-value'>{tryoutDatesDisplay}</span>
                 </div>
                 <div className='hero-fact'>
                   <span className='hero-fact-label'>Time</span>
@@ -349,9 +438,7 @@ const EventPage: React.FC<EventPageProps> = ({
                 </div>
                 <div className='hero-fact'>
                   <span className='hero-fact-label'>Location</span>
-                  <span className='hero-fact-value'>
-                    {getLocationName(config.location)}
-                  </span>
+                  <span className='hero-fact-value'>{locationDisplay}</span>
                 </div>
                 {config.grades && (
                   <div className='hero-fact'>
@@ -378,15 +465,14 @@ const EventPage: React.FC<EventPageProps> = ({
                       : '📋 Coming Soon'}
                   </span>
                 </div>
-                {config.registrationOpen &&
-                  (config.tryoutFee || config.price) > 0 && (
-                    <div className='hero-fact hero-fact-price'>
-                      <span className='hero-fact-label'>Registration Fee</span>
-                      <span className='hero-fact-value price-amount'>
-                        ${config.tryoutFee || config.price}
-                      </span>
-                    </div>
-                  )}
+                {config.registrationOpen && tryoutFee > 0 && (
+                  <div className='hero-fact hero-fact-price'>
+                    <span className='hero-fact-label'>Registration Fee</span>
+                    <span className='hero-fact-value price-amount'>
+                      ${tryoutFee}
+                    </span>
+                  </div>
+                )}
                 {config.registrationDeadline && (
                   <div className='hero-fact'>
                     <span className='hero-fact-label'>
@@ -448,25 +534,22 @@ const EventPage: React.FC<EventPageProps> = ({
                         {config.displayName || config.title}.
                       </p>
 
-                      {/* Tryout Fee */}
-                      {(config.tryoutFee || config.price) !== undefined &&
-                        (config.tryoutFee || config.price) > 0 && (
-                          <p
-                            className='event-form-price'
-                            style={{
-                              color: '#4ade80',
-                              fontWeight: '600',
-                              marginTop: '8px',
-                            }}
-                          >
-                            Tryout Fee:{' '}
-                            <strong>${config.tryoutFee || config.price}</strong>{' '}
-                            per player
-                          </p>
-                        )}
+                      {/* Tryout Fee - Using the helper */}
+                      {tryoutFee > 0 && (
+                        <p
+                          className='event-form-price'
+                          style={{
+                            color: '#4ade80',
+                            fontWeight: '600',
+                            marginTop: '8px',
+                          }}
+                        >
+                          Tryout Fee: <strong>${tryoutFee}</strong> per player
+                        </p>
+                      )}
 
-                      {/* Tryout Dates - FIX: Use config directly */}
-                      {config.startDate && (
+                      {/* Tryout Dates - Using the helper */}
+                      {tryoutDatesDisplay && tryoutDatesDisplay !== 'TBD' && (
                         <p
                           className='event-form-dates'
                           style={{
@@ -474,12 +557,12 @@ const EventPage: React.FC<EventPageProps> = ({
                             marginTop: '4px',
                           }}
                         >
-                          Tryout Dates: <strong>{formattedDate}</strong>
+                          Tryout Dates: <strong>{tryoutDatesDisplay}</strong>
                         </p>
                       )}
 
-                      {/* Location - FIX: Use getLocationDisplay helper */}
-                      {getLocationDisplay(config.location) && (
+                      {/* Location - Using the helper */}
+                      {locationDisplay && locationDisplay !== 'TBD' && (
                         <p
                           className='event-form-location'
                           style={{
@@ -487,8 +570,7 @@ const EventPage: React.FC<EventPageProps> = ({
                             marginTop: '4px',
                           }}
                         >
-                          Locations:{' '}
-                          <strong>{getLocationDisplay(config.location)}</strong>
+                          Locations: <strong>{locationDisplay}</strong>
                         </p>
                       )}
 
@@ -581,13 +663,13 @@ const EventPage: React.FC<EventPageProps> = ({
                     <div className='coming-soon-details'>
                       <div className='coming-soon-detail'>
                         <span className='detail-label'>Date</span>
-                        <span className='detail-value'>{formattedDate}</span>
+                        <span className='detail-value'>
+                          {tryoutDatesDisplay}
+                        </span>
                       </div>
                       <div className='coming-soon-detail'>
                         <span className='detail-label'>Location</span>
-                        <span className='detail-value'>
-                          {getLocationName(config.location)}
-                        </span>
+                        <span className='detail-value'>{locationDisplay}</span>
                       </div>
                       {config.grades && (
                         <div className='coming-soon-detail'>
@@ -701,7 +783,9 @@ const EventPage: React.FC<EventPageProps> = ({
                       <i className='ti ti-map-pin' /> Location
                     </h3>
                     <p className='details-text'>
-                      {getLocationDisplay(config.location) || 'Location TBD'}
+                      {locationDisplay !== 'TBD'
+                        ? locationDisplay
+                        : 'Location TBD'}
                     </p>
                     <p className='details-note'>
                       Arrive 30 minutes early for check-in.
