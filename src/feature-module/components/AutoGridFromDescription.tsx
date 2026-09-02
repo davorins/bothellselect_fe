@@ -564,7 +564,7 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
           {/* Pricing Section - Separate section with grid layout */}
           {(hasBasePrice || hasPricingPackages) && (
             <div className='agd-tile'>
-              <TileHead icon='ti-currency-dollar' label='Pricing' />
+              <TileHead icon='ti-currency-dollar' label='Price' />
 
               {/* Base Price */}
               {hasBasePrice && (
