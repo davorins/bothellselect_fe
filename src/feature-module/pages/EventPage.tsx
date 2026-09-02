@@ -263,74 +263,6 @@ const EventPage: React.FC<EventPageProps> = ({
           )}
         </section>
 
-        {/* ─── DETAILS ────────────────────────────────────────── */}
-        <section className='event-details' id='details'>
-          <h2 className='details-heading'>{title} details</h2>
-
-          <div className='details-columns'>
-            {config.whatToBring && config.whatToBring.length > 0 && (
-              <div className='details-col'>
-                <h3>What to bring</h3>
-                <ul>
-                  {config.whatToBring.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {config.whatToExpect && (
-              <div className='details-col'>
-                <h3>What to expect</h3>
-                <p>{config.whatToExpect}</p>
-              </div>
-            )}
-
-            <div className='details-col'>
-              <h3>Who can participate</h3>
-              <ul>
-                {config.gender && <li>{config.gender}</li>}
-                {config.grades && <li>{config.grades}</li>}
-                <li>All skill levels welcome</li>
-              </ul>
-            </div>
-
-            <div className='details-col'>
-              <h3>Location</h3>
-              <p>
-                {config.location.name}
-                {config.location.address && (
-                  <>
-                    <br />
-                    {config.location.address}
-                  </>
-                )}
-                {config.location.city && (
-                  <>
-                    <br />
-                    {config.location.city}, {config.location.state}{' '}
-                    {config.location.zip}
-                  </>
-                )}
-              </p>
-              <p className='details-note'>
-                Arrive 30 minutes early for check-in.
-              </p>
-            </div>
-          </div>
-
-          {config.importantNotes && config.importantNotes.length > 0 && (
-            <div className='important-notes'>
-              <h3>Important Notes</h3>
-              <ul>
-                {config.importantNotes.map((note, index) => (
-                  <li key={index}>{note}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </section>
-
         {/* ─── REGISTRATION ───────────────────────────────────── */}
         <section className='event-registration' id='registration'>
           {config.registrationOpen && eventConfig ? (
@@ -432,6 +364,74 @@ const EventPage: React.FC<EventPageProps> = ({
                   Follow us on social media for updates!
                 </p>
               </div>
+            </div>
+          )}
+        </section>
+
+        {/* ─── DETAILS ────────────────────────────────────────── */}
+        <section className='event-details' id='details'>
+          <h2 className='details-heading'>{title} details</h2>
+
+          <div className='details-columns'>
+            {config.whatToBring && config.whatToBring.length > 0 && (
+              <div className='details-col'>
+                <h3>What to bring</h3>
+                <ul>
+                  {config.whatToBring.map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {config.whatToExpect && (
+              <div className='details-col'>
+                <h3>What to expect</h3>
+                <p>{config.whatToExpect}</p>
+              </div>
+            )}
+
+            <div className='details-col'>
+              <h3>Who can participate</h3>
+              <ul>
+                {config.gender && <li>{config.gender}</li>}
+                {config.grades && <li>{config.grades}</li>}
+                <li>All skill levels welcome</li>
+              </ul>
+            </div>
+
+            <div className='details-col'>
+              <h3>Location</h3>
+              <p>
+                {config.location.name}
+                {config.location.address && (
+                  <>
+                    <br />
+                    {config.location.address}
+                  </>
+                )}
+                {config.location.city && (
+                  <>
+                    <br />
+                    {config.location.city}, {config.location.state}{' '}
+                    {config.location.zip}
+                  </>
+                )}
+              </p>
+              <p className='details-note'>
+                Arrive 30 minutes early for check-in.
+              </p>
+            </div>
+          </div>
+
+          {config.importantNotes && config.importantNotes.length > 0 && (
+            <div className='important-notes'>
+              <h3>Important Notes</h3>
+              <ul>
+                {config.importantNotes.map((note, index) => (
+                  <li key={index}>{note}</li>
+                ))}
+              </ul>
             </div>
           )}
         </section>
