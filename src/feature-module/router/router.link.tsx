@@ -84,7 +84,9 @@ import PaymentConfiguration from '../../components/admin/paymentSettings/Payment
 import FormFieldConfigPage from '../settings/systemSettings/formFieldConfig/FormFieldConfig';
 import CloverReceiptPage from '../peoples/parent/receipts/CloverReceiptPage';
 import AdminAdManager from '../components/ads/AdminAdManager';
-import AdminEventConfig from '../../components/admin/AdminEventConfig';
+import AdminTryoutConfig from '../../components/admin/AdminTryoutConfig';
+import AdminTrainingConfig from '../../components/admin/AdminTrainingConfig';
+import AdminTournamentConfig from '../../components/admin/AdminTournamentConfig';
 
 const routes = all_routes;
 
@@ -584,11 +586,7 @@ export const protectedRoutes = [
     path: '/admin/tryout-config',
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
-        <AdminEventConfig
-          eventType='tryout'
-          title='Tryouts'
-          icon='ti-target-arrow'
-        />
+        <AdminTryoutConfig />
       </ProtectedRoute>
     ),
     route: Route,
@@ -597,11 +595,7 @@ export const protectedRoutes = [
     path: '/admin/training-config',
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
-        <AdminEventConfig
-          eventType='training'
-          title='Training'
-          icon='ti-ball-basketball'
-        />
+        <AdminTrainingConfig />
       </ProtectedRoute>
     ),
     route: Route,
@@ -610,11 +604,7 @@ export const protectedRoutes = [
     path: '/admin/tournament-config',
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
-        <AdminEventConfig
-          eventType='tournament'
-          title='Tournaments'
-          icon='ti-trophy'
-        />
+        <AdminTournamentConfig />
       </ProtectedRoute>
     ),
     route: Route,
