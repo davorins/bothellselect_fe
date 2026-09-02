@@ -617,7 +617,8 @@
   color: #ffffff !important;
 }
 
-.event-registration-container .step-label {
+.event-registration-container > .step-label,
+.event-registration-container > .form-header {
   color: #ffffff !important;
 }
 
