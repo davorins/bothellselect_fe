@@ -7,7 +7,7 @@ import RegistrationWizard from '../components/registration/RegistrationWizard';
 import {
   TryoutSpecificConfig,
   RegistrationFormConfig,
-} from '../../../types/registration-types';
+} from '../../types/registration-types';
 import { formatDate } from '../../utils/dateFormatter';
 import ReactPixel from 'react-facebook-pixel';
 import './EventPage.css';
