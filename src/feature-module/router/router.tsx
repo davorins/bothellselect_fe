@@ -50,7 +50,7 @@ const ALLRoutes = ({ showSponsorLogo, onSplashClose }: ALLRoutesProps) => {
       />
 
       <Route
-        path='/tryouts'
+        path='/tryout'
         element={
           <MainLayout showSponsorLogo={showSponsorLogo}>
             <TryoutPage />
@@ -66,7 +66,7 @@ const ALLRoutes = ({ showSponsorLogo, onSplashClose }: ALLRoutesProps) => {
         }
       />
       <Route
-        path='/tournaments'
+        path='/tournament'
         element={
           <MainLayout showSponsorLogo={showSponsorLogo}>
             <TournamentPage />
