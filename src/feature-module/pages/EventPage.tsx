@@ -67,6 +67,7 @@ const EventPage: React.FC<EventPageProps> = ({
 
   const { getMarketingAttribution } = useMarketing();
 
+  // ✅ Track ViewContent event
   useEffect(() => {
     if (config) {
       ReactPixel.track('ViewContent', {
@@ -177,9 +178,10 @@ const EventPage: React.FC<EventPageProps> = ({
 
   if (loading) {
     return (
-      <div className='event-root'>
-        <div className='event-wrap'>
-          <div className='event-status'>
+      <div className='event-page-container'>
+        <div className='event-bg-gradient' />
+        <div className='event-content-wrapper'>
+          <div className='event-status-glass'>
             <LoadingSpinner />
             <p>Loading {title} information…</p>
           </div>
@@ -190,14 +192,15 @@ const EventPage: React.FC<EventPageProps> = ({
 
   if (error || !config) {
     return (
-      <div className='event-root'>
-        <div className='event-wrap'>
-          <div className='event-status'>
+      <div className='event-page-container'>
+        <div className='event-bg-gradient' />
+        <div className='event-content-wrapper'>
+          <div className='event-status-glass'>
             <h1 className='status-title'>No {title} scheduled</h1>
             <p className='status-body'>
               {error || `Check back soon for upcoming ${title}.`}
             </p>
-            <Link to='/' className='btn-primary'>
+            <Link to='/' className='event-btn-primary'>
               Return home
             </Link>
           </div>
@@ -209,249 +212,297 @@ const EventPage: React.FC<EventPageProps> = ({
   const formattedDate = formatDate(config.startDate);
 
   return (
-    <div className={`event-root event-root--${eventType}`}>
+    <div className='event-page-container'>
+      {/* Background gradient */}
+      <div className='event-bg-gradient' />
+
+      {/* Animated gradient orbs with event color */}
       <div
-        className='event-glow'
-        style={{
-          background: `radial-gradient(circle, ${color}18, transparent 70%)`,
-        }}
+        className='event-orb event-orb-1'
+        style={{ background: `${color}33` }}
+      />
+      <div
+        className='event-orb event-orb-2'
+        style={{ background: `${color}22` }}
+      />
+      <div
+        className='event-orb event-orb-3'
+        style={{ background: `${color}22` }}
       />
 
-      <div className='event-wrap'>
-        {/* ─── HERO ───────────────────────────────────────────── */}
-        <section className='event-hero'>
-          <div className='hero-icon' style={{ color }}>
-            <i className={`ti ${icon}`} />
-          </div>
-          <p className='hero-meta' style={{ color }}>
-            {title}
-          </p>
-          <h1 className='hero-title'>{config.title}</h1>
-          <p className='hero-lead'>{config.description}</p>
-
-          <dl className='hero-facts'>
-            <div className='fact'>
-              <dt>Date</dt>
-              <dd>{formattedDate}</dd>
-            </div>
-            <div className='fact'>
-              <dt>Time</dt>
-              <dd>
-                {config.startTime} – {config.endTime}
-              </dd>
-            </div>
-            <div className='fact'>
-              <dt>Where</dt>
-              <dd>{config.location.name}</dd>
-            </div>
-            {config.grades && (
-              <div className='fact'>
-                <dt>Grades</dt>
-                <dd>{config.grades}</dd>
-              </div>
-            )}
-            {config.gender && (
-              <div className='fact'>
-                <dt>Gender</dt>
-                <dd>{config.gender}</dd>
-              </div>
-            )}
-            <div className='fact'>
-              <dt>Status</dt>
-              <dd>
-                {config.registrationOpen ? (
-                  <span className='badge-open'>✅ Registration Open</span>
-                ) : (
-                  <span className='badge-coming'>📋 Coming Soon</span>
-                )}
-              </dd>
-            </div>
-          </dl>
-
-          {!config.registrationOpen && (
-            <div className='hero-cta-container'>
-              <p className='hero-cta-note'>
-                Registration is coming soon! Sign up below to be notified when
-                it opens.
-              </p>
-            </div>
-          )}
-        </section>
-
-        {/* ─── REGISTRATION ───────────────────────────────────── */}
-        <section className='event-registration' id='registration'>
-          {config.registrationOpen && eventConfig ? (
-            <>
-              <div className='registration-heading'>
-                <h2>Secure your spot</h2>
-                <p>Complete the form below to register.</p>
-              </div>
-
-              <div className='registration-container'>
-                <RegistrationWizard
-                  registrationType={registrationWizardType}
-                  eventData={{
-                    season: eventConfig.tryoutName,
-                    year: eventConfig.tryoutYear,
-                    eventId: config._id,
-                  }}
-                  seasonEvent={{
-                    season: eventConfig.tryoutName,
-                    year: eventConfig.tryoutYear,
-                    eventId: config._id,
-                    registrationOpen: true,
-                  }}
-                  formConfig={eventConfig}
-                  onSuccess={() => {
-                    console.log(`🎉 ${eventType} registration successful!`);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                />
-              </div>
-            </>
-          ) : (
-            <div className='registration-coming-soon'>
-              <div className='coming-soon-card'>
-                <div className='coming-soon-icon' style={{ color }}>
+      <div className='event-content-wrapper'>
+        <div className='event-grid'>
+          {/* Left side - Event Illustration with Glassmorphism */}
+          <div className='event-illustration-wrapper'>
+            <div className='event-illustration-glass'>
+              <div className='event-illustration-inner'>
+                <div className='event-illustration-icon' style={{ color }}>
                   <i className={`ti ${icon}`} />
                 </div>
-                <h2>{title} Announced!</h2>
-                <p className='coming-soon-text'>
-                  Registration for <strong>{config.title}</strong> will open
-                  soon. We're finalizing the details and can't wait to see you
-                  there.
-                </p>
-                <div className='coming-soon-details'>
-                  <div className='coming-soon-detail'>
-                    <span className='detail-label'>Date</span>
-                    <span className='detail-value'>{formattedDate}</span>
+                <h2 className='event-illustration-title' style={{ color }}>
+                  {title}
+                </h2>
+                <div className='event-illustration-facts'>
+                  <div className='event-fact'>
+                    <span className='fact-label'>Date</span>
+                    <span className='fact-value'>{formattedDate}</span>
                   </div>
-                  <div className='coming-soon-detail'>
-                    <span className='detail-label'>Location</span>
-                    <span className='detail-value'>{config.location.name}</span>
+                  <div className='event-fact'>
+                    <span className='fact-label'>Time</span>
+                    <span className='fact-value'>
+                      {config.startTime} – {config.endTime}
+                    </span>
+                  </div>
+                  <div className='event-fact'>
+                    <span className='fact-label'>Location</span>
+                    <span className='fact-value'>{config.location.name}</span>
                   </div>
                   {config.grades && (
-                    <div className='coming-soon-detail'>
-                      <span className='detail-label'>Grades</span>
-                      <span className='detail-value'>{config.grades}</span>
+                    <div className='event-fact'>
+                      <span className='fact-label'>Grades</span>
+                      <span className='fact-value'>{config.grades}</span>
                     </div>
                   )}
-                </div>
-
-                <div className='coming-soon-notify'>
-                  <p className='notify-text'>
-                    <i className='ti ti-bell-ringing'></i>
-                    Get notified when registration opens:
-                  </p>
-                  {notificationSubmitted ? (
-                    <div className='notify-success'>
-                      <i className='ti ti-circle-check'></i>
-                      You're on the list! We'll notify you when registration
-                      opens.
+                  {config.gender && (
+                    <div className='event-fact'>
+                      <span className='fact-label'>Gender</span>
+                      <span className='fact-value'>{config.gender}</span>
                     </div>
-                  ) : (
-                    <form
-                      onSubmit={handleNotificationSubmit}
-                      className='notify-form'
+                  )}
+                  <div className='event-fact'>
+                    <span className='fact-label'>Status</span>
+                    <span
+                      className='fact-value'
+                      style={{
+                        color: config.registrationOpen ? '#4ade80' : '#fbbf24',
+                      }}
                     >
-                      <input
-                        type='email'
-                        value={emailForNotification}
-                        onChange={(e) =>
-                          setEmailForNotification(e.target.value)
-                        }
-                        placeholder='Enter your email'
-                        required
-                        className='notify-input'
-                      />
-                      <button
-                        type='submit'
-                        className='notify-button'
-                        style={{ background: color }}
-                      >
-                        Notify Me
-                      </button>
-                    </form>
-                  )}
+                      {config.registrationOpen
+                        ? '✅ Registration Open'
+                        : '📋 Coming Soon'}
+                    </span>
+                  </div>
                 </div>
+                {config.registrationOpen && config.price > 0 && (
+                  <div className='event-illustration-price'>
+                    <span className='price-label'>Registration Fee</span>
+                    <span className='price-value'>${config.price}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
-                <p className='coming-soon-footer'>
-                  Follow us on social media for updates!
+          {/* Right side - Registration Form */}
+          <div className='event-form-wrapper'>
+            <div className='event-form-glass'>
+              {config.registrationOpen && eventConfig ? (
+                <>
+                  <div className='event-header'>
+                    <div
+                      className='event-header-icon'
+                      style={{
+                        background: `${color}33`,
+                        borderColor: `${color}66`,
+                      }}
+                    >
+                      <i className={`ti ${icon}`} style={{ color }} />
+                    </div>
+                    <h1 className='event-header-title'>Secure Your Spot</h1>
+                    <p className='event-header-subtitle'>
+                      Complete the form below to register for {config.title}.
+                    </p>
+                  </div>
+
+                  <div className='event-registration-container'>
+                    <RegistrationWizard
+                      registrationType={registrationWizardType}
+                      eventData={{
+                        season: eventConfig.tryoutName,
+                        year: eventConfig.tryoutYear,
+                        eventId: config._id,
+                      }}
+                      seasonEvent={{
+                        season: eventConfig.tryoutName,
+                        year: eventConfig.tryoutYear,
+                        eventId: config._id,
+                        registrationOpen: true,
+                      }}
+                      formConfig={eventConfig}
+                      onSuccess={() => {
+                        console.log(`🎉 ${eventType} registration successful!`);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    />
+                  </div>
+
+                  <div className='event-footer'>
+                    <div className='event-footer-content'>
+                      <p className='event-footer-text'>
+                        Questions?{' '}
+                        <Link to='/contact' className='event-footer-link'>
+                          Contact us
+                        </Link>
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                // Coming Soon State
+                <div className='event-coming-soon'>
+                  <div className='coming-soon-icon' style={{ color }}>
+                    <i className={`ti ${icon}`} />
+                  </div>
+                  <h2>{title} Announced!</h2>
+                  <p className='coming-soon-text'>
+                    Registration for <strong>{config.title}</strong> will open
+                    soon. We're finalizing the details and can't wait to see you
+                    there.
+                  </p>
+                  <div className='coming-soon-details'>
+                    <div className='coming-soon-detail'>
+                      <span className='detail-label'>Date</span>
+                      <span className='detail-value'>{formattedDate}</span>
+                    </div>
+                    <div className='coming-soon-detail'>
+                      <span className='detail-label'>Location</span>
+                      <span className='detail-value'>
+                        {config.location.name}
+                      </span>
+                    </div>
+                    {config.grades && (
+                      <div className='coming-soon-detail'>
+                        <span className='detail-label'>Grades</span>
+                        <span className='detail-value'>{config.grades}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className='coming-soon-notify'>
+                    <p className='notify-text'>
+                      <i className='ti ti-bell-ringing'></i>
+                      Get notified when registration opens:
+                    </p>
+                    {notificationSubmitted ? (
+                      <div className='notify-success'>
+                        <i className='ti ti-circle-check'></i>
+                        You're on the list! We'll notify you when registration
+                        opens.
+                      </div>
+                    ) : (
+                      <form
+                        onSubmit={handleNotificationSubmit}
+                        className='notify-form'
+                      >
+                        <input
+                          type='email'
+                          value={emailForNotification}
+                          onChange={(e) =>
+                            setEmailForNotification(e.target.value)
+                          }
+                          placeholder='Enter your email'
+                          required
+                          className='notify-input'
+                        />
+                        <button
+                          type='submit'
+                          className='notify-button'
+                          style={{ background: color }}
+                        >
+                          Notify Me
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Details Section - Below the main grid */}
+        <div className='event-details-section'>
+          <div className='event-details-glass'>
+            <h2 className='details-heading' style={{ color }}>
+              {title} Details
+            </h2>
+
+            <div className='details-grid'>
+              {config.whatToBring && config.whatToBring.length > 0 && (
+                <div className='details-card'>
+                  <h3 className='details-card-title' style={{ color }}>
+                    <i className='ti ti-backpack' /> What to Bring
+                  </h3>
+                  <ul className='details-list'>
+                    {config.whatToBring.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {config.whatToExpect && (
+                <div className='details-card'>
+                  <h3 className='details-card-title' style={{ color }}>
+                    <i className='ti ti-eye' /> What to Expect
+                  </h3>
+                  <p className='details-text'>{config.whatToExpect}</p>
+                </div>
+              )}
+
+              <div className='details-card'>
+                <h3 className='details-card-title' style={{ color }}>
+                  <i className='ti ti-users' /> Who Can Participate
+                </h3>
+                <ul className='details-list'>
+                  {config.gender && <li>{config.gender}</li>}
+                  {config.grades && <li>Grades: {config.grades}</li>}
+                  <li>All skill levels welcome</li>
+                </ul>
+              </div>
+
+              <div className='details-card'>
+                <h3 className='details-card-title' style={{ color }}>
+                  <i className='ti ti-map-pin' /> Location
+                </h3>
+                <p className='details-text'>
+                  {config.location.name}
+                  {config.location.address && (
+                    <>
+                      <br />
+                      {config.location.address}
+                    </>
+                  )}
+                  {config.location.city && (
+                    <>
+                      <br />
+                      {config.location.city}, {config.location.state}{' '}
+                      {config.location.zip}
+                    </>
+                  )}
+                </p>
+                <p className='details-note'>
+                  Arrive 30 minutes early for check-in.
                 </p>
               </div>
             </div>
-          )}
-        </section>
 
-        {/* ─── DETAILS ────────────────────────────────────────── */}
-        <section className='event-details' id='details'>
-          <h2 className='details-heading'>{title} details</h2>
-
-          <div className='details-columns'>
-            {config.whatToBring && config.whatToBring.length > 0 && (
-              <div className='details-col'>
-                <h3>What to bring</h3>
-                <ul>
-                  {config.whatToBring.map((item, index) => (
-                    <li key={index}>{item}</li>
+            {config.importantNotes && config.importantNotes.length > 0 && (
+              <div className='important-notes'>
+                <h3 className='important-notes-title' style={{ color }}>
+                  <i className='ti ti-alert-circle' /> Important Notes
+                </h3>
+                <ul className='important-notes-list'>
+                  {config.importantNotes.map((note, index) => (
+                    <li key={index}>{note}</li>
                   ))}
                 </ul>
               </div>
             )}
-
-            {config.whatToExpect && (
-              <div className='details-col'>
-                <h3>What to expect</h3>
-                <p>{config.whatToExpect}</p>
-              </div>
-            )}
-
-            <div className='details-col'>
-              <h3>Who can participate</h3>
-              <ul>
-                {config.gender && <li>{config.gender}</li>}
-                {config.grades && <li>{config.grades}</li>}
-                <li>All skill levels welcome</li>
-              </ul>
-            </div>
-
-            <div className='details-col'>
-              <h3>Location</h3>
-              <p>
-                {config.location.name}
-                {config.location.address && (
-                  <>
-                    <br />
-                    {config.location.address}
-                  </>
-                )}
-                {config.location.city && (
-                  <>
-                    <br />
-                    {config.location.city}, {config.location.state}{' '}
-                    {config.location.zip}
-                  </>
-                )}
-              </p>
-              <p className='details-note'>
-                Arrive 30 minutes early for check-in.
-              </p>
-            </div>
           </div>
+        </div>
 
-          {config.importantNotes && config.importantNotes.length > 0 && (
-            <div className='important-notes'>
-              <h3>Important Notes</h3>
-              <ul>
-                {config.importantNotes.map((note, index) => (
-                  <li key={index}>{note}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </section>
-
-        {/* ─── UTM Debug (Development Only) ──────────────────── */}
+        {/* UTM Debug (Development Only) */}
         {process.env.NODE_ENV === 'development' && (
           <div className='event-debug'>
             <strong>UTM debug</strong>
