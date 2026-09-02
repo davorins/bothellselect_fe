@@ -160,19 +160,15 @@ const EventPage: React.FC<EventPageProps> = ({
         displayName: config.displayName || config.title,
         registrationDeadline: config.registrationDeadline || '',
         tryoutDates: [config.startDate],
+        // ✅ FIX: locations must be an array of name strings — the tryout
+        // info card (TryoutRegistrationForm.tsx) does
+        // `locations.join(', ')`, which produces "[object Object]" if
+        // given full location objects instead.
         locations:
           config.location &&
           config.location.name &&
           config.location.name.trim() !== ''
-            ? [
-                {
-                  name: config.location.name,
-                  address: config.location.address || '',
-                  city: config.location.city || '',
-                  state: config.location.state || '',
-                  zipCode: config.location.zip || '',
-                },
-              ]
+            ? [config.location.name]
             : [],
         divisions: [],
         ageGroups: config.ageGroups || [],
