@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../../../context/AuthContext';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import { useSeasonEvents } from '../../hooks/useSeasonEvents';
+import ReactPixel from 'react-facebook-pixel';
 
 interface RegistrationWizardProps {
   registrationType?: 'player' | 'tournament' | 'training' | 'tryout' | 'team';
@@ -298,6 +299,24 @@ const RegistrationWizard: React.FC<RegistrationWizardProps> = ({
     // Clear localStorage
     localStorage.removeItem('pendingRegistrationUser');
     localStorage.removeItem('pendingRegistrationPlayers');
+
+    // ✅ Track Registration for Facebook Pixel
+    ReactPixel.track('CompleteRegistration', {
+      value: data?.payment?.amount || 0,
+      currency: 'USD',
+      content_name: `${registrationType} Registration`,
+      content_category: 'Sports Registration',
+    });
+
+    // If there was payment, also track Purchase
+    if (data?.payment?.amount) {
+      ReactPixel.track('Purchase', {
+        value: data.payment.amount,
+        currency: 'USD',
+        content_name: `${registrationType} Registration - Bothell Select`,
+        content_category: 'Sports Registration',
+      });
+    }
 
     // Reset state
     setUserRegistrationComplete(false);

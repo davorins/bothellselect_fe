@@ -6,6 +6,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import RegistrationWizard from '../components/registration/RegistrationWizard';
 import { TryoutSpecificConfig } from '../../types/registration-types';
 import { formatDate } from '../../utils/dateFormatter';
+import ReactPixel from 'react-facebook-pixel';
 import './EventPage.css';
 
 interface EventConfig {
@@ -65,6 +66,20 @@ const EventPage: React.FC<EventPageProps> = ({
   );
 
   const { getMarketingAttribution } = useMarketing();
+
+  useEffect(() => {
+    if (config) {
+      ReactPixel.track('ViewContent', {
+        content_name: `${title} Page - Bothell Select`,
+        content_category: `Basketball ${title}`,
+        content_type: 'landing_page',
+        event_type: eventType,
+        registration_open: config.registrationOpen,
+        price: config.price,
+      });
+      console.log(`✅ Facebook Pixel - ViewContent tracked for ${title} page`);
+    }
+  }, [config, title, eventType]);
 
   useEffect(() => {
     fetchEventConfig();
