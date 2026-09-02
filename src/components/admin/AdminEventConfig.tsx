@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { OverlayTrigger, Tooltip, Button, Alert, Badge } from 'react-bootstrap';
 import axios from 'axios';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { formatDateForStorage, isoToMMDDYYYY } from '../../utils/dateFormatter';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -101,9 +102,10 @@ const AdminEventConfig: React.FC<AdminEventConfigProps> = ({
       if (response.data.success && response.data.configs.length > 0) {
         const activeConfig = response.data.configs.find((c: any) => c.isActive);
         if (activeConfig) {
-          const startDate = new Date(activeConfig.startDate)
-            .toISOString()
-            .split('T')[0];
+          const startDate = activeConfig.startDate
+            ? formatDateForStorage(activeConfig.startDate)
+            : new Date().toISOString().split('T')[0];
+
           setConfig({ ...activeConfig, startDate });
         }
       }

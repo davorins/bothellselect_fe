@@ -5,6 +5,7 @@ import { useMarketing } from '../../context/MarketingContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import RegistrationWizard from '../components/registration/RegistrationWizard';
 import { TryoutSpecificConfig } from '../../types/registration-types';
+import { formatDate } from '../../utils/dateFormatter';
 import './EventPage.css';
 
 interface EventConfig {
@@ -190,12 +191,7 @@ const EventPage: React.FC<EventPageProps> = ({
     );
   }
 
-  const formattedDate = new Date(config.startDate).toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const formattedDate = formatDate(config.startDate);
 
   return (
     <div className={`event-root event-root--${eventType}`}>
