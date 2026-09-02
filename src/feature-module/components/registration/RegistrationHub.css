@@ -439,6 +439,7 @@
   max-width: 640px;
   margin: 0 auto;
   color: rgba(0, 0, 0, 0.75);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .tryout-registration-form .step-indicator {
@@ -630,12 +631,12 @@
 }
 
 .reg-form-wrapper .card {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .reg-form-wrapper .card-header {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 1);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
