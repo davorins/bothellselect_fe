@@ -1062,11 +1062,11 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
               <div className='card-body'>
                 <p className='h5 mb-1'>
                   <strong>Description:</strong>{' '}
-                  <span className='text-white'>{description}</span>
+                  <span className='text-dark'>{description}</span>
                 </p>
                 <p className='h4 mb-1'>
                   <strong>Total Amount:</strong>{' '}
-                  <span className='text-white'>
+                  <span className='text-dark'>
                     ${getTotalAmount().toFixed(2)}{' '}
                     {paymentConfig?.settings?.currency || 'USD'}
                   </span>
@@ -1123,7 +1123,7 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
         <div className='mt-4 p-3 bg-light rounded small'>
           <i className='ti ti-shield-check me-2 text-success'></i>
           <strong>Secure Payment:</strong>{' '}
-          <span className='text-white'>
+          <span className='text-dark'>
             Your payment information is encrypted and processed securely by{' '}
             {paymentSystem.charAt(0).toUpperCase() + paymentSystem.slice(1)}.
             {paymentSystem === 'square' &&
