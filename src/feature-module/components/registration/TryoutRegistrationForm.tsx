@@ -951,9 +951,9 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
 
             {effectiveTryoutConfig.refundPolicy && (
               <div className='alert alert-light mt-3'>
-                <i className='ti ti-info-circle text-white me-2'></i>
+                <i className='ti ti-info-circle text-dark me-2'></i>
                 <strong>Refund Policy:</strong>{' '}
-                <span className='text-white'>
+                <span className='text-dark'>
                   {effectiveTryoutConfig.refundPolicy}
                 </span>
               </div>
