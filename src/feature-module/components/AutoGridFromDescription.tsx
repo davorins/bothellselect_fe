@@ -913,7 +913,7 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
           {/* Pricing Section for Tryouts */}
           {typeof config.tryoutFee === 'number' && config.tryoutFee > 0 && (
             <div className='agd-tile'>
-              <TileHead icon='ti-currency-dollar' label='Pricing' />
+              <TileHead icon='ti-currency-dollar' label='Price' />
               <div className='agd-base-price'>
                 <span className='agd-base-price-amount'>
                   ${config.tryoutFee}
