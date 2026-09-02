@@ -6,6 +6,7 @@ import {
   PricingPackage,
   TournamentSpecificConfig,
   TryoutSpecificConfig,
+  TryoutLocation,
 } from '../../types/registration-types';
 
 interface FormPreviewProps {
@@ -17,6 +18,27 @@ interface FormPreviewProps {
   isTryoutView?: boolean;
   previewType?: 'training' | 'tournament' | 'tryout';
 }
+
+// ✅ Type guard to check if location is a TryoutLocation object
+const isTryoutLocation = (loc: any): loc is TryoutLocation => {
+  return loc && typeof loc === 'object' && 'name' in loc;
+};
+
+// ✅ Helper to get location display string
+const getLocationDisplay = (location: any): string => {
+  if (!location) return '';
+  if (typeof location === 'string') return location;
+  if (isTryoutLocation(location)) return location.name || '';
+  return '';
+};
+
+// ✅ Helper to get location array as strings
+const getLocationStrings = (locations: any[] | undefined): string[] => {
+  if (!locations || !Array.isArray(locations) || locations.length === 0) {
+    return [];
+  }
+  return locations.map((loc) => getLocationDisplay(loc)).filter(Boolean);
+};
 
 const FormPreview: React.FC<FormPreviewProps> = ({
   seasonEvent,
@@ -87,8 +109,8 @@ const FormPreview: React.FC<FormPreviewProps> = ({
               {isTournament
                 ? 'Add a tournament description in the configuration to see it here.'
                 : isTryout
-                ? 'Add a tryout description in the configuration to see it here.'
-                : 'Add a training description in the configuration to see it here.'}
+                  ? 'Add a tryout description in the configuration to see it here.'
+                  : 'Add a training description in the configuration to see it here.'}
             </p>
           </div>
         </div>
@@ -125,10 +147,10 @@ const FormPreview: React.FC<FormPreviewProps> = ({
             {isTournament
               ? 'No tournament configuration exists yet.'
               : isTryout
-              ? 'No tryout configuration exists yet.'
-              : `No configuration exists for ${
-                  seasonEvent?.season || 'this season'
-                } ${seasonEvent?.year || ''}.`}
+                ? 'No tryout configuration exists yet.'
+                : `No configuration exists for ${
+                    seasonEvent?.season || 'this season'
+                  } ${seasonEvent?.year || ''}.`}
             Please configure the form first.
           </p>
         </Card.Body>
@@ -145,8 +167,18 @@ const FormPreview: React.FC<FormPreviewProps> = ({
   const isActive = isTournament
     ? tournamentConfig?.isActive || false
     : isTryout
-    ? tryoutConfig?.isActive || false
-    : formConfig?.isActive || false;
+      ? tryoutConfig?.isActive || false
+      : formConfig?.isActive || false;
+
+  // ✅ Get location strings for display - using the helper functions
+  const tryoutLocationStrings =
+    isTryout && tryoutConfig ? getLocationStrings(tryoutConfig.locations) : [];
+  const tournamentLocationStrings =
+    isTournament && tournamentConfig
+      ? (tournamentConfig.locations || [])
+          .map((loc: any) => (typeof loc === 'string' ? loc : loc?.name || ''))
+          .filter(Boolean)
+      : [];
 
   return (
     <div className='form-preview'>
@@ -156,8 +188,8 @@ const FormPreview: React.FC<FormPreviewProps> = ({
             {isTournament
               ? 'Tournament Registration Preview'
               : isTryout
-              ? 'Tryout Registration Preview'
-              : 'Training Registration Preview'}
+                ? 'Tryout Registration Preview'
+                : 'Training Registration Preview'}
             {seasonEvent &&
               isTraining &&
               ` - ${seasonEvent.season} ${seasonEvent.year}`}
@@ -213,17 +245,21 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                   {tryoutConfig.registrationDeadline && (
                     <p className='mb-1'>
                       <strong>Registration Deadline:</strong>{' '}
-                      {new Date(
-                        tryoutConfig.registrationDeadline
-                      ).toLocaleDateString()}
+                      {typeof tryoutConfig.registrationDeadline === 'string'
+                        ? tryoutConfig.registrationDeadline
+                        : new Date(
+                            tryoutConfig.registrationDeadline,
+                          ).toLocaleDateString()}
                     </p>
                   )}
                   {tryoutConfig.paymentDeadline && (
                     <p className='mb-1'>
                       <strong>Payment Deadline:</strong>{' '}
-                      {new Date(
-                        tryoutConfig.paymentDeadline
-                      ).toLocaleDateString()}
+                      {typeof tryoutConfig.paymentDeadline === 'string'
+                        ? tryoutConfig.paymentDeadline
+                        : new Date(
+                            tryoutConfig.paymentDeadline,
+                          ).toLocaleDateString()}
                     </p>
                   )}
                 </div>
@@ -285,25 +321,28 @@ const FormPreview: React.FC<FormPreviewProps> = ({
               </div>
 
               {/* Tryout Dates */}
-              {tryoutConfig.tryoutDates?.length > 0 && (
-                <div className='mb-3'>
-                  <h6>Tryout Dates:</h6>
-                  <div className='d-flex flex-wrap gap-2'>
-                    {tryoutConfig.tryoutDates?.map((date, index) => (
-                      <Badge key={index} bg='primary'>
-                        {new Date(date).toLocaleDateString()}
-                      </Badge>
-                    ))}
+              {tryoutConfig.tryoutDates &&
+                tryoutConfig.tryoutDates.length > 0 && (
+                  <div className='mb-3'>
+                    <h6>Tryout Dates:</h6>
+                    <div className='d-flex flex-wrap gap-2'>
+                      {tryoutConfig.tryoutDates.map((date, index) => (
+                        <Badge key={index} bg='primary'>
+                          {typeof date === 'string'
+                            ? date
+                            : new Date(date).toLocaleDateString()}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Locations */}
-              {tryoutConfig.locations?.length > 0 && (
+              {/* ✅ Locations - Fixed */}
+              {tryoutLocationStrings.length > 0 && (
                 <div className='mb-3'>
                   <h6>Locations:</h6>
                   <div className='d-flex flex-wrap gap-2'>
-                    {tryoutConfig.locations?.map((location, index) => (
+                    {tryoutLocationStrings.map((location, index) => (
                       <Badge key={index} bg='info'>
                         {location}
                       </Badge>
@@ -340,17 +379,21 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                   {tournamentConfig.registrationDeadline && (
                     <p className='mb-1'>
                       <strong>Registration Deadline:</strong>{' '}
-                      {new Date(
-                        tournamentConfig.registrationDeadline
-                      ).toLocaleDateString()}
+                      {typeof tournamentConfig.registrationDeadline === 'string'
+                        ? tournamentConfig.registrationDeadline
+                        : new Date(
+                            tournamentConfig.registrationDeadline,
+                          ).toLocaleDateString()}
                     </p>
                   )}
                   {tournamentConfig.paymentDeadline && (
                     <p className='mb-1'>
                       <strong>Payment Deadline:</strong>{' '}
-                      {new Date(
-                        tournamentConfig.paymentDeadline
-                      ).toLocaleDateString()}
+                      {typeof tournamentConfig.paymentDeadline === 'string'
+                        ? tournamentConfig.paymentDeadline
+                        : new Date(
+                            tournamentConfig.paymentDeadline,
+                          ).toLocaleDateString()}
                     </p>
                   )}
                 </div>
@@ -400,25 +443,28 @@ const FormPreview: React.FC<FormPreviewProps> = ({
               </div>
 
               {/* Tournament Dates */}
-              {tournamentConfig.tournamentDates?.length > 0 && (
-                <div className='mb-3'>
-                  <h6>Tournament Dates:</h6>
-                  <div className='d-flex flex-wrap gap-2'>
-                    {tournamentConfig.tournamentDates?.map((date, index) => (
-                      <Badge key={index} bg='primary'>
-                        {new Date(date).toLocaleDateString()}
-                      </Badge>
-                    ))}
+              {tournamentConfig.tournamentDates &&
+                tournamentConfig.tournamentDates.length > 0 && (
+                  <div className='mb-3'>
+                    <h6>Tournament Dates:</h6>
+                    <div className='d-flex flex-wrap gap-2'>
+                      {tournamentConfig.tournamentDates.map((date, index) => (
+                        <Badge key={index} bg='primary'>
+                          {typeof date === 'string'
+                            ? date
+                            : new Date(date).toLocaleDateString()}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Locations */}
-              {tournamentConfig.locations?.length > 0 && (
+              {/* ✅ Locations - Fixed */}
+              {tournamentLocationStrings.length > 0 && (
                 <div className='mb-3'>
                   <h6>Locations:</h6>
                   <div className='d-flex flex-wrap gap-2'>
-                    {tournamentConfig.locations?.map((location, index) => (
+                    {tournamentLocationStrings.map((location, index) => (
                       <Badge key={index} bg='info'>
                         {location}
                       </Badge>
@@ -428,18 +474,19 @@ const FormPreview: React.FC<FormPreviewProps> = ({
               )}
 
               {/* Divisions */}
-              {tournamentConfig.divisions?.length > 0 && (
-                <div className='mb-4'>
-                  <h6>Divisions:</h6>
-                  <div className='d-flex flex-wrap gap-2'>
-                    {tournamentConfig.divisions?.map((division, index) => (
-                      <Badge key={index} bg='secondary'>
-                        {division}
-                      </Badge>
-                    ))}
+              {tournamentConfig.divisions &&
+                tournamentConfig.divisions.length > 0 && (
+                  <div className='mb-4'>
+                    <h6>Divisions:</h6>
+                    <div className='d-flex flex-wrap gap-2'>
+                      {tournamentConfig.divisions.map((division, index) => (
+                        <Badge key={index} bg='secondary'>
+                          {division}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Tournament Documents */}
               {(tournamentConfig.rulesDocumentUrl ||
@@ -488,23 +535,23 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                       {isTournament
                         ? 'Tournament Fee (per team)'
                         : isTryout
-                        ? 'Tryout Fee (per player)'
-                        : 'Base Price'}
+                          ? 'Tryout Fee (per player)'
+                          : 'Base Price'}
                     </h6>
                     <p className='h4 text-primary'>
                       $
                       {isTournament
                         ? tournamentFee
                         : isTryout
-                        ? tryoutFee
-                        : basePrice}
+                          ? tryoutFee
+                          : basePrice}
                     </p>
                     <small className='text-muted'>
                       {isTournament
                         ? 'Per team registration fee'
                         : isTryout
-                        ? 'Per player tryout fee'
-                        : 'Applied when no packages are selected'}
+                          ? 'Per player tryout fee'
+                          : 'Applied when no packages are selected'}
                     </small>
                   </div>
                 </div>
@@ -549,7 +596,7 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                         </div>
                       </div>
                     </div>
-                  )
+                  ),
                 )}
               </div>
             </div>
@@ -565,8 +612,8 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                   {isTournament
                     ? 'tournament registration'
                     : isTryout
-                    ? 'tryout registration'
-                    : 'form'}
+                      ? 'tryout registration'
+                      : 'form'}
                   , they will see:
                 </p>
                 <ul className='mb-0'>
@@ -577,8 +624,8 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                         {isTournament
                           ? 'Tournament'
                           : isTryout
-                          ? 'Tryout'
-                          : 'Form'}{' '}
+                            ? 'Tryout'
+                            : 'Form'}{' '}
                         is visible and accessible
                       </>
                     ) : (
@@ -587,8 +634,8 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                         {isTournament
                           ? 'Tournament'
                           : isTryout
-                          ? 'Tryout'
-                          : 'Form'}{' '}
+                            ? 'Tryout'
+                            : 'Form'}{' '}
                         is hidden from users
                       </>
                     )}
@@ -617,39 +664,44 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                   </li>
                   {isTournament && tournamentConfig ? (
                     <>
-                      {tournamentConfig.tournamentDates?.length > 0 && (
-                        <li>
-                          <i className='ti ti-calendar text-primary me-2'></i>
-                          {tournamentConfig.tournamentDates.length} tournament
-                          date(s)
-                        </li>
-                      )}
-                      {tournamentConfig.locations?.length > 0 && (
+                      {tournamentConfig.tournamentDates &&
+                        tournamentConfig.tournamentDates.length > 0 && (
+                          <li>
+                            <i className='ti ti-calendar text-primary me-2'></i>
+                            {tournamentConfig.tournamentDates.length} tournament
+                            date(s)
+                          </li>
+                        )}
+                      {tournamentLocationStrings.length > 0 && (
                         <li>
                           <i className='ti ti-map-pin text-primary me-2'></i>
-                          {tournamentConfig.locations.length} location(s)
+                          {tournamentLocationStrings.length} location(s)
                         </li>
                       )}
-                      {tournamentConfig.divisions?.length > 0 && (
-                        <li>
-                          <i className='ti ti-trophy text-primary me-2'></i>
-                          {tournamentConfig.divisions.length} division(s):{' '}
-                          {tournamentConfig.divisions.join(', ')}
-                        </li>
-                      )}
+                      {tournamentConfig.divisions &&
+                        tournamentConfig.divisions.length > 0 && (
+                          <li>
+                            <i className='ti ti-trophy text-primary me-2'></i>
+                            {
+                              tournamentConfig.divisions.length
+                            } division(s):{' '}
+                            {tournamentConfig.divisions.join(', ')}
+                          </li>
+                        )}
                     </>
                   ) : isTryout && tryoutConfig ? (
                     <>
-                      {tryoutConfig.tryoutDates?.length > 0 && (
-                        <li>
-                          <i className='ti ti-calendar text-primary me-2'></i>
-                          {tryoutConfig.tryoutDates.length} tryout date(s)
-                        </li>
-                      )}
-                      {tryoutConfig.locations?.length > 0 && (
+                      {tryoutConfig.tryoutDates &&
+                        tryoutConfig.tryoutDates.length > 0 && (
+                          <li>
+                            <i className='ti ti-calendar text-primary me-2'></i>
+                            {tryoutConfig.tryoutDates.length} tryout date(s)
+                          </li>
+                        )}
+                      {tryoutLocationStrings.length > 0 && (
                         <li>
                           <i className='ti ti-map-pin text-primary me-2'></i>
-                          {tryoutConfig.locations.length} location(s)
+                          {tryoutLocationStrings.length} location(s)
                         </li>
                       )}
                     </>
