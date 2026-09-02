@@ -3,7 +3,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useMarketing } from '../../context/MarketingContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-// ✅ Import the specific forms
 import TryoutRegistrationForm from '../components/registration/TryoutRegistrationForm';
 import TrainingRegistrationForm from '../components/registration/TrainingRegistrationForm';
 import TournamentRegistrationForm from '../components/registration/TournamentRegistrationForm';
@@ -45,10 +44,6 @@ interface EventConfig {
   tryoutName?: string;
   tryoutYear?: number;
   displayName?: string;
-  // These will be populated by the form itself
-  tryoutDetails?: any;
-  trainingDetails?: any;
-  tournamentDetails?: any;
 }
 
 interface EventPageProps {
@@ -133,7 +128,6 @@ const EventPage: React.FC<EventPageProps> = ({
     try {
       setLoading(true);
 
-      // ✅ Only fetch the basic event config
       const response = await axios.get(
         `${API_BASE_URL}/event-config/public/${eventType}`,
       );
@@ -348,8 +342,9 @@ const EventPage: React.FC<EventPageProps> = ({
               <div className='event-form-glass'>
                 {config.registrationOpen ? (
                   <>
+                    {/* ✅ REMOVED duplicate header - the TryoutRegistrationForm displays its own */}
+
                     <div className='event-registration-container'>
-                      {/* ✅ Let the form fetch its own data */}
                       {eventType === 'tryout' && (
                         <TryoutRegistrationForm
                           seasonEvent={{
