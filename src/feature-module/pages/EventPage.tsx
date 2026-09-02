@@ -290,119 +290,63 @@ const EventPage: React.FC<EventPageProps> = ({
 
       console.log('📦 Basic event config loaded:', configData);
 
-      // ✅ Step 2: Try to fetch full tryout config from the admin endpoint
-      // This is the same endpoint the home page uses
-      if (eventType === 'tryout' && configData.title) {
+      // ✅ Step 2: Try to fetch full config with details from the event-config endpoint
+      // The event config might already have the details embedded
+      if (configData.tryoutDetails) {
+        console.log(
+          '✅ tryoutDetails already in config:',
+          configData.tryoutDetails,
+        );
+      } else {
+        // If not, try to fetch from a different endpoint
+        // Try the registration-config endpoint that the home page might use
         try {
-          // Extract season and year from the config title
-          const season = configData.title;
-          const year = new Date(configData.startDate).getFullYear();
+          // Try different possible endpoints
+          const possibleEndpoints = [
+            `${API_BASE_URL}/event-config/tryout/${configData._id}`,
+            `${API_BASE_URL}/event-config/tryout/details/${configData._id}`,
+            `${API_BASE_URL}/admin/tryout-configs/current`,
+            `${API_BASE_URL}/tryout-configs/${configData.title}/${new Date(configData.startDate).getFullYear()}`,
+          ];
 
-          // Try to fetch the full tryout config
-          const fullConfigResponse = await axios.get(
-            `${API_BASE_URL}/admin/tryout-configs/${encodeURIComponent(season)}/${year}`,
-          );
-
-          if (
-            fullConfigResponse.data &&
-            fullConfigResponse.data.tryoutDetails
-          ) {
-            // ✅ Merge the tryoutDetails into our config
-            configData.tryoutDetails = fullConfigResponse.data.tryoutDetails;
-            configData.tryoutFee =
-              fullConfigResponse.data.tryoutFee || configData.tryoutFee;
-            configData.tryoutName =
-              fullConfigResponse.data.tryoutName || configData.title;
-            configData.tryoutYear = fullConfigResponse.data.tryoutYear || year;
-            configData.registrationDeadline =
-              fullConfigResponse.data.registrationDeadline ||
-              configData.registrationDeadline;
-            configData.requiresInsurance =
-              fullConfigResponse.data.requiresInsurance || false;
-            configData.refundPolicy =
-              fullConfigResponse.data.refundPolicy || configData.refundPolicy;
-
-            // If location is empty in basic config, try to get it from tryoutDetails
-            if (
-              !configData.location?.name &&
-              configData.tryoutDetails?.tryoutSessions?.length > 0
-            ) {
-              const session = configData.tryoutDetails.tryoutSessions[0];
-              if (session?.location?.name) {
-                configData.location = {
-                  name: session.location.name,
-                  address: session.location.address || '',
-                  city: session.location.city || '',
-                  state: session.location.state || '',
-                  zip: session.location.zipCode || '',
-                };
+          for (const endpoint of possibleEndpoints) {
+            try {
+              const fullResponse = await axios.get(endpoint);
+              if (fullResponse.data && fullResponse.data.tryoutDetails) {
+                configData.tryoutDetails = fullResponse.data.tryoutDetails;
+                configData.tryoutFee =
+                  fullResponse.data.tryoutFee || configData.tryoutFee;
+                configData.tryoutName =
+                  fullResponse.data.tryoutName || configData.title;
+                configData.tryoutYear =
+                  fullResponse.data.tryoutYear ||
+                  new Date(configData.startDate).getFullYear();
+                console.log(`✅ Full config loaded from: ${endpoint}`);
+                break;
               }
+            } catch (e) {
+              // Continue to next endpoint
+              console.log(`⚠️ Endpoint ${endpoint} failed, trying next...`);
             }
-
-            console.log('✅ Full tryout config merged:', {
-              tryoutFee: configData.tryoutFee,
-              hasTryoutDetails: !!configData.tryoutDetails,
-              tryoutSessions:
-                configData.tryoutDetails?.tryoutSessions?.length || 0,
-            });
           }
         } catch (fullConfigError) {
-          // This is not a critical error - we can continue with basic config
-          console.log(
-            'ℹ️ Could not fetch full tryout config, using basic config:',
-            fullConfigError,
-          );
+          console.log('ℹ️ Could not fetch full config, using basic config');
         }
       }
 
-      // ✅ Step 3: Try to fetch training details if applicable
-      if (eventType === 'training' && configData.title) {
-        try {
-          const season = configData.title;
-          const year = new Date(configData.startDate).getFullYear();
-
-          const fullConfigResponse = await axios.get(
-            `${API_BASE_URL}/admin/training-configs/${encodeURIComponent(season)}/${year}`,
-          );
-
-          if (
-            fullConfigResponse.data &&
-            fullConfigResponse.data.trainingDetails
-          ) {
-            configData.trainingDetails =
-              fullConfigResponse.data.trainingDetails;
-            console.log('✅ Full training config merged');
-          }
-        } catch (fullConfigError) {
-          console.log(
-            'ℹ️ Could not fetch full training config, using basic config',
-          );
+      // ✅ Step 3: Also try to fetch from the form config endpoint if it exists
+      try {
+        // Try a different approach - maybe the data is in the form config
+        const formConfigResponse = await axios.get(
+          `${API_BASE_URL}/admin/registration-configs/event/${eventType}`,
+        );
+        if (formConfigResponse.data && formConfigResponse.data.tryoutDetails) {
+          configData.tryoutDetails = formConfigResponse.data.tryoutDetails;
+          console.log('✅ Full config loaded from admin/registration-configs');
         }
-      }
-
-      // ✅ Step 4: Try to fetch tournament details if applicable
-      if (eventType === 'tournament' && configData.title) {
-        try {
-          const season = configData.title;
-          const year = new Date(configData.startDate).getFullYear();
-
-          const fullConfigResponse = await axios.get(
-            `${API_BASE_URL}/admin/tournament-configs/${encodeURIComponent(season)}/${year}`,
-          );
-
-          if (
-            fullConfigResponse.data &&
-            fullConfigResponse.data.tournamentDetails
-          ) {
-            configData.tournamentDetails =
-              fullConfigResponse.data.tournamentDetails;
-            console.log('✅ Full tournament config merged');
-          }
-        } catch (fullConfigError) {
-          console.log(
-            'ℹ️ Could not fetch full tournament config, using basic config',
-          );
-        }
+      } catch (e) {
+        // This is optional, continue
+        console.log('ℹ️ Could not fetch from admin/registration-configs');
       }
 
       setConfig(configData);
@@ -614,7 +558,7 @@ const EventPage: React.FC<EventPageProps> = ({
                 {config.registrationOpen && registrationConfig ? (
                   <>
                     <div className='event-registration-container'>
-                      {/* ✅ Use specific forms directly (same as home page) */}
+                      {/* ✅ Use specific forms directly */}
                       {eventType === 'tryout' && (
                         <TryoutRegistrationForm
                           tryoutConfig={registrationConfig}
