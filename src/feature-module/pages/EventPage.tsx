@@ -78,6 +78,29 @@ const EventPage: React.FC<EventPageProps> = ({
 
   const { getMarketingAttribution } = useMarketing();
 
+  // ✅ Helper function to safely get location name
+  const getLocationName = (location: any): string => {
+    if (!location) return 'TBD';
+    if (typeof location === 'string') return location;
+    return location.name || 'TBD';
+  };
+
+  // ✅ Helper function to safely get location display string
+  const getLocationDisplay = (location: any): string => {
+    if (!location) return '';
+    if (typeof location === 'string') return location;
+
+    const parts = [
+      location.name,
+      location.address,
+      location.city,
+      location.state,
+      location.zip,
+    ].filter((part: string) => part && part.trim && part.trim() !== '');
+
+    return parts.length > 0 ? parts.join(', ') : '';
+  };
+
   // ✅ Track ViewContent event
   useEffect(() => {
     if (config) {
@@ -130,7 +153,7 @@ const EventPage: React.FC<EventPageProps> = ({
         if (formResponse.data.success && formResponse.data.config) {
           const formData = formResponse.data.config;
 
-          // Merge additional fields from form config (without TypeScript errors)
+          // Merge additional fields from form config
           configData.registrationDeadline =
             formData.registrationDeadline || configData.registrationDeadline;
           configData.insuranceRequired = formData.requiresInsurance || false;
@@ -148,6 +171,10 @@ const EventPage: React.FC<EventPageProps> = ({
             formData.tryoutFee ||
             formData.pricing?.basePrice ||
             configData.price;
+          // Fix: Use location from form config if available
+          if (formData.location && formData.location.name) {
+            configData.location = formData.location;
+          }
 
           console.log('📦 Merged config data:', configData);
         }
@@ -170,6 +197,7 @@ const EventPage: React.FC<EventPageProps> = ({
         registrationDeadline: configData.registrationDeadline,
         insuranceRequired: configData.insuranceRequired,
         refundPolicy: configData.refundPolicy,
+        locationName: configData.location?.name,
       });
     } catch (err) {
       console.error(`Error fetching ${eventType} config:`, err);
@@ -186,17 +214,20 @@ const EventPage: React.FC<EventPageProps> = ({
       displayName: config.displayName || config.title,
       registrationDeadline: config.registrationDeadline || '',
       tryoutDates: [config.startDate],
-      locations: config.location
-        ? [
-            {
-              name: config.location.name,
-              address: config.location.address,
-              city: config.location.city,
-              state: config.location.state,
-              zipCode: config.location.zip,
-            },
-          ]
-        : [],
+      locations:
+        config.location &&
+        config.location.name &&
+        config.location.name.trim() !== ''
+          ? [
+              {
+                name: config.location.name,
+                address: config.location.address || '',
+                city: config.location.city || '',
+                state: config.location.state || '',
+                zipCode: config.location.zip || '',
+              },
+            ]
+          : [],
       divisions: [],
       ageGroups: config.ageGroups || [],
       requiresPayment: (config.tryoutFee || config.price || 0) > 0,
@@ -293,85 +324,91 @@ const EventPage: React.FC<EventPageProps> = ({
       <div className='event-content-wrapper'>
         {/* ─── HERO SECTION - Full Width ────────────────────── */}
         <section className='event-hero-section'>
-          <div className='event-hero-content'>
-            <div className='event-hero-icon' style={{ color }}>
-              <i className={`ti ${icon}`} />
-            </div>
-            <h1 className='event-hero-title' style={{ color }}>
-              {title}
-            </h1>
-            <h2 className='event-hero-subtitle'>
-              {config.displayName || config.title}
-            </h2>
-            <p className='event-hero-description'>{config.description}</p>
-            <div className='event-hero-facts'>
-              <div className='hero-fact'>
-                <span className='hero-fact-label'>Date</span>
-                <span className='hero-fact-value'>{formattedDate}</span>
+          <div className='event-hero-glass'>
+            <div className='event-hero-content'>
+              <div className='event-hero-icon' style={{ color }}>
+                <i className={`ti ${icon}`} />
               </div>
-              <div className='hero-fact'>
-                <span className='hero-fact-label'>Time</span>
-                <span className='hero-fact-value'>
-                  {config.startTime} – {config.endTime}
-                </span>
-              </div>
-              <div className='hero-fact'>
-                <span className='hero-fact-label'>Location</span>
-                <span className='hero-fact-value'>{config.location?.name}</span>
-              </div>
-              {config.grades && (
+              <h1 className='event-hero-title' style={{ color }}>
+                {title}
+              </h1>
+              <h2 className='event-hero-subtitle'>
+                {config.displayName || config.title}
+              </h2>
+              <p className='event-hero-description'>{config.description}</p>
+              <div className='event-hero-facts'>
                 <div className='hero-fact'>
-                  <span className='hero-fact-label'>Grades</span>
-                  <span className='hero-fact-value'>{config.grades}</span>
+                  <span className='hero-fact-label'>Date</span>
+                  <span className='hero-fact-value'>{formattedDate}</span>
                 </div>
-              )}
-              {config.gender && (
                 <div className='hero-fact'>
-                  <span className='hero-fact-label'>Gender</span>
-                  <span className='hero-fact-value'>{config.gender}</span>
+                  <span className='hero-fact-label'>Time</span>
+                  <span className='hero-fact-value'>
+                    {config.startTime} – {config.endTime}
+                  </span>
                 </div>
-              )}
-              <div className='hero-fact'>
-                <span className='hero-fact-label'>Status</span>
-                <span
-                  className='hero-fact-value'
-                  style={{
-                    color: config.registrationOpen ? '#4ade80' : '#fbbf24',
-                  }}
-                >
-                  {config.registrationOpen
-                    ? '✅ Registration Open'
-                    : '📋 Coming Soon'}
-                </span>
-              </div>
-              {config.registrationOpen &&
-                (config.tryoutFee || config.price) > 0 && (
-                  <div className='hero-fact hero-fact-price'>
-                    <span className='hero-fact-label'>Registration Fee</span>
-                    <span className='hero-fact-value price-amount'>
-                      ${config.tryoutFee || config.price}
+                <div className='hero-fact'>
+                  <span className='hero-fact-label'>Location</span>
+                  <span className='hero-fact-value'>
+                    {getLocationName(config.location)}
+                  </span>
+                </div>
+                {config.grades && (
+                  <div className='hero-fact'>
+                    <span className='hero-fact-label'>Grades</span>
+                    <span className='hero-fact-value'>{config.grades}</span>
+                  </div>
+                )}
+                {config.gender && (
+                  <div className='hero-fact'>
+                    <span className='hero-fact-label'>Gender</span>
+                    <span className='hero-fact-value'>{config.gender}</span>
+                  </div>
+                )}
+                <div className='hero-fact'>
+                  <span className='hero-fact-label'>Status</span>
+                  <span
+                    className='hero-fact-value'
+                    style={{
+                      color: config.registrationOpen ? '#4ade80' : '#fbbf24',
+                    }}
+                  >
+                    {config.registrationOpen
+                      ? '✅ Registration Open'
+                      : '📋 Coming Soon'}
+                  </span>
+                </div>
+                {config.registrationOpen &&
+                  (config.tryoutFee || config.price) > 0 && (
+                    <div className='hero-fact hero-fact-price'>
+                      <span className='hero-fact-label'>Registration Fee</span>
+                      <span className='hero-fact-value price-amount'>
+                        ${config.tryoutFee || config.price}
+                      </span>
+                    </div>
+                  )}
+                {config.registrationDeadline && (
+                  <div className='hero-fact'>
+                    <span className='hero-fact-label'>
+                      Registration Deadline
+                    </span>
+                    <span className='hero-fact-value'>
+                      {config.registrationDeadline}
                     </span>
                   </div>
                 )}
-              {config.registrationDeadline && (
-                <div className='hero-fact'>
-                  <span className='hero-fact-label'>Registration Deadline</span>
-                  <span className='hero-fact-value'>
-                    {config.registrationDeadline}
-                  </span>
-                </div>
-              )}
-              {config.insuranceRequired && (
-                <div className='hero-fact'>
-                  <span className='hero-fact-label'>Insurance</span>
-                  <span
-                    className='hero-fact-value'
-                    style={{ color: '#fbbf24' }}
-                  >
-                    Required
-                  </span>
-                </div>
-              )}
+                {config.insuranceRequired && (
+                  <div className='hero-fact'>
+                    <span className='hero-fact-label'>Insurance</span>
+                    <span
+                      className='hero-fact-value'
+                      style={{ color: '#fbbf24' }}
+                    >
+                      Required
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </section>
@@ -410,6 +447,8 @@ const EventPage: React.FC<EventPageProps> = ({
                         Complete the form below to register for{' '}
                         {config.displayName || config.title}.
                       </p>
+
+                      {/* Tryout Fee */}
                       {(config.tryoutFee || config.price) !== undefined &&
                         (config.tryoutFee || config.price) > 0 && (
                           <p
@@ -425,6 +464,35 @@ const EventPage: React.FC<EventPageProps> = ({
                             per player
                           </p>
                         )}
+
+                      {/* Tryout Dates - FIX: Use config directly */}
+                      {config.startDate && (
+                        <p
+                          className='event-form-dates'
+                          style={{
+                            color: 'rgba(255,255,255,0.8)',
+                            marginTop: '4px',
+                          }}
+                        >
+                          Tryout Dates: <strong>{formattedDate}</strong>
+                        </p>
+                      )}
+
+                      {/* Location - FIX: Use getLocationDisplay helper */}
+                      {getLocationDisplay(config.location) && (
+                        <p
+                          className='event-form-location'
+                          style={{
+                            color: 'rgba(255,255,255,0.8)',
+                            marginTop: '4px',
+                          }}
+                        >
+                          Locations:{' '}
+                          <strong>{getLocationDisplay(config.location)}</strong>
+                        </p>
+                      )}
+
+                      {/* Registration Deadline */}
                       {config.registrationDeadline && (
                         <p
                           className='event-form-deadline'
@@ -437,6 +505,8 @@ const EventPage: React.FC<EventPageProps> = ({
                           <strong>{config.registrationDeadline}</strong>
                         </p>
                       )}
+
+                      {/* Insurance Required */}
                       {config.insuranceRequired && (
                         <p
                           className='event-form-insurance'
@@ -446,6 +516,8 @@ const EventPage: React.FC<EventPageProps> = ({
                           insurance.
                         </p>
                       )}
+
+                      {/* Refund Policy */}
                       {config.refundPolicy && (
                         <p
                           className='event-form-refund'
@@ -514,7 +586,7 @@ const EventPage: React.FC<EventPageProps> = ({
                       <div className='coming-soon-detail'>
                         <span className='detail-label'>Location</span>
                         <span className='detail-value'>
-                          {config.location?.name}
+                          {getLocationName(config.location)}
                         </span>
                       </div>
                       {config.grades && (
@@ -629,20 +701,7 @@ const EventPage: React.FC<EventPageProps> = ({
                       <i className='ti ti-map-pin' /> Location
                     </h3>
                     <p className='details-text'>
-                      {config.location?.name}
-                      {config.location?.address && (
-                        <>
-                          <br />
-                          {config.location.address}
-                        </>
-                      )}
-                      {config.location?.city && (
-                        <>
-                          <br />
-                          {config.location.city}, {config.location.state}{' '}
-                          {config.location.zip}
-                        </>
-                      )}
+                      {getLocationDisplay(config.location) || 'Location TBD'}
                     </p>
                     <p className='details-note'>
                       Arrive 30 minutes early for check-in.
