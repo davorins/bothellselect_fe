@@ -22,7 +22,7 @@ import ThemeSettings from './core/common/theme-settings';
 // ✅ META PIXEL INTEGRATION
 import ReactPixel from 'react-facebook-pixel';
 
-const PIXEL_ID = '1332894629905225';
+const PIXEL_ID = '1367496575453255';
 
 const pixelOptions = {
   autoConfig: true,
