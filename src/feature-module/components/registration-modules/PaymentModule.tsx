@@ -28,6 +28,7 @@ import {
   CloverConfig,
 } from '../../../types/paymentTypes';
 import CloverPaymentForm from '../CloverPaymentForm';
+import ReactPixel from 'react-facebook-pixel';
 
 interface EnhancedPaymentModuleProps extends PaymentModuleProps {
   formConfig?: RegistrationFormConfig;
@@ -641,6 +642,31 @@ const PaymentModule: React.FC<EnhancedPaymentModuleProps> = ({
       );
 
       if (response.data.success) {
+        // ✅ FACEBOOK PIXEL TRACKING - Purchase Conversion
+        try {
+          // Track Purchase event
+          ReactPixel.track('Purchase', {
+            value: paymentData.amount / 100, // Amount in dollars
+            currency: 'USD',
+            content_name: `${registrationType} Registration - Bothell Select`,
+            content_category: 'Sports Registration',
+            content_type: 'product',
+            num_items: paymentData.players?.length || 1,
+          });
+
+          // Track CompleteRegistration event (standard event)
+          ReactPixel.track('CompleteRegistration', {
+            value: paymentData.amount / 100,
+            currency: 'USD',
+            content_name: registrationType,
+          });
+
+          console.log('✅ Facebook Pixel - Registration tracked successfully');
+        } catch (pixelError) {
+          console.warn('⚠️ Facebook Pixel tracking error:', pixelError);
+          // Don't fail the payment if pixel tracking fails
+        }
+
         const successData = {
           success: true,
           paymentId: response.data.paymentId,

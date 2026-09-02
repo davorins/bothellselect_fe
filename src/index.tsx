@@ -19,8 +19,23 @@ import { AuthProvider } from './context/AuthContext';
 import '../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js';
 import ThemeSettings from './core/common/theme-settings';
 
+// ✅ META PIXEL INTEGRATION
+import ReactPixel from 'react-facebook-pixel';
+
+const PIXEL_ID = '1367496575453255';
+
+const pixelOptions = {
+  autoConfig: true,
+  debug: process.env.NODE_ENV === 'development',
+};
+
+ReactPixel.init(PIXEL_ID, undefined, pixelOptions);
+ReactPixel.pageView();
+
+console.log('✅ Meta Pixel initialized with ID:', PIXEL_ID);
+
 const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
+  document.getElementById('root') as HTMLElement,
 );
 
 root.render(
@@ -33,5 +48,5 @@ root.render(
         </AuthProvider>
       </BrowserRouter>
     </Provider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
