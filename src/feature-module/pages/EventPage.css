@@ -617,6 +617,10 @@
   color: #ffffff !important;
 }
 
+.event-registration-container .step-label {
+  color: #ffffff !important;
+}
+
 /* Input group text */
 .event-registration-container .input-group-text {
   background: #f3f4f6 !important;
