@@ -474,13 +474,8 @@ const EventPage: React.FC<EventPageProps> = ({
   if (loading) {
     return (
       <div className='event-page-container'>
-        <div className='event-bg-gradient' />
-        <div className='event-content-wrapper'>
-          <div className='event-status-glass'>
-            <LoadingSpinner />
-            <p>Loading {title} information…</p>
-          </div>
-        </div>
+        <LoadingSpinner />
+        <p>Loading {title} information…</p>
       </div>
     );
   }
