@@ -588,14 +588,6 @@ const EventPage: React.FC<EventPageProps> = ({
                   <span className='hero-fact-value price-amount'>${fee}</span>
                 </div>
               )}
-              {config.registrationDeadline && (
-                <div className='hero-fact'>
-                  <span className='hero-fact-label'>Registration Deadline</span>
-                  <span className='hero-fact-value'>
-                    {config.registrationDeadline}
-                  </span>
-                </div>
-              )}
               {config.insuranceRequired && (
                 <div className='hero-fact'>
                   <span className='hero-fact-label'>Insurance</span>

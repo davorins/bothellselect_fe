@@ -20,6 +20,7 @@ import { useAuth } from '../../../context/AuthContext';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import axios from 'axios';
 import { useMarketing } from '../../../context/MarketingContext';
+import { formatDate, isoToMMDDYYYY } from '../../../utils/dateFormatter';
 
 interface TryoutRegistrationFormProps {
   onSuccess?: (data?: any) => void;
@@ -893,6 +894,20 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
       );
     }
 
+    // ✅ Helper to format the registration deadline correctly
+    const getFormattedDate = (date: any): string => {
+      if (!date) return '';
+      // If it's a string (ISO format from MongoDB), use isoToMMDDYYYY
+      if (typeof date === 'string') {
+        return isoToMMDDYYYY(date);
+      }
+      // If it's a Date object, use formatDate
+      if (date instanceof Date) {
+        return formatDate(date);
+      }
+      return '';
+    };
+
     return (
       <div className='form-content'>
         <div className='card mb-4'>
@@ -916,26 +931,33 @@ const TryoutRegistrationForm: React.FC<TryoutRegistrationFormProps> = ({
                 {effectiveTryoutConfig.registrationDeadline && (
                   <p className='mb-2'>
                     <strong>Registration Deadline:</strong>{' '}
-                    {new Date(
+                    {/* ✅ Use the helper function instead of new Date() */}
+                    {getFormattedDate(
                       effectiveTryoutConfig.registrationDeadline,
-                    ).toLocaleDateString()}
+                    )}
                   </p>
                 )}
               </div>
               <div className='col-md-6'>
-                {effectiveTryoutConfig.tryoutDates.length > 0 && (
-                  <p className='mb-2'>
-                    <strong>Tryout Dates:</strong>{' '}
-                    {effectiveTryoutConfig.tryoutDates
-                      .map((d: string) => new Date(d).toLocaleDateString())
-                      .join(', ')}
-                  </p>
-                )}
+                {effectiveTryoutConfig.tryoutDates &&
+                  effectiveTryoutConfig.tryoutDates.length > 0 && (
+                    <p className='mb-2'>
+                      <strong>Tryout Dates:</strong>{' '}
+                      {effectiveTryoutConfig.tryoutDates
+                        .map((d: string) => isoToMMDDYYYY(d))
+                        .join(', ')}
+                    </p>
+                  )}
                 {effectiveTryoutConfig.locations &&
                   effectiveTryoutConfig.locations.length > 0 && (
                     <p className='mb-2'>
                       <strong>Locations:</strong>{' '}
-                      {effectiveTryoutConfig.locations.join(', ')}
+                      {effectiveTryoutConfig.locations
+                        .map((loc: any) =>
+                          typeof loc === 'string' ? loc : loc.name,
+                        )
+                        .filter(Boolean)
+                        .join(', ')}
                     </p>
                   )}
               </div>
