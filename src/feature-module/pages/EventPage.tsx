@@ -13,6 +13,7 @@ import {
 } from '../../types/registration-types';
 import { formatDate } from '../../utils/dateFormatter';
 import ReactPixel from 'react-facebook-pixel';
+import ImageWithBasePath from '../../core/common/imageWithBasePath';
 import './EventPage.css';
 
 interface EventConfig {
@@ -286,13 +287,6 @@ const EventPage: React.FC<EventPageProps> = ({
 
       console.log('📦 Basic event config loaded:', configData);
 
-      // ✅ Step 2: Try to fetch the full tryout config.
-      // NOTE: We no longer look this up by season/year string — the basic
-      // EventConfig's "title" has no guaranteed relationship to
-      // TryoutConfig's "season" field, so that lookup was fragile and would
-      // silently 404. Instead we fetch the full list (same endpoint/approach
-      // as HomeTileRenderer.tsx and PageRenderer.tsx) and pick whichever one
-      // is flagged isActive.
       if (eventType === 'tryout') {
         try {
           const fullConfigListResponse = await axios.get(
@@ -596,15 +590,11 @@ const EventPage: React.FC<EventPageProps> = ({
         <section className='event-main-section'>
           <div className='event-main-grid'>
             {/* Left - Image */}
-            <div className='event-image-wrapper'>
-              <div className='event-image-container'>
-                <img
-                  src='/assets/img/bg/bg_login.png'
-                  alt={`${title} - Bothell Select`}
-                  className='event-image'
-                />
-              </div>
-            </div>
+            <ImageWithBasePath
+              src='assets/img/theme/player_1.png'
+              alt='Contact Illustration'
+              className='contact-illustration-img'
+            />
 
             {/* Right - Registration Form */}
             <div className='event-form-wrapper'>
