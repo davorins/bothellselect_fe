@@ -1,3 +1,4 @@
+// feature-module/pages/EventPage.tsx - Bothell Select
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
@@ -161,10 +162,6 @@ const EventPage: React.FC<EventPageProps> = ({
         displayName: config.displayName || config.title,
         registrationDeadline: config.registrationDeadline || '',
         tryoutDates: [config.startDate],
-        // ✅ FIX: locations must be an array of name strings — the tryout
-        // info card (TryoutRegistrationForm.tsx) does
-        // `locations.join(', ')`, which produces "[object Object]" if
-        // given full location objects instead.
         locations:
           config.location &&
           config.location.name &&
@@ -591,9 +588,9 @@ const EventPage: React.FC<EventPageProps> = ({
           <div className='event-main-grid'>
             {/* Left - Image */}
             <ImageWithBasePath
-              src='assets/img/theme/player_1.png'
-              alt='Contact Illustration'
-              className='contact-illustration-img'
+              src='assets/img/bg/bg_login.png'
+              alt='Background'
+              className='login-bg-img'
             />
 
             {/* Right - Registration Form */}
