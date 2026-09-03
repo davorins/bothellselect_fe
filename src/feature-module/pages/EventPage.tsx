@@ -599,14 +599,14 @@ const EventPage: React.FC<EventPageProps> = ({
           </div>
         </section>
 
-        {/* ─── MAIN SECTION - Image Left | Form Right ──────── */}
+        {/* ─── Image Left | Form Right ──────── */}
         <section className='event-main-section'>
           <div className='event-main-grid'>
             {/* Left - Image */}
             <ImageWithBasePath
               src='assets/img/bg/bg_login.png'
               alt='Background'
-              className='event-bg-img'
+              className='event-illustration-img'
             />
 
             {/* Right - Registration Form */}
