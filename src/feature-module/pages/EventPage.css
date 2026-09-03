@@ -1378,3 +1378,85 @@
     transition: none !important;
   }
 }
+
+/* Target step labels inside the step indicator */
+.event-form-glass .step-label,
+.event-form-glass .step-indicator .step-label,
+.event-form-glass .step-indicator span,
+.event-form-glass .step .step-label,
+.event-registration-container .step-label,
+.event-registration-container .step-indicator .step-label,
+.event-registration-container .step-indicator span,
+.event-registration-container .step .step-label,
+.tryout-registration-form .step-label,
+.tryout-registration-form .step-indicator .step-label,
+.tryout-registration-form .step-indicator span,
+.tryout-registration-form .step .step-label {
+  color: #ffffff !important;
+}
+
+/* Target step labels specifically */
+.step-label,
+.step-indicator .step-label,
+.step .step-label {
+  color: #ffffff !important;
+}
+
+/* Target the step indicator container and all its children */
+.step-indicator,
+.step-indicator *,
+.step-indicator .step,
+.step-indicator .step-label,
+.step-indicator .step-icon-wrapper i {
+  color: #ffffff !important;
+}
+
+/* Target the "Tryout Registration" heading */
+.form-header h2,
+.form-header .mt-3,
+.tryout-registration-form .form-header h2,
+.tryout-registration-form .form-header .mt-3 {
+  color: #ffffff !important;
+}
+
+/* Target the "Register players for..." text */
+.form-header p,
+.tryout-registration-form .form-header p {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Target the step icons */
+.step-icon-wrapper i,
+.step-indicator .step-icon-wrapper i {
+  color: #ffffff !important;
+}
+
+/* Target active step */
+.step.active .step-label,
+.step.active .step-icon-wrapper i {
+  color: #506ee4 !important;
+}
+
+/* Target completed steps */
+.step.completed .step-label,
+.step.completed .step-icon-wrapper i {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Target the connector lines */
+.step-connector {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.step-connector.active {
+  background: #506ee4 !important;
+}
+
+/* ─── Form Header inside tryout-registration-form ────────── */
+.tryout-registration-form .form-header h2 {
+  color: #ffffff !important;
+}
+
+.tryout-registration-form .form-header p {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
