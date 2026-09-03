@@ -590,7 +590,7 @@ const EventPage: React.FC<EventPageProps> = ({
             <ImageWithBasePath
               src='assets/img/bg/bg_login.png'
               alt='Background'
-              className='login-bg-img'
+              className='event-bg-img'
             />
 
             {/* Right - Registration Form */}
