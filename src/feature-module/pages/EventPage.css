@@ -1,4 +1,4 @@
-/* EventPage.css - Bothell Select Premium glassmorphism design matching Contact Page */
+/* EventPage.css - Bothell Select Premium glassmorphism design */
 
 /* ── Root & Container ──────────────────────────────────────── */
 .event-page-container {
@@ -33,7 +33,6 @@
   }
 }
 
-/* Background gradient */
 .event-bg-gradient {
   position: fixed;
   top: 0;
@@ -55,7 +54,6 @@
   z-index: 0;
 }
 
-/* Animated orbs */
 .event-orb {
   position: fixed;
   border-radius: 50%;
@@ -144,6 +142,7 @@
   margin: 0 0 8px;
   color: #fff;
 }
+
 .status-body {
   color: rgba(255, 255, 255, 0.7);
   margin: 0 0 24px;
@@ -167,12 +166,13 @@
     box-shadow 0.2s ease,
     transform 0.2s ease;
 }
+
 .event-btn-primary:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 24px rgba(80, 110, 228, 0.45);
 }
 
-/* ─── HERO SECTION - Full Width ────────────────────────────── */
+/* ─── HERO SECTION ────────────────────────────────────────── */
 .event-hero-section {
   width: 100%;
   animation: slideInDown 0.8s ease-out;
@@ -189,7 +189,11 @@
   }
 }
 
-.event-hero-glass {
+.event-hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(20px);
   border-radius: 44px;
@@ -199,35 +203,16 @@
   transition: all 0.3s ease;
 }
 
-.event-hero-glass:hover {
+.event-hero-content:hover {
   border-color: rgba(255, 255, 255, 0.25);
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
-}
-
-.event-hero-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.event-hero-icon {
-  font-size: 3.5rem;
-  margin-bottom: 8px;
-}
-
-.event-hero-title {
-  font-size: 2.8rem;
-  font-weight: 800;
-  margin: 0;
-  letter-spacing: -0.02em;
 }
 
 .event-hero-subtitle {
   font-size: 1.6rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
-  margin: 8px 0 12px;
+  margin: 0 0 12px;
 }
 
 .event-hero-description {
@@ -277,7 +262,7 @@
   color: #4ade80;
 }
 
-/* ─── MAIN SECTION - Image Left | Form Right ────────────── */
+/* ─── MAIN SECTION ────────────────────────────────────────── */
 .event-main-section {
   width: 100%;
   animation: slideInUp 0.8s ease-out;
@@ -319,6 +304,8 @@
   justify-content: center;
   height: 100%;
   width: 100%;
+  overflow: hidden;
+  position: relative;
 }
 
 .event-image-glass:hover {
@@ -334,6 +321,7 @@
   justify-content: center;
   border-radius: 24px;
   overflow: hidden;
+  position: relative;
 }
 
 .event-image {
@@ -372,112 +360,82 @@
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
 }
 
-/* ── Form Header ──────────────────────────────────────────── */
-.event-form-header {
-  text-align: center;
-  margin-bottom: 24px;
-  flex-shrink: 0;
-}
-
-.event-form-header-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 14px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.event-form-header-icon i {
-  font-size: 28px;
-}
-
-.event-form-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #fff;
-  margin: 0 0 6px;
-}
-
-.event-form-subtitle {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.6);
-  line-height: 1.5;
-}
-
 /* ── Registration Container ──────────────────────────────── */
 .event-registration-container {
   flex: 1;
 }
 
-/* ─── FIX: Registration Form - Dark Text for Light Backgrounds ── */
+/* ─── REGISTRATION WIZARD - WHITE BACKGROUND & DARK TEXT ── */
+.event-registration-container .registration-wizard {
+  background: #ffffff !important;
+  border-radius: 16px;
+  padding: 24px;
+  color: #1a1a2e !important;
+}
 
-/* Override the form text to be dark for better readability */
 .event-registration-container .card,
 .event-registration-container .card-body,
 .event-registration-container .card-header,
 .event-registration-container .card-title,
-.event-registration-container .card-text,
-.event-registration-container .h5,
-.event-registration-container .h4,
-.event-registration-container .h3,
-.event-registration-container h3,
-.event-registration-container h4,
-.event-registration-container h5,
-.event-registration-container p,
-.event-registration-container span,
-.event-registration-container
-  div:not(.alert):not(.bg-light):not(.form-control) {
+.event-registration-container .card-text {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px;
   color: #1a1a2e !important;
 }
 
-/* Keep alert text with their proper colors */
-.event-registration-container .alert-warning {
-  color: #856404 !important;
+.event-registration-container .card-header {
+  background: #f9fafb !important;
+  border-bottom: 1px solid #e5e7eb !important;
 }
 
-.event-registration-container .alert-info {
-  color: #0c5460 !important;
-}
-
-.event-registration-container .alert-danger {
-  color: #721c24 !important;
-}
-
-.event-registration-container .alert-success {
-  color: #155724 !important;
-}
-
-/* Alert text override - keep alert text readable */
-.event-registration-container .alert {
+/* Step indicator */
+.event-registration-container .step-indicator {
+  background: #ffffff !important;
   color: #1a1a2e !important;
 }
 
-.event-registration-container .alert-warning * {
-  color: #856404 !important;
+.event-registration-container .step-number {
+  background: #f3f4f6 !important;
+  color: #506ee4 !important;
+  font-weight: 700;
 }
 
-.event-registration-container .alert-info * {
-  color: #0c5460 !important;
+.event-registration-container .step-number.active {
+  background: #506ee4 !important;
+  color: #ffffff !important;
 }
 
-.event-registration-container .alert-danger * {
-  color: #721c24 !important;
+.event-registration-container .step-number.completed {
+  background: #4ade80 !important;
+  color: #ffffff !important;
 }
 
-.event-registration-container .alert-success * {
-  color: #155724 !important;
+.event-registration-container .step-label {
+  color: #1a1a2e !important;
+  font-weight: 600;
 }
 
-/* Form labels - dark */
+.event-registration-container .step-label.active {
+  color: #506ee4 !important;
+}
+
+.event-registration-container .step-title {
+  color: #1a1a2e !important;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.event-registration-container .step-subtitle {
+  color: #6b7280 !important;
+}
+
+/* Form elements */
 .event-registration-container .form-label {
   color: #1a1a2e !important;
   font-weight: 600;
 }
 
-/* Form controls - white background with dark text */
 .event-registration-container .form-control {
   background: #ffffff !important;
   border: 1px solid #d1d5db !important;
@@ -489,15 +447,12 @@
 .event-registration-container .form-control:focus {
   border-color: #506ee4 !important;
   box-shadow: 0 0 0 3px rgba(80, 110, 228, 0.15) !important;
-  background: #ffffff !important;
-  color: #1a1a2e !important;
 }
 
 .event-registration-container .form-control::placeholder {
   color: #9ca3af !important;
 }
 
-/* Form select dropdowns */
 .event-registration-container .form-select {
   background: #ffffff !important;
   border: 1px solid #d1d5db !important;
@@ -509,39 +464,6 @@
   color: #1a1a2e !important;
 }
 
-/* Text muted - dark */
-.event-registration-container .text-muted {
-  color: #6b7280 !important;
-}
-
-/* Background light - keep it light */
-.event-registration-container .bg-light {
-  background: #f9fafb !important;
-  color: #1a1a2e !important;
-}
-
-/* Card backgrounds - white/light */
-.event-registration-container .card {
-  background: #ffffff !important;
-  border: 1px solid #e5e7eb !important;
-  border-radius: 16px;
-  color: #1a1a2e !important;
-}
-
-.event-registration-container .card-header {
-  background: #f9fafb !important;
-  border-bottom: 1px solid #e5e7eb !important;
-  color: #1a1a2e !important;
-}
-
-/* List items - dark text */
-.event-registration-container .list-group-item {
-  background: #ffffff !important;
-  border-color: #e5e7eb !important;
-  color: #1a1a2e !important;
-}
-
-/* Checkbox and radio labels */
 .event-registration-container .form-check-label {
   color: #1a1a2e !important;
 }
@@ -556,11 +478,145 @@
   border-color: #506ee4 !important;
 }
 
-/* Buttons - keep primary blue, others dark */
+/* Progress bar */
+.event-registration-container .progress {
+  background: #e5e7eb !important;
+  height: 6px;
+  border-radius: 4px;
+}
+
+.event-registration-container .progress-bar {
+  background: linear-gradient(135deg, #506ee4, #3f5cd6) !important;
+  border-radius: 4px;
+}
+
+/* Text colors */
+.event-registration-container .text-muted {
+  color: #6b7280 !important;
+}
+
+.event-registration-container .text-success {
+  color: #22c55e !important;
+}
+
+.event-registration-container .text-danger {
+  color: #ef4444 !important;
+}
+
+.event-registration-container .text-warning {
+  color: #f59e0b !important;
+}
+
+.event-registration-container .text-info {
+  color: #3b82f6 !important;
+}
+
+/* Alerts - keep their colors */
+.event-registration-container .alert-warning {
+  background: #fff3cd !important;
+  border-color: #ffeaa7 !important;
+  color: #856404 !important;
+}
+
+.event-registration-container .alert-info {
+  background: #cce5ff !important;
+  border-color: #b8daff !important;
+  color: #0c5460 !important;
+}
+
+.event-registration-container .alert-danger {
+  background: #f8d7da !important;
+  border-color: #f5c6cb !important;
+  color: #721c24 !important;
+}
+
+.event-registration-container .alert-success {
+  background: #d4edda !important;
+  border-color: #c3e6cb !important;
+  color: #155724 !important;
+}
+
+/* Player cards */
+.event-registration-container .players-section {
+  background: #f9fafb !important;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb !important;
+}
+
+.event-registration-container .player-card {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  color: #1a1a2e !important;
+}
+
+.event-registration-container .player-name {
+  color: #1a1a2e !important;
+  font-weight: 600;
+}
+
+.event-registration-container .player-grade {
+  color: #6b7280 !important;
+}
+
+.event-registration-container .player-status-paid {
+  color: #22c55e !important;
+  font-weight: 600;
+}
+
+.event-registration-container .registered-header {
+  color: #1a1a2e !important;
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 12px 0 8px;
+  border-bottom: 2px solid #e5e7eb !important;
+}
+
+/* Register another player */
+.event-registration-container .register-another-section {
+  background: #f9fafb !important;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e5e7eb !important;
+  text-align: center;
+}
+
+.event-registration-container .register-another-section h5 {
+  color: #1a1a2e !important;
+  font-weight: 600;
+}
+
+.event-registration-container .register-another-section p {
+  color: #6b7280 !important;
+}
+
+.event-registration-container .btn-add-player {
+  background: #f3f4f6 !important;
+  border: 2px dashed #d1d5db !important;
+  color: #506ee4 !important;
+  border-radius: 12px;
+  padding: 16px;
+  font-weight: 600;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.event-registration-container .btn-add-player:hover {
+  background: #e5e7eb !important;
+  border-color: #506ee4 !important;
+}
+
+/* Buttons */
 .event-registration-container .btn-primary {
   background: linear-gradient(135deg, #506ee4, #3f5cd6) !important;
   border: none !important;
   color: #ffffff !important;
+  border-radius: 12px;
+  padding: 10px 32px;
+  font-weight: 600;
 }
 
 .event-registration-container .btn-primary:hover {
@@ -569,25 +625,18 @@
 }
 
 .event-registration-container .btn-secondary {
-  background: #e5e7eb !important;
-  border: 1px solid #d1d5db !important;
+  background: #f3f4f6 !important;
+  border: 1px solid #e5e7eb !important;
   color: #1a1a2e !important;
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-weight: 600;
 }
 
 .event-registration-container .btn-secondary:hover {
-  background: #d1d5db !important;
+  background: #e5e7eb !important;
 }
 
-.event-registration-container .btn-outline-secondary {
-  border-color: #d1d5db !important;
-  color: #1a1a2e !important;
-}
-
-.event-registration-container .btn-outline-secondary:hover {
-  background: #f3f4f6 !important;
-}
-
-/* Link buttons */
 .event-registration-container .btn-link {
   color: #506ee4 !important;
 }
@@ -596,19 +645,62 @@
   color: #3f5cd6 !important;
 }
 
-/* Strong and bold text */
-.event-registration-container strong,
-.event-registration-container b {
+/* Total fee */
+.event-registration-container .total-fee {
+  background: #f9fafb !important;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.event-registration-container .total-fee-label {
+  color: #6b7280 !important;
+  font-weight: 500;
+}
+
+.event-registration-container .total-fee-amount {
+  color: #1a1a2e !important;
+  font-weight: 800;
+  font-size: 1.25rem;
+}
+
+/* List items */
+.event-registration-container .list-group-item {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
   color: #1a1a2e !important;
 }
 
-/* Small text */
-.event-registration-container small,
-.event-registration-container .small {
-  color: #6b7280 !important;
+.event-registration-container .bg-light {
+  background: #f9fafb !important;
+  color: #1a1a2e !important;
 }
 
-/* Table text */
+.event-registration-container .input-group-text {
+  background: #f3f4f6 !important;
+  border: 1px solid #d1d5db !important;
+  color: #1a1a2e !important;
+}
+
+.event-registration-container .badge {
+  color: #ffffff !important;
+}
+
+.event-registration-container .dropdown-menu {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.event-registration-container .dropdown-item {
+  color: #1a1a2e !important;
+}
+
+.event-registration-container .dropdown-item:hover {
+  background: #f3f4f6 !important;
+}
+
 .event-registration-container .table {
   color: #1a1a2e !important;
 }
@@ -623,90 +715,12 @@
   background: #f9fafb !important;
 }
 
-/* Badge text */
-.event-registration-container .badge {
-  color: #ffffff !important;
-}
-
-/* Progress bar */
-.event-registration-container .progress {
-  background: #e5e7eb !important;
-}
-
-.event-registration-container .progress-bar {
-  background: linear-gradient(135deg, #506ee4, #3f5cd6) !important;
-  color: #ffffff !important;
-}
-
-.event-registration-container > .step-label,
-.event-registration-container > .form-header {
-  color: #ffffff !important;
-}
-
-/* Input group text */
-.event-registration-container .input-group-text {
-  background: #f3f4f6 !important;
-  border: 1px solid #d1d5db !important;
-  color: #1a1a2e !important;
-}
-
-/* Close button */
-.event-registration-container .btn-close {
-  filter: none !important;
-}
-
-/* Dropdown menus */
-.event-registration-container .dropdown-menu {
+/* Step navigation */
+.event-registration-container .step-navigation {
   background: #ffffff !important;
-  border: 1px solid #e5e7eb !important;
-}
-
-.event-registration-container .dropdown-item {
-  color: #1a1a2e !important;
-}
-
-.event-registration-container .dropdown-item:hover {
-  background: #f3f4f6 !important;
-}
-
-/* Disabled form controls */
-.event-registration-container .form-control:disabled {
-  background: #f3f4f6 !important;
-  color: #6b7280 !important;
-}
-
-/* "O per player" text */
-.event-registration-container .text-muted.mb-0 {
-  color: #6b7280 !important;
-}
-
-/* Registration wizard titles */
-.event-registration-container .registration-wizard h1,
-.event-registration-container .registration-wizard h2,
-.event-registration-container .registration-wizard h3,
-.event-registration-container .registration-wizard h4,
-.event-registration-container .registration-wizard h5,
-.event-registration-container .registration-wizard h6 {
-  color: #1a1a2e !important;
-}
-
-/* Fix text in registration wizard */
-.event-registration-container .registration-wizard p,
-.event-registration-container .registration-wizard span,
-.event-registration-container
-  .registration-wizard
-  div:not(.alert):not(.bg-light) {
-  color: #1a1a2e !important;
-}
-
-/* Fix "Your Players" section */
-.event-registration-container .card .card-title {
-  color: #1a1a2e !important;
-}
-
-/* Fix "Ready to Add Players" text */
-.event-registration-container .text-center .text-muted {
-  color: #6b7280 !important;
+  padding: 16px 0 0;
+  border-top: 1px solid #e5e7eb !important;
+  margin-top: 16px;
 }
 
 /* ── Form Footer ──────────────────────────────────────────── */
@@ -877,7 +891,7 @@
   margin: 0 auto;
 }
 
-/* ─── DETAILS SECTION - Collapsible ────────────────────────── */
+/* ─── DETAILS SECTION ────────────────────────────────────── */
 .event-details-section {
   width: 100%;
   animation: slideInUp 1s ease-out;
@@ -898,7 +912,6 @@
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.35);
 }
 
-/* Details Header - Clickable Toggle */
 .event-details-header {
   display: flex;
   justify-content: space-between;
@@ -953,7 +966,6 @@
   transition: transform 0.3s ease;
 }
 
-/* Details Body - Collapsible */
 .event-details-body {
   max-height: 0;
   overflow: hidden;
@@ -970,7 +982,6 @@
   margin-top: 20px;
 }
 
-/* ── Details Grid ──────────────────────────────────────────── */
 .details-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1035,7 +1046,6 @@
   font-style: italic;
 }
 
-/* ── Important Notes ──────────────────────────────────────── */
 .important-notes {
   margin-top: 24px;
   padding-top: 20px;
@@ -1092,22 +1102,15 @@
 
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 1024px) {
-  .event-hero-glass {
+  .event-hero-content {
     padding: 36px 32px;
   }
-
-  .event-hero-title {
-    font-size: 2.2rem;
-  }
-
   .event-main-grid {
     gap: 24px;
   }
-
   .event-form-glass {
     padding: 32px 24px;
   }
-
   .event-details-glass {
     padding: 28px 24px;
   }
@@ -1118,126 +1121,73 @@
     padding: 40px 16px 32px;
     gap: 32px;
   }
-
-  .event-hero-glass {
+  .event-hero-content {
     padding: 28px 20px;
     border-radius: 32px;
   }
-
-  .event-hero-title {
-    font-size: 1.8rem;
-  }
-
   .event-hero-subtitle {
     font-size: 1.2rem;
   }
-
   .event-hero-description {
     font-size: 0.95rem;
   }
-
   .event-hero-facts {
     gap: 16px 24px;
     padding: 16px;
   }
-
   .hero-fact {
     min-width: 60px;
   }
-
   .event-main-grid {
     grid-template-columns: 1fr;
     gap: 24px;
   }
-
   .event-image-wrapper {
-    order: -1;
+    display: none !important;
   }
-
-  .event-image-glass {
-    padding: 24px;
-    min-height: 200px;
-  }
-
   .event-form-glass {
     padding: 24px 20px;
     border-radius: 32px;
   }
-
   .event-details-glass {
     padding: 20px 18px;
     border-radius: 32px;
   }
-
   .event-details-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
-
   .event-details-toggle {
     padding: 6px 14px;
     font-size: 0.8rem;
   }
-
   .event-details-title {
     font-size: 1.2rem;
   }
-
   .details-grid {
     grid-template-columns: 1fr;
     gap: 14px;
   }
-
   .important-notes-list {
     grid-template-columns: 1fr;
   }
-
   .coming-soon-details {
     flex-direction: column;
     gap: 10px;
   }
-
   .notify-form {
     flex-direction: column;
   }
-
   .notify-button {
     width: 100%;
     justify-content: center;
   }
-
-  .event-form-title {
-    font-size: 1.3rem;
+  .event-registration-container .registration-wizard {
+    padding: 16px !important;
   }
-
-  .event-image-wrapper {
-    display: none !important;
-  }
-
-  .event-main-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .event-image-glass {
-    display: none !important;
-  }
-
-  .event-image-container {
-    display: none !important;
-  }
-
-  .event-form-wrapper {
-    width: 100%;
-  }
-
-  .event-form-glass {
-    border-radius: 32px;
-    padding: 24px 20px;
-  }
-
-  .event-main-grid {
-    gap: 0;
+  .event-registration-container .player-card {
+    padding: 12px !important;
   }
 }
 
@@ -1246,83 +1196,44 @@
     padding: 24px 12px 24px;
     gap: 24px;
   }
-
-  .event-hero-glass {
+  .event-hero-content {
     padding: 20px 16px;
     border-radius: 24px;
   }
-
-  .event-hero-title {
-    font-size: 1.4rem;
-  }
-
   .event-hero-subtitle {
     font-size: 1rem;
   }
-
-  .event-hero-icon {
-    font-size: 2.5rem;
-  }
-
   .event-hero-facts {
     gap: 12px 16px;
     padding: 12px;
   }
-
   .hero-fact-value {
     font-size: 0.8rem;
   }
-
-  .event-image-glass {
-    padding: 16px;
-    min-height: 150px;
-    border-radius: 24px;
-  }
-
   .event-form-glass {
     padding: 18px 14px;
     border-radius: 24px;
   }
-
-  .event-form-header-icon {
-    width: 44px;
-    height: 44px;
-  }
-
-  .event-form-header-icon i {
-    font-size: 22px;
-  }
-
-  .event-form-title {
-    font-size: 1.1rem;
-  }
-
   .event-details-glass {
     padding: 16px 14px;
     border-radius: 24px;
   }
-
   .event-details-title {
     font-size: 1rem;
   }
-
   .event-details-toggle {
     font-size: 0.75rem;
     padding: 4px 12px;
   }
-
   .details-card {
     padding: 16px;
   }
-
   .details-card-title {
     font-size: 0.85rem;
   }
-
   .coming-soon-icon {
     font-size: 2.5rem;
   }
-
   .event-coming-soon h2 {
     font-size: 1.3rem;
   }
@@ -1341,148 +1252,7 @@
     animation: none !important;
     transition: none !important;
   }
-
   .event-details-body {
     transition: none !important;
   }
-}
-
-/* Target step labels inside the step indicator */
-.event-form-glass .step-label,
-.event-form-glass .step-indicator .step-label,
-.event-form-glass .step-indicator span,
-.event-form-glass .step .step-label,
-.event-registration-container .step-label,
-.event-registration-container .step-indicator .step-label,
-.event-registration-container .step-indicator span,
-.event-registration-container .step .step-label,
-.tryout-registration-form .step-label,
-.tryout-registration-form .step-indicator .step-label,
-.tryout-registration-form .step-indicator span,
-.tryout-registration-form .step .step-label {
-  color: #ffffff !important;
-}
-
-/* Target step labels specifically */
-.step-label,
-.step-indicator .step-label,
-.step .step-label {
-  color: #ffffff !important;
-}
-
-/* Target the step indicator container and all its children */
-.step-indicator,
-.step-indicator *,
-.step-indicator .step,
-.step-indicator .step-label,
-.step-indicator .step-icon-wrapper i {
-  color: #ffffff !important;
-}
-
-/* Target the "Tryout Registration" heading */
-.form-header h2,
-.form-header .mt-3,
-.tryout-registration-form .form-header h2,
-.tryout-registration-form .form-header .mt-3 {
-  color: #ffffff !important;
-}
-
-/* Target the "Register players for..." text */
-.form-header p,
-.tryout-registration-form .form-header p {
-  color: rgba(255, 255, 255, 0.7) !important;
-}
-
-/* Target the step icons */
-.step-icon-wrapper i,
-.step-indicator .step-icon-wrapper i {
-  color: #ffffff !important;
-}
-
-/* Target active step */
-.step.active .step-label,
-.step.active .step-icon-wrapper i {
-  color: #506ee4 !important;
-}
-
-/* Target completed steps */
-.step.completed .step-label,
-.step.completed .step-icon-wrapper i {
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-
-/* Target the connector lines */
-.step-connector {
-  background: rgba(255, 255, 255, 0.2) !important;
-}
-
-.step-connector.active {
-  background: #506ee4 !important;
-}
-
-/* ─── Form Header inside tryout-registration-form ────────── */
-.tryout-registration-form .form-header h2 {
-  color: #ffffff !important;
-}
-
-.tryout-registration-form .form-header p {
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-
-/* Force all step labels to be white */
-.step-label {
-  color: #ffffff !important;
-}
-
-.step-label * {
-  color: #ffffff !important;
-}
-
-/* Force all text inside step-indicator to be white */
-.step-indicator {
-  color: #ffffff !important;
-}
-
-.step-indicator * {
-  color: #ffffff !important;
-}
-
-/* Force form header to be white */
-.form-header h2 {
-  color: #ffffff !important;
-}
-
-.form-header h2 * {
-  color: #ffffff !important;
-}
-
-.form-header p {
-  color: rgba(255, 255, 255, 0.7) !important;
-}
-
-/* Target everything inside the registration form */
-.tryout-registration-form {
-  color: #ffffff !important;
-}
-
-.tryout-registration-form * {
-  color: #ffffff !important;
-}
-
-/* But keep dark text for card content (form inputs, etc.) */
-.tryout-registration-form .card,
-.tryout-registration-form .card-body,
-.tryout-registration-form .card-header,
-.tryout-registration-form .card *,
-.tryout-registration-form .form-control,
-.tryout-registration-form .form-label,
-.tryout-registration-form .text-dark {
-  color: #1a1a2e !important;
-}
-
-/* But keep step labels white inside cards */
-.tryout-registration-form .step-label,
-.tryout-registration-form .step-indicator,
-.tryout-registration-form .step-indicator * {
-  color: #ffffff !important;
 }
