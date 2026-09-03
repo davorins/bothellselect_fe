@@ -607,12 +607,11 @@ const EventPage: React.FC<EventPageProps> = ({
               <div className='event-image-container'>
                 <ImageWithBasePath
                   src='assets/img/bg/bg_login.png'
-                  alt='event Illustration'
+                  alt='Bothell Select Basketball'
                   className='event-illustration-img'
                 />
               </div>
             </div>
-
             {/* Right - Registration Form */}
             <div className='event-form-wrapper'>
               <div className='event-form-glass'>
