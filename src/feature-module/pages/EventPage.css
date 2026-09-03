@@ -20,6 +20,7 @@
   filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.3));
   object-fit: cover;
   position: absolute;
+  top: 0;
 }
 
 @keyframes slowZoom {
