@@ -605,7 +605,7 @@ const EventPage: React.FC<EventPageProps> = ({
             {/* Left - Image - Full size, no glass container */}
             <div className='event-image-wrapper'>
               <ImageWithBasePath
-                src='assets/img/bg/bg_login.png'
+                src='assets/img/bg/bg_events.png'
                 alt='Bothell Select Basketball'
                 className='event-illustration-img'
               />
