@@ -52,6 +52,8 @@
   display: block;
   filter: brightness(1);
   animation: slowZoom 20s ease-in-out infinite alternate;
+  position: relative;
+  left: 200px;
 }
 
 @keyframes slowZoom {

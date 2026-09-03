@@ -7,6 +7,11 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import TryoutRegistrationForm from '../components/registration/TryoutRegistrationForm';
 import TrainingRegistrationForm from '../components/registration/TrainingRegistrationForm';
 import TournamentRegistrationForm from '../components/registration/TournamentRegistrationForm';
+import {
+  TryoutSpecificConfig,
+  RegistrationFormConfig,
+  TournamentSpecificConfig,
+} from '../../types/registration-types';
 import { formatDate } from '../../utils/dateFormatter';
 import ReactPixel from 'react-facebook-pixel';
 import ImageWithBasePath from '../../core/common/imageWithBasePath';
@@ -78,23 +83,28 @@ const EventPage: React.FC<EventPageProps> = ({
 
   const { getMarketingAttribution } = useMarketing();
 
-  // ─── Helper Functions ─────────────────────────────────────
+  // ─── Helper Functions ─────────────────────────────────────────────────────
 
   const getLocationFromConfig = (config: any): string => {
     if (!config) return 'TBD';
 
     if (config.tryoutDetails?.tryoutSessions?.length > 0) {
       const session = config.tryoutDetails.tryoutSessions[0];
-      if (session?.location?.name?.trim()) {
+      if (session?.location?.name && session.location.name.trim() !== '') {
         return session.location.name;
       }
     }
-    if (config.tryoutDetails?.location?.name?.trim()) {
+    if (
+      config.tryoutDetails?.location?.name &&
+      config.tryoutDetails.location.name.trim() !== ''
+    ) {
       return config.tryoutDetails.location.name;
     }
-    if (config.location?.name?.trim()) {
+
+    if (config.location?.name && config.location.name.trim() !== '') {
       return config.location.name;
     }
+
     return 'TBD';
   };
 
@@ -105,82 +115,122 @@ const EventPage: React.FC<EventPageProps> = ({
       const dates = config.tryoutDetails.tryoutSessions
         .filter((s: any) => s.date)
         .map((s: any) => s.date);
-      if (dates.length > 0) return dates.join(', ');
+      if (dates.length > 0) {
+        return dates.join(', ');
+      }
     }
-    if (config.tryoutDetails?.startDate) return config.tryoutDetails.startDate;
-    if (config.startDate) return formatDate(config.startDate);
+    if (config.tryoutDetails?.startDate) {
+      return config.tryoutDetails.startDate;
+    }
+
+    if (config.startDate) {
+      return formatDate(config.startDate);
+    }
+
     return 'TBD';
   };
 
   const getFeeFromConfig = (config: any): number => {
     if (!config) return 0;
-    if (config.tryoutDetails?.tryoutFee > 0)
+
+    if (
+      config.tryoutDetails?.tryoutFee !== undefined &&
+      config.tryoutDetails.tryoutFee > 0
+    ) {
       return config.tryoutDetails.tryoutFee;
-    if (config.tryoutFee > 0) return config.tryoutFee;
-    if (config.price > 0) return config.price;
+    }
+    if (config.tryoutFee && config.tryoutFee > 0) {
+      return config.tryoutFee;
+    }
+    if (config.price && config.price > 0) {
+      return config.price;
+    }
+
     return 0;
   };
 
-  // ─── Build Registration Config ────────────────────────────
+  // ─── Build Registration Config ──────────────────────────────────────────
 
   const buildRegistrationConfig = (): any => {
     if (!config) return null;
 
-    const base = {
-      displayName: config.displayName || config.title,
-      registrationDeadline: config.registrationDeadline || '',
-      requiresInsurance: config.insuranceRequired || false,
-      refundPolicy:
-        config.refundPolicy || 'No refunds after registration deadline',
-      isActive: config.registrationOpen,
-      description: config.description || '',
-      eventId: config._id,
-      ageGroups: config.ageGroups || [],
-    };
-
     if (eventType === 'tryout') {
       return {
-        ...base,
         tryoutName: config.tryoutName || config.title,
         tryoutYear:
           config.tryoutYear || new Date(config.startDate).getFullYear(),
+        displayName: config.displayName || config.title,
+        registrationDeadline: config.registrationDeadline || '',
         tryoutDates: [config.startDate],
-        locations: config.location?.name?.trim() ? [config.location.name] : [],
+        locations:
+          config.location &&
+          config.location.name &&
+          config.location.name.trim() !== ''
+            ? [config.location.name]
+            : [],
         divisions: [],
+        ageGroups: config.ageGroups || [],
         requiresPayment: (config.tryoutFee || config.price || 0) > 0,
         requiresRoster: false,
+        requiresInsurance: config.insuranceRequired || false,
         paymentDeadline: '',
+        refundPolicy:
+          config.refundPolicy || 'No refunds after registration deadline',
         tryoutFee: config.tryoutFee || config.price || 0,
+        isActive: config.registrationOpen,
+        description: config.description || '',
+        eventId: config._id,
         tryoutDetails: config.tryoutDetails || null,
       };
     }
 
     if (eventType === 'training') {
       return {
-        ...base,
         season: config.title,
         year: new Date(config.startDate).getFullYear(),
+        displayName: config.displayName || config.title,
+        isActive: config.registrationOpen,
         requiresPayment: (config.price || 0) > 0,
         requiresQualification: false,
         pricing: {
           basePrice: config.price || 75,
           packages: [],
         },
+        description: config.description || '',
+        eventId: config._id,
+        registrationDeadline: config.registrationDeadline || '',
+        refundPolicy:
+          config.refundPolicy || 'No refunds after registration deadline',
+        requiresInsurance: config.insuranceRequired || false,
+        ageGroups: config.ageGroups || [],
         trainingDetails: config.trainingDetails || null,
       };
     }
 
     if (eventType === 'tournament') {
       return {
-        ...base,
         tournamentName: config.title,
         tournamentYear: new Date(config.startDate).getFullYear(),
+        displayName: config.displayName || config.title,
+        registrationDeadline: config.registrationDeadline || '',
         tournamentDates: [config.startDate],
-        locations: config.location?.name?.trim() ? [config.location.name] : [],
+        locations:
+          config.location &&
+          config.location.name &&
+          config.location.name.trim() !== ''
+            ? [config.location.name]
+            : [],
         divisions: ['Gold', 'Silver'],
+        ageGroups: config.ageGroups || [],
         requiresRoster: true,
+        requiresInsurance: config.insuranceRequired || false,
         paymentDeadline: '',
+        refundPolicy:
+          config.refundPolicy || 'No refunds after registration deadline',
         tournamentFee: config.price || 425,
+        isActive: config.registrationOpen,
+        description: config.description || '',
+        eventId: config._id,
         tournamentDetails: config.tournamentDetails || null,
       };
     }
@@ -199,6 +249,7 @@ const EventPage: React.FC<EventPageProps> = ({
         registration_open: config.registrationOpen,
         price: config.price,
       });
+      console.log(`✅ Facebook Pixel - ViewContent tracked for ${title} page`);
     }
   }, [config, title, eventType]);
 
@@ -217,6 +268,7 @@ const EventPage: React.FC<EventPageProps> = ({
     try {
       setLoading(true);
 
+      // ✅ Step 1: Fetch basic event config
       const response = await axios.get(
         `${API_BASE_URL}/event-config/public/${eventType}`,
       );
@@ -230,32 +282,37 @@ const EventPage: React.FC<EventPageProps> = ({
       const configData = response.data.config;
       configData.eventType = eventType;
 
-      // Try to fetch full config with details
+      console.log('📦 Basic event config loaded:', configData);
+
       if (eventType === 'tryout') {
         try {
-          const fullResponse = await axios.get(
+          const fullConfigListResponse = await axios.get(
             `${API_BASE_URL}/admin/tryout-configs`,
           );
-          const activeConfig = Array.isArray(fullResponse.data)
-            ? fullResponse.data.find((c: any) => c.isActive)
+
+          const activeTryoutConfig = Array.isArray(fullConfigListResponse.data)
+            ? fullConfigListResponse.data.find((c: any) => c.isActive)
             : null;
 
-          if (activeConfig?.tryoutDetails) {
-            configData.tryoutDetails = activeConfig.tryoutDetails;
+          if (activeTryoutConfig && activeTryoutConfig.tryoutDetails) {
+            // ✅ Merge the tryoutDetails into our config
+            configData.tryoutDetails = activeTryoutConfig.tryoutDetails;
             configData.tryoutFee =
-              activeConfig.tryoutFee || configData.tryoutFee;
-            configData.tryoutName = activeConfig.tryoutName || configData.title;
+              activeTryoutConfig.tryoutFee || configData.tryoutFee;
+            configData.tryoutName =
+              activeTryoutConfig.tryoutName || configData.title;
             configData.tryoutYear =
-              activeConfig.tryoutYear ||
+              activeTryoutConfig.tryoutYear ||
               new Date(configData.startDate).getFullYear();
             configData.registrationDeadline =
-              activeConfig.registrationDeadline ||
+              activeTryoutConfig.registrationDeadline ||
               configData.registrationDeadline;
             configData.requiresInsurance =
-              activeConfig.requiresInsurance || false;
+              activeTryoutConfig.requiresInsurance || false;
             configData.refundPolicy =
-              activeConfig.refundPolicy || configData.refundPolicy;
+              activeTryoutConfig.refundPolicy || configData.refundPolicy;
 
+            // If location is empty in basic config, try to get it from tryoutDetails
             if (
               !configData.location?.name &&
               configData.tryoutDetails?.tryoutSessions?.length > 0
@@ -271,47 +328,108 @@ const EventPage: React.FC<EventPageProps> = ({
                 };
               }
             }
+
+            console.log('✅ Full tryout config merged:', {
+              tryoutFee: configData.tryoutFee,
+              hasTryoutDetails: !!configData.tryoutDetails,
+              tryoutSessions:
+                configData.tryoutDetails?.tryoutSessions?.length || 0,
+            });
+          } else {
+            console.log(
+              'ℹ️ No active tryout config with tryoutDetails found, using basic config',
+            );
           }
-        } catch (e) {
-          console.log('ℹ️ Could not fetch full tryout config');
+        } catch (fullConfigError) {
+          // This is not a critical error - we can continue with basic config
+          console.log(
+            'ℹ️ Could not fetch full tryout config, using basic config:',
+            fullConfigError,
+          );
         }
       }
 
+      // ✅ Step 3: Try to fetch training details, matched by isActive
+      // (see note above — same fix as the tryout block).
       if (eventType === 'training') {
         try {
-          const fullResponse = await axios.get(
+          const fullConfigListResponse = await axios.get(
             `${API_BASE_URL}/admin/form-configs`,
           );
-          const configs = Array.isArray(fullResponse.data)
-            ? fullResponse.data
-            : Object.values(fullResponse.data || {});
-          const activeConfig = configs.find(
+
+          const trainingConfigs = Array.isArray(fullConfigListResponse.data)
+            ? fullConfigListResponse.data
+            : Object.values(fullConfigListResponse.data || {});
+
+          const activeTrainingConfig: any = trainingConfigs.find(
             (c: any) => c.isActive && c.trainingDetails,
           );
-          if (activeConfig)
-            configData.trainingDetails = activeConfig.trainingDetails;
-        } catch (e) {
-          console.log('ℹ️ Could not fetch full training config');
+
+          if (activeTrainingConfig) {
+            configData.trainingDetails = activeTrainingConfig.trainingDetails;
+            console.log('✅ Full training config merged');
+          } else {
+            console.log(
+              'ℹ️ No active training config with trainingDetails found, using basic config',
+            );
+          }
+        } catch (fullConfigError) {
+          console.log(
+            'ℹ️ Could not fetch full training config, using basic config',
+          );
         }
       }
 
+      // ✅ Step 4: Try to fetch tournament details, matched by isActive
+      // (see note above — same fix as the tryout block).
       if (eventType === 'tournament') {
         try {
-          const fullResponse = await axios.get(
+          const fullConfigListResponse = await axios.get(
             `${API_BASE_URL}/admin/tournament-configs`,
           );
-          const activeConfig = Array.isArray(fullResponse.data)
-            ? fullResponse.data.find((c: any) => c.isActive)
+
+          const activeTournamentConfig = Array.isArray(
+            fullConfigListResponse.data,
+          )
+            ? fullConfigListResponse.data.find((c: any) => c.isActive)
             : null;
-          if (activeConfig?.tournamentDetails) {
-            configData.tournamentDetails = activeConfig.tournamentDetails;
+
+          if (
+            activeTournamentConfig &&
+            activeTournamentConfig.tournamentDetails
+          ) {
+            configData.tournamentDetails =
+              activeTournamentConfig.tournamentDetails;
+            console.log('✅ Full tournament config merged');
+          } else {
+            console.log(
+              'ℹ️ No active tournament config with tournamentDetails found, using basic config',
+            );
           }
-        } catch (e) {
-          console.log('ℹ️ Could not fetch full tournament config');
+        } catch (fullConfigError) {
+          console.log(
+            'ℹ️ Could not fetch full tournament config, using basic config',
+          );
         }
       }
 
       setConfig(configData);
+
+      const fee = getFeeFromConfig(configData);
+      const location = getLocationFromConfig(configData);
+      const dates = getDatesFromConfig(configData);
+
+      console.log(`🎯 ${eventType} config loaded:`, {
+        title: configData.title,
+        registrationOpen: configData.registrationOpen,
+        fee: fee,
+        registrationDeadline: configData.registrationDeadline,
+        insuranceRequired: configData.insuranceRequired,
+        refundPolicy: configData.refundPolicy,
+        location: location,
+        dates: dates,
+        hasTryoutDetails: !!configData.tryoutDetails,
+      });
     } catch (err) {
       console.error(`Error fetching ${eventType} config:`, err);
       setError(`Failed to load ${eventType} information`);
@@ -331,22 +449,24 @@ const EventPage: React.FC<EventPageProps> = ({
         eventId: config?._id,
       });
       setNotificationSubmitted(true);
+      console.log(
+        `📧 Email collected for ${eventType} notification:`,
+        emailForNotification,
+      );
     } catch (error) {
       console.error('Error submitting notification email:', error);
     }
   };
 
-  const toggleDetails = () => setDetailsExpanded(!detailsExpanded);
+  const toggleDetails = () => {
+    setDetailsExpanded(!detailsExpanded);
+  };
 
   if (loading) {
     return (
       <div className='event-page-container'>
-        <div className='event-content-wrapper'>
-          <div className='event-status-glass'>
-            <LoadingSpinner />
-            <p>Loading {title} information…</p>
-          </div>
-        </div>
+        <LoadingSpinner />
+        <p>Loading {title} information…</p>
       </div>
     );
   }
@@ -375,115 +495,12 @@ const EventPage: React.FC<EventPageProps> = ({
   const datesDisplay = getDatesFromConfig(config);
   const registrationConfig = buildRegistrationConfig();
 
-  const renderRegistrationForm = () => {
-    if (!config.registrationOpen || !registrationConfig) {
-      return (
-        <div className='event-coming-soon'>
-          <div className='coming-soon-icon' style={{ color }}>
-            <i className={`ti ${icon}`} />
-          </div>
-          <h2>{title} Announced!</h2>
-          <p className='coming-soon-text'>
-            Registration for{' '}
-            <strong>{config.displayName || config.title}</strong> will open
-            soon.
-          </p>
-          <div className='coming-soon-details'>
-            <div className='coming-soon-detail'>
-              <span className='detail-label'>Date</span>
-              <span className='detail-value'>{datesDisplay}</span>
-            </div>
-            <div className='coming-soon-detail'>
-              <span className='detail-label'>Location</span>
-              <span className='detail-value'>{locationDisplay}</span>
-            </div>
-          </div>
-          <div className='coming-soon-notify'>
-            <p className='notify-text'>
-              <i className='ti ti-bell-ringing'></i> Get notified when
-              registration opens:
-            </p>
-            {notificationSubmitted ? (
-              <div className='notify-success'>
-                <i className='ti ti-circle-check'></i> You're on the list!
-              </div>
-            ) : (
-              <form onSubmit={handleNotificationSubmit} className='notify-form'>
-                <input
-                  type='email'
-                  value={emailForNotification}
-                  onChange={(e) => setEmailForNotification(e.target.value)}
-                  placeholder='Enter your email'
-                  required
-                  className='notify-input'
-                />
-                <button
-                  type='submit'
-                  className='notify-button'
-                  style={{ background: color }}
-                >
-                  Notify Me
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    const FormComponent = {
-      tryout: TryoutRegistrationForm,
-      training: TrainingRegistrationForm,
-      tournament: TournamentRegistrationForm,
-    }[eventType];
-
-    return (
-      <>
-        <div className='event-registration-container'>
-          <FormComponent
-            {...(eventType === 'tryout' && {
-              tryoutConfig: registrationConfig,
-            })}
-            {...(eventType === 'training' && {
-              formConfig: registrationConfig,
-            })}
-            {...(eventType === 'tournament' && {
-              tournamentConfig: registrationConfig,
-            })}
-            seasonEvent={{
-              season:
-                registrationConfig.tryoutName ||
-                registrationConfig.season ||
-                registrationConfig.tournamentName ||
-                config.title,
-              year:
-                registrationConfig.tryoutYear ||
-                registrationConfig.year ||
-                new Date(config.startDate).getFullYear(),
-              eventId: config._id,
-            }}
-            onSuccess={() => {
-              console.log(`🎉 ${eventType} registration successful!`);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-          />
-        </div>
-        <div className='event-form-footer'>
-          <p className='event-form-footer-text'>
-            Questions?{' '}
-            <Link to='/contact-us' className='event-footer-link'>
-              Contact us
-            </Link>
-          </p>
-        </div>
-      </>
-    );
-  };
-
   return (
     <div className='event-page-container'>
+      {/* Background gradient */}
       <div className='event-bg-gradient' />
 
+      {/* Animated gradient orbs with event color */}
       <div
         className='event-orb event-orb-1'
         style={{ background: `${color}33` }}
@@ -498,106 +515,217 @@ const EventPage: React.FC<EventPageProps> = ({
       />
 
       <div className='event-content-wrapper'>
-        {/* ─── HERO SECTION ──────────────────────────────── */}
+        {/* ─── HERO SECTION - Full Width ────────────────────── */}
         <section className='event-hero-section'>
-          <div className='event-hero-glass'>
-            <div className='event-hero-content'>
-              <div className='event-hero-icon' style={{ color }}>
-                <i className={`ti ${icon}`} />
+          <div className='event-hero-content'>
+            <h2 className='event-hero-subtitle'>
+              {config.displayName || config.title}
+            </h2>
+            <p className='event-hero-description'>{config.description}</p>
+            <div className='event-hero-facts'>
+              <div className='hero-fact'>
+                <span className='hero-fact-label'>Date</span>
+                <span className='hero-fact-value'>{datesDisplay}</span>
               </div>
-              <h1 className='event-hero-title' style={{ color }}>
-                {title}
-              </h1>
-              <h2 className='event-hero-subtitle'>
-                {config.displayName || config.title}
-              </h2>
-              <p className='event-hero-description'>{config.description}</p>
-              <div className='event-hero-facts'>
+              <div className='hero-fact'>
+                <span className='hero-fact-label'>Time</span>
+                <span className='hero-fact-value'>
+                  {config.startTime} – {config.endTime}
+                </span>
+              </div>
+              <div className='hero-fact'>
+                <span className='hero-fact-label'>Location</span>
+                <span className='hero-fact-value'>{locationDisplay}</span>
+              </div>
+              {config.grades && (
                 <div className='hero-fact'>
-                  <span className='hero-fact-label'>Date</span>
-                  <span className='hero-fact-value'>{datesDisplay}</span>
+                  <span className='hero-fact-label'>Grades</span>
+                  <span className='hero-fact-value'>{config.grades}</span>
                 </div>
+              )}
+              {config.gender && (
                 <div className='hero-fact'>
-                  <span className='hero-fact-label'>Time</span>
-                  <span className='hero-fact-value'>
-                    {config.startTime} – {config.endTime}
-                  </span>
+                  <span className='hero-fact-label'>Gender</span>
+                  <span className='hero-fact-value'>{config.gender}</span>
                 </div>
-                <div className='hero-fact'>
-                  <span className='hero-fact-label'>Location</span>
-                  <span className='hero-fact-value'>{locationDisplay}</span>
+              )}
+              <div className='hero-fact'>
+                <span className='hero-fact-label'>Status</span>
+                <span
+                  className='hero-fact-value'
+                  style={{
+                    color: config.registrationOpen ? '#4ade80' : '#fbbf24',
+                  }}
+                >
+                  {config.registrationOpen
+                    ? '✅ Registration Open'
+                    : '📋 Coming Soon'}
+                </span>
+              </div>
+              {config.registrationOpen && fee > 0 && (
+                <div className='hero-fact hero-fact-price'>
+                  <span className='hero-fact-label'>Registration Fee</span>
+                  <span className='hero-fact-value price-amount'>${fee}</span>
                 </div>
-                {config.grades && (
-                  <div className='hero-fact'>
-                    <span className='hero-fact-label'>Grades</span>
-                    <span className='hero-fact-value'>{config.grades}</span>
-                  </div>
-                )}
-                {config.gender && (
-                  <div className='hero-fact'>
-                    <span className='hero-fact-label'>Gender</span>
-                    <span className='hero-fact-value'>{config.gender}</span>
-                  </div>
-                )}
+              )}
+              {config.insuranceRequired && (
                 <div className='hero-fact'>
-                  <span className='hero-fact-label'>Status</span>
+                  <span className='hero-fact-label'>Insurance</span>
                   <span
                     className='hero-fact-value'
-                    style={{
-                      color: config.registrationOpen ? '#4ade80' : '#fbbf24',
-                    }}
+                    style={{ color: '#fbbf24' }}
                   >
-                    {config.registrationOpen
-                      ? '✅ Registration Open'
-                      : '📋 Coming Soon'}
+                    Required
                   </span>
                 </div>
-                {config.registrationOpen && fee > 0 && (
-                  <div className='hero-fact hero-fact-price'>
-                    <span className='hero-fact-label'>Registration Fee</span>
-                    <span className='hero-fact-value price-amount'>${fee}</span>
-                  </div>
-                )}
-                {config.insuranceRequired && (
-                  <div className='hero-fact'>
-                    <span className='hero-fact-label'>Insurance</span>
-                    <span
-                      className='hero-fact-value'
-                      style={{ color: '#fbbf24' }}
-                    >
-                      Required
-                    </span>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </section>
 
-        {/* ─── MAIN SECTION ────────────────────────────────── */}
+        {/* ─── MAIN SECTION - Image Left | Form Right ──────── */}
         <section className='event-main-section'>
           <div className='event-main-grid'>
-            {/* Left - Image (hidden on mobile) */}
-            <div className='event-image-wrapper'>
-              <div className='event-image-glass'>
-                <div className='event-image-container'>
-                  <ImageWithBasePath
-                    src='assets/img/theme/player_1.png'
-                    alt={`${title} - Bothell Select`}
-                    className='event-image'
-                  />
-                </div>
-              </div>
-            </div>
+            {/* Left - Image */}
+            <ImageWithBasePath
+              src='assets/img/bg/bg_login.png'
+              alt='Background'
+              className='event-bg-img'
+            />
 
             {/* Right - Registration Form */}
             <div className='event-form-wrapper'>
-              <div className='event-form-glass'>{renderRegistrationForm()}</div>
+              <div className='event-form-glass'>
+                {config.registrationOpen && registrationConfig ? (
+                  <>
+                    <div className='event-registration-container'>
+                      {/* ✅ Use specific forms directly (same as home page) */}
+                      {eventType === 'tryout' && (
+                        <TryoutRegistrationForm
+                          tryoutConfig={registrationConfig}
+                          seasonEvent={{
+                            season: registrationConfig.tryoutName,
+                            year: registrationConfig.tryoutYear,
+                            eventId: config._id,
+                          }}
+                          onSuccess={() => {
+                            console.log(
+                              `🎉 ${eventType} registration successful!`,
+                            );
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                        />
+                      )}
+                      {eventType === 'training' && (
+                        <TrainingRegistrationForm
+                          formConfig={registrationConfig}
+                          seasonEvent={{
+                            season: config.title,
+                            year: new Date(config.startDate).getFullYear(),
+                            eventId: config._id,
+                          }}
+                          onSuccess={() => {
+                            console.log(
+                              `🎉 ${eventType} registration successful!`,
+                            );
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                        />
+                      )}
+                      {eventType === 'tournament' && (
+                        <TournamentRegistrationForm
+                          tournamentConfig={registrationConfig}
+                          seasonEvent={{
+                            season: config.title,
+                            year: new Date(config.startDate).getFullYear(),
+                            eventId: config._id,
+                          }}
+                          onSuccess={() => {
+                            console.log(
+                              `🎉 ${eventType} registration successful!`,
+                            );
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                        />
+                      )}
+                    </div>
+
+                    <div className='event-form-footer'>
+                      <p className='event-form-footer-text'>
+                        Questions?{' '}
+                        <Link to='/contact-us' className='event-footer-link'>
+                          Contact us
+                        </Link>
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  // Coming Soon State
+                  <div className='event-coming-soon'>
+                    <div className='coming-soon-icon' style={{ color }}>
+                      <i className={`ti ${icon}`} />
+                    </div>
+                    <h2>{title} Announced!</h2>
+                    <p className='coming-soon-text'>
+                      Registration for{' '}
+                      <strong>{config.displayName || config.title}</strong> will
+                      open soon.
+                    </p>
+                    <div className='coming-soon-details'>
+                      <div className='coming-soon-detail'>
+                        <span className='detail-label'>Date</span>
+                        <span className='detail-value'>{datesDisplay}</span>
+                      </div>
+                      <div className='coming-soon-detail'>
+                        <span className='detail-label'>Location</span>
+                        <span className='detail-value'>{locationDisplay}</span>
+                      </div>
+                    </div>
+
+                    <div className='coming-soon-notify'>
+                      <p className='notify-text'>
+                        <i className='ti ti-bell-ringing'></i>
+                        Get notified when registration opens:
+                      </p>
+                      {notificationSubmitted ? (
+                        <div className='notify-success'>
+                          <i className='ti ti-circle-check'></i>
+                          You're on the list! We'll notify you when registration
+                          opens.
+                        </div>
+                      ) : (
+                        <form
+                          onSubmit={handleNotificationSubmit}
+                          className='notify-form'
+                        >
+                          <input
+                            type='email'
+                            value={emailForNotification}
+                            onChange={(e) =>
+                              setEmailForNotification(e.target.value)
+                            }
+                            placeholder='Enter your email'
+                            required
+                            className='notify-input'
+                          />
+                          <button
+                            type='submit'
+                            className='notify-button'
+                            style={{ background: color }}
+                          >
+                            Notify Me
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </section>
 
-        {/* ─── DETAILS SECTION ─────────────────────────────── */}
+        {/* ─── DETAILS SECTION - Collapsible ────────────────── */}
         <section className='event-details-section'>
           <div className='event-details-glass'>
             <div className='event-details-header' onClick={toggleDetails}>
@@ -620,14 +748,14 @@ const EventPage: React.FC<EventPageProps> = ({
             >
               <div className='event-details-content'>
                 <div className='details-grid'>
-                  {config.whatToBring?.length > 0 && (
+                  {config.whatToBring && config.whatToBring.length > 0 && (
                     <div className='details-card'>
                       <h3 className='details-card-title' style={{ color }}>
                         <i className='ti ti-backpack' /> What to Bring
                       </h3>
                       <ul className='details-list'>
-                        {config.whatToBring.map((item, i) => (
-                          <li key={i}>{item}</li>
+                        {config.whatToBring.map((item, index) => (
+                          <li key={index}>{item}</li>
                         ))}
                       </ul>
                     </div>
@@ -668,14 +796,14 @@ const EventPage: React.FC<EventPageProps> = ({
                   </div>
                 </div>
 
-                {config.importantNotes?.length > 0 && (
+                {config.importantNotes && config.importantNotes.length > 0 && (
                   <div className='important-notes'>
                     <h3 className='important-notes-title' style={{ color }}>
                       <i className='ti ti-alert-circle' /> Important Notes
                     </h3>
                     <ul className='important-notes-list'>
-                      {config.importantNotes.map((note, i) => (
-                        <li key={i}>{note}</li>
+                      {config.importantNotes.map((note, index) => (
+                        <li key={index}>{note}</li>
                       ))}
                     </ul>
                   </div>
@@ -685,7 +813,7 @@ const EventPage: React.FC<EventPageProps> = ({
           </div>
         </section>
 
-        {/* ─── UTM Debug ────────────────────────────────────── */}
+        {/* ─── UTM Debug (Development Only) ──────────────────── */}
         {process.env.NODE_ENV === 'development' && (
           <div className='event-debug'>
             <strong>UTM debug</strong>
