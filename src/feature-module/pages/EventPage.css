@@ -276,23 +276,6 @@
   overflow: visible; /* Allow image to show without being cut off */
 }
 
-.event-image-glass {
-  padding: 32px;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  width: 100%;
-  position: relative;
-  overflow: visible; /* Important: allow image to extend beyond container */
-}
-
-.event-image-glass:hover {
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
-}
-
 .event-image-container {
   width: 100%;
   height: 100%;
@@ -317,36 +300,23 @@
   margin: 0 auto; /* Center horizontally */
 }
 
-/* If you want the image to be larger but still centered with overflow visible */
-.event-illustration-img.large {
-  width: 110%; /* Slightly larger */
-  height: 110%;
-  max-width: 110%;
-  max-height: 110%;
-  margin: 0 -5%; /* Negative margin to center the larger image */
-}
-
-/* ── Alternative: Full bleed image (extends beyond container) ── */
-.event-image-glass.bleed {
-  overflow: visible;
-  padding: 0; /* Remove padding for full bleed */
-}
-
-.event-image-glass.bleed .event-image-container {
-  overflow: visible;
-  padding: 20px; /* Add padding back for spacing */
-}
-
-.event-image-glass.bleed .event-illustration-img {
-  width: 120%; /* Extend beyond container */
+/* If you want the image to be larger than the container */
+.event-illustration-img.bleed {
+  width: 120%;
   height: 120%;
   max-width: 120%;
   max-height: 120%;
-  margin: 0 -10%; /* Negative margin to center */
   object-fit: contain;
-  position: relative;
-  top: auto;
-  left: auto;
+  margin: -10%; /* Negative margin to center */
+}
+
+/* If you want the image at its exact natural size */
+.event-illustration-img.natural {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: none;
 }
 
 /* ── Form Glass Card ──────────────────────────────────────── */
