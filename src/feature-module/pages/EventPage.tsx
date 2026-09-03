@@ -603,12 +603,16 @@ const EventPage: React.FC<EventPageProps> = ({
         <section className='event-main-section'>
           <div className='event-main-grid'>
             {/* Left - Image */}
-            <div>
-              <ImageWithBasePath
-                src='assets/img/bg/bg_login.png'
-                alt='Background'
-                className='event-illustration-img'
-              />
+            <div className='contact-image-wrapper'>
+              <div className='contact-image-glass'>
+                <div className='contact-image-container'>
+                  <ImageWithBasePath
+                    src='assets/img/theme/player_1.png'
+                    alt='Contact Illustration'
+                    className='contact-illustration-img'
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Right - Registration Form */}
