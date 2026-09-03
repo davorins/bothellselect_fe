@@ -335,7 +335,19 @@
 
 /* ── Form Glass Card ──────────────────────────────────────── */
 .event-form-wrapper {
+  animation: slideInRight 0.8s ease-out;
   display: flex;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .event-form-glass {
