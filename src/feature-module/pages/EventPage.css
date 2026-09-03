@@ -1240,6 +1240,35 @@
   .event-form-title {
     font-size: 1.3rem;
   }
+
+  .event-image-wrapper {
+    display: none !important;
+  }
+
+  .event-main-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .event-image-glass {
+    display: none !important;
+  }
+
+  .event-image-container {
+    display: none !important;
+  }
+
+  .event-form-wrapper {
+    width: 100%;
+  }
+
+  .event-form-glass {
+    border-radius: 32px;
+    padding: 24px 20px;
+  }
+
+  .event-main-grid {
+    gap: 0;
+  }
 }
 
 @media (max-width: 480px) {
