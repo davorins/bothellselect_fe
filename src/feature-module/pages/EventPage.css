@@ -14,36 +14,6 @@
     sans-serif;
 }
 
-.event-background-image {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 0;
-  overflow: hidden;
-  opacity: 0;
-  transform: scale(1.1);
-  transition:
-    opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.event-background-image.loaded {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.event-bg-parallax {
-  width: 110%;
-  height: 110%;
-  position: relative;
-  top: -5%;
-  left: -5%;
-  transition: transform 0.1s ease-out;
-  will-change: transform;
-}
-
 .event-bg-img {
   width: 100%;
   height: 100%;
@@ -52,8 +22,6 @@
   display: block;
   filter: brightness(1);
   animation: slowZoom 20s ease-in-out infinite alternate;
-  position: relative;
-  left: 200px;
 }
 
 @keyframes slowZoom {
@@ -1459,4 +1427,62 @@
 
 .tryout-registration-form .form-header p {
   color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Force all step labels to be white */
+.step-label {
+  color: #ffffff !important;
+}
+
+.step-label * {
+  color: #ffffff !important;
+}
+
+/* Force all text inside step-indicator to be white */
+.step-indicator {
+  color: #ffffff !important;
+}
+
+.step-indicator * {
+  color: #ffffff !important;
+}
+
+/* Force form header to be white */
+.form-header h2 {
+  color: #ffffff !important;
+}
+
+.form-header h2 * {
+  color: #ffffff !important;
+}
+
+.form-header p {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Target everything inside the registration form */
+.tryout-registration-form {
+  color: #ffffff !important;
+}
+
+.tryout-registration-form * {
+  color: #ffffff !important;
+}
+
+/* But keep dark text for card content (form inputs, etc.) */
+.tryout-registration-form .card,
+.tryout-registration-form .card-body,
+.tryout-registration-form .card-header,
+.tryout-registration-form .card *,
+.tryout-registration-form .form-control,
+.tryout-registration-form .form-label,
+.tryout-registration-form .text-dark {
+  color: #1a1a2e !important;
+}
+
+/* But keep step labels white inside cards */
+.tryout-registration-form .step-label,
+.tryout-registration-form .step-indicator,
+.tryout-registration-form .step-indicator * {
+  color: #ffffff !important;
 }
