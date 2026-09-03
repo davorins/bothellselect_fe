@@ -442,19 +442,35 @@ const EventPage: React.FC<EventPageProps> = ({
     e.preventDefault();
     if (!emailForNotification) return;
 
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailForNotification)) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+
     try {
+      // ✅ Send notification request to backend
       await axios.post(`${API_BASE_URL}/event-config/notify`, {
         email: emailForNotification,
-        eventType,
+        eventType: eventType,
         eventId: config?._id,
+        eventName:
+          config?.displayName || config?.title || 'Bothell Select Tryouts',
+        eventDate: datesDisplay,
+        eventLocation: locationDisplay,
       });
+
       setNotificationSubmitted(true);
       console.log(
-        `📧 Email collected for ${eventType} notification:`,
-        emailForNotification,
+        `✅ Notification request submitted for: ${emailForNotification}`,
       );
     } catch (error) {
-      console.error('Error submitting notification email:', error);
+      console.error('Error submitting notification request:', error);
+      // ✅ User-friendly error message
+      alert(
+        'Unable to submit notification request. Please try again later or contact us directly at bothellselect@proton.me.',
+      );
     }
   };
 
