@@ -267,20 +267,21 @@
   align-items: stretch;
 }
 
-/* ── Image Wrapper ────────────────────────────────────────── */
+/* ── Image Wrapper - FIXED ────────────────────────────────── */
 .event-image-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
   width: 100%;
   height: 100%;
   min-height: 500px;
+  position: relative;
+  overflow: visible;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(20px);
   border-radius: 44px;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 32px;
+  padding: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
 }
@@ -290,51 +291,15 @@
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
 }
 
-.event-image-container {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: visible;
-}
-
-/* ── Image - Full Size ────────────────────────────────────────── */
+/* ── Image - Full Size, No Cropping ────────────────────────── */
 .event-illustration-img {
-  width: 100%; /* Take full width */
-  height: 100%; /* Take full height */
-  max-width: 100%; /* Don't exceed container */
-  max-height: 100%; /* Don't exceed container */
-  object-fit: contain; /* Show full image without cropping */
-  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.3));
-  display: block;
-}
-
-/* If you want the image to be larger than the container (bleed effect) */
-.event-illustration-img.bleed {
-  width: 120%;
-  height: 120%;
-  max-width: 120%;
-  max-height: 120%;
-  object-fit: contain;
-  margin: -10%; /* Negative margin to center */
-}
-
-/* If you want the image to fill the container (may crop) */
-.event-illustration-img.cover {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-}
-
-/* If you want the image at its exact natural size */
-.event-illustration-img.natural {
-  width: auto;
-  height: auto;
   max-width: 100%;
   max-height: 100%;
-  object-fit: none;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.3));
+  display: block;
 }
 
 /* ── Form Glass Card ──────────────────────────────────────── */
