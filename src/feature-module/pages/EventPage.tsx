@@ -575,7 +575,7 @@ const EventPage: React.FC<EventPageProps> = ({
                 >
                   {config.registrationOpen
                     ? '✅ Registration Open'
-                    : '📋 Coming Soon'}
+                    : 'Coming Soon'}
                 </span>
               </div>
               {config.registrationOpen && fee > 0 && (
