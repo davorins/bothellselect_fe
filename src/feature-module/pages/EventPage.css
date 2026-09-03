@@ -14,24 +14,6 @@
     sans-serif;
 }
 
-.event-illustration-img {
-  max-width: 125%;
-  height: 100%;
-  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.3));
-  object-fit: cover;
-  position: absolute;
-  top: 0;
-}
-
-@keyframes slowZoom {
-  0% {
-    transform: scale(1);
-  }
-  100% {
-    transform: scale(1.05);
-  }
-}
-
 .event-bg-gradient {
   position: fixed;
   top: 0;
@@ -288,23 +270,22 @@
 /* ── Image Wrapper ────────────────────────────────────────── */
 .event-image-wrapper {
   display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: visible; /* Allow image to show without being cut off */
 }
 
 .event-image-glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  border-radius: 44px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
   padding: 32px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
   width: 100%;
-  overflow: hidden;
   position: relative;
+  overflow: visible; /* Important: allow image to extend beyond container */
 }
 
 .event-image-glass:hover {
@@ -318,21 +299,54 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 24px;
-  overflow: hidden;
   position: relative;
+  overflow: visible; /* Allow image to extend beyond container */
 }
 
-.event-image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+.event-illustration-img {
+  width: auto; /* Use original width */
+  height: auto; /* Use original height */
+  max-width: 100%; /* Don't exceed container width */
+  max-height: 100%; /* Don't exceed container height */
   filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.3));
-  transition: transform 0.3s ease;
+  object-fit: contain; /* Maintain aspect ratio */
+  display: block;
+  position: relative; /* Remove absolute positioning */
+  top: auto; /* Reset top positioning */
+  left: auto; /* Reset left positioning */
+  margin: 0 auto; /* Center horizontally */
 }
 
-.event-image-glass:hover .event-image {
-  transform: scale(1.02);
+/* If you want the image to be larger but still centered with overflow visible */
+.event-illustration-img.large {
+  width: 110%; /* Slightly larger */
+  height: 110%;
+  max-width: 110%;
+  max-height: 110%;
+  margin: 0 -5%; /* Negative margin to center the larger image */
+}
+
+/* ── Alternative: Full bleed image (extends beyond container) ── */
+.event-image-glass.bleed {
+  overflow: visible;
+  padding: 0; /* Remove padding for full bleed */
+}
+
+.event-image-glass.bleed .event-image-container {
+  overflow: visible;
+  padding: 20px; /* Add padding back for spacing */
+}
+
+.event-image-glass.bleed .event-illustration-img {
+  width: 120%; /* Extend beyond container */
+  height: 120%;
+  max-width: 120%;
+  max-height: 120%;
+  margin: 0 -10%; /* Negative margin to center */
+  object-fit: contain;
+  position: relative;
+  top: auto;
+  left: auto;
 }
 
 /* ── Form Glass Card ──────────────────────────────────────── */

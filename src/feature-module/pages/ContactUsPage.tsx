@@ -78,11 +78,17 @@ const ContactPage = () => {
         <div className='contact-grid'>
           {/* Left side - Illustration with glassmorphism - Centered image */}
 
-          <ImageWithBasePath
-            src='assets/img/theme/player_1.png'
-            alt='Contact Illustration'
-            className='contact-illustration-img'
-          />
+          <div className='contact-image-wrapper'>
+            <div className='contact-image-glass'>
+              <div className='contact-image-container'>
+                <ImageWithBasePath
+                  src='assets/img/theme/player_1.png'
+                  alt='Contact Illustration'
+                  className='contact-illustration-img'
+                />
+              </div>
+            </div>
+          </div>
 
           {/* Right side - Contact Form */}
           <div className='contact-form-wrapper'>
