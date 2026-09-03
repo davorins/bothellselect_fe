@@ -425,8 +425,9 @@
   color: #ffffff !important;
 }
 
-.event-registration-container .step-label {
-  color: #1a1a2e !important;
+.event-registration-container .step-label,
+h2.mt-3 {
+  color: #fff !important;
   font-weight: 600;
 }
 
