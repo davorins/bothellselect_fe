@@ -215,10 +215,7 @@ const Sidebar = () => {
           onClick={() => toggleSubmenu(item.label)}
         >
           {item.icon && <i className={`${item.icon} menu-icon`} />}
-
           <span>{item.label}</span>
-
-          <span className='menu-arrow'>▸</span>
         </button>
 
         {isOpen && (
@@ -298,10 +295,7 @@ const Sidebar = () => {
           onClick={() => toggleMenu(mainItem.label)}
         >
           {mainItem.icon && <i className={`${mainItem.icon} menu-icon`} />}
-
           <span>{mainItem.label}</span>
-
-          <span className='menu-arrow'>▸</span>
         </button>
 
         {isOpen && (
@@ -332,7 +326,6 @@ const Sidebar = () => {
                     }`}
                   >
                     {item.icon && <i className={`${item.icon} menu-icon`} />}
-
                     <span>{item.label}</span>
                   </Link>
                 </li>
