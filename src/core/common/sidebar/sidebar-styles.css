@@ -1,5 +1,144 @@
 /* =========================================================
-   MINI / COLLAPSED SIDEBAR
+   SIDEBAR - FULL VERSION
+   ========================================================= */
+
+.sidebar-menu,
+.sidebar-menu ul,
+.sidebar-menu li {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.sidebar-menu ul::before,
+.sidebar-menu li::before {
+  content: none !important;
+  display: none !important;
+}
+
+.sidebar-menu li::marker {
+  content: none !important;
+}
+
+/* Root menu */
+.sidebar-root-menu {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Every menu item */
+.sidebar-menu-item {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* =========================================================
+   LINKS + BUTTONS
+   ========================================================= */
+
+.sidebar-link {
+  width: 100%;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+
+  min-height: 40px;
+  padding: 8px 16px;
+
+  border: 0;
+  background: transparent;
+
+  color: #6b7280;
+  text-decoration: none;
+
+  font: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.sidebar-link:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.sidebar-link.active {
+  color: #2563eb;
+  background-color: #eff6ff;
+}
+
+/* =========================================================
+   ICONS
+   ========================================================= */
+
+.sidebar-link .menu-icon {
+  flex: 0 0 20px;
+
+  width: 20px;
+  margin-right: 12px;
+
+  font-size: 18px;
+  line-height: 1;
+
+  text-align: center;
+
+  color: inherit;
+}
+
+/* =========================================================
+   ARROW
+   ========================================================= */
+
+.sidebar-link .menu-arrow {
+  margin-left: auto;
+
+  font-size: 14px;
+  line-height: 1;
+
+  transition: transform 0.2s ease;
+}
+
+.sidebar-link.subdrop .menu-arrow {
+  transform: rotate(90deg);
+}
+
+/* =========================================================
+   SUBMENUS
+   ========================================================= */
+
+.sidebar-submenu {
+  list-style: none !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.sidebar-submenu li {
+  list-style: none !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* First-level submenu */
+.sidebar-menu .submenu-link {
+  padding-left: 48px !important;
+}
+
+/* Second-level submenu */
+.sidebar-menu .nested-submenu-link {
+  padding-left: 72px !important;
+}
+
+/* =========================================================
+   MINI SIDEBAR - ONLY ICONS VISIBLE
    ========================================================= */
 
 .sidebar.mini-sidebar {
@@ -11,66 +150,42 @@
   overflow: visible !important;
 }
 
-.sidebar.mini-sidebar .sidebar-menu {
-  overflow: visible;
-}
-
 .sidebar.mini-sidebar .sidebar-root-menu {
   width: 60px;
-  overflow: visible;
 }
 
-/* ---------------------------------------------------------
-   Hide all menu labels in collapsed state
-   --------------------------------------------------------- */
-
+/* Hide text labels in mini mode */
 .sidebar.mini-sidebar .sidebar-link span {
   display: none !important;
 }
 
-/* ---------------------------------------------------------
-   Center icons in collapsed sidebar
-   --------------------------------------------------------- */
-
+/* Center icons in mini mode */
 .sidebar.mini-sidebar .sidebar-link {
   justify-content: center !important;
   padding: 12px 0 !important;
-  width: 100%;
-  min-height: 44px;
 }
 
 .sidebar.mini-sidebar .sidebar-link .menu-icon {
   margin-right: 0 !important;
-  flex: 0 0 20px;
   font-size: 20px;
 }
 
-/* ---------------------------------------------------------
-   Hide arrows in mini mode
-   --------------------------------------------------------- */
-
+/* Hide arrows in mini mode */
 .sidebar.mini-sidebar .menu-arrow {
   display: none !important;
 }
 
-/* ---------------------------------------------------------
-   Every top-level menu item becomes the popup anchor
-   --------------------------------------------------------- */
-
+/* Every menu item becomes a popup trigger */
 .sidebar.mini-sidebar .sidebar-root-menu > .sidebar-menu-item {
   position: relative;
 }
 
-/* ---------------------------------------------------------
-   Submenu popup - appears when menu is toggled open
-   --------------------------------------------------------- */
-
+/* Submenu popup - appears as a dropdown next to the icon */
 .sidebar.mini-sidebar
   .sidebar-root-menu
   > .sidebar-menu-item
   > .sidebar-submenu {
   position: fixed;
-
   left: 60px;
   top: 50%;
   transform: translateY(-50%);
@@ -82,57 +197,30 @@
   padding: 8px 0 !important;
 
   background: #ffffff;
-
   border: 1px solid #e5e7eb;
-  border-radius: 4px;
-
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 
   z-index: 9999;
 }
 
-/* ---------------------------------------------------------
-   Make popup submenu items normal width
-   --------------------------------------------------------- */
-
-.sidebar.mini-sidebar
-  .sidebar-root-menu
-  > .sidebar-menu-item
-  > .sidebar-submenu
-  .sidebar-link {
-  width: 100%;
-
-  justify-content: flex-start !important;
-
-  padding: 9px 16px !important;
-
-  white-space: nowrap;
-}
-
 /* Show labels inside popup */
-.sidebar.mini-sidebar
-  .sidebar-root-menu
-  > .sidebar-menu-item
-  > .sidebar-submenu
-  .sidebar-link
-  span {
+.sidebar.mini-sidebar .sidebar-submenu .sidebar-link span {
   display: inline !important;
 }
 
-/* Restore icon spacing inside popup */
-.sidebar.mini-sidebar
-  .sidebar-root-menu
-  > .sidebar-menu-item
-  > .sidebar-submenu
-  .sidebar-link
-  .menu-icon {
+/* Fix popup link styling */
+.sidebar.mini-sidebar .sidebar-submenu .sidebar-link {
+  justify-content: flex-start !important;
+  padding: 9px 16px !important;
+  white-space: nowrap;
+}
+
+.sidebar.mini-sidebar .sidebar-submenu .sidebar-link .menu-icon {
   margin-right: 12px !important;
 }
 
-/* ---------------------------------------------------------
-   Nested submenu popup (second level)
-   --------------------------------------------------------- */
-
+/* Nested submenu popup */
 .sidebar.mini-sidebar
   .sidebar-root-menu
   > .sidebar-menu-item
@@ -148,7 +236,6 @@
   > .sidebar-menu-item
   > .nested-submenu {
   position: fixed;
-
   left: 280px;
   top: 50%;
   transform: translateY(-50%);
@@ -160,23 +247,11 @@
   padding: 8px 0 !important;
 
   background: #ffffff;
-
   border: 1px solid #e5e7eb;
-  border-radius: 4px;
-
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 
   z-index: 10000;
-}
-
-/* Nested popup links */
-.sidebar.mini-sidebar .nested-submenu .sidebar-link {
-  width: 100%;
-  justify-content: flex-start !important;
-
-  padding: 9px 16px !important;
-
-  white-space: nowrap;
 }
 
 /* Show nested labels */
@@ -184,75 +259,38 @@
   display: inline !important;
 }
 
-/* Restore nested icon spacing */
+.sidebar.mini-sidebar .nested-submenu .sidebar-link {
+  justify-content: flex-start !important;
+  padding: 9px 16px !important;
+  white-space: nowrap;
+}
+
 .sidebar.mini-sidebar .nested-submenu .sidebar-link .menu-icon {
   margin-right: 12px !important;
 }
 
-/* ---------------------------------------------------------
-   Direct links remain simple icons (no popup)
-   --------------------------------------------------------- */
-
-.sidebar.mini-sidebar .sidebar-root-menu > .sidebar-menu-item > .sidebar-link {
-  justify-content: center !important;
-}
-
-/* ---------------------------------------------------------
-   Active icon state
-   --------------------------------------------------------- */
-
+/* Active and hover states in mini mode */
 .sidebar.mini-sidebar .sidebar-link.active {
   background-color: #eff6ff;
   color: #2563eb;
   border-radius: 4px;
 }
 
-/* ---------------------------------------------------------
-   Hover state for icons
-   --------------------------------------------------------- */
-
 .sidebar.mini-sidebar .sidebar-link:hover {
   background-color: #f3f4f6;
   border-radius: 4px;
 }
 
-/* ---------------------------------------------------------
-   Ensure proper z-index layering
-   --------------------------------------------------------- */
-
-.sidebar.mini-sidebar .sidebar-submenu {
-  z-index: 9999 !important;
-}
-
-.sidebar.mini-sidebar .nested-submenu {
-  z-index: 10000 !important;
-}
-
-/* ---------------------------------------------------------
-   Scrollbar fixes for mini sidebar
-   --------------------------------------------------------- */
-
-.sidebar.mini-sidebar .slimscroll {
-  overflow: visible !important;
-}
-
-.sidebar.mini-sidebar .slimscroll::-webkit-scrollbar {
-  display: none;
-}
-
-/* ---------------------------------------------------------
-   Animation for smooth transitions (optional)
-   --------------------------------------------------------- */
-
+/* Animation for popups */
 .sidebar.mini-sidebar .sidebar-submenu,
 .sidebar.mini-sidebar .nested-submenu {
-  animation: miniSlideIn 0.2s ease;
+  animation: slideIn 0.15s ease;
 }
 
-@keyframes miniSlideIn {
+@keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(-40%) translateX(-10px);
+    transform: translateY(-40%) translateX(-8px);
   }
   to {
     opacity: 1;

@@ -153,14 +153,7 @@ const Sidebar = () => {
    * Only one top-level menu can be open at a time.
    */
   const toggleMenu = (label: string) => {
-    setExpandedMenus((prev) => {
-      // If clicking the already open menu, close it
-      if (prev.includes(label)) {
-        return [];
-      }
-      // Otherwise, open this menu and close all others
-      return [label];
-    });
+    setExpandedMenus((prev) => (prev.includes(label) ? [] : [label]));
   };
 
   /**
@@ -209,11 +202,8 @@ const Sidebar = () => {
       }
     });
 
-    // Only auto-expand if not in mini mode
-    if (!isMiniSidebar) {
-      setExpandedMenus(activeMainLabel ? [activeMainLabel] : []);
-    }
-  }, [location.pathname, filteredSidebarData, isMiniSidebar]);
+    setExpandedMenus(activeMainLabel ? [activeMainLabel] : []);
+  }, [location.pathname, filteredSidebarData]);
 
   /**
    * Render nested submenu.
