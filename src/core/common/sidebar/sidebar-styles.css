@@ -261,7 +261,8 @@
   align-items: center;
 }
 
-.sidebar.mini-sidebar .sidebar-submenu.mini-stack {
+/* Show submenu items in mini mode - FIXED */
+.sidebar.mini-sidebar .sidebar-submenu {
   display: flex !important;
   flex-direction: column;
   align-items: center;
@@ -274,45 +275,39 @@
   padding: 4px 0 !important;
 }
 
-.sidebar.mini-sidebar .sidebar-submenu.mini-stack li {
+/* Make submenu items visible in mini mode */
+.sidebar.mini-sidebar .sidebar-submenu .sidebar-menu-item {
   display: block;
   width: 100%;
 }
 
-/* Submenu icon wrapper - colored badge style */
-.sidebar.mini-sidebar .submenu-icon-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #9c8c7a;
-  color: #ffffff;
-  transition: background-color 0.2s ease;
-}
-
-.sidebar.mini-sidebar .submenu-icon-wrapper .submenu-icon {
-  font-size: 16px;
-  color: #ffffff;
-}
-
-.sidebar.mini-sidebar .submenu-icon-wrapper:hover {
-  background: #c4a882;
-}
-
-.sidebar.mini-sidebar .sidebar-link.active .submenu-icon-wrapper {
-  background: #2563eb;
-}
-
-/* Ensure no text shows in mini submenus */
-.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-link .menu-label {
-  display: none !important;
-}
-
-.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-link {
-  justify-content: center !important;
+/* Style submenu items differently in mini mode for better visibility */
+.sidebar.mini-sidebar .sidebar-submenu .sidebar-link {
+  background-color: #f9fafb;
+  border-radius: 6px;
+  margin: 2px 4px;
   padding: 8px !important;
+  min-height: 36px;
+}
+
+.sidebar.mini-sidebar .sidebar-submenu .sidebar-link:hover {
+  background-color: #f3f4f6;
+}
+
+.sidebar.mini-sidebar .sidebar-submenu .sidebar-link.active {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+/* Show icon in submenu items in mini mode */
+.sidebar.mini-sidebar .sidebar-submenu .menu-icon {
+  font-size: 18px;
+  margin-right: 0 !important;
+}
+
+/* Hide submenu labels in mini mode */
+.sidebar.mini-sidebar .sidebar-submenu .menu-label {
+  display: none !important;
 }
 
 /* Hide nested submenus in mini mode (only show level 1) */
@@ -321,7 +316,7 @@
 }
 
 /* ---------------------------------------------------------
-   Tooltips via data-tooltip attribute
+   Tooltips via data-tooltip attribute - FIXED
    --------------------------------------------------------- */
 
 .sidebar.mini-sidebar .sidebar-link {
@@ -391,6 +386,69 @@
   border-radius: 4px;
 }
 
-.sidebar.mini-sidebar .sidebar-link.active .submenu-icon-wrapper {
-  background: #2563eb;
+/* =========================================================
+   HOVER EXPAND - Show labels when hovering mini sidebar
+   ========================================================= */
+
+.sidebar.mini-sidebar:hover {
+  width: 240px !important;
+}
+
+.sidebar.mini-sidebar:hover .sidebar-link .menu-label {
+  opacity: 1;
+  max-width: 200px;
+  margin-left: 12px !important;
+  pointer-events: auto;
+}
+
+.sidebar.mini-sidebar:hover .sidebar-link .menu-arrow {
+  opacity: 1;
+  max-width: 14px;
+  margin-left: 8px;
+  pointer-events: auto;
+}
+
+.sidebar.mini-sidebar:hover .sidebar-link {
+  justify-content: flex-start !important;
+  padding: 10px 16px !important;
+}
+
+.sidebar.mini-sidebar:hover .sidebar-link .menu-icon {
+  margin-right: 12px !important;
+  font-size: 18px;
+}
+
+/* Show submenu items with labels on hover */
+.sidebar.mini-sidebar:hover .sidebar-submenu .menu-label {
+  display: block !important;
+  opacity: 1;
+  max-width: 200px;
+  margin-left: 12px !important;
+  pointer-events: auto;
+}
+
+.sidebar.mini-sidebar:hover .sidebar-submenu .sidebar-link {
+  justify-content: flex-start !important;
+  padding: 10px 16px !important;
+  background: transparent;
+}
+
+.sidebar.mini-sidebar:hover .sidebar-submenu .sidebar-link .menu-icon {
+  margin-right: 12px !important;
+  font-size: 18px;
+}
+
+.sidebar.mini-sidebar:hover .sidebar-submenu .sidebar-link:hover {
+  background-color: #f3f4f6;
+}
+
+.sidebar.mini-sidebar:hover .sidebar-submenu .sidebar-link.active {
+  background-color: #eff6ff;
+}
+
+/* Hide tooltips when hovered (since labels show) */
+.sidebar.mini-sidebar:hover .sidebar-link[data-tooltip]::after,
+.sidebar.mini-sidebar:hover .sidebar-link[data-tooltip]::before {
+  opacity: 0 !important;
+  visibility: hidden !important;
 }

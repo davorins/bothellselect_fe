@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Scrollbars from 'react-custom-scrollbars-2';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { SidebarData } from '../../data/json/sidebarData';
 import '../../../style/icon/tabler-icons/webfont/tabler-icons.css';
 import { useAuth } from '../../../context/AuthContext';
@@ -44,6 +44,8 @@ interface User {
 
 const Sidebar = () => {
   const location = useLocation();
+  const dispatch = useDispatch();
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   const { user } = useAuth() as {
     user: User | null;
@@ -65,24 +67,29 @@ const Sidebar = () => {
 
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [expandedSubmenus, setExpandedSubmenus] = useState<string[]>([]);
+  const [isHovering, setIsHovering] = useState(false);
 
   /* =========================================================
      MINI SIDEBAR STATE
      ========================================================= */
 
-  /*
-   * This is the important part.
-   *
-   * The sidebar is mini ONLY when:
-   *
-   *   miniSidebar === true
-   *   AND
-   *   expandMenu === false
-   *
-   * When the user hovers over the mini sidebar,
-   * expandMenu becomes true and the labels return.
-   */
-  const isMiniSidebar = miniSidebar && !expandMenu;
+  // The sidebar is mini ONLY when miniSidebar === true AND expandMenu === false
+  const isMiniSidebar = miniSidebar && !expandMenu && !isHovering;
+
+  // Handle hover events
+  const handleMouseEnter = () => {
+    if (miniSidebar) {
+      setIsHovering(true);
+      // Optionally dispatch action to expand on hover
+      // dispatch({ type: 'sidebar/setExpandMenu', payload: true });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+    // Optionally dispatch action to collapse on leave
+    // dispatch({ type: 'sidebar/setExpandMenu', payload: false });
+  };
 
   /* =========================================================
      LINK HELPER
@@ -100,10 +107,8 @@ const Sidebar = () => {
 
   const normalizedData = useMemo<MainMenuItem[]>(() => {
     return SidebarData.map((item: any) => {
-      /*
-       * Convert a top-level item that only has a link
-       * into the same structure as the other menu items.
-       */
+      // Convert a top-level item that only has a link
+      // into the same structure as the other menu items.
       if (item.link && !item.submenuItems) {
         return {
           ...item,
@@ -142,9 +147,7 @@ const Sidebar = () => {
             (item: SubmenuItem) => !item.roles || item.roles.includes(role),
           )
           .map((item: SubmenuItem) => {
-            /*
-             * Special Parents behavior.
-             */
+            // Special Parents behavior
             if (item.label === 'Parents') {
               const isAdminView = role === 'admin';
 
@@ -159,9 +162,7 @@ const Sidebar = () => {
               };
             }
 
-            /*
-             * Filter nested menus.
-             */
+            // Filter nested menus
             if (item.submenuItems) {
               return {
                 ...item,
@@ -331,10 +332,7 @@ const Sidebar = () => {
       return null;
     }
 
-    /*
-     * If there is only one direct child, make the parent
-     * itself a direct link.
-     */
+    // If there is only one direct child, make the parent itself a direct link
     const isDirectMenu =
       children.length === 1 && !!children[0].link && !children[0].submenuItems;
 
@@ -455,6 +453,9 @@ const Sidebar = () => {
     <div
       className={`sidebar ${isMiniSidebar ? 'mini-sidebar' : ''}`}
       id='sidebar'
+      ref={sidebarRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <Scrollbars>
         <div className='sidebar-inner slimscroll'>
