@@ -184,3 +184,47 @@
 .sidebar-menu button.sidebar-link:focus {
   outline: none;
 }
+
+/* =========================================================
+   MINI SIDEBAR STYLES
+   ========================================================= */
+
+.sidebar.mini-sidebar .sidebar-link span {
+  display: none;
+}
+
+.sidebar.mini-sidebar .sidebar-submenu {
+  /* Submenus in mini mode - show on hover or click */
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: #fff;
+  min-width: 200px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  padding: 8px 0 !important;
+  z-index: 1000;
+}
+
+.sidebar.mini-sidebar .sidebar-menu-item {
+  position: relative;
+}
+
+.sidebar.mini-sidebar .sidebar-menu-item:hover .sidebar-submenu {
+  display: block;
+}
+
+/* Ensure submenu items in mini mode are clickable */
+.sidebar.mini-sidebar .sidebar-submenu .sidebar-link {
+  padding: 8px 16px !important;
+  white-space: nowrap;
+}
+
+.sidebar.mini-sidebar .sidebar-submenu .sidebar-link span {
+  display: inline-block !important;
+}
+
+/* Hide arrow in mini mode */
+.sidebar.mini-sidebar .menu-arrow {
+  display: none !important;
+}
