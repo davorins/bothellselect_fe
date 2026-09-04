@@ -355,18 +355,8 @@ export const SidebarData = [
   },
   {
     label: 'FAQ',
-    submenuOpen: false,
-    showSubRoute: false,
     submenuHdr: 'FAQ',
     icon: 'ti ti-question-mark',
-    submenuItems: [
-      {
-        label: 'FAQ',
-        submenu: false,
-        showSubRoute: false,
-        link: routes.faq,
-        icon: 'ti ti-question-mark',
-      },
-    ],
+    link: routes.faq,
   },
 ];
