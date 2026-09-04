@@ -1239,7 +1239,7 @@ const EmailTemplatesList: React.FC<EmailTemplatesListProps> = ({
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className='page-wrapper'>
+    <div className='page-wrapper' style={{ padding: 0 }}>
       <div className='content content-two'>
         {error && (
           <Alert variant='danger' onClose={() => setError(null)} dismissible>
