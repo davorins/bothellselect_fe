@@ -1,5 +1,5 @@
 /* =========================================================
-   SIDEBAR - FULL VERSION
+   SIDEBAR - BASE STYLES
    ========================================================= */
 
 .sidebar-menu,
@@ -20,14 +20,12 @@
   content: none !important;
 }
 
-/* Root menu */
 .sidebar-root-menu {
   list-style: none !important;
   margin: 0 !important;
   padding: 0 !important;
 }
 
-/* Every menu item */
 .sidebar-menu-item {
   list-style: none !important;
   margin: 0 !important;
@@ -74,6 +72,10 @@
   background-color: #eff6ff;
 }
 
+.sidebar-link.expanded {
+  background-color: #f3f4f6;
+}
+
 /* =========================================================
    ICONS
    ========================================================= */
@@ -105,8 +107,8 @@
   transition: transform 0.2s ease;
 }
 
-.sidebar-link.subdrop .menu-arrow {
-  transform: rotate(90deg);
+.sidebar-link.expanded .menu-arrow {
+  transform: rotate(180deg);
 }
 
 /* =========================================================
@@ -138,11 +140,11 @@
 }
 
 /* =========================================================
-   MINI SIDEBAR - ONLY ICONS VISIBLE
+   MINI SIDEBAR - CLEAN ICON ONLY
    ========================================================= */
 
 .sidebar.mini-sidebar {
-  width: 60px !important;
+  width: 70px !important;
   overflow: visible !important;
 }
 
@@ -151,7 +153,8 @@
 }
 
 .sidebar.mini-sidebar .sidebar-root-menu {
-  width: 60px;
+  width: 70px;
+  overflow: visible;
 }
 
 /* Hide text labels in mini mode */
@@ -159,10 +162,15 @@
   display: none !important;
 }
 
+.sidebar.mini-sidebar .sidebar-link .menu-arrow {
+  display: none !important;
+}
+
 /* Center icons in mini mode */
 .sidebar.mini-sidebar .sidebar-link {
   justify-content: center !important;
-  padding: 12px 0 !important;
+  padding: 12px !important;
+  min-height: 44px;
 }
 
 .sidebar.mini-sidebar .sidebar-link .menu-icon {
@@ -170,106 +178,135 @@
   font-size: 20px;
 }
 
-/* Hide arrows in mini mode */
-.sidebar.mini-sidebar .menu-arrow {
+/* ---------------------------------------------------------
+   Submenu items stack below parent in mini mode
+   --------------------------------------------------------- */
+
+.sidebar.mini-sidebar .sidebar-menu-item.has-submenu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sidebar.mini-sidebar .sidebar-submenu.mini-stack {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  position: static !important;
+  width: 100%;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  margin: 0 !important;
+  padding: 4px 0 !important;
+}
+
+.sidebar.mini-sidebar .sidebar-submenu.mini-stack li {
+  display: block;
+  width: 100%;
+}
+
+/* Submenu icon wrapper - colored badge style */
+.sidebar.mini-sidebar .submenu-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #9c8c7a;
+  color: #ffffff;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar.mini-sidebar .submenu-icon-wrapper .submenu-icon {
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.sidebar.mini-sidebar .submenu-icon-wrapper:hover {
+  background: #c4a882;
+}
+
+.sidebar.mini-sidebar .sidebar-link.active .submenu-icon-wrapper {
+  background: #2563eb;
+}
+
+/* Hide text in mini submenus */
+.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-link span {
   display: none !important;
 }
 
-/* Every menu item becomes a popup trigger */
-.sidebar.mini-sidebar .sidebar-root-menu > .sidebar-menu-item {
+.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-link {
+  justify-content: center !important;
+  padding: 8px !important;
+}
+
+/* Hide nested submenus in mini mode (only show level 1) */
+.sidebar.mini-sidebar .nested-submenu {
+  display: none !important;
+}
+
+/* ---------------------------------------------------------
+   Tooltips via data-tooltip attribute
+   --------------------------------------------------------- */
+
+.sidebar.mini-sidebar .sidebar-link {
   position: relative;
 }
 
-/* Submenu popup - appears as a dropdown next to the icon */
-.sidebar.mini-sidebar
-  .sidebar-root-menu
-  > .sidebar-menu-item
-  > .sidebar-submenu {
-  position: fixed;
-  left: 60px;
+.sidebar.mini-sidebar .sidebar-link[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  background: #2c2416;
+  color: #fff;
+  font-family: 'Jost', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+  transition-delay: 0.1s;
+  z-index: 1100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.sidebar.mini-sidebar .sidebar-link[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  left: calc(100% + 4px);
   top: 50%;
   transform: translateY(-50%);
-
-  width: 220px;
-  min-width: 220px;
-
-  margin: 0 !important;
-  padding: 8px 0 !important;
-
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-
-  z-index: 9999;
+  border: 5px solid transparent;
+  border-right-color: #2c2416;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  transition-delay: 0.1s;
+  z-index: 1100;
 }
 
-/* Show labels inside popup */
-.sidebar.mini-sidebar .sidebar-submenu .sidebar-link span {
-  display: inline !important;
+.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::after,
+.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
 }
 
-/* Fix popup link styling */
-.sidebar.mini-sidebar .sidebar-submenu .sidebar-link {
-  justify-content: flex-start !important;
-  padding: 9px 16px !important;
-  white-space: nowrap;
-}
+/* ---------------------------------------------------------
+   Active and hover states in mini mode
+   --------------------------------------------------------- */
 
-.sidebar.mini-sidebar .sidebar-submenu .sidebar-link .menu-icon {
-  margin-right: 12px !important;
-}
-
-/* Nested submenu popup */
-.sidebar.mini-sidebar
-  .sidebar-root-menu
-  > .sidebar-menu-item
-  > .sidebar-submenu
-  > .sidebar-menu-item {
-  position: relative;
-}
-
-.sidebar.mini-sidebar
-  .sidebar-root-menu
-  > .sidebar-menu-item
-  > .sidebar-submenu
-  > .sidebar-menu-item
-  > .nested-submenu {
-  position: fixed;
-  left: 280px;
-  top: 50%;
-  transform: translateY(-50%);
-
-  width: 220px;
-  min-width: 220px;
-
-  margin: 0 !important;
-  padding: 8px 0 !important;
-
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-
-  z-index: 10000;
-}
-
-/* Show nested labels */
-.sidebar.mini-sidebar .nested-submenu .sidebar-link span {
-  display: inline !important;
-}
-
-.sidebar.mini-sidebar .nested-submenu .sidebar-link {
-  justify-content: flex-start !important;
-  padding: 9px 16px !important;
-  white-space: nowrap;
-}
-
-.sidebar.mini-sidebar .nested-submenu .sidebar-link .menu-icon {
-  margin-right: 12px !important;
-}
-
-/* Active and hover states in mini mode */
 .sidebar.mini-sidebar .sidebar-link.active {
   background-color: #eff6ff;
   color: #2563eb;
@@ -281,19 +318,14 @@
   border-radius: 4px;
 }
 
-/* Animation for popups */
-.sidebar.mini-sidebar .sidebar-submenu,
-.sidebar.mini-sidebar .nested-submenu {
-  animation: slideIn 0.15s ease;
+.sidebar.mini-sidebar .sidebar-link.active .submenu-icon-wrapper {
+  background: #2563eb;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-40%) translateX(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-  }
+/* ---------------------------------------------------------
+   Main content adjustment
+   --------------------------------------------------------- */
+
+.sidebar.mini-sidebar ~ .main-content {
+  margin-left: 70px;
 }

@@ -153,7 +153,14 @@ const Sidebar = () => {
    * Only one top-level menu can be open at a time.
    */
   const toggleMenu = (label: string) => {
-    setExpandedMenus((prev) => (prev.includes(label) ? [] : [label]));
+    setExpandedMenus((prev) => {
+      // If this menu is already open, close it
+      if (prev.includes(label)) {
+        return [];
+      }
+      // Otherwise, open this menu and close all others
+      return [label];
+    });
   };
 
   /**
@@ -215,21 +222,31 @@ const Sidebar = () => {
     return (
       <li
         key={`${mainItem.label}-${item.label}`}
-        className='sidebar-menu-item sidebar-nested-item'
+        className={`sidebar-menu-item sidebar-nested-item ${isMiniSidebar ? 'has-submenu' : ''}`}
       >
         <button
           type='button'
           className={`sidebar-link submenu-link ${
             isActive ? 'active' : ''
-          } ${isOpen ? 'subdrop' : ''}`}
+          } ${isOpen ? 'expanded' : ''}`}
           onClick={() => toggleSubmenu(item.label)}
+          data-tooltip={item.label}
         >
           {item.icon && <i className={`${item.icon} menu-icon`} />}
-          <span>{item.label}</span>
+          {!isMiniSidebar && <span>{item.label}</span>}
+          {!isMiniSidebar && (
+            <i
+              className={`ti ti-chevron-${isOpen ? 'up' : 'down'} menu-arrow`}
+            />
+          )}
         </button>
 
         {isOpen && (
-          <ul className='sidebar-submenu nested-submenu'>
+          <ul
+            className={`sidebar-submenu nested-submenu ${
+              isMiniSidebar ? 'mini-stack' : ''
+            }`}
+          >
             {(item.submenuItems || []).map((sub) => {
               const link = getItemLink(sub);
 
@@ -247,9 +264,19 @@ const Sidebar = () => {
                     className={`sidebar-link nested-submenu-link ${
                       active ? 'active' : ''
                     }`}
+                    data-tooltip={sub.label}
                   >
-                    {sub.icon && <i className={`${sub.icon} menu-icon`} />}
-                    <span>{sub.label}</span>
+                    {isMiniSidebar && sub.icon ? (
+                      <span className='submenu-icon-wrapper'>
+                        <i className={`${sub.icon} submenu-icon`} />
+                      </span>
+                    ) : (
+                      <>
+                        {sub.icon && <i className={`${sub.icon} menu-icon`} />}
+                        <span>{sub.label}</span>
+                      </>
+                    )}
+                    {!isMiniSidebar && sub.label}
                   </Link>
                 </li>
               );
@@ -280,12 +307,20 @@ const Sidebar = () => {
       const active = isActivePath(link);
 
       return (
-        <li key={`${mainItem.label}-${index}`} className='sidebar-menu-item'>
-          <Link to={link} className={`sidebar-link ${active ? 'active' : ''}`}>
+        <li
+          key={`${mainItem.label}-${index}`}
+          className='sidebar-menu-item'
+          data-tooltip={mainItem.label}
+        >
+          <Link
+            to={link}
+            className={`sidebar-link ${active ? 'active' : ''}`}
+            data-tooltip={mainItem.label}
+          >
             {(mainItem.icon || child.icon) && (
               <i className={`${mainItem.icon || child.icon} menu-icon`} />
             )}
-            <span>{mainItem.label}</span>
+            {!isMiniSidebar && <span>{mainItem.label}</span>}
           </Link>
         </li>
       );
@@ -295,20 +330,31 @@ const Sidebar = () => {
     const isActive = hasActiveChild(mainItem);
 
     return (
-      <li key={`${mainItem.label}-${index}`} className='sidebar-menu-item'>
+      <li
+        key={`${mainItem.label}-${index}`}
+        className={`sidebar-menu-item ${isMiniSidebar ? 'has-submenu' : ''}`}
+      >
         <button
           type='button'
           className={`sidebar-link sidebar-parent-link ${
             isActive ? 'active' : ''
-          } ${isOpen ? 'subdrop' : ''}`}
+          } ${isOpen ? 'expanded' : ''}`}
           onClick={() => toggleMenu(mainItem.label)}
+          data-tooltip={mainItem.label}
         >
           {mainItem.icon && <i className={`${mainItem.icon} menu-icon`} />}
-          <span>{mainItem.label}</span>
+          {!isMiniSidebar && <span>{mainItem.label}</span>}
+          {!isMiniSidebar && (
+            <i
+              className={`ti ti-chevron-${isOpen ? 'up' : 'down'} menu-arrow`}
+            />
+          )}
         </button>
 
         {isOpen && (
-          <ul className='sidebar-submenu'>
+          <ul
+            className={`sidebar-submenu ${isMiniSidebar ? 'mini-stack' : ''}`}
+          >
             {children.map((item) => {
               const hasNested =
                 !!item.submenuItems && item.submenuItems.length > 0;
@@ -333,9 +379,20 @@ const Sidebar = () => {
                     className={`sidebar-link submenu-link ${
                       active ? 'active' : ''
                     }`}
+                    data-tooltip={item.label}
                   >
-                    {item.icon && <i className={`${item.icon} menu-icon`} />}
-                    <span>{item.label}</span>
+                    {isMiniSidebar && item.icon ? (
+                      <span className='submenu-icon-wrapper'>
+                        <i className={`${item.icon} submenu-icon`} />
+                      </span>
+                    ) : (
+                      <>
+                        {item.icon && (
+                          <i className={`${item.icon} menu-icon`} />
+                        )}
+                        <span>{item.label}</span>
+                      </>
+                    )}
                   </Link>
                 </li>
               );
