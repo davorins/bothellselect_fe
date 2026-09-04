@@ -1,32 +1,33 @@
 /* =========================================================
-   SIDEBAR - BASE STYLES
+   SIDEBAR
    ========================================================= */
 
-.sidebar-menu,
-.sidebar-menu ul,
-.sidebar-menu li {
+#sidebar.sidebar,
+#sidebar.sidebar-menu,
+#sidebar.sidebar-menu ul,
+#sidebar.sidebar-menu li {
   list-style: none !important;
   margin: 0 !important;
   padding: 0 !important;
 }
 
-.sidebar-menu ul::before,
-.sidebar-menu li::before {
+#sidebar.sidebar-menu ul::before,
+#sidebar.sidebar-menu li::before {
   content: none !important;
   display: none !important;
 }
 
-.sidebar-menu li::marker {
+#sidebar.sidebar-menu li::marker {
   content: none !important;
 }
 
-.sidebar-root-menu {
+#sidebar .sidebar-root-menu {
   list-style: none !important;
   margin: 0 !important;
   padding: 0 !important;
 }
 
-.sidebar-menu-item {
+#sidebar .sidebar-menu-item {
   list-style: none !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -36,7 +37,7 @@
    LINKS + BUTTONS
    ========================================================= */
 
-.sidebar-link {
+#sidebar .sidebar-link {
   width: 100%;
   box-sizing: border-box;
 
@@ -62,17 +63,17 @@
     color 0.2s ease;
 }
 
-.sidebar-link:hover {
+#sidebar .sidebar-link:hover {
   background-color: #f3f4f6;
   color: #111827;
 }
 
-.sidebar-link.active {
+#sidebar .sidebar-link.active {
   color: #2563eb;
   background-color: #eff6ff;
 }
 
-.sidebar-link.expanded {
+#sidebar .sidebar-link.expanded {
   background-color: #f3f4f6;
 }
 
@@ -80,7 +81,7 @@
    ICONS
    ========================================================= */
 
-.sidebar-link .menu-icon {
+#sidebar .sidebar-link .menu-icon {
   flex: 0 0 20px;
 
   width: 20px;
@@ -98,7 +99,7 @@
    ARROW
    ========================================================= */
 
-.sidebar-link .menu-arrow {
+#sidebar .sidebar-link .menu-arrow {
   margin-left: auto;
 
   font-size: 14px;
@@ -107,7 +108,7 @@
   transition: transform 0.2s ease;
 }
 
-.sidebar-link.expanded .menu-arrow {
+#sidebar .sidebar-link.expanded .menu-arrow {
   transform: rotate(180deg);
 }
 
@@ -115,14 +116,14 @@
    SUBMENUS
    ========================================================= */
 
-.sidebar-submenu {
+#sidebar .sidebar-submenu {
   list-style: none !important;
 
   margin: 0 !important;
   padding: 0 !important;
 }
 
-.sidebar-submenu li {
+#sidebar .sidebar-submenu li {
   list-style: none !important;
 
   margin: 0 !important;
@@ -130,51 +131,51 @@
 }
 
 /* First-level submenu */
-.sidebar-menu .submenu-link {
+#sidebar .sidebar-menu .submenu-link {
   padding-left: 48px !important;
 }
 
 /* Second-level submenu */
-.sidebar-menu .nested-submenu-link {
+#sidebar .sidebar-menu .nested-submenu-link {
   padding-left: 72px !important;
 }
 
 /* =========================================================
-   MINI SIDEBAR - COMPLETE OVERHAUL
+   MINI SIDEBAR - HIGH SPECIFICITY TO OVERRIDE GLOBAL CSS
    ========================================================= */
 
-.sidebar.mini-sidebar {
+#sidebar.sidebar.mini-sidebar {
   width: 70px !important;
   overflow: visible !important;
 }
 
-.sidebar.mini-sidebar .sidebar-inner {
+#sidebar.sidebar.mini-sidebar .sidebar-inner {
   overflow: visible !important;
 }
 
-.sidebar.mini-sidebar .sidebar-root-menu {
+#sidebar.sidebar.mini-sidebar .sidebar-root-menu {
   width: 70px;
   overflow: visible;
 }
 
-/* CRITICAL: Hide ALL text labels in mini mode - this includes submenu items */
-.sidebar.mini-sidebar .sidebar-link span {
+/* CRITICAL: Hide ALL text labels in mini mode */
+#sidebar.sidebar.mini-sidebar .sidebar-link span {
   display: none !important;
 }
 
 /* CRITICAL: Hide ALL arrows in mini mode */
-.sidebar.mini-sidebar .sidebar-link .menu-arrow {
+#sidebar.sidebar.mini-sidebar .sidebar-link .menu-arrow {
   display: none !important;
 }
 
 /* Center icons in mini mode */
-.sidebar.mini-sidebar .sidebar-link {
+#sidebar.sidebar.mini-sidebar .sidebar-link {
   justify-content: center !important;
   padding: 12px !important;
   min-height: 44px;
 }
 
-.sidebar.mini-sidebar .sidebar-link .menu-icon {
+#sidebar.sidebar.mini-sidebar .sidebar-link .menu-icon {
   margin-right: 0 !important;
   font-size: 20px;
 }
@@ -183,13 +184,13 @@
    Submenu items stack below parent in mini mode
    --------------------------------------------------------- */
 
-.sidebar.mini-sidebar .sidebar-menu-item.has-submenu {
+#sidebar.sidebar.mini-sidebar .sidebar-menu-item.has-submenu {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.sidebar.mini-sidebar .sidebar-submenu.mini-stack {
+#sidebar.sidebar.mini-sidebar .sidebar-submenu.mini-stack {
   display: flex !important;
   flex-direction: column;
   align-items: center;
@@ -202,13 +203,13 @@
   padding: 4px 0 !important;
 }
 
-.sidebar.mini-sidebar .sidebar-submenu.mini-stack li {
+#sidebar.sidebar.mini-sidebar .sidebar-submenu.mini-stack li {
   display: block;
   width: 100%;
 }
 
 /* Submenu icon wrapper - colored badge style */
-.sidebar.mini-sidebar .submenu-icon-wrapper {
+#sidebar.sidebar.mini-sidebar .submenu-icon-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -220,31 +221,31 @@
   transition: background-color 0.2s ease;
 }
 
-.sidebar.mini-sidebar .submenu-icon-wrapper .submenu-icon {
+#sidebar.sidebar.mini-sidebar .submenu-icon-wrapper .submenu-icon {
   font-size: 16px;
   color: #ffffff;
 }
 
-.sidebar.mini-sidebar .submenu-icon-wrapper:hover {
+#sidebar.sidebar.mini-sidebar .submenu-icon-wrapper:hover {
   background: #c4a882;
 }
 
-.sidebar.mini-sidebar .sidebar-link.active .submenu-icon-wrapper {
+#sidebar.sidebar.mini-sidebar .sidebar-link.active .submenu-icon-wrapper {
   background: #2563eb;
 }
 
 /* CRITICAL: Ensure no text shows in mini submenus */
-.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-link span {
+#sidebar.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-link span {
   display: none !important;
 }
 
-.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-link {
+#sidebar.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-link {
   justify-content: center !important;
   padding: 8px !important;
 }
 
 /* Hide nested submenus in mini mode (only show level 1) */
-.sidebar.mini-sidebar .nested-submenu {
+#sidebar.sidebar.mini-sidebar .nested-submenu {
   display: none !important;
 }
 
@@ -252,11 +253,11 @@
    Tooltips via data-tooltip attribute
    --------------------------------------------------------- */
 
-.sidebar.mini-sidebar .sidebar-link {
+#sidebar.sidebar.mini-sidebar .sidebar-link {
   position: relative;
 }
 
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]::after {
+#sidebar.sidebar.mini-sidebar .sidebar-link[data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
   left: calc(100% + 10px);
@@ -281,7 +282,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]::before {
+#sidebar.sidebar.mini-sidebar .sidebar-link[data-tooltip]::before {
   content: '';
   position: absolute;
   left: calc(100% + 4px);
@@ -297,8 +298,8 @@
   z-index: 1100;
 }
 
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::after,
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::before {
+#sidebar.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::after,
+#sidebar.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::before {
   opacity: 1;
   visibility: visible;
   transform: translateY(-50%) translateX(0);
@@ -308,22 +309,17 @@
    Active and hover states in mini mode
    --------------------------------------------------------- */
 
-.sidebar.mini-sidebar .sidebar-link.active {
+#sidebar.sidebar.mini-sidebar .sidebar-link.active {
   background-color: #eff6ff;
   color: #2563eb;
   border-radius: 4px;
 }
 
-.sidebar.mini-sidebar .sidebar-link:hover {
+#sidebar.sidebar.mini-sidebar .sidebar-link:hover {
   background-color: #f3f4f6;
   border-radius: 4px;
 }
 
-.sidebar.mini-sidebar .sidebar-link.active .submenu-icon-wrapper {
+#sidebar.sidebar.mini-sidebar .sidebar-link.active .submenu-icon-wrapper {
   background: #2563eb;
-}
-
-/* Main content adjustment */
-.sidebar.mini-sidebar ~ .main-content {
-  margin-left: 70px;
 }
