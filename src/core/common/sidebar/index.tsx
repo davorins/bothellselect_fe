@@ -142,6 +142,7 @@ const Sidebar = () => {
 
   /**
    * Open/close a top-level menu.
+   * Only one top-level menu can be open at a time.
    */
   const toggleMenu = (label: string) => {
     setExpandedMenus((prev) => (prev.includes(label) ? [] : [label]));
@@ -182,6 +183,7 @@ const Sidebar = () => {
 
   /**
    * Automatically expand menus containing current route.
+   * Only one menu will be expanded at a time.
    */
   useEffect(() => {
     let activeMainLabel: string | null = null;
@@ -239,7 +241,6 @@ const Sidebar = () => {
                     }`}
                   >
                     {sub.icon && <i className={`${sub.icon} menu-icon`} />}
-
                     <span>{sub.label}</span>
                   </Link>
                 </li>
