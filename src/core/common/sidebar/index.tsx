@@ -233,7 +233,7 @@ const Sidebar = () => {
           data-tooltip={item.label}
         >
           {item.icon && <i className={`${item.icon} menu-icon`} />}
-          {!isMiniSidebar && <span>{item.label}</span>}
+          <span>{item.label}</span>
           {!isMiniSidebar && (
             <i
               className={`ti ti-chevron-${isOpen ? 'up' : 'down'} menu-arrow`}
@@ -276,7 +276,6 @@ const Sidebar = () => {
                         <span>{sub.label}</span>
                       </>
                     )}
-                    {!isMiniSidebar && sub.label}
                   </Link>
                 </li>
               );
@@ -320,7 +319,7 @@ const Sidebar = () => {
             {(mainItem.icon || child.icon) && (
               <i className={`${mainItem.icon || child.icon} menu-icon`} />
             )}
-            {!isMiniSidebar && <span>{mainItem.label}</span>}
+            <span>{mainItem.label}</span>
           </Link>
         </li>
       );
@@ -343,7 +342,7 @@ const Sidebar = () => {
           data-tooltip={mainItem.label}
         >
           {mainItem.icon && <i className={`${mainItem.icon} menu-icon`} />}
-          {!isMiniSidebar && <span>{mainItem.label}</span>}
+          <span>{mainItem.label}</span>
           {!isMiniSidebar && (
             <i
               className={`ti ti-chevron-${isOpen ? 'up' : 'down'} menu-arrow`}
