@@ -6,6 +6,7 @@ import { SidebarData } from '../../data/json/sidebarData';
 import '../../../style/icon/tabler-icons/webfont/tabler-icons.css';
 import { useAuth } from '../../../context/AuthContext';
 import { all_routes } from '../../../feature-module/router/all_routes';
+import './sidebar-styles.css';
 
 // Define interfaces for type safety
 export interface SubmenuItem {
