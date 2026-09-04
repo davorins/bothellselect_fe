@@ -182,16 +182,16 @@ const Sidebar = () => {
     user?._id,
   );
 
-  // Toggle menu with accordion behavior - close others when opening one
+  // Toggle menu with proper accordion behavior
   const toggleMenu = (menuLabel: string) => {
     setExpandedMenus((prev) => {
+      // If this menu is already expanded, close it
       if (prev.includes(menuLabel)) {
-        // If clicking the same menu, close it
-        return [];
-      } else {
-        // Close all others and open this one
-        return [menuLabel];
+        return prev.filter((label) => label !== menuLabel);
       }
+
+      // Close all other menus and open this one
+      return [menuLabel];
     });
   };
 
@@ -211,28 +211,35 @@ const Sidebar = () => {
     console.log('Navigation request:', {
       label,
       userRole: user?.role,
+      hasSubmenuItems: !!item?.submenuItems,
+      link: 'link' in item ? item.link : undefined,
     });
 
     // Check if this is a leaf item with a link (like Home, About Us, etc.)
-    if ('link' in item && item.link && !item.submenuItems) {
+    if (
+      'link' in item &&
+      item.link &&
+      (!item.submenuItems || item.submenuItems.length === 0)
+    ) {
       navigate(item.link);
       return;
     }
 
     // If it's a main menu item with submenuItems, toggle expansion
     if (item?.submenuItems && item?.submenuItems.length > 0) {
+      // Check if it should be a direct link (single visible item with no icon)
       const visibleItems = item.submenuItems.filter(
         (subItem) =>
           !subItem.roles || subItem.roles.includes(user?.role || 'user'),
       );
 
-      // If only one visible item and the parent has no icon (like Dashboard), navigate directly
+      // If only one visible item and no icon, navigate directly
       if (visibleItems.length === 1 && !item.icon) {
         const singleItem = visibleItems[0];
         if (singleItem.link) {
           navigate(singleItem.link);
+          return;
         }
-        return;
       }
 
       // Otherwise toggle expansion
@@ -246,7 +253,7 @@ const Sidebar = () => {
     }
   };
 
-  // Check if a main menu should be treated as a direct link (single item)
+  // Check if a main menu should be treated as a direct link (single item with no icon)
   const isSingleItemMenu = (mainLabel: MainMenuItem): boolean => {
     const items = mainLabel.submenuItems || [];
     const visibleItems = items.filter(
@@ -261,26 +268,37 @@ const Sidebar = () => {
     const menuToExpand: string[] = [];
 
     filteredSidebarData.forEach((mainLabel: MainMenuItem) => {
-      if (!isSingleItemMenu(mainLabel)) {
-        (mainLabel.submenuItems || []).forEach((item: SubmenuItem) => {
-          // Check direct link
-          if (item.link === currentPath) {
-            menuToExpand.push(mainLabel.label);
-          }
-          // Check nested items
-          if (item.submenuItems) {
-            item.submenuItems.forEach((subItem: SubmenuItem) => {
-              if (subItem.link === currentPath) {
-                menuToExpand.push(mainLabel.label);
-              }
-            });
-          }
-        });
-      }
+      // Skip single item menus (they don't expand)
+      if (isSingleItemMenu(mainLabel)) return;
+
+      (mainLabel.submenuItems || []).forEach((item: SubmenuItem) => {
+        // Check direct link
+        if (item.link === currentPath) {
+          menuToExpand.push(mainLabel.label);
+        }
+        // Check nested items
+        if (item.submenuItems) {
+          item.submenuItems.forEach((subItem: SubmenuItem) => {
+            if (subItem.link === currentPath) {
+              menuToExpand.push(mainLabel.label);
+            }
+          });
+        }
+      });
     });
 
+    // Only set expanded if we found matches and they're not already expanded
     if (menuToExpand.length > 0) {
-      setExpandedMenus(menuToExpand);
+      setExpandedMenus((prev) => {
+        // Only add if not already present
+        const newMenus = [...prev];
+        menuToExpand.forEach((menu) => {
+          if (!newMenus.includes(menu)) {
+            newMenus.push(menu);
+          }
+        });
+        return newMenus;
+      });
     }
 
     // Set active submenu
@@ -379,7 +397,14 @@ const Sidebar = () => {
           className={`${isExpanded ? 'subdrop' : ''} ${isMainActive ? 'active' : ''}`}
           onClick={(e) => {
             e.preventDefault();
-            handleClick(mainLabel.label, mainLabel);
+            // Check if this is a leaf item (like "Main" with submenuItems)
+            if (mainLabel.submenuItems && mainLabel.submenuItems.length > 0) {
+              // If it has submenuItems, toggle expansion
+              toggleMenu(mainLabel.label);
+            } else {
+              // Otherwise navigate
+              handleClick(mainLabel.label, mainLabel);
+            }
           }}
         >
           {mainLabel.icon && (
@@ -487,7 +512,7 @@ const Sidebar = () => {
                   </li>
                 );
               } else {
-                // Regular submenu item
+                // Regular submenu item - this is where Home, About Us, etc. are rendered
                 const isSubActive = item?.link === location.pathname;
                 return (
                   <li key={item.label} style={{ listStyle: 'none' }}>
