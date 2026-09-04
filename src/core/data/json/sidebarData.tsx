@@ -4,8 +4,8 @@ const routes = all_routes;
 
 export const SidebarData = [
   {
-    label: 'MAIN',
-    submenuOpen: true,
+    label: 'Main',
+    submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Main',
     submenuItems: [
@@ -13,21 +13,29 @@ export const SidebarData = [
         icon: 'ti ti-home-2',
         label: 'Home',
         path: '/',
+        submenu: false,
+        showSubRoute: false,
       },
       {
         icon: 'ti ti-chess-knight',
         label: 'About Us',
         path: '/about-us',
+        submenu: false,
+        showSubRoute: false,
       },
       {
         icon: 'ti ti-ball-basketball',
         label: 'Our Team',
         path: '/our-team',
+        submenu: false,
+        showSubRoute: false,
       },
       {
         icon: 'ti ti-mail',
         label: 'Contact Us',
         path: '/contact-us',
+        submenu: false,
+        showSubRoute: false,
       },
     ],
   },
