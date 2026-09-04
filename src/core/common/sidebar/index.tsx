@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Scrollbars from 'react-custom-scrollbars-2';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { SidebarData } from '../../data/json/sidebarData';
 import '../../../style/icon/tabler-icons/webfont/tabler-icons.css';
 import { useAuth } from '../../../context/AuthContext';
@@ -44,8 +44,6 @@ interface User {
 
 const Sidebar = () => {
   const location = useLocation();
-  const dispatch = useDispatch();
-  const sidebarRef = useRef<HTMLDivElement>(null);
 
   const { user } = useAuth() as {
     user: User | null;
@@ -67,29 +65,24 @@ const Sidebar = () => {
 
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [expandedSubmenus, setExpandedSubmenus] = useState<string[]>([]);
-  const [isHovering, setIsHovering] = useState(false);
 
   /* =========================================================
      MINI SIDEBAR STATE
      ========================================================= */
 
-  // The sidebar is mini ONLY when miniSidebar === true AND expandMenu === false
-  const isMiniSidebar = miniSidebar && !expandMenu && !isHovering;
-
-  // Handle hover events
-  const handleMouseEnter = () => {
-    if (miniSidebar) {
-      setIsHovering(true);
-      // Optionally dispatch action to expand on hover
-      // dispatch({ type: 'sidebar/setExpandMenu', payload: true });
-    }
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovering(false);
-    // Optionally dispatch action to collapse on leave
-    // dispatch({ type: 'sidebar/setExpandMenu', payload: false });
-  };
+  /*
+   * The sidebar is mini ONLY when:
+   *
+   *   miniSidebar === true
+   *   AND
+   *   expandMenu === false
+   *
+   * Hovering an item shows a tooltip (via data-tooltip / CSS),
+   * it does NOT expand the whole sidebar. That's intentional -
+   * a hover-driven full expand was removed because it fought
+   * with the tooltip behavior.
+   */
+  const isMiniSidebar = miniSidebar && !expandMenu;
 
   /* =========================================================
      LINK HELPER
@@ -276,10 +269,17 @@ const Sidebar = () => {
 
           <span className='menu-label'>{item.label}</span>
 
-          <i
-            className={`ti ti-chevron-${isOpen ? 'up' : 'down'} menu-arrow`}
-            aria-hidden='true'
-          />
+          {/*
+            Arrow is only rendered when the sidebar is expanded.
+            In mini mode it's omitted from the DOM entirely so it
+            can never appear detached/misplaced.
+          */}
+          {!isMiniSidebar && (
+            <i
+              className={`ti ti-chevron-${isOpen ? 'up' : 'down'} menu-arrow`}
+              aria-hidden='true'
+            />
+          )}
         </button>
 
         {isOpen && (
@@ -391,10 +391,12 @@ const Sidebar = () => {
 
           <span className='menu-label'>{mainItem.label}</span>
 
-          <i
-            className={`ti ti-chevron-${isOpen ? 'up' : 'down'} menu-arrow`}
-            aria-hidden='true'
-          />
+          {!isMiniSidebar && (
+            <i
+              className={`ti ti-chevron-${isOpen ? 'up' : 'down'} menu-arrow`}
+              aria-hidden='true'
+            />
+          )}
         </button>
 
         {isOpen && (
@@ -453,9 +455,6 @@ const Sidebar = () => {
     <div
       className={`sidebar ${isMiniSidebar ? 'mini-sidebar' : ''}`}
       id='sidebar'
-      ref={sidebarRef}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
     >
       <Scrollbars>
         <div className='sidebar-inner slimscroll'>
