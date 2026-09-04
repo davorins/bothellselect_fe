@@ -6,10 +6,9 @@ import { SidebarData } from '../../data/json/sidebarData';
 import '../../../style/icon/tabler-icons/webfont/tabler-icons.css';
 import { useAuth } from '../../../context/AuthContext';
 import { all_routes } from '../../../feature-module/router/all_routes';
-import './sidebar-styles.css';
 
 // Define interfaces for type safety
-interface SubmenuItem {
+export interface SubmenuItem {
   label: string;
   icon?: string;
   submenu?: boolean;
@@ -27,7 +26,7 @@ interface SubmenuItem {
   submenuHdr?: string;
 }
 
-interface MainMenuItem {
+export interface MainMenuItem {
   label: string;
   submenuOpen?: boolean;
   showSubRoute?: boolean;
@@ -49,7 +48,7 @@ const styles = {
     width: '20px',
     display: 'inline-block',
     textAlign: 'center' as const,
-    color: 'inherit', // Match text color
+    color: 'inherit',
   },
   link: {
     display: 'flex',
@@ -58,12 +57,13 @@ const styles = {
     color: '#6b7280',
     textDecoration: 'none',
     transition: 'all 0.2s',
+    cursor: 'pointer' as const,
   },
   submenuLink: {
-    paddingLeft: '48px', // Icon width (20px) + marginRight (12px) + extra indent
+    paddingLeft: '48px',
   },
   nestedSubmenuLink: {
-    paddingLeft: '72px', // Additional indent for nested items
+    paddingLeft: '72px',
   },
   activeLink: {
     color: '#2563eb',
@@ -71,6 +71,10 @@ const styles = {
   },
   menuArrow: {
     marginLeft: 'auto',
+    transition: 'transform 0.2s',
+  },
+  menuArrowExpanded: {
+    transform: 'rotate(90deg)',
   },
 };
 
@@ -133,7 +137,7 @@ const Sidebar = () => {
   };
 
   const filteredSidebarData = filterSidebarData(
-    SidebarData,
+    SidebarData as MainMenuItem[],
     user?.role || 'user',
     user?._id,
   );
@@ -322,6 +326,9 @@ const Sidebar = () => {
 
     // If it has multiple items or has an icon, render as collapsible
     const isMainActive = isActive;
+    const arrowStyle = isExpanded
+      ? { ...styles.menuArrow, ...styles.menuArrowExpanded }
+      : styles.menuArrow;
 
     return (
       <li key={index} style={{ listStyle: 'none' }}>
@@ -341,7 +348,7 @@ const Sidebar = () => {
             <i className={mainLabel.icon} style={styles.icon}></i>
           )}
           <span>{mainLabel.label}</span>
-          <span className='menu-arrow' style={styles.menuArrow}>
+          <span className='menu-arrow' style={arrowStyle}>
             ▸
           </span>
         </Link>
@@ -362,6 +369,9 @@ const Sidebar = () => {
                 // Handle nested submenu (like Event Configurations)
                 const isNestedExpanded = subsidebar === item?.label;
                 const isNestedActive = isNestedSubmenuActive(item);
+                const nestedArrowStyle = isNestedExpanded
+                  ? { ...styles.menuArrow, ...styles.menuArrowExpanded }
+                  : styles.menuArrow;
 
                 return (
                   <li
@@ -386,7 +396,7 @@ const Sidebar = () => {
                         <i className={item.icon} style={styles.icon}></i>
                       )}
                       <span>{item.label}</span>
-                      <span className='menu-arrow' style={styles.menuArrow}>
+                      <span className='menu-arrow' style={nestedArrowStyle}>
                         ▸
                       </span>
                     </Link>
