@@ -1,230 +1,216 @@
 /* =========================================================
-   SIDEBAR
+   MINI / COLLAPSED SIDEBAR
    ========================================================= */
 
-.sidebar-menu,
-.sidebar-menu ul,
-.sidebar-menu li {
-  list-style: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
+.sidebar.mini-sidebar {
+  overflow: visible;
 }
 
-.sidebar-menu ul::before,
-.sidebar-menu li::before {
-  content: none !important;
+.sidebar.mini-sidebar .sidebar-inner {
+  overflow: visible;
+}
+
+.sidebar.mini-sidebar .sidebar-menu {
+  overflow: visible;
+}
+
+.sidebar.mini-sidebar .sidebar-root-menu {
+  overflow: visible;
+}
+
+/* ---------------------------------------------------------
+   Hide all menu labels
+   --------------------------------------------------------- */
+
+.sidebar.mini-sidebar .sidebar-link span {
   display: none !important;
 }
 
-.sidebar-menu li::marker {
-  content: none !important;
-}
+/* ---------------------------------------------------------
+   Center icons in collapsed sidebar
+   --------------------------------------------------------- */
 
-/* Root menu */
-.sidebar-root-menu {
-  list-style: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Every menu item */
-.sidebar-menu-item {
-  list-style: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* =========================================================
-   LINKS + BUTTONS
-   ========================================================= */
-
-.sidebar-link {
+.sidebar.mini-sidebar .sidebar-link {
+  justify-content: center;
+  padding: 10px 0 !important;
   width: 100%;
-  box-sizing: border-box;
-
-  display: flex;
-  align-items: center;
-
-  min-height: 40px;
-  padding: 8px 16px;
-
-  border: 0;
-  background: transparent;
-
-  color: #6b7280;
-  text-decoration: none;
-
-  font: inherit;
-  text-align: left;
-
-  cursor: pointer;
-
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
 }
 
-.sidebar-link:hover {
-  background-color: #f3f4f6;
-  color: #111827;
-}
-
-.sidebar-link.active {
-  color: #2563eb;
-  background-color: #eff6ff;
-}
-
-/* =========================================================
-   ICONS
-   ========================================================= */
-
-.sidebar-link .menu-icon {
+.sidebar.mini-sidebar .sidebar-link .menu-icon {
+  margin-right: 0 !important;
   flex: 0 0 20px;
-
-  width: 20px;
-  margin-right: 12px;
-
-  font-size: 18px;
-  line-height: 1;
-
-  text-align: center;
-
-  color: inherit;
 }
 
-/* =========================================================
-   ARROW
-   ========================================================= */
+/* ---------------------------------------------------------
+   Hide arrows in mini mode
+   --------------------------------------------------------- */
 
-.sidebar-link .menu-arrow {
-  margin-left: auto;
-
-  font-size: 14px;
-  line-height: 1;
-
-  transition: transform 0.2s ease;
+.sidebar.mini-sidebar .menu-arrow {
+  display: none !important;
 }
 
-.sidebar-link.subdrop .menu-arrow {
-  transform: rotate(90deg);
-}
+/* ---------------------------------------------------------
+   Every top-level menu item becomes the popup anchor
+   --------------------------------------------------------- */
 
-/* =========================================================
-   SUBMENUS
-   ========================================================= */
-
-.sidebar-submenu {
-  list-style: none !important;
-
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.sidebar-submenu li {
-  list-style: none !important;
-
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* First-level submenu */
-.sidebar-menu .submenu-link {
-  padding-left: 48px !important;
-}
-
-/* Second-level submenu */
-.sidebar-menu .nested-submenu-link {
-  padding-left: 72px !important;
-}
-
-/* =========================================================
-   NESTED SUBMENU
-   ========================================================= */
-
-.sidebar-nested-item {
-  list-style: none !important;
-}
-
-.sidebar-nested-item > .sidebar-link {
-  padding-left: 48px !important;
-}
-
-/* =========================================================
-   BULLET / TEMPLATE OVERRIDES
-   ========================================================= */
-
-.sidebar-menu ul li,
-.sidebar-menu ul li::before,
-.sidebar-menu ul li::after,
-.sidebar-menu li::marker {
-  list-style: none !important;
-  content: none !important;
-}
-
-.sidebar-menu > ul,
-.sidebar-menu > ul > li,
-.sidebar-menu > ul > li > ul,
-.sidebar-menu > ul > li > ul > li,
-.sidebar-menu > ul > li > ul > li > ul,
-.sidebar-menu > ul > li > ul > li > ul > li {
-  list-style: none !important;
-}
-
-/* =========================================================
-   BUTTON RESET
-   ========================================================= */
-
-.sidebar-menu button.sidebar-link {
-  appearance: none;
-  -webkit-appearance: none;
-
-  outline: none;
-}
-
-.sidebar-menu button.sidebar-link:focus {
-  outline: none;
-}
-
-/* =========================================================
-   MINI SIDEBAR STYLES
-   ========================================================= */
-
-.sidebar.mini-sidebar .sidebar-link span {
-  display: none;
-}
-
-.sidebar.mini-sidebar .sidebar-submenu {
-  /* Submenus in mini mode - show on hover or click */
-  position: absolute;
-  left: 100%;
-  top: 0;
-  background: #fff;
-  min-width: 200px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
-  padding: 8px 0 !important;
-  z-index: 1000;
-}
-
-.sidebar.mini-sidebar .sidebar-menu-item {
+.sidebar.mini-sidebar .sidebar-root-menu > .sidebar-menu-item {
   position: relative;
 }
 
-.sidebar.mini-sidebar .sidebar-menu-item:hover .sidebar-submenu {
-  display: block;
+/* ---------------------------------------------------------
+   Submenu popup
+   --------------------------------------------------------- */
+
+.sidebar.mini-sidebar
+  .sidebar-root-menu
+  > .sidebar-menu-item
+  > .sidebar-submenu {
+  position: absolute;
+
+  top: 0;
+  left: 100%;
+
+  width: 220px;
+  min-width: 220px;
+
+  margin: 0 !important;
+  padding: 8px 0 !important;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+  z-index: 9999;
 }
 
-/* Ensure submenu items in mini mode are clickable */
-.sidebar.mini-sidebar .sidebar-submenu .sidebar-link {
-  padding: 8px 16px !important;
+/* ---------------------------------------------------------
+   Make popup submenu items normal width
+   --------------------------------------------------------- */
+
+.sidebar.mini-sidebar
+  .sidebar-root-menu
+  > .sidebar-menu-item
+  > .sidebar-submenu
+  .sidebar-link {
+  width: 100%;
+
+  justify-content: flex-start;
+
+  padding: 9px 16px !important;
+
   white-space: nowrap;
 }
 
-.sidebar.mini-sidebar .sidebar-submenu .sidebar-link span {
-  display: inline-block !important;
+/* Show labels inside popup */
+.sidebar.mini-sidebar
+  .sidebar-root-menu
+  > .sidebar-menu-item
+  > .sidebar-submenu
+  .sidebar-link
+  span {
+  display: inline !important;
 }
 
-/* Hide arrow in mini mode */
-.sidebar.mini-sidebar .menu-arrow {
-  display: none !important;
+/* Restore icon spacing inside popup */
+.sidebar.mini-sidebar
+  .sidebar-root-menu
+  > .sidebar-menu-item
+  > .sidebar-submenu
+  .sidebar-link
+  .menu-icon {
+  margin-right: 12px !important;
+}
+
+/* ---------------------------------------------------------
+   Nested submenu popup
+   --------------------------------------------------------- */
+
+.sidebar.mini-sidebar
+  .sidebar-root-menu
+  > .sidebar-menu-item
+  > .sidebar-submenu
+  > .sidebar-menu-item {
+  position: relative;
+}
+
+.sidebar.mini-sidebar
+  .sidebar-root-menu
+  > .sidebar-menu-item
+  > .sidebar-submenu
+  > .sidebar-menu-item
+  > .nested-submenu {
+  position: absolute;
+
+  top: 0;
+  left: 100%;
+
+  width: 220px;
+  min-width: 220px;
+
+  margin: 0 !important;
+  padding: 8px 0 !important;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+  z-index: 10000;
+}
+
+/* Nested popup links */
+.sidebar.mini-sidebar .nested-submenu .sidebar-link {
+  width: 100%;
+  justify-content: flex-start;
+
+  padding: 9px 16px !important;
+
+  white-space: nowrap;
+}
+
+/* Show nested labels */
+.sidebar.mini-sidebar .nested-submenu .sidebar-link span {
+  display: inline !important;
+}
+
+/* Restore nested icon spacing */
+.sidebar.mini-sidebar .nested-submenu .sidebar-link .menu-icon {
+  margin-right: 12px !important;
+}
+
+/* ---------------------------------------------------------
+   IMPORTANT:
+   Do NOT use hover to open menus.
+   
+   React state controls whether the submenu exists.
+   This means clicking the icon opens it.
+   --------------------------------------------------------- */
+
+.sidebar.mini-sidebar
+  .sidebar-root-menu
+  > .sidebar-menu-item
+  > .sidebar-submenu {
+  display: block;
+}
+
+/* ---------------------------------------------------------
+   Direct links remain simple icons
+   --------------------------------------------------------- */
+
+.sidebar.mini-sidebar .sidebar-root-menu > .sidebar-menu-item > .sidebar-link {
+  justify-content: center;
+}
+
+/* ---------------------------------------------------------
+   Active icon
+   --------------------------------------------------------- */
+
+.sidebar.mini-sidebar .sidebar-link.active {
+  background-color: #eff6ff;
+  color: #2563eb;
 }

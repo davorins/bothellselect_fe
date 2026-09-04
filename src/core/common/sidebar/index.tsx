@@ -250,7 +250,8 @@ const Sidebar = () => {
                     }`}
                   >
                     {sub.icon && <i className={`${sub.icon} menu-icon`} />}
-                    {!isMiniSidebar && <span>{sub.label}</span>}
+
+                    <span>{sub.label}</span>
                   </Link>
                 </li>
               );
@@ -286,7 +287,7 @@ const Sidebar = () => {
             {(mainItem.icon || child.icon) && (
               <i className={`${mainItem.icon || child.icon} menu-icon`} />
             )}
-            {!isMiniSidebar && <span>{mainItem.label}</span>}
+            <span>{mainItem.label}</span>
           </Link>
         </li>
       );
@@ -305,7 +306,8 @@ const Sidebar = () => {
           onClick={() => toggleMenu(mainItem.label)}
         >
           {mainItem.icon && <i className={`${mainItem.icon} menu-icon`} />}
-          {!isMiniSidebar && <span>{mainItem.label}</span>}
+
+          <span>{mainItem.label}</span>
         </button>
 
         {/* Always render submenu content but hide text in mini mode */}
@@ -337,7 +339,8 @@ const Sidebar = () => {
                     }`}
                   >
                     {item.icon && <i className={`${item.icon} menu-icon`} />}
-                    {!isMiniSidebar && <span>{item.label}</span>}
+
+                    <span>{item.label}</span>
                   </Link>
                 </li>
               );
@@ -349,7 +352,10 @@ const Sidebar = () => {
   };
 
   return (
-    <div className='sidebar' id='sidebar'>
+    <div
+      className={`sidebar ${isMiniSidebar ? 'mini-sidebar' : ''}`}
+      id='sidebar'
+    >
       <Scrollbars>
         <div className='sidebar-inner slimscroll'>
           <div id='sidebar-menu' className='sidebar-menu'>
