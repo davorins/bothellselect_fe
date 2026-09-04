@@ -167,16 +167,16 @@ const Sidebar = () => {
       userRole: user?.role,
     });
 
-    // If it's a main menu item with submenuItems, toggle expansion
+    // If it's a main menu item with submenuItems, check if it should be a single item
     if (item?.submenuItems && item?.submenuItems.length > 0) {
-      // Check if this is a "single item" menu (like Dashboard with only 1 visible item)
+      // Get visible items based on user role
       const visibleItems = item.submenuItems.filter(
         (subItem) =>
           !subItem.roles || subItem.roles.includes(user?.role || 'user'),
       );
 
-      // If only one item and no icon on parent, treat as direct link
-      if (visibleItems.length === 1 && !item.icon) {
+      // If only one visible item, navigate directly (no expansion)
+      if (visibleItems.length === 1) {
         const singleItem = visibleItems[0];
         if (singleItem.link) {
           navigate(singleItem.link);
@@ -184,7 +184,7 @@ const Sidebar = () => {
         return;
       }
 
-      // Otherwise toggle expansion
+      // Otherwise toggle expansion for multiple items
       toggleMenu(label);
       return;
     }
@@ -200,7 +200,8 @@ const Sidebar = () => {
     const visibleItems = mainLabel.submenuItems.filter(
       (item) => !item.roles || item.roles.includes(user?.role || 'user'),
     );
-    return visibleItems.length === 1 && !mainLabel.icon;
+    // Return true if only one visible item OR if the main label has no icon (special case for Dashboard)
+    return visibleItems.length === 1;
   };
 
   // Auto-expand menu containing current route on load
@@ -209,32 +210,30 @@ const Sidebar = () => {
     const menuToExpand: string[] = [];
 
     filteredSidebarData.forEach((mainLabel: MainMenuItem) => {
-      mainLabel.submenuItems.forEach((item: SubmenuItem) => {
-        // Check if current path matches any link in this menu
-        if (
-          item.link === currentPath ||
-          (item.submenuItems &&
-            item.submenuItems.some(
-              (sub: SubmenuItem) => sub.link === currentPath,
-            ))
-        ) {
-          // Only expand if it's not a single-item menu
-          if (!isSingleItemMenu(mainLabel)) {
+      // Only check for expansion if it's not a single-item menu
+      if (!isSingleItemMenu(mainLabel)) {
+        mainLabel.submenuItems.forEach((item: SubmenuItem) => {
+          // Check if current path matches any link in this menu
+          if (
+            item.link === currentPath ||
+            (item.submenuItems &&
+              item.submenuItems.some(
+                (sub: SubmenuItem) => sub.link === currentPath,
+              ))
+          ) {
             menuToExpand.push(mainLabel.label);
           }
-        }
 
-        // Also check nested items
-        if (item.submenuItems) {
-          item.submenuItems.forEach((subItem: SubmenuItem) => {
-            if (subItem.link === currentPath) {
-              if (!isSingleItemMenu(mainLabel)) {
+          // Also check nested items
+          if (item.submenuItems) {
+            item.submenuItems.forEach((subItem: SubmenuItem) => {
+              if (subItem.link === currentPath) {
                 menuToExpand.push(mainLabel.label);
               }
-            }
-          });
-        }
-      });
+            });
+          }
+        });
+      }
     });
 
     if (menuToExpand.length > 0) {
@@ -297,7 +296,7 @@ const Sidebar = () => {
     const isSingleItem = isSingleItemMenu(mainLabel);
     const isActive = isMenuItemActive(mainLabel);
 
-    // If it's a single item with no icon, render as direct link
+    // If it's a single item, render as direct link (no expansion)
     if (isSingleItem) {
       const singleItem = mainLabel.submenuItems[0];
       const isLinkActive = singleItem.link === location.pathname;
@@ -316,16 +315,16 @@ const Sidebar = () => {
               }
             }}
           >
-            {singleItem.icon && (
-              <i className={singleItem.icon} style={styles.icon}></i>
+            {mainLabel.icon && (
+              <i className={mainLabel.icon} style={styles.icon}></i>
             )}
-            <span>{singleItem.label}</span>
+            <span>{mainLabel.label}</span>
           </Link>
         </li>
       );
     }
 
-    // If it has multiple items or has an icon, render as collapsible
+    // If it has multiple items, render as collapsible
     const isMainActive = isActive;
     const arrowStyle = isExpanded
       ? { ...styles.menuArrow, ...styles.menuArrowExpanded }
