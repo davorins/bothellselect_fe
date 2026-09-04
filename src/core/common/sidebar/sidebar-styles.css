@@ -39,22 +39,51 @@
 
 /* Submenu indentation */
 .submenu-link {
-  padding-left: 48px !important; /* Icon width (20px) + marginRight (12px) + extra indent */
+  padding-left: 48px !important;
 }
 
 .nested-submenu-link {
-  padding-left: 72px !important; /* Additional indent for nested items */
+  padding-left: 72px !important;
 }
 
-/* Remove bullets */
+/* CRITICAL: Remove ALL bullets from ALL lists */
+.sidebar-menu,
 .sidebar-menu ul,
 .sidebar-menu ul ul,
-.sidebar-menu ul ul ul {
-  list-style: none;
-  padding-left: 0;
-  margin: 0;
+.sidebar-menu ul ul ul,
+.sidebar-menu li,
+.sidebar-menu ul li,
+.sidebar-menu ul ul li,
+.sidebar-menu ul ul ul li {
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin: 0 !important;
 }
 
-.sidebar-menu li {
-  list-style: none;
+/* Also remove any pseudo-element bullets */
+.sidebar-menu li::before,
+.sidebar-menu ul li::before,
+.sidebar-menu ul ul li::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* Ensure submenu items have proper padding */
+.sidebar-menu .submenu-two > ul {
+  padding-left: 0 !important;
+}
+
+.sidebar-menu .submenu-two > ul li {
+  padding-left: 0 !important;
+}
+
+/* Hover states for better UX */
+.sidebar-menu a:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.sidebar-menu a.active {
+  color: #2563eb;
+  background-color: #eff6ff;
 }

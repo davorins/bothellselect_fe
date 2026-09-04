@@ -34,7 +34,7 @@ export interface MainMenuItem {
   submenuHdr?: string;
   icon?: string;
   submenuItems?: SubmenuItem[];
-  link?: string; // For single items like FAQ
+  link?: string;
 }
 
 interface User {
@@ -110,12 +110,10 @@ const Sidebar = () => {
               showSubRoute: false,
             },
           ],
-          // Remove the top-level link since we're using submenuItems
           link: undefined,
         };
       }
 
-      // If item has submenuItems, keep it as is
       if (item.submenuItems) {
         return {
           ...item,
@@ -123,7 +121,6 @@ const Sidebar = () => {
         };
       }
 
-      // Fallback - return item with empty submenuItems
       return {
         ...item,
         submenuItems: [],
@@ -178,7 +175,6 @@ const Sidebar = () => {
       );
   };
 
-  // Normalize the data first, then filter
   const normalizedData = normalizeSidebarData(SidebarData);
   const filteredSidebarData = filterSidebarData(
     normalizedData,
@@ -186,12 +182,15 @@ const Sidebar = () => {
     user?._id,
   );
 
+  // Toggle menu with accordion behavior - close others when opening one
   const toggleMenu = (menuLabel: string) => {
     setExpandedMenus((prev) => {
       if (prev.includes(menuLabel)) {
-        return prev.filter((label) => label !== menuLabel);
+        // If clicking the same menu, close it
+        return [];
       } else {
-        return [...prev, menuLabel];
+        // Close all others and open this one
+        return [menuLabel];
       }
     });
   };
@@ -204,22 +203,31 @@ const Sidebar = () => {
     }
   };
 
-  const handleClick = (label: string, item: SubmenuItem | MainMenuItem) => {
+  const handleClick = (
+    label: string,
+    item: SubmenuItem | MainMenuItem,
+    e?: React.MouseEvent,
+  ) => {
     console.log('Navigation request:', {
       label,
       userRole: user?.role,
     });
 
-    // If it's a main menu item with submenuItems, check if it should be a single item
+    // Check if this is a leaf item with a link (like Home, About Us, etc.)
+    if ('link' in item && item.link && !item.submenuItems) {
+      navigate(item.link);
+      return;
+    }
+
+    // If it's a main menu item with submenuItems, toggle expansion
     if (item?.submenuItems && item?.submenuItems.length > 0) {
-      // Get visible items based on user role
       const visibleItems = item.submenuItems.filter(
         (subItem) =>
           !subItem.roles || subItem.roles.includes(user?.role || 'user'),
       );
 
-      // If only one visible item, navigate directly (no expansion)
-      if (visibleItems.length === 1) {
+      // If only one visible item and the parent has no icon (like Dashboard), navigate directly
+      if (visibleItems.length === 1 && !item.icon) {
         const singleItem = visibleItems[0];
         if (singleItem.link) {
           navigate(singleItem.link);
@@ -227,7 +235,7 @@ const Sidebar = () => {
         return;
       }
 
-      // Otherwise toggle expansion for multiple items
+      // Otherwise toggle expansion
       toggleMenu(label);
       return;
     }
@@ -244,7 +252,7 @@ const Sidebar = () => {
     const visibleItems = items.filter(
       (item) => !item.roles || item.roles.includes(user?.role || 'user'),
     );
-    return visibleItems.length === 1;
+    return visibleItems.length === 1 && !mainLabel.icon;
   };
 
   // Auto-expand menu containing current route on load
@@ -253,21 +261,13 @@ const Sidebar = () => {
     const menuToExpand: string[] = [];
 
     filteredSidebarData.forEach((mainLabel: MainMenuItem) => {
-      // Only check for expansion if it's not a single-item menu
       if (!isSingleItemMenu(mainLabel)) {
         (mainLabel.submenuItems || []).forEach((item: SubmenuItem) => {
-          // Check if current path matches any link in this menu
-          if (
-            item.link === currentPath ||
-            (item.submenuItems &&
-              item.submenuItems.some(
-                (sub: SubmenuItem) => sub.link === currentPath,
-              ))
-          ) {
+          // Check direct link
+          if (item.link === currentPath) {
             menuToExpand.push(mainLabel.label);
           }
-
-          // Also check nested items
+          // Check nested items
           if (item.submenuItems) {
             item.submenuItems.forEach((subItem: SubmenuItem) => {
               if (subItem.link === currentPath) {
@@ -280,15 +280,7 @@ const Sidebar = () => {
     });
 
     if (menuToExpand.length > 0) {
-      setExpandedMenus((prev) => {
-        const newMenus = [...prev];
-        menuToExpand.forEach((menu) => {
-          if (!newMenus.includes(menu)) {
-            newMenus.push(menu);
-          }
-        });
-        return newMenus;
-      });
+      setExpandedMenus(menuToExpand);
     }
 
     // Set active submenu
