@@ -33,7 +33,8 @@ export interface MainMenuItem {
   showSubRoute?: boolean;
   submenuHdr?: string;
   icon?: string;
-  submenuItems: SubmenuItem[];
+  submenuItems?: SubmenuItem[];
+  link?: string; // For single items like FAQ
 }
 
 interface User {
@@ -93,6 +94,43 @@ const Sidebar = () => {
     });
   }, [user]);
 
+  // Normalize sidebar data - convert single items to have submenuItems
+  const normalizeSidebarData = (data: any[]): MainMenuItem[] => {
+    return data.map((item) => {
+      // If item has link but no submenuItems (like FAQ), convert it
+      if (item.link && !item.submenuItems) {
+        return {
+          ...item,
+          submenuItems: [
+            {
+              label: item.label,
+              icon: item.icon,
+              link: item.link,
+              submenu: false,
+              showSubRoute: false,
+            },
+          ],
+          // Remove the top-level link since we're using submenuItems
+          link: undefined,
+        };
+      }
+
+      // If item has submenuItems, keep it as is
+      if (item.submenuItems) {
+        return {
+          ...item,
+          submenuItems: item.submenuItems,
+        };
+      }
+
+      // Fallback - return item with empty submenuItems
+      return {
+        ...item,
+        submenuItems: [],
+      };
+    });
+  };
+
   const filterSidebarData = (
     data: MainMenuItem[],
     role: string,
@@ -101,7 +139,7 @@ const Sidebar = () => {
     return data
       .map((mainLabel) => ({
         ...mainLabel,
-        submenuItems: mainLabel.submenuItems
+        submenuItems: (mainLabel.submenuItems || [])
           .filter(
             (item: SubmenuItem) => !item.roles || item.roles.includes(role),
           )
@@ -134,11 +172,16 @@ const Sidebar = () => {
             return item;
           }),
       }))
-      .filter((mainLabel) => mainLabel.submenuItems.length > 0);
+      .filter(
+        (mainLabel) =>
+          mainLabel.submenuItems && mainLabel.submenuItems.length > 0,
+      );
   };
 
+  // Normalize the data first, then filter
+  const normalizedData = normalizeSidebarData(SidebarData);
   const filteredSidebarData = filterSidebarData(
-    SidebarData as MainMenuItem[],
+    normalizedData,
     user?.role || 'user',
     user?._id,
   );
@@ -197,10 +240,10 @@ const Sidebar = () => {
 
   // Check if a main menu should be treated as a direct link (single item)
   const isSingleItemMenu = (mainLabel: MainMenuItem): boolean => {
-    const visibleItems = mainLabel.submenuItems.filter(
+    const items = mainLabel.submenuItems || [];
+    const visibleItems = items.filter(
       (item) => !item.roles || item.roles.includes(user?.role || 'user'),
     );
-    // Return true if only one visible item OR if the main label has no icon (special case for Dashboard)
     return visibleItems.length === 1;
   };
 
@@ -212,7 +255,7 @@ const Sidebar = () => {
     filteredSidebarData.forEach((mainLabel: MainMenuItem) => {
       // Only check for expansion if it's not a single-item menu
       if (!isSingleItemMenu(mainLabel)) {
-        mainLabel.submenuItems.forEach((item: SubmenuItem) => {
+        (mainLabel.submenuItems || []).forEach((item: SubmenuItem) => {
           // Check if current path matches any link in this menu
           if (
             item.link === currentPath ||
@@ -298,7 +341,10 @@ const Sidebar = () => {
 
     // If it's a single item, render as direct link (no expansion)
     if (isSingleItem) {
-      const singleItem = mainLabel.submenuItems[0];
+      const items = mainLabel.submenuItems || [];
+      const singleItem = items[0];
+      if (!singleItem) return null;
+
       const isLinkActive = singleItem.link === location.pathname;
       return (
         <li key={index} style={{ listStyle: 'none' }}>
@@ -361,7 +407,7 @@ const Sidebar = () => {
               margin: 0,
             }}
           >
-            {mainLabel.submenuItems.map((item: SubmenuItem) => {
+            {(mainLabel.submenuItems || []).map((item: SubmenuItem) => {
               const hasNestedChildren =
                 item.submenuItems && item.submenuItems.length > 0;
 
@@ -409,39 +455,41 @@ const Sidebar = () => {
                           margin: 0,
                         }}
                       >
-                        {item.submenuItems?.map((subItem: SubmenuItem) => {
-                          const isSubActive =
-                            subItem.link === location.pathname;
-                          return (
-                            <li
-                              key={subItem.label}
-                              style={{ listStyle: 'none' }}
-                            >
-                              <Link
-                                to={subItem?.link || '#'}
-                                style={{
-                                  ...styles.link,
-                                  ...styles.nestedSubmenuLink,
-                                  ...(isSubActive ? styles.activeLink : {}),
-                                }}
-                                className={isSubActive ? 'active' : ''}
-                                onClick={() => {
-                                  if (subItem.link) {
-                                    navigate(subItem.link);
-                                  }
-                                }}
+                        {(item.submenuItems || []).map(
+                          (subItem: SubmenuItem) => {
+                            const isSubActive =
+                              subItem.link === location.pathname;
+                            return (
+                              <li
+                                key={subItem.label}
+                                style={{ listStyle: 'none' }}
                               >
-                                {subItem.icon && (
-                                  <i
-                                    className={subItem.icon}
-                                    style={styles.icon}
-                                  ></i>
-                                )}
-                                <span>{subItem.label}</span>
-                              </Link>
-                            </li>
-                          );
-                        })}
+                                <Link
+                                  to={subItem?.link || '#'}
+                                  style={{
+                                    ...styles.link,
+                                    ...styles.nestedSubmenuLink,
+                                    ...(isSubActive ? styles.activeLink : {}),
+                                  }}
+                                  className={isSubActive ? 'active' : ''}
+                                  onClick={() => {
+                                    if (subItem.link) {
+                                      navigate(subItem.link);
+                                    }
+                                  }}
+                                >
+                                  {subItem.icon && (
+                                    <i
+                                      className={subItem.icon}
+                                      style={styles.icon}
+                                    ></i>
+                                  )}
+                                  <span>{subItem.label}</span>
+                                </Link>
+                              </li>
+                            );
+                          },
+                        )}
                       </ul>
                     )}
                   </li>
