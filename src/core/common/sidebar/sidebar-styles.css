@@ -69,10 +69,11 @@
   .sidebar-root-menu
   > .sidebar-menu-item
   > .sidebar-submenu {
-  position: absolute;
+  position: fixed;
 
-  top: 0;
-  left: 100%;
+  left: 60px;
+  top: 50%;
+  transform: translateY(-50%);
 
   width: 220px;
   min-width: 220px;
@@ -146,10 +147,11 @@
   > .sidebar-submenu
   > .sidebar-menu-item
   > .nested-submenu {
-  position: absolute;
+  position: fixed;
 
-  top: 0;
-  left: 100%;
+  left: 280px;
+  top: 50%;
+  transform: translateY(-50%);
 
   width: 220px;
   min-width: 220px;
@@ -188,13 +190,6 @@
 }
 
 /* ---------------------------------------------------------
-   Remove hover-based opening - rely on React state
-   The submenu display is controlled by React, not CSS hover
-   --------------------------------------------------------- */
-
-/* Remove any hover-based display rules */
-
-/* ---------------------------------------------------------
    Direct links remain simple icons (no popup)
    --------------------------------------------------------- */
 
@@ -222,17 +217,6 @@
 }
 
 /* ---------------------------------------------------------
-   REMOVED: Duplicate styles and conflicting rules
-   --------------------------------------------------------- */
-
-/* 
-   REMOVED: Duplicate .sidebar.mini-sidebar .sidebar-menu-item 
-   REMOVED: Duplicate .sidebar.mini-sidebar .sidebar-link span
-   REMOVED: .mini-tooltip (better to use React for tooltips)
-   REMOVED: .mini-dropdown class (using direct child selectors instead)
-*/
-
-/* ---------------------------------------------------------
    Ensure proper z-index layering
    --------------------------------------------------------- */
 
@@ -242,54 +226,6 @@
 
 .sidebar.mini-sidebar .nested-submenu {
   z-index: 10000 !important;
-}
-
-/* ---------------------------------------------------------
-   Fix for nested submenu items inside popup
-   --------------------------------------------------------- */
-
-.sidebar.mini-sidebar
-  .sidebar-root-menu
-  > .sidebar-menu-item
-  > .sidebar-submenu
-  .sidebar-nested-item {
-  position: relative;
-}
-
-.sidebar.mini-sidebar
-  .sidebar-root-menu
-  > .sidebar-menu-item
-  > .sidebar-submenu
-  .sidebar-nested-item
-  > .nested-submenu {
-  position: absolute;
-
-  top: 0;
-  left: 100%;
-
-  width: 220px;
-  min-width: 220px;
-
-  margin: 0 !important;
-  padding: 8px 0 !important;
-
-  background: #ffffff;
-
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-
-  z-index: 10000;
-}
-
-/* ---------------------------------------------------------
-   Ensure submenu links inside popup show text
-   --------------------------------------------------------- */
-
-.sidebar.mini-sidebar .sidebar-submenu .sidebar-link span,
-.sidebar.mini-sidebar .nested-submenu .sidebar-link span {
-  display: inline !important;
 }
 
 /* ---------------------------------------------------------
@@ -316,10 +252,10 @@
 @keyframes miniSlideIn {
   from {
     opacity: 0;
-    transform: translateX(-10px);
+    transform: translateY(-40%) translateX(-10px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(-50%) translateX(0);
   }
 }

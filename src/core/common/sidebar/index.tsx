@@ -55,7 +55,6 @@ const Sidebar = () => {
 
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [expandedSubmenus, setExpandedSubmenus] = useState<string[]>([]);
-  const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
 
   const getItemLink = (
     item?: MainMenuItem | SubmenuItem,
@@ -154,12 +153,14 @@ const Sidebar = () => {
    * Only one top-level menu can be open at a time.
    */
   const toggleMenu = (label: string) => {
-    if (isMiniSidebar) {
-      // In mini mode, toggle the menu
-      setExpandedMenus((prev) => (prev.includes(label) ? [] : [label]));
-    } else {
-      setExpandedMenus((prev) => (prev.includes(label) ? [] : [label]));
-    }
+    setExpandedMenus((prev) => {
+      // If clicking the already open menu, close it
+      if (prev.includes(label)) {
+        return [];
+      }
+      // Otherwise, open this menu and close all others
+      return [label];
+    });
   };
 
   /**
@@ -208,21 +209,11 @@ const Sidebar = () => {
       }
     });
 
-    setExpandedMenus(activeMainLabel ? [activeMainLabel] : []);
-  }, [location.pathname, filteredSidebarData]);
-
-  /**
-   * Handle mouse enter for mini sidebar tooltips
-   */
-  const handleMouseEnter = (label: string) => {
-    if (isMiniSidebar) {
-      setHoveredMenu(label);
+    // Only auto-expand if not in mini mode
+    if (!isMiniSidebar) {
+      setExpandedMenus(activeMainLabel ? [activeMainLabel] : []);
     }
-  };
-
-  const handleMouseLeave = () => {
-    setHoveredMenu(null);
-  };
+  }, [location.pathname, filteredSidebarData, isMiniSidebar]);
 
   /**
    * Render nested submenu.
@@ -235,8 +226,6 @@ const Sidebar = () => {
       <li
         key={`${mainItem.label}-${item.label}`}
         className='sidebar-menu-item sidebar-nested-item'
-        onMouseEnter={() => handleMouseEnter(item.label)}
-        onMouseLeave={handleMouseLeave}
       >
         <button
           type='button'
@@ -246,15 +235,11 @@ const Sidebar = () => {
           onClick={() => toggleSubmenu(item.label)}
         >
           {item.icon && <i className={`${item.icon} menu-icon`} />}
-          {!isMiniSidebar && <span>{item.label}</span>}
+          <span>{item.label}</span>
         </button>
 
         {isOpen && (
-          <ul
-            className={`sidebar-submenu nested-submenu ${
-              isMiniSidebar ? 'mini-dropdown' : ''
-            }`}
-          >
+          <ul className='sidebar-submenu nested-submenu'>
             {(item.submenuItems || []).map((sub) => {
               const link = getItemLink(sub);
 
@@ -305,21 +290,13 @@ const Sidebar = () => {
       const active = isActivePath(link);
 
       return (
-        <li
-          key={`${mainItem.label}-${index}`}
-          className='sidebar-menu-item'
-          onMouseEnter={() => handleMouseEnter(mainItem.label)}
-          onMouseLeave={handleMouseLeave}
-        >
+        <li key={`${mainItem.label}-${index}`} className='sidebar-menu-item'>
           <Link to={link} className={`sidebar-link ${active ? 'active' : ''}`}>
             {(mainItem.icon || child.icon) && (
               <i className={`${mainItem.icon || child.icon} menu-icon`} />
             )}
-            {!isMiniSidebar && <span>{mainItem.label}</span>}
+            <span>{mainItem.label}</span>
           </Link>
-          {isMiniSidebar && hoveredMenu === mainItem.label && (
-            <div className='mini-tooltip'>{mainItem.label}</div>
-          )}
         </li>
       );
     }
@@ -328,12 +305,7 @@ const Sidebar = () => {
     const isActive = hasActiveChild(mainItem);
 
     return (
-      <li
-        key={`${mainItem.label}-${index}`}
-        className='sidebar-menu-item'
-        onMouseEnter={() => handleMouseEnter(mainItem.label)}
-        onMouseLeave={handleMouseLeave}
-      >
+      <li key={`${mainItem.label}-${index}`} className='sidebar-menu-item'>
         <button
           type='button'
           className={`sidebar-link sidebar-parent-link ${
@@ -342,17 +314,11 @@ const Sidebar = () => {
           onClick={() => toggleMenu(mainItem.label)}
         >
           {mainItem.icon && <i className={`${mainItem.icon} menu-icon`} />}
-          {!isMiniSidebar && <span>{mainItem.label}</span>}
+          <span>{mainItem.label}</span>
         </button>
 
-        {isMiniSidebar && hoveredMenu === mainItem.label && (
-          <div className='mini-tooltip'>{mainItem.label}</div>
-        )}
-
         {isOpen && (
-          <ul
-            className={`sidebar-submenu ${isMiniSidebar ? 'mini-dropdown' : ''}`}
-          >
+          <ul className='sidebar-submenu'>
             {children.map((item) => {
               const hasNested =
                 !!item.submenuItems && item.submenuItems.length > 0;
