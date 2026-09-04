@@ -1,5 +1,5 @@
 /* =========================================================
-   SIDEBAR - BASE STYLES
+   SIDEBAR - RESET
    ========================================================= */
 
 .sidebar-menu,
@@ -11,13 +11,16 @@
 }
 
 .sidebar-menu ul::before,
-.sidebar-menu li::before {
+.sidebar-menu ul::after,
+.sidebar-menu li::before,
+.sidebar-menu li::after {
   content: none !important;
   display: none !important;
 }
 
 .sidebar-menu li::marker {
   content: none !important;
+  display: none !important;
 }
 
 .sidebar-root-menu {
@@ -33,17 +36,17 @@
 }
 
 /* =========================================================
-   LINKS + BUTTONS
+   LINKS / BUTTONS
    ========================================================= */
 
 .sidebar-link {
   width: 100%;
+  min-height: 40px;
   box-sizing: border-box;
 
   display: flex;
   align-items: center;
 
-  min-height: 40px;
   padding: 8px 16px;
 
   border: 0;
@@ -68,12 +71,20 @@
 }
 
 .sidebar-link.active {
-  color: #2563eb;
   background-color: #eff6ff;
+  color: #2563eb;
 }
 
 .sidebar-link.expanded {
   background-color: #f3f4f6;
+}
+
+/* =========================================================
+   LABEL
+   ========================================================= */
+
+.menu-label {
+  display: inline;
 }
 
 /* =========================================================
@@ -95,7 +106,7 @@
 }
 
 /* =========================================================
-   ARROW
+   ARROWS
    ========================================================= */
 
 .sidebar-link .menu-arrow {
@@ -129,18 +140,53 @@
   padding: 0 !important;
 }
 
-/* First-level submenu */
+/* =========================================================
+   REGULAR MODE - SUBMENU
+   ========================================================= */
+
 .sidebar-menu .submenu-link {
   padding-left: 48px !important;
 }
 
-/* Second-level submenu */
 .sidebar-menu .nested-submenu-link {
   padding-left: 72px !important;
 }
 
 /* =========================================================
-   MINI SIDEBAR - COMPLETE OVERHAUL
+   NESTED MENU
+   ========================================================= */
+
+.sidebar-nested-item {
+  list-style: none !important;
+}
+
+.sidebar-nested-item > .sidebar-link {
+  padding-left: 48px !important;
+}
+
+/* =========================================================
+   BUTTON RESET
+   ========================================================= */
+
+.sidebar-menu button.sidebar-link {
+  appearance: none;
+  -webkit-appearance: none;
+
+  outline: none;
+
+  font-family: inherit;
+}
+
+.sidebar-menu button.sidebar-link:focus {
+  outline: none;
+}
+
+.sidebar-menu button.sidebar-link::-moz-focus-inner {
+  border: 0;
+}
+
+/* =========================================================
+   MINI SIDEBAR
    ========================================================= */
 
 .sidebar.mini-sidebar {
@@ -148,182 +194,237 @@
   overflow: visible !important;
 }
 
-.sidebar.mini-sidebar .sidebar-inner {
+.sidebar.mini-sidebar .sidebar-inner,
+.sidebar.mini-sidebar .slimscroll,
+.sidebar.mini-sidebar .sidebar-menu {
   overflow: visible !important;
 }
 
 .sidebar.mini-sidebar .sidebar-root-menu {
   width: 70px;
-  overflow: visible;
+  overflow: visible !important;
 }
 
-/* CRITICAL: Hide ALL text labels in mini mode - this includes submenu items */
-.sidebar.mini-sidebar .sidebar-link span {
+/* =========================================================
+   MINI MODE:
+   HIDE EVERY LABEL
+   ========================================================= */
+
+.sidebar.mini-sidebar .menu-label {
   display: none !important;
 }
 
-/* CRITICAL: Hide ALL arrows in mini mode */
-.sidebar.mini-sidebar .sidebar-link .menu-arrow {
+/* =========================================================
+   MINI MODE:
+   HIDE EVERY ARROW
+   ========================================================= */
+
+.sidebar.mini-sidebar .menu-arrow {
   display: none !important;
 }
 
-/* Center icons in mini mode */
+/* =========================================================
+   MINI MODE:
+   CENTER ICONS
+   ========================================================= */
+
 .sidebar.mini-sidebar .sidebar-link {
-  justify-content: center !important;
-  padding: 12px !important;
+  width: 100%;
+
   min-height: 44px;
+
+  justify-content: center !important;
+
+  padding: 12px !important;
 }
 
 .sidebar.mini-sidebar .sidebar-link .menu-icon {
+  flex: 0 0 20px;
+
+  width: 20px;
+
   margin-right: 0 !important;
+
   font-size: 20px;
 }
 
-/* ---------------------------------------------------------
-   Submenu items stack below parent in mini mode
-   --------------------------------------------------------- */
+/* =========================================================
+   MINI MODE:
+   TOP LEVEL ITEMS
+   ========================================================= */
 
-.sidebar.mini-sidebar .sidebar-menu-item.has-submenu {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.sidebar.mini-sidebar .sidebar-root-menu > .sidebar-menu-item {
+  position: relative;
 }
+
+/* =========================================================
+   MINI MODE:
+   SUBMENU STACK
+   ========================================================= */
 
 .sidebar.mini-sidebar .sidebar-submenu.mini-stack {
   display: flex !important;
+
   flex-direction: column;
   align-items: center;
+
   position: static !important;
+
   width: 100%;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+
   margin: 0 !important;
   padding: 4px 0 !important;
+
+  background: transparent;
+
+  border: none;
+
+  box-shadow: none;
 }
 
-.sidebar.mini-sidebar .sidebar-submenu.mini-stack li {
-  display: block;
+/* =========================================================
+   MINI MODE:
+   SUBMENU ITEMS
+   ========================================================= */
+
+.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-menu-item {
   width: 100%;
 }
 
-/* Submenu icon wrapper - colored badge style */
-.sidebar.mini-sidebar .submenu-icon-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #9c8c7a;
-  color: #ffffff;
-  transition: background-color 0.2s ease;
-}
-
-.sidebar.mini-sidebar .submenu-icon-wrapper .submenu-icon {
-  font-size: 16px;
-  color: #ffffff;
-}
-
-.sidebar.mini-sidebar .submenu-icon-wrapper:hover {
-  background: #c4a882;
-}
-
-.sidebar.mini-sidebar .sidebar-link.active .submenu-icon-wrapper {
-  background: #2563eb;
-}
-
-/* CRITICAL: Ensure no text shows in mini submenus */
-.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-link span {
-  display: none !important;
-}
+/* =========================================================
+   MINI MODE:
+   SUBMENU LINKS
+   ========================================================= */
 
 .sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-link {
+  width: 100%;
+
+  min-height: 40px;
+
   justify-content: center !important;
+
   padding: 8px !important;
 }
 
-/* Hide nested submenus in mini mode (only show level 1) */
-.sidebar.mini-sidebar .nested-submenu {
+/* =========================================================
+   MINI MODE:
+   SUBMENU ICON
+   ========================================================= */
+
+.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-link .menu-icon {
+  margin-right: 0 !important;
+
+  font-size: 18px;
+}
+
+/* =========================================================
+   MINI MODE:
+   NESTED SUBMENU
+
+   Keep nested submenu collapsed in mini mode.
+   ========================================================= */
+
+.sidebar.mini-sidebar .sidebar-submenu .nested-submenu {
   display: none !important;
 }
 
-/* ---------------------------------------------------------
-   Tooltips via data-tooltip attribute
-   --------------------------------------------------------- */
+/* =========================================================
+   MINI MODE:
+   TOOLTIP
+   ========================================================= */
 
-.sidebar.mini-sidebar .sidebar-link {
+.sidebar.mini-sidebar .sidebar-link[data-tooltip] {
   position: relative;
 }
 
 .sidebar.mini-sidebar .sidebar-link[data-tooltip]::after {
   content: attr(data-tooltip);
+
   position: absolute;
+
   left: calc(100% + 10px);
   top: 50%;
+
   transform: translateY(-50%) translateX(-4px);
+
   background: #2c2416;
-  color: #fff;
+  color: #ffffff;
+
   font-family: 'Jost', sans-serif;
   font-size: 12px;
   font-weight: 400;
+
   white-space: nowrap;
+
   padding: 6px 10px;
+
   border-radius: 6px;
+
   pointer-events: none;
+
   opacity: 0;
   visibility: hidden;
+
   transition:
     opacity 0.15s ease,
     transform 0.15s ease;
+
   transition-delay: 0.1s;
+
   z-index: 1100;
+
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  left: calc(100% + 4px);
-  top: 50%;
-  transform: translateY(-50%);
-  border: 5px solid transparent;
-  border-right-color: #2c2416;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.15s ease;
-  transition-delay: 0.1s;
-  z-index: 1100;
-}
-
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::after,
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::before {
+.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::after {
   opacity: 1;
   visibility: visible;
+
   transform: translateY(-50%) translateX(0);
 }
 
-/* ---------------------------------------------------------
-   Active and hover states in mini mode
-   --------------------------------------------------------- */
+/* =========================================================
+   MINI MODE:
+   ACTIVE
+   ========================================================= */
 
 .sidebar.mini-sidebar .sidebar-link.active {
   background-color: #eff6ff;
   color: #2563eb;
+
   border-radius: 4px;
 }
 
 .sidebar.mini-sidebar .sidebar-link:hover {
   background-color: #f3f4f6;
+
   border-radius: 4px;
 }
 
-.sidebar.mini-sidebar .sidebar-link.active .submenu-icon-wrapper {
-  background: #2563eb;
+/* =========================================================
+   PREVENT OLD THEME BULLETS / CONNECTOR LINES
+   ========================================================= */
+
+.sidebar-menu ul li,
+.sidebar-menu ul li::before,
+.sidebar-menu ul li::after,
+.sidebar-menu li::marker {
+  list-style: none !important;
+  content: none !important;
 }
 
-/* Main content adjustment */
+.sidebar-menu ul ul::before,
+.sidebar-menu ul ul::after,
+.sidebar-menu li a::before,
+.sidebar-menu li a::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* =========================================================
+   MAIN CONTENT OFFSET
+   ========================================================= */
+
 .sidebar.mini-sidebar ~ .main-content {
   margin-left: 70px;
 }
