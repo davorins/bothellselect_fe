@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Scrollbars from 'react-custom-scrollbars-2';
+import { useSelector } from 'react-redux';
 import { SidebarData } from '../../data/json/sidebarData';
 import '../../../style/icon/tabler-icons/webfont/tabler-icons.css';
 import { useAuth } from '../../../context/AuthContext';
@@ -48,6 +49,10 @@ const Sidebar = () => {
     user: User | null;
   };
 
+  // Get sidebar state from Redux
+  const dataLayout = useSelector((state: any) => state.themeSetting.dataLayout);
+  const expandMenu = useSelector((state: any) => state.sidebarSlice.expandMenu);
+
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [expandedSubmenus, setExpandedSubmenus] = useState<string[]>([]);
 
@@ -56,6 +61,9 @@ const Sidebar = () => {
   ): string | undefined => {
     return item?.link || item?.path;
   };
+
+  // Check if sidebar is in mini/collapsed mode
+  const isMiniSidebar = dataLayout === 'mini_layout' && !expandMenu;
 
   /**
    * Convert a top-level item that has only `link`
@@ -217,9 +225,10 @@ const Sidebar = () => {
           onClick={() => toggleSubmenu(item.label)}
         >
           {item.icon && <i className={`${item.icon} menu-icon`} />}
-          <span>{item.label}</span>
+          {!isMiniSidebar && <span>{item.label}</span>}
         </button>
 
+        {/* Always render submenu content but hide text in mini mode */}
         {isOpen && (
           <ul className='sidebar-submenu nested-submenu'>
             {(item.submenuItems || []).map((sub) => {
@@ -241,7 +250,7 @@ const Sidebar = () => {
                     }`}
                   >
                     {sub.icon && <i className={`${sub.icon} menu-icon`} />}
-                    <span>{sub.label}</span>
+                    {!isMiniSidebar && <span>{sub.label}</span>}
                   </Link>
                 </li>
               );
@@ -277,7 +286,7 @@ const Sidebar = () => {
             {(mainItem.icon || child.icon) && (
               <i className={`${mainItem.icon || child.icon} menu-icon`} />
             )}
-            <span>{mainItem.label}</span>
+            {!isMiniSidebar && <span>{mainItem.label}</span>}
           </Link>
         </li>
       );
@@ -296,9 +305,10 @@ const Sidebar = () => {
           onClick={() => toggleMenu(mainItem.label)}
         >
           {mainItem.icon && <i className={`${mainItem.icon} menu-icon`} />}
-          <span>{mainItem.label}</span>
+          {!isMiniSidebar && <span>{mainItem.label}</span>}
         </button>
 
+        {/* Always render submenu content but hide text in mini mode */}
         {isOpen && (
           <ul className='sidebar-submenu'>
             {children.map((item) => {
@@ -327,7 +337,7 @@ const Sidebar = () => {
                     }`}
                   >
                     {item.icon && <i className={`${item.icon} menu-icon`} />}
-                    <span>{item.label}</span>
+                    {!isMiniSidebar && <span>{item.label}</span>}
                   </Link>
                 </li>
               );
