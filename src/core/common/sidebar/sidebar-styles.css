@@ -1,0 +1,60 @@
+/* sidebar-styles.css */
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  color: #6b7280;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.sidebar-link:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.sidebar-link.active {
+  color: #2563eb;
+  background-color: #eff6ff;
+}
+
+.sidebar-link .menu-icon {
+  margin-right: 12px;
+  font-size: 18px;
+  width: 20px;
+  display: inline-block;
+  text-align: center;
+  color: inherit;
+}
+
+.sidebar-link .menu-arrow {
+  margin-left: auto;
+  transition: transform 0.2s;
+}
+
+.sidebar-link.subdrop .menu-arrow {
+  transform: rotate(90deg);
+}
+
+/* Submenu indentation */
+.submenu-link {
+  padding-left: 48px !important; /* Icon width (20px) + marginRight (12px) + extra indent */
+}
+
+.nested-submenu-link {
+  padding-left: 72px !important; /* Additional indent for nested items */
+}
+
+/* Remove bullets */
+.sidebar-menu ul,
+.sidebar-menu ul ul,
+.sidebar-menu ul ul ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.sidebar-menu li {
+  list-style: none;
+}

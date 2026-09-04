@@ -6,6 +6,7 @@ import { SidebarData } from '../../data/json/sidebarData';
 import '../../../style/icon/tabler-icons/webfont/tabler-icons.css';
 import { useAuth } from '../../../context/AuthContext';
 import { all_routes } from '../../../feature-module/router/all_routes';
+import './sidebar-styles.css';
 
 // Define interfaces for type safety
 interface SubmenuItem {
@@ -39,6 +40,39 @@ interface User {
   role: string;
   _id?: string;
 }
+
+// Styles for consistent icon and text spacing
+const styles = {
+  icon: {
+    marginRight: '12px',
+    fontSize: '18px',
+    width: '20px',
+    display: 'inline-block',
+    textAlign: 'center' as const,
+    color: 'inherit', // Match text color
+  },
+  link: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '8px 16px',
+    color: '#6b7280',
+    textDecoration: 'none',
+    transition: 'all 0.2s',
+  },
+  submenuLink: {
+    paddingLeft: '48px', // Icon width (20px) + marginRight (12px) + extra indent
+  },
+  nestedSubmenuLink: {
+    paddingLeft: '72px', // Additional indent for nested items
+  },
+  activeLink: {
+    color: '#2563eb',
+    backgroundColor: '#eff6ff',
+  },
+  menuArrow: {
+    marginLeft: 'auto',
+  },
+};
 
 const Sidebar = () => {
   const location = useLocation();
@@ -255,25 +289,31 @@ const Sidebar = () => {
   // Render main menu items
   const renderMainMenuItem = (mainLabel: MainMenuItem, index: number) => {
     const isExpanded = expandedMenus.includes(mainLabel.label);
-    const hasVisibleItems = mainLabel.submenuItems.length > 0;
     const isSingleItem = isSingleItemMenu(mainLabel);
     const isActive = isMenuItemActive(mainLabel);
 
     // If it's a single item with no icon, render as direct link
     if (isSingleItem) {
       const singleItem = mainLabel.submenuItems[0];
+      const isLinkActive = singleItem.link === location.pathname;
       return (
         <li key={index} style={{ listStyle: 'none' }}>
           <Link
             to={singleItem.link || '#'}
-            className={`${singleItem.link === location.pathname ? 'active' : ''}`}
+            style={{
+              ...styles.link,
+              ...(isLinkActive ? styles.activeLink : {}),
+            }}
+            className={isLinkActive ? 'active' : ''}
             onClick={() => {
               if (singleItem.link) {
                 navigate(singleItem.link);
               }
             }}
           >
-            {singleItem.icon && <i className={singleItem.icon}></i>}
+            {singleItem.icon && (
+              <i className={singleItem.icon} style={styles.icon}></i>
+            )}
             <span>{singleItem.label}</span>
           </Link>
         </li>
@@ -281,19 +321,29 @@ const Sidebar = () => {
     }
 
     // If it has multiple items or has an icon, render as collapsible
+    const isMainActive = isActive;
+
     return (
       <li key={index} style={{ listStyle: 'none' }}>
         <Link
           to='#'
+          style={{
+            ...styles.link,
+            ...(isMainActive ? styles.activeLink : {}),
+          }}
+          className={`${isExpanded ? 'subdrop' : ''} ${isMainActive ? 'active' : ''}`}
           onClick={(e) => {
             e.preventDefault();
             handleClick(mainLabel.label, mainLabel);
           }}
-          className={`${isExpanded ? 'subdrop' : ''} ${isActive ? 'active' : ''}`}
         >
-          {mainLabel.icon && <i className={mainLabel.icon}></i>}
+          {mainLabel.icon && (
+            <i className={mainLabel.icon} style={styles.icon}></i>
+          )}
           <span>{mainLabel.label}</span>
-          <span className='menu-arrow' />
+          <span className='menu-arrow' style={styles.menuArrow}>
+            ▸
+          </span>
         </Link>
         {isExpanded && (
           <ul
@@ -321,15 +371,24 @@ const Sidebar = () => {
                   >
                     <Link
                       to='#'
+                      style={{
+                        ...styles.link,
+                        ...styles.submenuLink,
+                        ...(isNestedActive ? styles.activeLink : {}),
+                      }}
                       className={`${isNestedExpanded ? 'subdrop' : ''} ${isNestedActive ? 'active' : ''}`}
                       onClick={(e) => {
                         e.preventDefault();
                         toggleSubsidebar(item?.label);
                       }}
                     >
-                      {item.icon && <i className={item.icon}></i>}
+                      {item.icon && (
+                        <i className={item.icon} style={styles.icon}></i>
+                      )}
                       <span>{item.label}</span>
-                      <span className='menu-arrow' />
+                      <span className='menu-arrow' style={styles.menuArrow}>
+                        ▸
+                      </span>
                     </Link>
                     {isNestedExpanded && (
                       <ul
@@ -340,40 +399,65 @@ const Sidebar = () => {
                           margin: 0,
                         }}
                       >
-                        {item.submenuItems?.map((subItem: SubmenuItem) => (
-                          <li key={subItem.label} style={{ listStyle: 'none' }}>
-                            <Link
-                              to={subItem?.link || '#'}
-                              className={`${subItem.link === location.pathname ? 'active' : ''}`}
-                              onClick={() => {
-                                if (subItem.link) {
-                                  navigate(subItem.link);
-                                }
-                              }}
+                        {item.submenuItems?.map((subItem: SubmenuItem) => {
+                          const isSubActive =
+                            subItem.link === location.pathname;
+                          return (
+                            <li
+                              key={subItem.label}
+                              style={{ listStyle: 'none' }}
                             >
-                              {subItem.icon && <i className={subItem.icon}></i>}
-                              <span>{subItem.label}</span>
-                            </Link>
-                          </li>
-                        ))}
+                              <Link
+                                to={subItem?.link || '#'}
+                                style={{
+                                  ...styles.link,
+                                  ...styles.nestedSubmenuLink,
+                                  ...(isSubActive ? styles.activeLink : {}),
+                                }}
+                                className={isSubActive ? 'active' : ''}
+                                onClick={() => {
+                                  if (subItem.link) {
+                                    navigate(subItem.link);
+                                  }
+                                }}
+                              >
+                                {subItem.icon && (
+                                  <i
+                                    className={subItem.icon}
+                                    style={styles.icon}
+                                  ></i>
+                                )}
+                                <span>{subItem.label}</span>
+                              </Link>
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </li>
                 );
               } else {
                 // Regular submenu item
+                const isSubActive = item?.link === location.pathname;
                 return (
                   <li key={item.label} style={{ listStyle: 'none' }}>
                     <Link
                       to={item?.link || '#'}
-                      className={`${item?.link === location.pathname ? 'active' : ''}`}
+                      style={{
+                        ...styles.link,
+                        ...styles.submenuLink,
+                        ...(isSubActive ? styles.activeLink : {}),
+                      }}
+                      className={isSubActive ? 'active' : ''}
                       onClick={() => {
                         if (item.link) {
                           navigate(item.link);
                         }
                       }}
                     >
-                      {item.icon && <i className={item.icon}></i>}
+                      {item.icon && (
+                        <i className={item.icon} style={styles.icon}></i>
+                      )}
                       <span>{item.label}</span>
                     </Link>
                   </li>
