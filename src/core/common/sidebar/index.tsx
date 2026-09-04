@@ -234,11 +234,7 @@ const Sidebar = () => {
         >
           {item.icon && <i className={`${item.icon} menu-icon`} />}
           <span>{item.label}</span>
-          {!isMiniSidebar && (
-            <i
-              className={`ti ti-chevron-${isOpen ? 'up' : 'down'} menu-arrow`}
-            />
-          )}
+          <i className={`ti ti-chevron-${isOpen ? 'up' : 'down'} menu-arrow`} />
         </button>
 
         {isOpen && (
@@ -343,11 +339,7 @@ const Sidebar = () => {
         >
           {mainItem.icon && <i className={`${mainItem.icon} menu-icon`} />}
           <span>{mainItem.label}</span>
-          {!isMiniSidebar && (
-            <i
-              className={`ti ti-chevron-${isOpen ? 'up' : 'down'} menu-arrow`}
-            />
-          )}
+          <i className={`ti ti-chevron-${isOpen ? 'up' : 'down'} menu-arrow`} />
         </button>
 
         {isOpen && (

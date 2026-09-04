@@ -140,7 +140,7 @@
 }
 
 /* =========================================================
-   MINI SIDEBAR
+   MINI SIDEBAR - COMPLETE OVERHAUL
    ========================================================= */
 
 .sidebar.mini-sidebar {
@@ -157,10 +157,12 @@
   overflow: visible;
 }
 
+/* CRITICAL: Hide ALL text labels in mini mode - this includes submenu items */
 .sidebar.mini-sidebar .sidebar-link span {
   display: none !important;
 }
 
+/* CRITICAL: Hide ALL arrows in mini mode */
 .sidebar.mini-sidebar .sidebar-link .menu-arrow {
   display: none !important;
 }
@@ -322,14 +324,6 @@
 }
 
 /* Main content adjustment */
-.sidebar.mini-sidebar ~ .main-content {
-  margin-left: 70px;
-}
-
-/* ---------------------------------------------------------
-   Main content adjustment
-   --------------------------------------------------------- */
-
 .sidebar.mini-sidebar ~ .main-content {
   margin-left: 70px;
 }
