@@ -5,7 +5,7 @@ const routes = all_routes;
 export const SidebarData = [
   {
     label: 'MAIN',
-    submenuOpen: true,
+    submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Main',
     submenuItems: [
@@ -33,7 +33,7 @@ export const SidebarData = [
   },
   {
     label: 'Dashboard',
-    submenuOpen: true,
+    submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Dashboard',
     submenuItems: [
@@ -57,7 +57,7 @@ export const SidebarData = [
   },
   {
     label: 'Team',
-    submenuOpen: true,
+    submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Peoples',
     submenuItems: [
@@ -111,7 +111,7 @@ export const SidebarData = [
   },
   {
     label: 'Managers',
-    submenuOpen: true,
+    submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Peoples',
     submenuItems: [
@@ -135,7 +135,7 @@ export const SidebarData = [
   },
   {
     label: 'Schedule/Events',
-    submenuOpen: true,
+    submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Schedule/Events',
     submenuItems: [
@@ -236,6 +236,38 @@ export const SidebarData = [
         roles: ['admin'],
       },
       {
+        label: 'Event Configurations',
+        submenuOpen: false,
+        showSubRoute: false,
+        submenuHdr: 'Event Configs',
+        submenuItems: [
+          {
+            label: 'Tryouts',
+            icon: 'ti ti-target-arrow',
+            submenu: false,
+            showSubRoute: false,
+            link: '/admin/tryout-config',
+            roles: ['admin'],
+          },
+          {
+            label: 'Training',
+            icon: 'ti ti-ball-basketball',
+            submenu: false,
+            showSubRoute: false,
+            link: '/admin/training-config',
+            roles: ['admin'],
+          },
+          {
+            label: 'Tournaments',
+            icon: 'ti ti-trophy',
+            submenu: false,
+            showSubRoute: false,
+            link: '/admin/tournament-config',
+            roles: ['admin'],
+          },
+        ],
+      },
+      {
         label: 'Form Fields',
         submenu: false,
         showSubRoute: false,
@@ -279,7 +311,7 @@ export const SidebarData = [
   },
   {
     label: 'Marketing',
-    submenuOpen: true,
+    submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Marketing',
     submenuItems: [
@@ -297,38 +329,6 @@ export const SidebarData = [
         submenu: false,
         showSubRoute: false,
         link: '/admin/marketing',
-        roles: ['admin'],
-      },
-    ],
-  },
-  {
-    label: 'Event Configurations',
-    submenuOpen: true,
-    showSubRoute: false,
-    submenuHdr: 'Event Configs',
-    submenuItems: [
-      {
-        label: 'Tryouts',
-        icon: 'ti ti-target-arrow',
-        submenu: false,
-        showSubRoute: false,
-        link: '/admin/tryout-config',
-        roles: ['admin'],
-      },
-      {
-        label: 'Training',
-        icon: 'ti ti-ball-basketball',
-        submenu: false,
-        showSubRoute: false,
-        link: '/admin/training-config',
-        roles: ['admin'],
-      },
-      {
-        label: 'Tournaments',
-        icon: 'ti ti-trophy',
-        submenu: false,
-        showSubRoute: false,
-        link: '/admin/tournament-config',
         roles: ['admin'],
       },
     ],
