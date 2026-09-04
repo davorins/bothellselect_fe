@@ -2,12 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Scrollbars from 'react-custom-scrollbars-2';
 import { useSelector } from 'react-redux';
-
 import { SidebarData } from '../../data/json/sidebarData';
 import '../../../style/icon/tabler-icons/webfont/tabler-icons.css';
 import { useAuth } from '../../../context/AuthContext';
 import { all_routes } from '../../../feature-module/router/all_routes';
-
 import './sidebar-styles.css';
 
 export interface SubmenuItem {
@@ -44,66 +42,36 @@ interface User {
   _id?: string;
 }
 
-const Sidebar: React.FC = () => {
+const Sidebar = () => {
   const location = useLocation();
 
   const { user } = useAuth() as {
     user: User | null;
   };
 
+  // Get sidebar state from Redux
   const dataLayout = useSelector((state: any) => state.themeSetting.dataLayout);
-
   const expandMenu = useSelector((state: any) => state.sidebarSlice.expandMenu);
 
-  /*
-   * Mini sidebar is active when:
-   *
-   * dataLayout === 'mini_layout'
-   * AND
-   * expandMenu is false
-   */
-  const isMiniSidebar = dataLayout === 'mini_layout' && !expandMenu;
-
-  /*
-   * Which top-level menus are open
-   */
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
-
-  /*
-   * Which nested menus are open
-   */
   const [expandedSubmenus, setExpandedSubmenus] = useState<string[]>([]);
+  const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
 
-  /*
-   * Which mini-sidebar menu is currently open.
-   *
-   * This is separate from expandedMenus because mini mode
-   * behaves more like a fly-out menu.
-   */
-  const [miniOpenMenu, setMiniOpenMenu] = useState<string | null>(null);
-
-  /*
-   * Convert either "link" or "path" into the actual route.
-   */
   const getItemLink = (
     item?: MainMenuItem | SubmenuItem,
   ): string | undefined => {
-    if (!item) return undefined;
-
-    return item.link || item.path;
+    return item?.link || item?.path;
   };
 
-  /*
-   * Normalize SidebarData.
-   *
-   * Some of your menu entries are direct links while others
-   * have submenuItems.
-   *
-   * A direct link is converted into one child so that the
-   * rendering logic remains consistent.
+  // Check if sidebar is in mini/collapsed mode
+  const isMiniSidebar = dataLayout === 'mini_layout' && !expandMenu;
+
+  /**
+   * Convert a top-level item that has only `link`
+   * into the same structure used by the other menus.
    */
   const normalizedData = useMemo<MainMenuItem[]>(() => {
-    return (SidebarData as any[]).map((item: any) => {
+    return SidebarData.map((item: any) => {
       if (item.link && !item.submenuItems) {
         return {
           ...item,
@@ -128,8 +96,8 @@ const Sidebar: React.FC = () => {
     });
   }, []);
 
-  /*
-   * Filter menu items based on the logged-in user's role.
+  /**
+   * Filter menu items according to user role.
    */
   const filteredSidebarData = useMemo<MainMenuItem[]>(() => {
     const role = user?.role || 'user';
@@ -141,11 +109,8 @@ const Sidebar: React.FC = () => {
             (item: SubmenuItem) => !item.roles || item.roles.includes(role),
           )
           .map((item: SubmenuItem) => {
-            /*
-             * Parents behaves differently depending on role.
-             *
-             * Admin -> parent list
-             * User/coach/etc -> own parent detail
+            /**
+             * Special Parents behavior.
              */
             if (item.label === 'Parents') {
               const isAdminView = role === 'admin';
@@ -161,10 +126,10 @@ const Sidebar: React.FC = () => {
               };
             }
 
-            /*
-             * Filter nested submenu items as well.
+            /**
+             * Filter nested menus too.
              */
-            if (item.submenuItems && item.submenuItems.length > 0) {
+            if (item.submenuItems) {
               return {
                 ...item,
                 submenuItems: item.submenuItems.filter(
@@ -184,59 +149,21 @@ const Sidebar: React.FC = () => {
       .filter((mainItem) => (mainItem.submenuItems || []).length > 0);
   }, [normalizedData, user]);
 
-  /*
-   * Determine whether a route is active.
-   */
-  const isActivePath = (link?: string): boolean => {
-    if (!link) return false;
-
-    return (
-      location.pathname === link || location.pathname.startsWith(`${link}/`)
-    );
-  };
-
-  /*
-   * Recursively determine whether an item or one of its
-   * children is active.
-   */
-  const hasActiveChild = (item: MainMenuItem | SubmenuItem): boolean => {
-    if (isActivePath(getItemLink(item))) {
-      return true;
-    }
-
-    return (item.submenuItems || []).some((child) => hasActiveChild(child));
-  };
-
-  /*
+  /**
    * Open/close a top-level menu.
-   *
-   * Only one top-level menu remains open at a time.
+   * Only one top-level menu can be open at a time.
    */
   const toggleMenu = (label: string) => {
-    setExpandedMenus((previous) => {
-      const currentlyOpen = previous.includes(label);
-
-      if (currentlyOpen) {
-        return [];
-      }
-
-      return [label];
-    });
-
-    /*
-     * Reset nested submenu state when changing
-     * top-level menu.
-     */
-    setExpandedSubmenus([]);
-
-    /*
-     * In mini mode, this controls the fly-out.
-     */
-    setMiniOpenMenu((previous) => (previous === label ? null : label));
+    if (isMiniSidebar) {
+      // In mini mode, toggle the menu
+      setExpandedMenus((prev) => (prev.includes(label) ? [] : [label]));
+    } else {
+      setExpandedMenus((prev) => (prev.includes(label) ? [] : [label]));
+    }
   };
 
-  /*
-   * Toggle nested submenu.
+  /**
+   * Open/close nested menu.
    */
   const toggleSubmenu = (label: string) => {
     setExpandedSubmenus((previous) =>
@@ -246,9 +173,31 @@ const Sidebar: React.FC = () => {
     );
   };
 
-  /*
-   * When navigating directly to a child route, automatically
-   * open its parent menu.
+  /**
+   * Determine whether a link is active.
+   */
+  const isActivePath = (link?: string) => {
+    if (!link) return false;
+
+    return (
+      location.pathname === link || location.pathname.startsWith(`${link}/`)
+    );
+  };
+
+  /**
+   * Determine whether any child of a menu is active.
+   */
+  const hasActiveChild = (item: MainMenuItem | SubmenuItem): boolean => {
+    if (isActivePath(getItemLink(item))) {
+      return true;
+    }
+
+    return (item.submenuItems || []).some((child) => hasActiveChild(child));
+  };
+
+  /**
+   * Automatically expand menus containing current route.
+   * Only one menu will be expanded at a time.
    */
   useEffect(() => {
     let activeMainLabel: string | null = null;
@@ -259,31 +208,24 @@ const Sidebar: React.FC = () => {
       }
     });
 
-    if (activeMainLabel) {
-      setExpandedMenus([activeMainLabel]);
-    }
+    setExpandedMenus(activeMainLabel ? [activeMainLabel] : []);
   }, [location.pathname, filteredSidebarData]);
 
-  /*
-   * When leaving mini mode, close any mini popup.
+  /**
+   * Handle mouse enter for mini sidebar tooltips
    */
-  useEffect(() => {
-    if (!isMiniSidebar) {
-      setMiniOpenMenu(null);
-    }
-  }, [isMiniSidebar]);
-
-  /*
-   * When clicking a normal link in mini mode, close the popup.
-   */
-  const handleNavigation = () => {
+  const handleMouseEnter = (label: string) => {
     if (isMiniSidebar) {
-      setMiniOpenMenu(null);
+      setHoveredMenu(label);
     }
   };
 
-  /*
-   * Render deeply nested submenu.
+  const handleMouseLeave = () => {
+    setHoveredMenu(null);
+  };
+
+  /**
+   * Render nested submenu.
    */
   const renderNestedMenu = (item: SubmenuItem, mainItem: MainMenuItem) => {
     const isOpen = expandedSubmenus.includes(item.label);
@@ -293,6 +235,8 @@ const Sidebar: React.FC = () => {
       <li
         key={`${mainItem.label}-${item.label}`}
         className='sidebar-menu-item sidebar-nested-item'
+        onMouseEnter={() => handleMouseEnter(item.label)}
+        onMouseLeave={handleMouseLeave}
       >
         <button
           type='button'
@@ -300,19 +244,17 @@ const Sidebar: React.FC = () => {
             isActive ? 'active' : ''
           } ${isOpen ? 'subdrop' : ''}`}
           onClick={() => toggleSubmenu(item.label)}
-          aria-expanded={isOpen}
         >
-          {item.icon && (
-            <i className={`${item.icon} menu-icon`} aria-hidden='true' />
-          )}
-
-          <span>{item.label}</span>
-
-          <i className='ti ti-chevron-right menu-arrow' aria-hidden='true' />
+          {item.icon && <i className={`${item.icon} menu-icon`} />}
+          {!isMiniSidebar && <span>{item.label}</span>}
         </button>
 
         {isOpen && (
-          <ul className='sidebar-submenu nested-submenu'>
+          <ul
+            className={`sidebar-submenu nested-submenu ${
+              isMiniSidebar ? 'mini-dropdown' : ''
+            }`}
+          >
             {(item.submenuItems || []).map((sub) => {
               const link = getItemLink(sub);
 
@@ -327,18 +269,11 @@ const Sidebar: React.FC = () => {
                 >
                   <Link
                     to={link}
-                    onClick={handleNavigation}
                     className={`sidebar-link nested-submenu-link ${
                       active ? 'active' : ''
                     }`}
                   >
-                    {sub.icon && (
-                      <i
-                        className={`${sub.icon} menu-icon`}
-                        aria-hidden='true'
-                      />
-                    )}
-
+                    {sub.icon && <i className={`${sub.icon} menu-icon`} />}
                     <span>{sub.label}</span>
                   </Link>
                 </li>
@@ -350,94 +285,54 @@ const Sidebar: React.FC = () => {
     );
   };
 
-  /*
-   * Render a top-level menu item.
+  /**
+   * Render top-level menu.
    */
   const renderMainMenuItem = (mainItem: MainMenuItem, index: number) => {
     const children = mainItem.submenuItems || [];
 
-    if (children.length === 0) {
-      return null;
-    }
+    if (children.length === 0) return null;
 
-    /*
-     * If after role filtering there is only one direct child,
-     * treat the parent itself as the actual link.
-     *
-     * Example:
-     *
-     * Dashboard
-     *    Dashboard
-     *
-     * becomes simply:
-     *
-     * Dashboard
-     */
+    // Direct link if exactly one child, it has a link, and no deeper submenu
     const isDirectMenu =
-      children.length === 1 &&
-      !!getItemLink(children[0]) &&
-      !children[0].submenuItems?.length;
+      children.length === 1 && children[0].link && !children[0].submenuItems;
 
     if (isDirectMenu) {
       const child = children[0];
       const link = getItemLink(child);
-
-      if (!link) {
-        return null;
-      }
+      if (!link) return null;
 
       const active = isActivePath(link);
 
       return (
-        <li key={`${mainItem.label}-${index}`} className='sidebar-menu-item'>
-          <Link
-            to={link}
-            onClick={handleNavigation}
-            className={`sidebar-link ${active ? 'active' : ''}`}
-          >
+        <li
+          key={`${mainItem.label}-${index}`}
+          className='sidebar-menu-item'
+          onMouseEnter={() => handleMouseEnter(mainItem.label)}
+          onMouseLeave={handleMouseLeave}
+        >
+          <Link to={link} className={`sidebar-link ${active ? 'active' : ''}`}>
             {(mainItem.icon || child.icon) && (
-              <i
-                className={`${mainItem.icon || child.icon} menu-icon`}
-                aria-hidden='true'
-              />
+              <i className={`${mainItem.icon || child.icon} menu-icon`} />
             )}
-
-            <span>{mainItem.label}</span>
+            {!isMiniSidebar && <span>{mainItem.label}</span>}
           </Link>
+          {isMiniSidebar && hoveredMenu === mainItem.label && (
+            <div className='mini-tooltip'>{mainItem.label}</div>
+          )}
         </li>
       );
     }
 
-    /*
-     * Normal menu with children.
-     */
     const isOpen = expandedMenus.includes(mainItem.label);
-
     const isActive = hasActiveChild(mainItem);
-
-    /*
-     * Mini mode popup is controlled by miniOpenMenu.
-     */
-    const miniIsOpen = isMiniSidebar && miniOpenMenu === mainItem.label;
-
-    const submenuClassName = [
-      'sidebar-submenu',
-      miniIsOpen ? 'mini-submenu-open' : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
-
-    /*
-     * In normal mode we use expandedMenus.
-     *
-     * In mini mode we use miniOpenMenu.
-     */
-    const shouldShowSubmenu = isMiniSidebar ? miniIsOpen : isOpen;
 
     return (
       <li
         key={`${mainItem.label}-${index}`}
-        className={`sidebar-menu-item ${miniIsOpen ? 'mini-menu-open' : ''}`}
+        className='sidebar-menu-item'
+        onMouseEnter={() => handleMouseEnter(mainItem.label)}
+        onMouseLeave={handleMouseLeave}
       >
         <button
           type='button'
@@ -445,38 +340,30 @@ const Sidebar: React.FC = () => {
             isActive ? 'active' : ''
           } ${isOpen ? 'subdrop' : ''}`}
           onClick={() => toggleMenu(mainItem.label)}
-          aria-expanded={shouldShowSubmenu}
         >
-          {mainItem.icon && (
-            <i className={`${mainItem.icon} menu-icon`} aria-hidden='true' />
-          )}
-
-          <span>{mainItem.label}</span>
-
-          <i className='ti ti-chevron-right menu-arrow' aria-hidden='true' />
+          {mainItem.icon && <i className={`${mainItem.icon} menu-icon`} />}
+          {!isMiniSidebar && <span>{mainItem.label}</span>}
         </button>
 
-        {shouldShowSubmenu && (
-          <ul className={submenuClassName}>
+        {isMiniSidebar && hoveredMenu === mainItem.label && (
+          <div className='mini-tooltip'>{mainItem.label}</div>
+        )}
+
+        {isOpen && (
+          <ul
+            className={`sidebar-submenu ${isMiniSidebar ? 'mini-dropdown' : ''}`}
+          >
             {children.map((item) => {
               const hasNested =
                 !!item.submenuItems && item.submenuItems.length > 0;
 
-              /*
-               * Nested menu
-               */
               if (hasNested) {
                 return renderNestedMenu(item, mainItem);
               }
 
-              /*
-               * Regular submenu item
-               */
               const link = getItemLink(item);
 
-              if (!link) {
-                return null;
-              }
+              if (!link) return null;
 
               const active = isActivePath(link);
 
@@ -487,26 +374,12 @@ const Sidebar: React.FC = () => {
                 >
                   <Link
                     to={link}
-                    onClick={handleNavigation}
                     className={`sidebar-link submenu-link ${
                       active ? 'active' : ''
                     }`}
                   >
-                    {item.icon && (
-                      <i
-                        className={`${item.icon} menu-icon`}
-                        aria-hidden='true'
-                      />
-                    )}
-
+                    {item.icon && <i className={`${item.icon} menu-icon`} />}
                     <span>{item.label}</span>
-
-                    {item.submenuItems && item.submenuItems.length > 0 && (
-                      <i
-                        className='ti ti-chevron-right menu-arrow'
-                        aria-hidden='true'
-                      />
-                    )}
                   </Link>
                 </li>
               );
