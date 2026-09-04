@@ -53,7 +53,9 @@ const Sidebar = () => {
      REDUX
      ========================================================= */
 
-  const dataLayout = useSelector((state: any) => state.themeSetting.dataLayout);
+  const miniSidebar = useSelector(
+    (state: any) => state.sidebarSlice.miniSidebar,
+  );
 
   const expandMenu = useSelector((state: any) => state.sidebarSlice.expandMenu);
 
@@ -73,14 +75,14 @@ const Sidebar = () => {
    *
    * The sidebar is mini ONLY when:
    *
-   *   dataLayout === 'mini_layout'
+   *   miniSidebar === true
    *   AND
    *   expandMenu === false
    *
    * When the user hovers over the mini sidebar,
    * expandMenu becomes true and the labels return.
    */
-  const isMiniSidebar = dataLayout === 'mini_layout' && !expandMenu;
+  const isMiniSidebar = miniSidebar && !expandMenu;
 
   /* =========================================================
      LINK HELPER
