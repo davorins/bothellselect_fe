@@ -240,6 +240,7 @@ export const SidebarData = [
         submenuOpen: false,
         showSubRoute: false,
         submenuHdr: 'Event Configs',
+        icon: 'ti ti-cog',
         submenuItems: [
           {
             label: 'Tryouts',
