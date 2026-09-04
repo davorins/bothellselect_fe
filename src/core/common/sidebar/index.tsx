@@ -144,11 +144,7 @@ const Sidebar = () => {
    * Open/close a top-level menu.
    */
   const toggleMenu = (label: string) => {
-    setExpandedMenus((previous) =>
-      previous.includes(label)
-        ? previous.filter((item) => item !== label)
-        : [...previous, label],
-    );
+    setExpandedMenus((prev) => (prev.includes(label) ? [] : [label]));
   };
 
   /**
@@ -188,26 +184,15 @@ const Sidebar = () => {
    * Automatically expand menus containing current route.
    */
   useEffect(() => {
-    const menusToOpen: string[] = [];
-    const submenusToOpen: string[] = [];
+    let activeMainLabel: string | null = null;
 
     filteredSidebarData.forEach((mainItem) => {
       if (hasActiveChild(mainItem)) {
-        menusToOpen.push(mainItem.label);
+        activeMainLabel = mainItem.label;
       }
-
-      (mainItem.submenuItems || []).forEach((item) => {
-        if (item.submenuItems?.length && hasActiveChild(item)) {
-          submenusToOpen.push(item.label);
-        }
-      });
     });
 
-    setExpandedMenus((previous) => [...new Set([...previous, ...menusToOpen])]);
-
-    setExpandedSubmenus((previous) => [
-      ...new Set([...previous, ...submenusToOpen]),
-    ]);
+    setExpandedMenus(activeMainLabel ? [activeMainLabel] : []);
   }, [location.pathname, filteredSidebarData]);
 
   /**
@@ -275,22 +260,15 @@ const Sidebar = () => {
   const renderMainMenuItem = (mainItem: MainMenuItem, index: number) => {
     const children = mainItem.submenuItems || [];
 
-    if (children.length === 0) {
-      return null;
-    }
+    if (children.length === 0) return null;
 
-    /**
-     * A menu with exactly one child and no parent icon
-     * behaves as a direct link.
-     *
-     * Example: FAQ
-     */
-    const isDirectMenu = children.length === 1 && !mainItem.icon;
+    // Direct link if exactly one child, it has a link, and no deeper submenu
+    const isDirectMenu =
+      children.length === 1 && children[0].link && !children[0].submenuItems;
 
     if (isDirectMenu) {
       const child = children[0];
       const link = getItemLink(child);
-
       if (!link) return null;
 
       const active = isActivePath(link);
@@ -301,7 +279,6 @@ const Sidebar = () => {
             {(mainItem.icon || child.icon) && (
               <i className={`${mainItem.icon || child.icon} menu-icon`} />
             )}
-
             <span>{mainItem.label}</span>
           </Link>
         </li>
