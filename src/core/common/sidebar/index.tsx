@@ -2,10 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Scrollbars from 'react-custom-scrollbars-2';
 import { useSelector } from 'react-redux';
+
 import { SidebarData } from '../../data/json/sidebarData';
 import '../../../style/icon/tabler-icons/webfont/tabler-icons.css';
 import { useAuth } from '../../../context/AuthContext';
 import { all_routes } from '../../../feature-module/router/all_routes';
+
 import './sidebar-styles.css';
 
 export interface SubmenuItem {
@@ -42,35 +44,66 @@ interface User {
   _id?: string;
 }
 
-const Sidebar = () => {
+const Sidebar: React.FC = () => {
   const location = useLocation();
 
   const { user } = useAuth() as {
     user: User | null;
   };
 
-  // Get sidebar state from Redux
   const dataLayout = useSelector((state: any) => state.themeSetting.dataLayout);
+
   const expandMenu = useSelector((state: any) => state.sidebarSlice.expandMenu);
 
+  /*
+   * Mini sidebar is active when:
+   *
+   * dataLayout === 'mini_layout'
+   * AND
+   * expandMenu is false
+   */
+  const isMiniSidebar = dataLayout === 'mini_layout' && !expandMenu;
+
+  /*
+   * Which top-level menus are open
+   */
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+
+  /*
+   * Which nested menus are open
+   */
   const [expandedSubmenus, setExpandedSubmenus] = useState<string[]>([]);
 
+  /*
+   * Which mini-sidebar menu is currently open.
+   *
+   * This is separate from expandedMenus because mini mode
+   * behaves more like a fly-out menu.
+   */
+  const [miniOpenMenu, setMiniOpenMenu] = useState<string | null>(null);
+
+  /*
+   * Convert either "link" or "path" into the actual route.
+   */
   const getItemLink = (
     item?: MainMenuItem | SubmenuItem,
   ): string | undefined => {
-    return item?.link || item?.path;
+    if (!item) return undefined;
+
+    return item.link || item.path;
   };
 
-  // Check if sidebar is in mini/collapsed mode
-  const isMiniSidebar = dataLayout === 'mini_layout' && !expandMenu;
-
-  /**
-   * Convert a top-level item that has only `link`
-   * into the same structure used by the other menus.
+  /*
+   * Normalize SidebarData.
+   *
+   * Some of your menu entries are direct links while others
+   * have submenuItems.
+   *
+   * A direct link is converted into one child so that the
+   * rendering logic remains consistent.
    */
   const normalizedData = useMemo<MainMenuItem[]>(() => {
-    return SidebarData.map((item: any) => {
+    return (SidebarData as any[]).map((item: any) => {
       if (item.link && !item.submenuItems) {
         return {
           ...item,
@@ -95,8 +128,8 @@ const Sidebar = () => {
     });
   }, []);
 
-  /**
-   * Filter menu items according to user role.
+  /*
+   * Filter menu items based on the logged-in user's role.
    */
   const filteredSidebarData = useMemo<MainMenuItem[]>(() => {
     const role = user?.role || 'user';
@@ -108,8 +141,11 @@ const Sidebar = () => {
             (item: SubmenuItem) => !item.roles || item.roles.includes(role),
           )
           .map((item: SubmenuItem) => {
-            /**
-             * Special Parents behavior.
+            /*
+             * Parents behaves differently depending on role.
+             *
+             * Admin -> parent list
+             * User/coach/etc -> own parent detail
              */
             if (item.label === 'Parents') {
               const isAdminView = role === 'admin';
@@ -125,10 +161,10 @@ const Sidebar = () => {
               };
             }
 
-            /**
-             * Filter nested menus too.
+            /*
+             * Filter nested submenu items as well.
              */
-            if (item.submenuItems) {
+            if (item.submenuItems && item.submenuItems.length > 0) {
               return {
                 ...item,
                 submenuItems: item.submenuItems.filter(
@@ -148,29 +184,10 @@ const Sidebar = () => {
       .filter((mainItem) => (mainItem.submenuItems || []).length > 0);
   }, [normalizedData, user]);
 
-  /**
-   * Open/close a top-level menu.
-   * Only one top-level menu can be open at a time.
+  /*
+   * Determine whether a route is active.
    */
-  const toggleMenu = (label: string) => {
-    setExpandedMenus((prev) => (prev.includes(label) ? [] : [label]));
-  };
-
-  /**
-   * Open/close nested menu.
-   */
-  const toggleSubmenu = (label: string) => {
-    setExpandedSubmenus((previous) =>
-      previous.includes(label)
-        ? previous.filter((item) => item !== label)
-        : [...previous, label],
-    );
-  };
-
-  /**
-   * Determine whether a link is active.
-   */
-  const isActivePath = (link?: string) => {
+  const isActivePath = (link?: string): boolean => {
     if (!link) return false;
 
     return (
@@ -178,8 +195,9 @@ const Sidebar = () => {
     );
   };
 
-  /**
-   * Determine whether any child of a menu is active.
+  /*
+   * Recursively determine whether an item or one of its
+   * children is active.
    */
   const hasActiveChild = (item: MainMenuItem | SubmenuItem): boolean => {
     if (isActivePath(getItemLink(item))) {
@@ -189,9 +207,48 @@ const Sidebar = () => {
     return (item.submenuItems || []).some((child) => hasActiveChild(child));
   };
 
-  /**
-   * Automatically expand menus containing current route.
-   * Only one menu will be expanded at a time.
+  /*
+   * Open/close a top-level menu.
+   *
+   * Only one top-level menu remains open at a time.
+   */
+  const toggleMenu = (label: string) => {
+    setExpandedMenus((previous) => {
+      const currentlyOpen = previous.includes(label);
+
+      if (currentlyOpen) {
+        return [];
+      }
+
+      return [label];
+    });
+
+    /*
+     * Reset nested submenu state when changing
+     * top-level menu.
+     */
+    setExpandedSubmenus([]);
+
+    /*
+     * In mini mode, this controls the fly-out.
+     */
+    setMiniOpenMenu((previous) => (previous === label ? null : label));
+  };
+
+  /*
+   * Toggle nested submenu.
+   */
+  const toggleSubmenu = (label: string) => {
+    setExpandedSubmenus((previous) =>
+      previous.includes(label)
+        ? previous.filter((item) => item !== label)
+        : [...previous, label],
+    );
+  };
+
+  /*
+   * When navigating directly to a child route, automatically
+   * open its parent menu.
    */
   useEffect(() => {
     let activeMainLabel: string | null = null;
@@ -202,11 +259,31 @@ const Sidebar = () => {
       }
     });
 
-    setExpandedMenus(activeMainLabel ? [activeMainLabel] : []);
+    if (activeMainLabel) {
+      setExpandedMenus([activeMainLabel]);
+    }
   }, [location.pathname, filteredSidebarData]);
 
-  /**
-   * Render nested submenu.
+  /*
+   * When leaving mini mode, close any mini popup.
+   */
+  useEffect(() => {
+    if (!isMiniSidebar) {
+      setMiniOpenMenu(null);
+    }
+  }, [isMiniSidebar]);
+
+  /*
+   * When clicking a normal link in mini mode, close the popup.
+   */
+  const handleNavigation = () => {
+    if (isMiniSidebar) {
+      setMiniOpenMenu(null);
+    }
+  };
+
+  /*
+   * Render deeply nested submenu.
    */
   const renderNestedMenu = (item: SubmenuItem, mainItem: MainMenuItem) => {
     const isOpen = expandedSubmenus.includes(item.label);
@@ -223,12 +300,17 @@ const Sidebar = () => {
             isActive ? 'active' : ''
           } ${isOpen ? 'subdrop' : ''}`}
           onClick={() => toggleSubmenu(item.label)}
+          aria-expanded={isOpen}
         >
-          {item.icon && <i className={`${item.icon} menu-icon`} />}
-          {!isMiniSidebar && <span>{item.label}</span>}
+          {item.icon && (
+            <i className={`${item.icon} menu-icon`} aria-hidden='true' />
+          )}
+
+          <span>{item.label}</span>
+
+          <i className='ti ti-chevron-right menu-arrow' aria-hidden='true' />
         </button>
 
-        {/* Always render submenu content but hide text in mini mode */}
         {isOpen && (
           <ul className='sidebar-submenu nested-submenu'>
             {(item.submenuItems || []).map((sub) => {
@@ -245,11 +327,17 @@ const Sidebar = () => {
                 >
                   <Link
                     to={link}
+                    onClick={handleNavigation}
                     className={`sidebar-link nested-submenu-link ${
                       active ? 'active' : ''
                     }`}
                   >
-                    {sub.icon && <i className={`${sub.icon} menu-icon`} />}
+                    {sub.icon && (
+                      <i
+                        className={`${sub.icon} menu-icon`}
+                        aria-hidden='true'
+                      />
+                    )}
 
                     <span>{sub.label}</span>
                   </Link>
@@ -262,68 +350,133 @@ const Sidebar = () => {
     );
   };
 
-  /**
-   * Render top-level menu.
+  /*
+   * Render a top-level menu item.
    */
   const renderMainMenuItem = (mainItem: MainMenuItem, index: number) => {
     const children = mainItem.submenuItems || [];
 
-    if (children.length === 0) return null;
+    if (children.length === 0) {
+      return null;
+    }
 
-    // Direct link if exactly one child, it has a link, and no deeper submenu
+    /*
+     * If after role filtering there is only one direct child,
+     * treat the parent itself as the actual link.
+     *
+     * Example:
+     *
+     * Dashboard
+     *    Dashboard
+     *
+     * becomes simply:
+     *
+     * Dashboard
+     */
     const isDirectMenu =
-      children.length === 1 && children[0].link && !children[0].submenuItems;
+      children.length === 1 &&
+      !!getItemLink(children[0]) &&
+      !children[0].submenuItems?.length;
 
     if (isDirectMenu) {
       const child = children[0];
       const link = getItemLink(child);
-      if (!link) return null;
+
+      if (!link) {
+        return null;
+      }
 
       const active = isActivePath(link);
 
       return (
         <li key={`${mainItem.label}-${index}`} className='sidebar-menu-item'>
-          <Link to={link} className={`sidebar-link ${active ? 'active' : ''}`}>
+          <Link
+            to={link}
+            onClick={handleNavigation}
+            className={`sidebar-link ${active ? 'active' : ''}`}
+          >
             {(mainItem.icon || child.icon) && (
-              <i className={`${mainItem.icon || child.icon} menu-icon`} />
+              <i
+                className={`${mainItem.icon || child.icon} menu-icon`}
+                aria-hidden='true'
+              />
             )}
+
             <span>{mainItem.label}</span>
           </Link>
         </li>
       );
     }
 
+    /*
+     * Normal menu with children.
+     */
     const isOpen = expandedMenus.includes(mainItem.label);
+
     const isActive = hasActiveChild(mainItem);
 
+    /*
+     * Mini mode popup is controlled by miniOpenMenu.
+     */
+    const miniIsOpen = isMiniSidebar && miniOpenMenu === mainItem.label;
+
+    const submenuClassName = [
+      'sidebar-submenu',
+      miniIsOpen ? 'mini-submenu-open' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    /*
+     * In normal mode we use expandedMenus.
+     *
+     * In mini mode we use miniOpenMenu.
+     */
+    const shouldShowSubmenu = isMiniSidebar ? miniIsOpen : isOpen;
+
     return (
-      <li key={`${mainItem.label}-${index}`} className='sidebar-menu-item'>
+      <li
+        key={`${mainItem.label}-${index}`}
+        className={`sidebar-menu-item ${miniIsOpen ? 'mini-menu-open' : ''}`}
+      >
         <button
           type='button'
           className={`sidebar-link sidebar-parent-link ${
             isActive ? 'active' : ''
           } ${isOpen ? 'subdrop' : ''}`}
           onClick={() => toggleMenu(mainItem.label)}
+          aria-expanded={shouldShowSubmenu}
         >
-          {mainItem.icon && <i className={`${mainItem.icon} menu-icon`} />}
+          {mainItem.icon && (
+            <i className={`${mainItem.icon} menu-icon`} aria-hidden='true' />
+          )}
 
           <span>{mainItem.label}</span>
+
+          <i className='ti ti-chevron-right menu-arrow' aria-hidden='true' />
         </button>
 
-        {/* Always render submenu content but hide text in mini mode */}
-        {isOpen && (
-          <ul className='sidebar-submenu'>
+        {shouldShowSubmenu && (
+          <ul className={submenuClassName}>
             {children.map((item) => {
               const hasNested =
                 !!item.submenuItems && item.submenuItems.length > 0;
 
+              /*
+               * Nested menu
+               */
               if (hasNested) {
                 return renderNestedMenu(item, mainItem);
               }
 
+              /*
+               * Regular submenu item
+               */
               const link = getItemLink(item);
 
-              if (!link) return null;
+              if (!link) {
+                return null;
+              }
 
               const active = isActivePath(link);
 
@@ -334,13 +487,26 @@ const Sidebar = () => {
                 >
                   <Link
                     to={link}
+                    onClick={handleNavigation}
                     className={`sidebar-link submenu-link ${
                       active ? 'active' : ''
                     }`}
                   >
-                    {item.icon && <i className={`${item.icon} menu-icon`} />}
+                    {item.icon && (
+                      <i
+                        className={`${item.icon} menu-icon`}
+                        aria-hidden='true'
+                      />
+                    )}
 
                     <span>{item.label}</span>
+
+                    {item.submenuItems && item.submenuItems.length > 0 && (
+                      <i
+                        className='ti ti-chevron-right menu-arrow'
+                        aria-hidden='true'
+                      />
+                    )}
                   </Link>
                 </li>
               );
