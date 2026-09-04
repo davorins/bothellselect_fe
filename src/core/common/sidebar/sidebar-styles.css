@@ -1,5 +1,5 @@
 /* =========================================================
-   SIDEBAR
+   SIDEBAR - BASE STYLES
    ========================================================= */
 
 .sidebar-menu,
@@ -33,7 +33,7 @@
 }
 
 /* =========================================================
-   LINKS / BUTTONS
+   LINKS + BUTTONS
    ========================================================= */
 
 .sidebar-link {
@@ -50,7 +50,6 @@
   background: transparent;
 
   color: #6b7280;
-
   text-decoration: none;
 
   font: inherit;
@@ -85,7 +84,6 @@
   flex: 0 0 20px;
 
   width: 20px;
-
   margin-right: 12px;
 
   font-size: 18px;
@@ -94,15 +92,6 @@
   text-align: center;
 
   color: inherit;
-}
-
-/* =========================================================
-   LABEL
-   ========================================================= */
-
-.menu-label {
-  display: inline-block;
-  min-width: 0;
 }
 
 /* =========================================================
@@ -141,21 +130,20 @@
 }
 
 /* First-level submenu */
-
 .sidebar-menu .submenu-link {
   padding-left: 48px !important;
 }
 
 /* Second-level submenu */
-
 .sidebar-menu .nested-submenu-link {
   padding-left: 72px !important;
 }
 
 /* =========================================================
-   MINI SIDEBAR
+   MINI SIDEBAR - Target your actual HTML
    ========================================================= */
 
+/* When sidebar has mini-sidebar class */
 .sidebar.mini-sidebar {
   width: 70px !important;
   overflow: visible !important;
@@ -170,61 +158,31 @@
   overflow: visible;
 }
 
-/* =========================================================
-   MINI MODE:
-   HIDE ALL TEXT LABELS
-   ========================================================= */
-
-/*
- * IMPORTANT:
- *
- * We are NOT hiding all spans.
- *
- * We ONLY hide elements whose job is to display text.
- *
- * This allows icon wrappers and other structural spans
- * to continue working.
- */
-
-.sidebar.mini-sidebar .menu-label {
+/* Hide ALL text labels in mini mode - target .menu-label specifically */
+.sidebar.mini-sidebar .sidebar-link .menu-label {
   display: none !important;
 }
 
-/* Hide arrows */
-
-.sidebar.mini-sidebar .menu-arrow {
+/* Hide ALL arrows in mini mode */
+.sidebar.mini-sidebar .sidebar-link .menu-arrow {
   display: none !important;
 }
 
-/* =========================================================
-   MINI MODE:
-   MAIN LINKS
-   ========================================================= */
-
+/* Center icons in mini mode */
 .sidebar.mini-sidebar .sidebar-link {
   justify-content: center !important;
-
   padding: 12px !important;
-
   min-height: 44px;
-
-  gap: 0 !important;
 }
 
 .sidebar.mini-sidebar .sidebar-link .menu-icon {
-  flex: 0 0 auto;
-
-  width: auto;
-
   margin-right: 0 !important;
-
   font-size: 20px;
 }
 
-/* =========================================================
-   MINI MODE:
-   MAIN MENU WITH SUBMENU
-   ========================================================= */
+/* ---------------------------------------------------------
+   Submenu items stack below parent in mini mode
+   --------------------------------------------------------- */
 
 .sidebar.mini-sidebar .sidebar-menu-item.has-submenu {
   display: flex;
@@ -232,306 +190,136 @@
   align-items: center;
 }
 
-/*
- * The parent button remains visible.
- *
- * Its label is hidden by .menu-label above.
- *
- * Its icon remains visible.
- */
-
-.sidebar.mini-sidebar .sidebar-parent-link {
-  width: 100%;
-}
-
-/* =========================================================
-   MINI MODE:
-   SUBMENU
-   ========================================================= */
-
-.sidebar.mini-sidebar .sidebar-submenu {
+.sidebar.mini-sidebar .sidebar-submenu.mini-stack {
   display: flex !important;
-
   flex-direction: column;
-
   align-items: center;
-
+  position: static !important;
   width: 100%;
-
-  margin: 0 !important;
-
-  padding: 4px 0 !important;
-
   background: transparent;
-
   border: none;
-
   box-shadow: none;
+  margin: 0 !important;
+  padding: 4px 0 !important;
 }
 
-/* Each submenu item */
-
-.sidebar.mini-sidebar .sidebar-submenu > .sidebar-menu-item {
+.sidebar.mini-sidebar .sidebar-submenu.mini-stack li {
   display: block;
-
   width: 100%;
 }
 
-/* =========================================================
-   MINI MODE:
-   SUBMENU LINKS
-   ========================================================= */
-
-.sidebar.mini-sidebar .sidebar-submenu .submenu-link,
-.sidebar.mini-sidebar .sidebar-submenu .nested-submenu-link {
+/* Submenu icon wrapper - colored badge style */
+.sidebar.mini-sidebar .submenu-icon-wrapper {
   display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  width: 100%;
-
-  padding: 8px !important;
-
-  margin: 2px 0;
-
-  gap: 0;
-}
-
-/*
- * Submenu icons remain visible.
- */
-
-.sidebar.mini-sidebar .sidebar-submenu .menu-icon {
-  display: flex;
-
   align-items: center;
   justify-content: center;
-
   width: 32px;
   height: 32px;
-
-  margin: 0 !important;
-
   border-radius: 8px;
-
   background: #9c8c7a;
-
   color: #ffffff;
+  transition: background-color 0.2s ease;
+}
 
+.sidebar.mini-sidebar .submenu-icon-wrapper .submenu-icon {
   font-size: 16px;
+  color: #ffffff;
 }
 
-/* Hover */
-
-.sidebar.mini-sidebar .sidebar-submenu .sidebar-link:hover .menu-icon {
+.sidebar.mini-sidebar .submenu-icon-wrapper:hover {
   background: #c4a882;
-
-  color: #ffffff;
 }
 
-/* Active */
-
-.sidebar.mini-sidebar .sidebar-submenu .sidebar-link.active .menu-icon {
+.sidebar.mini-sidebar .sidebar-link.active .submenu-icon-wrapper {
   background: #2563eb;
-
-  color: #ffffff;
 }
 
-/* =========================================================
-   MINI MODE:
-   NESTED LEVEL 2
-   ========================================================= */
+/* Ensure no text shows in mini submenus */
+.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-link .menu-label {
+  display: none !important;
+}
 
+.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-link {
+  justify-content: center !important;
+  padding: 8px !important;
+}
+
+/* Hide nested submenus in mini mode (only show level 1) */
 .sidebar.mini-sidebar .nested-submenu {
   display: none !important;
 }
 
-/* =========================================================
-   MINI MODE:
-   ACTIVE STATES
-   ========================================================= */
+/* ---------------------------------------------------------
+   Tooltips via data-tooltip attribute
+   --------------------------------------------------------- */
+
+.sidebar.mini-sidebar .sidebar-link {
+  position: relative;
+}
+
+.sidebar.mini-sidebar .sidebar-link[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  background: #2c2416;
+  color: #fff;
+  font-family: 'Jost', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+  transition-delay: 0.1s;
+  z-index: 1100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.sidebar.mini-sidebar .sidebar-link[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  left: calc(100% + 4px);
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-right-color: #2c2416;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  transition-delay: 0.1s;
+  z-index: 1100;
+}
+
+.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::after,
+.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* ---------------------------------------------------------
+   Active and hover states in mini mode
+   --------------------------------------------------------- */
 
 .sidebar.mini-sidebar .sidebar-link.active {
   background-color: #eff6ff;
-
   color: #2563eb;
-
   border-radius: 4px;
 }
 
 .sidebar.mini-sidebar .sidebar-link:hover {
   background-color: #f3f4f6;
-
-  color: #111827;
-
   border-radius: 4px;
 }
 
-/* =========================================================
-   TOOLTIP
-   ========================================================= */
-
-.sidebar.mini-sidebar .sidebar-link[data-tooltip] {
-  position: relative;
-}
-
-/* Tooltip body */
-
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]::after {
-  content: attr(data-tooltip);
-
-  position: absolute;
-
-  left: calc(100% + 10px);
-
-  top: 50%;
-
-  transform: translateY(-50%) translateX(-4px);
-
-  background: #2c2416;
-
-  color: #ffffff;
-
-  font-family: 'Jost', sans-serif;
-
-  font-size: 12px;
-
-  font-weight: 400;
-
-  white-space: nowrap;
-
-  padding: 6px 10px;
-
-  border-radius: 6px;
-
-  pointer-events: none;
-
-  opacity: 0;
-
-  visibility: hidden;
-
-  transition:
-    opacity 0.15s ease,
-    transform 0.15s ease;
-
-  transition-delay: 0.1s;
-
-  z-index: 1100;
-
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-}
-
-/* Tooltip arrow */
-
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]::before {
-  content: '';
-
-  position: absolute;
-
-  left: calc(100% + 4px);
-
-  top: 50%;
-
-  transform: translateY(-50%);
-
-  border: 5px solid transparent;
-
-  border-right-color: #2c2416;
-
-  pointer-events: none;
-
-  opacity: 0;
-
-  visibility: hidden;
-
-  transition: opacity 0.15s ease;
-
-  transition-delay: 0.1s;
-
-  z-index: 1100;
-}
-
-/* Show tooltip */
-
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::after,
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::before {
-  opacity: 1;
-
-  visibility: visible;
-}
-
-/* =========================================================
-   MAIN CONTENT
-   ========================================================= */
-
-.sidebar.mini-sidebar ~ .main-content {
-  margin-left: 70px;
-}
-
-/* =========================================================
-   DARK MODE
-   ========================================================= */
-
-.dark_data_theme .sidebar {
-  background: #1a1a1a;
-
-  border-right-color: #333;
-}
-
-.dark_data_theme .sidebar-link {
-  color: #aaa;
-}
-
-.dark_data_theme .sidebar-link .menu-icon {
-  color: #666;
-}
-
-.dark_data_theme .sidebar-link:hover,
-.dark_data_theme .sidebar-link.active,
-.dark_data_theme .sidebar-link.expanded {
-  background: #252525;
-
-  color: #ddd;
-}
-
-.dark_data_theme .sidebar-link:hover .menu-icon,
-.dark_data_theme .sidebar-link.active .menu-icon {
-  color: #c4a882;
-}
-
-/* =========================================================
-   RESPONSIVE
-   ========================================================= */
-
-@media (max-width: 768px) {
-  /*
-   * On mobile we don't use mini mode.
-   * Labels should always be visible.
-   */
-
-  .sidebar.mini-sidebar {
-    width: 280px !important;
-  }
-
-  .sidebar.mini-sidebar .menu-label {
-    display: inline-block !important;
-  }
-
-  .sidebar.mini-sidebar .menu-arrow {
-    display: block !important;
-  }
-
-  .sidebar.mini-sidebar .sidebar-link {
-    justify-content: flex-start !important;
-
-    padding: 12px 16px !important;
-
-    gap: initial !important;
-  }
-
-  .sidebar.mini-sidebar .sidebar-link .menu-icon {
-    margin-right: 12px !important;
-  }
+.sidebar.mini-sidebar .sidebar-link.active .submenu-icon-wrapper {
+  background: #2563eb;
 }
