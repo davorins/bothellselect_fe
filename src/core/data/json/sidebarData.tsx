@@ -5,7 +5,7 @@ const routes = all_routes;
 export const SidebarData = [
   {
     label: 'MAIN',
-    submenuOpen: false,
+    submenuOpen: true,
     showSubRoute: false,
     submenuHdr: 'Main',
     submenuItems: [
