@@ -1,5 +1,5 @@
 /* =========================================================
-   SIDEBAR - RESET
+   SIDEBAR
    ========================================================= */
 
 .sidebar-menu,
@@ -11,16 +11,13 @@
 }
 
 .sidebar-menu ul::before,
-.sidebar-menu ul::after,
-.sidebar-menu li::before,
-.sidebar-menu li::after {
+.sidebar-menu li::before {
   content: none !important;
   display: none !important;
 }
 
 .sidebar-menu li::marker {
   content: none !important;
-  display: none !important;
 }
 
 .sidebar-root-menu {
@@ -41,18 +38,19 @@
 
 .sidebar-link {
   width: 100%;
-  min-height: 40px;
   box-sizing: border-box;
 
   display: flex;
   align-items: center;
 
+  min-height: 40px;
   padding: 8px 16px;
 
   border: 0;
   background: transparent;
 
   color: #6b7280;
+
   text-decoration: none;
 
   font: inherit;
@@ -71,20 +69,12 @@
 }
 
 .sidebar-link.active {
-  background-color: #eff6ff;
   color: #2563eb;
+  background-color: #eff6ff;
 }
 
 .sidebar-link.expanded {
   background-color: #f3f4f6;
-}
-
-/* =========================================================
-   LABEL
-   ========================================================= */
-
-.menu-label {
-  display: inline;
 }
 
 /* =========================================================
@@ -95,6 +85,7 @@
   flex: 0 0 20px;
 
   width: 20px;
+
   margin-right: 12px;
 
   font-size: 18px;
@@ -106,7 +97,16 @@
 }
 
 /* =========================================================
-   ARROWS
+   LABEL
+   ========================================================= */
+
+.menu-label {
+  display: inline-block;
+  min-width: 0;
+}
+
+/* =========================================================
+   ARROW
    ========================================================= */
 
 .sidebar-link .menu-arrow {
@@ -140,49 +140,16 @@
   padding: 0 !important;
 }
 
-/* =========================================================
-   REGULAR MODE - SUBMENU
-   ========================================================= */
+/* First-level submenu */
 
 .sidebar-menu .submenu-link {
   padding-left: 48px !important;
 }
 
+/* Second-level submenu */
+
 .sidebar-menu .nested-submenu-link {
   padding-left: 72px !important;
-}
-
-/* =========================================================
-   NESTED MENU
-   ========================================================= */
-
-.sidebar-nested-item {
-  list-style: none !important;
-}
-
-.sidebar-nested-item > .sidebar-link {
-  padding-left: 48px !important;
-}
-
-/* =========================================================
-   BUTTON RESET
-   ========================================================= */
-
-.sidebar-menu button.sidebar-link {
-  appearance: none;
-  -webkit-appearance: none;
-
-  outline: none;
-
-  font-family: inherit;
-}
-
-.sidebar-menu button.sidebar-link:focus {
-  outline: none;
-}
-
-.sidebar-menu button.sidebar-link::-moz-focus-inner {
-  border: 0;
 }
 
 /* =========================================================
@@ -194,30 +161,36 @@
   overflow: visible !important;
 }
 
-.sidebar.mini-sidebar .sidebar-inner,
-.sidebar.mini-sidebar .slimscroll,
-.sidebar.mini-sidebar .sidebar-menu {
+.sidebar.mini-sidebar .sidebar-inner {
   overflow: visible !important;
 }
 
 .sidebar.mini-sidebar .sidebar-root-menu {
   width: 70px;
-  overflow: visible !important;
+  overflow: visible;
 }
 
 /* =========================================================
    MINI MODE:
-   HIDE EVERY LABEL
+   HIDE ALL TEXT LABELS
    ========================================================= */
+
+/*
+ * IMPORTANT:
+ *
+ * We are NOT hiding all spans.
+ *
+ * We ONLY hide elements whose job is to display text.
+ *
+ * This allows icon wrappers and other structural spans
+ * to continue working.
+ */
 
 .sidebar.mini-sidebar .menu-label {
   display: none !important;
 }
 
-/* =========================================================
-   MINI MODE:
-   HIDE EVERY ARROW
-   ========================================================= */
+/* Hide arrows */
 
 .sidebar.mini-sidebar .menu-arrow {
   display: none !important;
@@ -225,23 +198,23 @@
 
 /* =========================================================
    MINI MODE:
-   CENTER ICONS
+   MAIN LINKS
    ========================================================= */
 
 .sidebar.mini-sidebar .sidebar-link {
-  width: 100%;
-
-  min-height: 44px;
-
   justify-content: center !important;
 
   padding: 12px !important;
+
+  min-height: 44px;
+
+  gap: 0 !important;
 }
 
 .sidebar.mini-sidebar .sidebar-link .menu-icon {
-  flex: 0 0 20px;
+  flex: 0 0 auto;
 
-  width: 20px;
+  width: auto;
 
   margin-right: 0 !important;
 
@@ -250,29 +223,43 @@
 
 /* =========================================================
    MINI MODE:
-   TOP LEVEL ITEMS
+   MAIN MENU WITH SUBMENU
    ========================================================= */
 
-.sidebar.mini-sidebar .sidebar-root-menu > .sidebar-menu-item {
-  position: relative;
+.sidebar.mini-sidebar .sidebar-menu-item.has-submenu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/*
+ * The parent button remains visible.
+ *
+ * Its label is hidden by .menu-label above.
+ *
+ * Its icon remains visible.
+ */
+
+.sidebar.mini-sidebar .sidebar-parent-link {
+  width: 100%;
 }
 
 /* =========================================================
    MINI MODE:
-   SUBMENU STACK
+   SUBMENU
    ========================================================= */
 
-.sidebar.mini-sidebar .sidebar-submenu.mini-stack {
+.sidebar.mini-sidebar .sidebar-submenu {
   display: flex !important;
 
   flex-direction: column;
-  align-items: center;
 
-  position: static !important;
+  align-items: center;
 
   width: 100%;
 
   margin: 0 !important;
+
   padding: 4px 0 !important;
 
   background: transparent;
@@ -282,12 +269,11 @@
   box-shadow: none;
 }
 
-/* =========================================================
-   MINI MODE:
-   SUBMENU ITEMS
-   ========================================================= */
+/* Each submenu item */
 
-.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-menu-item {
+.sidebar.mini-sidebar .sidebar-submenu > .sidebar-menu-item {
+  display: block;
+
   width: 100%;
 }
 
@@ -296,40 +282,94 @@
    SUBMENU LINKS
    ========================================================= */
 
-.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-link {
+.sidebar.mini-sidebar .sidebar-submenu .submenu-link,
+.sidebar.mini-sidebar .sidebar-submenu .nested-submenu-link {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
   width: 100%;
 
-  min-height: 40px;
-
-  justify-content: center !important;
-
   padding: 8px !important;
+
+  margin: 2px 0;
+
+  gap: 0;
+}
+
+/*
+ * Submenu icons remain visible.
+ */
+
+.sidebar.mini-sidebar .sidebar-submenu .menu-icon {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+
+  margin: 0 !important;
+
+  border-radius: 8px;
+
+  background: #9c8c7a;
+
+  color: #ffffff;
+
+  font-size: 16px;
+}
+
+/* Hover */
+
+.sidebar.mini-sidebar .sidebar-submenu .sidebar-link:hover .menu-icon {
+  background: #c4a882;
+
+  color: #ffffff;
+}
+
+/* Active */
+
+.sidebar.mini-sidebar .sidebar-submenu .sidebar-link.active .menu-icon {
+  background: #2563eb;
+
+  color: #ffffff;
 }
 
 /* =========================================================
    MINI MODE:
-   SUBMENU ICON
+   NESTED LEVEL 2
    ========================================================= */
 
-.sidebar.mini-sidebar .sidebar-submenu.mini-stack .sidebar-link .menu-icon {
-  margin-right: 0 !important;
-
-  font-size: 18px;
-}
-
-/* =========================================================
-   MINI MODE:
-   NESTED SUBMENU
-
-   Keep nested submenu collapsed in mini mode.
-   ========================================================= */
-
-.sidebar.mini-sidebar .sidebar-submenu .nested-submenu {
+.sidebar.mini-sidebar .nested-submenu {
   display: none !important;
 }
 
 /* =========================================================
    MINI MODE:
+   ACTIVE STATES
+   ========================================================= */
+
+.sidebar.mini-sidebar .sidebar-link.active {
+  background-color: #eff6ff;
+
+  color: #2563eb;
+
+  border-radius: 4px;
+}
+
+.sidebar.mini-sidebar .sidebar-link:hover {
+  background-color: #f3f4f6;
+
+  color: #111827;
+
+  border-radius: 4px;
+}
+
+/* =========================================================
    TOOLTIP
    ========================================================= */
 
@@ -337,21 +377,27 @@
   position: relative;
 }
 
+/* Tooltip body */
+
 .sidebar.mini-sidebar .sidebar-link[data-tooltip]::after {
   content: attr(data-tooltip);
 
   position: absolute;
 
   left: calc(100% + 10px);
+
   top: 50%;
 
   transform: translateY(-50%) translateX(-4px);
 
   background: #2c2416;
+
   color: #ffffff;
 
   font-family: 'Jost', sans-serif;
+
   font-size: 12px;
+
   font-weight: 400;
 
   white-space: nowrap;
@@ -363,6 +409,7 @@
   pointer-events: none;
 
   opacity: 0;
+
   visibility: hidden;
 
   transition:
@@ -376,55 +423,115 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::after {
+/* Tooltip arrow */
+
+.sidebar.mini-sidebar .sidebar-link[data-tooltip]::before {
+  content: '';
+
+  position: absolute;
+
+  left: calc(100% + 4px);
+
+  top: 50%;
+
+  transform: translateY(-50%);
+
+  border: 5px solid transparent;
+
+  border-right-color: #2c2416;
+
+  pointer-events: none;
+
+  opacity: 0;
+
+  visibility: hidden;
+
+  transition: opacity 0.15s ease;
+
+  transition-delay: 0.1s;
+
+  z-index: 1100;
+}
+
+/* Show tooltip */
+
+.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::after,
+.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::before {
   opacity: 1;
+
   visibility: visible;
-
-  transform: translateY(-50%) translateX(0);
 }
 
 /* =========================================================
-   MINI MODE:
-   ACTIVE
-   ========================================================= */
-
-.sidebar.mini-sidebar .sidebar-link.active {
-  background-color: #eff6ff;
-  color: #2563eb;
-
-  border-radius: 4px;
-}
-
-.sidebar.mini-sidebar .sidebar-link:hover {
-  background-color: #f3f4f6;
-
-  border-radius: 4px;
-}
-
-/* =========================================================
-   PREVENT OLD THEME BULLETS / CONNECTOR LINES
-   ========================================================= */
-
-.sidebar-menu ul li,
-.sidebar-menu ul li::before,
-.sidebar-menu ul li::after,
-.sidebar-menu li::marker {
-  list-style: none !important;
-  content: none !important;
-}
-
-.sidebar-menu ul ul::before,
-.sidebar-menu ul ul::after,
-.sidebar-menu li a::before,
-.sidebar-menu li a::after {
-  content: none !important;
-  display: none !important;
-}
-
-/* =========================================================
-   MAIN CONTENT OFFSET
+   MAIN CONTENT
    ========================================================= */
 
 .sidebar.mini-sidebar ~ .main-content {
   margin-left: 70px;
+}
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+.dark_data_theme .sidebar {
+  background: #1a1a1a;
+
+  border-right-color: #333;
+}
+
+.dark_data_theme .sidebar-link {
+  color: #aaa;
+}
+
+.dark_data_theme .sidebar-link .menu-icon {
+  color: #666;
+}
+
+.dark_data_theme .sidebar-link:hover,
+.dark_data_theme .sidebar-link.active,
+.dark_data_theme .sidebar-link.expanded {
+  background: #252525;
+
+  color: #ddd;
+}
+
+.dark_data_theme .sidebar-link:hover .menu-icon,
+.dark_data_theme .sidebar-link.active .menu-icon {
+  color: #c4a882;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 768px) {
+  /*
+   * On mobile we don't use mini mode.
+   * Labels should always be visible.
+   */
+
+  .sidebar.mini-sidebar {
+    width: 280px !important;
+  }
+
+  .sidebar.mini-sidebar .menu-label {
+    display: inline-block !important;
+  }
+
+  .sidebar.mini-sidebar .menu-arrow {
+    display: block !important;
+  }
+
+  .sidebar.mini-sidebar .sidebar-link {
+    justify-content: flex-start !important;
+
+    padding: 12px 16px !important;
+
+    gap: initial !important;
+  }
+
+  .sidebar.mini-sidebar .sidebar-link .menu-icon {
+    margin-right: 12px !important;
+  }
 }
