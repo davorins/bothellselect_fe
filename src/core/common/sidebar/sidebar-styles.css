@@ -1,12 +1,67 @@
-/* sidebar-styles.css */
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+.sidebar-menu,
+.sidebar-menu ul,
+.sidebar-menu li {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.sidebar-menu ul::before,
+.sidebar-menu li::before {
+  content: none !important;
+  display: none !important;
+}
+
+.sidebar-menu li::marker {
+  content: none !important;
+}
+
+/* Root menu */
+.sidebar-root-menu {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Every menu item */
+.sidebar-menu-item {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* =========================================================
+   LINKS + BUTTONS
+   ========================================================= */
 
 .sidebar-link {
+  width: 100%;
+  box-sizing: border-box;
+
   display: flex;
   align-items: center;
+
+  min-height: 40px;
   padding: 8px 16px;
+
+  border: 0;
+  background: transparent;
+
   color: #6b7280;
   text-decoration: none;
-  transition: all 0.2s;
+
+  font: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .sidebar-link:hover {
@@ -19,71 +74,113 @@
   background-color: #eff6ff;
 }
 
+/* =========================================================
+   ICONS
+   ========================================================= */
+
 .sidebar-link .menu-icon {
-  margin-right: 12px;
-  font-size: 18px;
+  flex: 0 0 20px;
+
   width: 20px;
-  display: inline-block;
+  margin-right: 12px;
+
+  font-size: 18px;
+  line-height: 1;
+
   text-align: center;
+
   color: inherit;
 }
 
+/* =========================================================
+   ARROW
+   ========================================================= */
+
 .sidebar-link .menu-arrow {
   margin-left: auto;
-  transition: transform 0.2s;
+
+  font-size: 14px;
+  line-height: 1;
+
+  transition: transform 0.2s ease;
 }
 
 .sidebar-link.subdrop .menu-arrow {
   transform: rotate(90deg);
 }
 
-/* Submenu indentation */
-.submenu-link {
+/* =========================================================
+   SUBMENUS
+   ========================================================= */
+
+.sidebar-submenu {
+  list-style: none !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.sidebar-submenu li {
+  list-style: none !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* First-level submenu */
+.sidebar-menu .submenu-link {
   padding-left: 48px !important;
 }
 
-.nested-submenu-link {
+/* Second-level submenu */
+.sidebar-menu .nested-submenu-link {
   padding-left: 72px !important;
 }
 
-/* Remove ALL bullets from ALL lists */
-.sidebar-menu,
-.sidebar-menu ul,
-.sidebar-menu ul ul,
-.sidebar-menu ul ul ul,
-.sidebar-menu li,
-.sidebar-menu ul li,
-.sidebar-menu ul ul li,
-.sidebar-menu ul ul ul li {
+/* =========================================================
+   NESTED SUBMENU
+   ========================================================= */
+
+.sidebar-nested-item {
   list-style: none !important;
-  padding-left: 0 !important;
-  margin: 0 !important;
 }
 
-/* Also remove pseudo-element bullets */
-.sidebar-menu li::before,
+.sidebar-nested-item > .sidebar-link {
+  padding-left: 48px !important;
+}
+
+/* =========================================================
+   BULLET / TEMPLATE OVERRIDES
+   ========================================================= */
+
+.sidebar-menu ul li,
 .sidebar-menu ul li::before,
-.sidebar-menu ul ul li::before {
+.sidebar-menu ul li::after,
+.sidebar-menu li::marker {
+  list-style: none !important;
   content: none !important;
-  display: none !important;
 }
 
-/* Ensure submenu items have proper padding */
-.sidebar-menu .submenu-two > ul {
-  padding-left: 0 !important;
+.sidebar-menu > ul,
+.sidebar-menu > ul > li,
+.sidebar-menu > ul > li > ul,
+.sidebar-menu > ul > li > ul > li,
+.sidebar-menu > ul > li > ul > li > ul,
+.sidebar-menu > ul > li > ul > li > ul > li {
+  list-style: none !important;
 }
 
-.sidebar-menu .submenu-two > ul li {
-  padding-left: 0 !important;
+/* =========================================================
+   BUTTON RESET
+   ========================================================= */
+
+.sidebar-menu button.sidebar-link {
+  appearance: none;
+  -webkit-appearance: none;
+
+  outline: none;
 }
 
-/* Hover states */
-.sidebar-menu a:hover {
-  background-color: #f3f4f6;
-  color: #111827;
-}
-
-.sidebar-menu a.active {
-  color: #2563eb;
-  background-color: #eff6ff;
+.sidebar-menu button.sidebar-link:focus {
+  outline: none;
 }

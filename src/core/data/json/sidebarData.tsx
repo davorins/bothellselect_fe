@@ -46,6 +46,7 @@ export const SidebarData = [
     submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Dashboard',
+    icon: 'ti ti-dashboard',
     submenuItems: [
       {
         label: 'Dashboard',

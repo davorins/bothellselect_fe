@@ -1,6 +1,5 @@
-// Sidebar.tsx
-import React, { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import Scrollbars from 'react-custom-scrollbars-2';
 import { SidebarData } from '../../data/json/sidebarData';
 import '../../../style/icon/tabler-icons/webfont/tabler-icons.css';
@@ -8,7 +7,6 @@ import { useAuth } from '../../../context/AuthContext';
 import { all_routes } from '../../../feature-module/router/all_routes';
 import './sidebar-styles.css';
 
-// Interfaces
 export interface SubmenuItem {
   label: string;
   icon?: string;
@@ -35,7 +33,7 @@ export interface MainMenuItem {
   icon?: string;
   submenuItems?: SubmenuItem[];
   link?: string;
-  path?: string; // Added to fix TypeScript error
+  path?: string;
 }
 
 interface User {
@@ -43,61 +41,28 @@ interface User {
   _id?: string;
 }
 
-// Styles
-const styles = {
-  icon: {
-    marginRight: '12px',
-    fontSize: '18px',
-    width: '20px',
-    display: 'inline-block',
-    textAlign: 'center' as const,
-    color: 'inherit',
-  },
-  link: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '8px 16px',
-    color: '#6b7280',
-    textDecoration: 'none',
-    transition: 'all 0.2s',
-    cursor: 'pointer' as const,
-  },
-  submenuLink: {
-    paddingLeft: '48px',
-  },
-  nestedSubmenuLink: {
-    paddingLeft: '72px',
-  },
-  activeLink: {
-    color: '#2563eb',
-    backgroundColor: '#eff6ff',
-  },
-  menuArrow: {
-    marginLeft: 'auto',
-    transition: 'transform 0.2s',
-  },
-  menuArrowExpanded: {
-    transform: 'rotate(90deg)',
-  },
-};
-
 const Sidebar = () => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { user } = useAuth() as { user: User | null };
-  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
-  const [subsidebar, setSubsidebar] = useState<string>('');
 
-  // Helper to get link from item (supports both 'link' and 'path')
+  const { user } = useAuth() as {
+    user: User | null;
+  };
+
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+  const [expandedSubmenus, setExpandedSubmenus] = useState<string[]>([]);
+
   const getItemLink = (
     item?: MainMenuItem | SubmenuItem,
   ): string | undefined => {
     return item?.link || item?.path;
   };
 
-  // Normalize data: convert items with only 'link' to have submenuItems
-  const normalizeSidebarData = (data: any[]): MainMenuItem[] => {
-    return data.map((item) => {
+  /**
+   * Convert a top-level item that has only `link`
+   * into the same structure used by the other menus.
+   */
+  const normalizedData = useMemo<MainMenuItem[]>(() => {
+    return SidebarData.map((item: any) => {
       if (item.link && !item.submenuItems) {
         return {
           ...item,
@@ -108,44 +73,53 @@ const Sidebar = () => {
               link: item.link,
               submenu: false,
               showSubRoute: false,
+              roles: item.roles,
             },
           ],
           link: undefined,
         };
       }
-      if (item.submenuItems) {
-        return { ...item, submenuItems: item.submenuItems };
-      }
-      return { ...item, submenuItems: [] };
-    });
-  };
 
-  // Filter by role and handle special cases
-  const filterSidebarData = (
-    data: MainMenuItem[],
-    role: string,
-    userId?: string,
-  ): MainMenuItem[] => {
-    return data
-      .map((mainLabel) => ({
-        ...mainLabel,
-        submenuItems: (mainLabel.submenuItems || [])
+      return {
+        ...item,
+        submenuItems: item.submenuItems || [],
+      };
+    });
+  }, []);
+
+  /**
+   * Filter menu items according to user role.
+   */
+  const filteredSidebarData = useMemo<MainMenuItem[]>(() => {
+    const role = user?.role || 'user';
+
+    return normalizedData
+      .map((mainItem) => {
+        const filteredChildren = (mainItem.submenuItems || [])
           .filter(
             (item: SubmenuItem) => !item.roles || item.roles.includes(role),
           )
           .map((item: SubmenuItem) => {
+            /**
+             * Special Parents behavior.
+             */
             if (item.label === 'Parents') {
               const isAdminView = role === 'admin';
+
               return {
                 ...item,
                 link: isAdminView
                   ? all_routes.parentList
-                  : `${all_routes.parentDetail}/${userId}`,
+                  : `${all_routes.parentDetail}/${user?._id || ''}`,
                 isAdminView,
                 isUserView: !isAdminView,
                 accessRole: role,
               };
             }
+
+            /**
+             * Filter nested menus too.
+             */
             if (item.submenuItems) {
               return {
                 ...item,
@@ -154,299 +128,238 @@ const Sidebar = () => {
                 ),
               };
             }
+
             return item;
-          }),
-      }))
-      .filter(
-        (mainLabel) =>
-          mainLabel.submenuItems && mainLabel.submenuItems.length > 0,
-      );
-  };
-
-  const normalizedData = normalizeSidebarData(SidebarData);
-  const filteredSidebarData = filterSidebarData(
-    normalizedData,
-    user?.role || 'user',
-    user?._id,
-  );
-
-  // Toggle menu (accordion: only one open at a time)
-  const toggleMenu = (menuLabel: string) => {
-    setExpandedMenus((prev) => {
-      if (prev.includes(menuLabel)) {
-        return prev.filter((label) => label !== menuLabel);
-      }
-      return [menuLabel];
-    });
-  };
-
-  const toggleSubsidebar = (subitem: string) => {
-    setSubsidebar((prev) => (prev === subitem ? '' : subitem));
-  };
-
-  // Handle click on menu items
-  const handleClick = (label: string, item: SubmenuItem | MainMenuItem) => {
-    // If it has submenuItems, it's a parent
-    if (item.submenuItems && item.submenuItems.length > 0) {
-      const visibleItems = item.submenuItems.filter(
-        (sub) => !sub.roles || sub.roles.includes(user?.role || 'user'),
-      );
-      // If single visible item and no parent icon, treat as direct link
-      if (visibleItems.length === 1 && !item.icon) {
-        const single = visibleItems[0];
-        const link = getItemLink(single);
-        if (link) navigate(link);
-        return;
-      }
-      // Otherwise toggle expansion
-      toggleMenu(label);
-      return;
-    }
-
-    // Leaf item: navigate directly
-    const link = getItemLink(item);
-    if (link) {
-      navigate(link);
-    }
-  };
-
-  // Check if a main menu is a single-item menu (no expansion)
-  const isSingleItemMenu = (mainLabel: MainMenuItem): boolean => {
-    const visible = (mainLabel.submenuItems || []).filter(
-      (item) => !item.roles || item.roles.includes(user?.role || 'user'),
-    );
-    return visible.length === 1 && !mainLabel.icon;
-  };
-
-  // Auto-expand the menu containing the current route
-  useEffect(() => {
-    const currentPath = location.pathname;
-    const toExpand: string[] = [];
-
-    filteredSidebarData.forEach((main) => {
-      if (isSingleItemMenu(main)) return;
-      (main.submenuItems || []).forEach((item) => {
-        if (getItemLink(item) === currentPath) {
-          toExpand.push(main.label);
-        }
-        if (item.submenuItems) {
-          item.submenuItems.forEach((sub) => {
-            if (getItemLink(sub) === currentPath) {
-              toExpand.push(main.label);
-            }
           });
+
+        return {
+          ...mainItem,
+          submenuItems: filteredChildren,
+        };
+      })
+      .filter((mainItem) => (mainItem.submenuItems || []).length > 0);
+  }, [normalizedData, user]);
+
+  /**
+   * Open/close a top-level menu.
+   */
+  const toggleMenu = (label: string) => {
+    setExpandedMenus((previous) =>
+      previous.includes(label)
+        ? previous.filter((item) => item !== label)
+        : [...previous, label],
+    );
+  };
+
+  /**
+   * Open/close nested menu.
+   */
+  const toggleSubmenu = (label: string) => {
+    setExpandedSubmenus((previous) =>
+      previous.includes(label)
+        ? previous.filter((item) => item !== label)
+        : [...previous, label],
+    );
+  };
+
+  /**
+   * Determine whether a link is active.
+   */
+  const isActivePath = (link?: string) => {
+    if (!link) return false;
+
+    return (
+      location.pathname === link || location.pathname.startsWith(`${link}/`)
+    );
+  };
+
+  /**
+   * Determine whether any child of a menu is active.
+   */
+  const hasActiveChild = (item: MainMenuItem | SubmenuItem): boolean => {
+    if (isActivePath(getItemLink(item))) {
+      return true;
+    }
+
+    return (item.submenuItems || []).some((child) => hasActiveChild(child));
+  };
+
+  /**
+   * Automatically expand menus containing current route.
+   */
+  useEffect(() => {
+    const menusToOpen: string[] = [];
+    const submenusToOpen: string[] = [];
+
+    filteredSidebarData.forEach((mainItem) => {
+      if (hasActiveChild(mainItem)) {
+        menusToOpen.push(mainItem.label);
+      }
+
+      (mainItem.submenuItems || []).forEach((item) => {
+        if (item.submenuItems?.length && hasActiveChild(item)) {
+          submenusToOpen.push(item.label);
         }
       });
     });
 
-    if (toExpand.length > 0) {
-      setExpandedMenus((prev) => {
-        const merged = [...prev];
-        toExpand.forEach((m) => {
-          if (!merged.includes(m)) merged.push(m);
-        });
-        return merged;
-      });
-    }
+    setExpandedMenus((previous) => [...new Set([...previous, ...menusToOpen])]);
+
+    setExpandedSubmenus((previous) => [
+      ...new Set([...previous, ...submenusToOpen]),
+    ]);
   }, [location.pathname, filteredSidebarData]);
 
-  // Helper to check if a nested submenu is active
-  const isNestedSubmenuActive = (item: SubmenuItem): boolean => {
-    if (getItemLink(item) === location.pathname) return true;
-    if (item.submenuItems) {
-      return item.submenuItems.some(
-        (sub) => getItemLink(sub) === location.pathname,
-      );
-    }
-    return false;
+  /**
+   * Render nested submenu.
+   */
+  const renderNestedMenu = (item: SubmenuItem, mainItem: MainMenuItem) => {
+    const isOpen = expandedSubmenus.includes(item.label);
+    const isActive = hasActiveChild(item);
+
+    return (
+      <li
+        key={`${mainItem.label}-${item.label}`}
+        className='sidebar-menu-item sidebar-nested-item'
+      >
+        <button
+          type='button'
+          className={`sidebar-link submenu-link ${
+            isActive ? 'active' : ''
+          } ${isOpen ? 'subdrop' : ''}`}
+          onClick={() => toggleSubmenu(item.label)}
+        >
+          {item.icon && <i className={`${item.icon} menu-icon`} />}
+
+          <span>{item.label}</span>
+
+          <span className='menu-arrow'>▸</span>
+        </button>
+
+        {isOpen && (
+          <ul className='sidebar-submenu nested-submenu'>
+            {(item.submenuItems || []).map((sub) => {
+              const link = getItemLink(sub);
+
+              if (!link) return null;
+
+              const active = isActivePath(link);
+
+              return (
+                <li
+                  key={`${item.label}-${sub.label}`}
+                  className='sidebar-menu-item'
+                >
+                  <Link
+                    to={link}
+                    className={`sidebar-link nested-submenu-link ${
+                      active ? 'active' : ''
+                    }`}
+                  >
+                    {sub.icon && <i className={`${sub.icon} menu-icon`} />}
+
+                    <span>{sub.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </li>
+    );
   };
 
-  const isMenuItemActive = (item: SubmenuItem | MainMenuItem): boolean => {
-    if (getItemLink(item) === location.pathname) return true;
-    if (item.submenuItems) {
-      return item.submenuItems.some((sub) => {
-        if (getItemLink(sub) === location.pathname) return true;
-        if (sub.submenuItems) {
-          return sub.submenuItems.some(
-            (nested) => getItemLink(nested) === location.pathname,
-          );
-        }
-        return false;
-      });
+  /**
+   * Render top-level menu.
+   */
+  const renderMainMenuItem = (mainItem: MainMenuItem, index: number) => {
+    const children = mainItem.submenuItems || [];
+
+    if (children.length === 0) {
+      return null;
     }
-    return false;
-  };
 
-  // Render a single main menu item
-  const renderMainMenuItem = (mainLabel: MainMenuItem, index: number) => {
-    const isExpanded = expandedMenus.includes(mainLabel.label);
-    const isSingle = isSingleItemMenu(mainLabel);
-    const isActive = isMenuItemActive(mainLabel);
+    /**
+     * A menu with exactly one child and no parent icon
+     * behaves as a direct link.
+     *
+     * Example: FAQ
+     */
+    const isDirectMenu = children.length === 1 && !mainItem.icon;
 
-    // Single item – direct link
-    if (isSingle) {
-      const singleItem = (mainLabel.submenuItems || [])[0];
-      if (!singleItem) return null;
-      const link = getItemLink(singleItem);
-      const isLinkActive = link === location.pathname;
-      // Icon: use parent icon if exists, else child icon
-      const icon = mainLabel.icon || singleItem.icon;
+    if (isDirectMenu) {
+      const child = children[0];
+      const link = getItemLink(child);
+
+      if (!link) return null;
+
+      const active = isActivePath(link);
+
       return (
-        <li key={index} style={{ listStyle: 'none' }}>
-          <Link
-            to={link || '#'}
-            style={{
-              ...styles.link,
-              ...(isLinkActive ? styles.activeLink : {}),
-            }}
-            className={isLinkActive ? 'active' : ''}
-            onClick={() => link && navigate(link)}
-          >
-            {icon && <i className={icon} style={styles.icon}></i>}
-            <span>{mainLabel.label}</span>
+        <li key={`${mainItem.label}-${index}`} className='sidebar-menu-item'>
+          <Link to={link} className={`sidebar-link ${active ? 'active' : ''}`}>
+            {(mainItem.icon || child.icon) && (
+              <i className={`${mainItem.icon || child.icon} menu-icon`} />
+            )}
+
+            <span>{mainItem.label}</span>
           </Link>
         </li>
       );
     }
 
-    // Multi-item – collapsible
-    const arrowStyle = isExpanded
-      ? { ...styles.menuArrow, ...styles.menuArrowExpanded }
-      : styles.menuArrow;
+    const isOpen = expandedMenus.includes(mainItem.label);
+    const isActive = hasActiveChild(mainItem);
 
     return (
-      <li key={index} style={{ listStyle: 'none' }}>
-        <Link
-          to='#'
-          style={{
-            ...styles.link,
-            ...(isActive ? styles.activeLink : {}),
-          }}
-          className={`${isExpanded ? 'subdrop' : ''} ${isActive ? 'active' : ''}`}
-          onClick={(e) => {
-            e.preventDefault();
-            toggleMenu(mainLabel.label);
-          }}
+      <li key={`${mainItem.label}-${index}`} className='sidebar-menu-item'>
+        <button
+          type='button'
+          className={`sidebar-link sidebar-parent-link ${
+            isActive ? 'active' : ''
+          } ${isOpen ? 'subdrop' : ''}`}
+          onClick={() => toggleMenu(mainItem.label)}
         >
-          {mainLabel.icon && (
-            <i className={mainLabel.icon} style={styles.icon}></i>
-          )}
-          <span>{mainLabel.label}</span>
-          <span className='menu-arrow' style={arrowStyle}>
-            ▸
-          </span>
-        </Link>
-        {isExpanded && (
-          <ul
-            style={{
-              display: 'block',
-              listStyle: 'none',
-              paddingLeft: 0,
-              margin: 0,
-            }}
-          >
-            {(mainLabel.submenuItems || []).map((item) => {
+          {mainItem.icon && <i className={`${mainItem.icon} menu-icon`} />}
+
+          <span>{mainItem.label}</span>
+
+          <span className='menu-arrow'>▸</span>
+        </button>
+
+        {isOpen && (
+          <ul className='sidebar-submenu'>
+            {children.map((item) => {
               const hasNested =
-                item.submenuItems && item.submenuItems.length > 0;
+                !!item.submenuItems && item.submenuItems.length > 0;
 
               if (hasNested) {
-                // Nested submenu (e.g., Event Configurations)
-                const isNestedExpanded = subsidebar === item.label;
-                const isNestedActive = isNestedSubmenuActive(item);
-                const nestedArrow = isNestedExpanded
-                  ? { ...styles.menuArrow, ...styles.menuArrowExpanded }
-                  : styles.menuArrow;
-
-                return (
-                  <li
-                    key={item.label}
-                    className='submenu submenu-two'
-                    style={{ listStyle: 'none' }}
-                  >
-                    <Link
-                      to='#'
-                      style={{
-                        ...styles.link,
-                        ...styles.submenuLink,
-                        ...(isNestedActive ? styles.activeLink : {}),
-                      }}
-                      className={`${isNestedExpanded ? 'subdrop' : ''} ${isNestedActive ? 'active' : ''}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        toggleSubsidebar(item.label);
-                      }}
-                    >
-                      {item.icon && (
-                        <i className={item.icon} style={styles.icon}></i>
-                      )}
-                      <span>{item.label}</span>
-                      <span className='menu-arrow' style={nestedArrow}>
-                        ▸
-                      </span>
-                    </Link>
-                    {isNestedExpanded && (
-                      <ul
-                        style={{
-                          display: 'block',
-                          listStyle: 'none',
-                          paddingLeft: 0,
-                          margin: 0,
-                        }}
-                      >
-                        {(item.submenuItems || []).map((sub) => {
-                          const link = getItemLink(sub);
-                          const isSubActive = link === location.pathname;
-                          return (
-                            <li key={sub.label} style={{ listStyle: 'none' }}>
-                              <Link
-                                to={link || '#'}
-                                style={{
-                                  ...styles.link,
-                                  ...styles.nestedSubmenuLink,
-                                  ...(isSubActive ? styles.activeLink : {}),
-                                }}
-                                className={isSubActive ? 'active' : ''}
-                                onClick={() => link && navigate(link)}
-                              >
-                                {sub.icon && (
-                                  <i
-                                    className={sub.icon}
-                                    style={styles.icon}
-                                  ></i>
-                                )}
-                                <span>{sub.label}</span>
-                              </Link>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </li>
-                );
-              } else {
-                // Regular submenu item
-                const link = getItemLink(item);
-                const isSubActive = link === location.pathname;
-                return (
-                  <li key={item.label} style={{ listStyle: 'none' }}>
-                    <Link
-                      to={link || '#'}
-                      style={{
-                        ...styles.link,
-                        ...styles.submenuLink,
-                        ...(isSubActive ? styles.activeLink : {}),
-                      }}
-                      className={isSubActive ? 'active' : ''}
-                      onClick={() => link && navigate(link)}
-                    >
-                      {item.icon && (
-                        <i className={item.icon} style={styles.icon}></i>
-                      )}
-                      <span>{item.label}</span>
-                    </Link>
-                  </li>
-                );
+                return renderNestedMenu(item, mainItem);
               }
+
+              const link = getItemLink(item);
+
+              if (!link) return null;
+
+              const active = isActivePath(link);
+
+              return (
+                <li
+                  key={`${mainItem.label}-${item.label}`}
+                  className='sidebar-menu-item'
+                >
+                  <Link
+                    to={link}
+                    className={`sidebar-link submenu-link ${
+                      active ? 'active' : ''
+                    }`}
+                  >
+                    {item.icon && <i className={`${item.icon} menu-icon`} />}
+
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              );
             })}
           </ul>
         )}
@@ -459,9 +372,9 @@ const Sidebar = () => {
       <Scrollbars>
         <div className='sidebar-inner slimscroll'>
           <div id='sidebar-menu' className='sidebar-menu'>
-            <ul style={{ listStyle: 'none', paddingLeft: 0, margin: 0 }}>
-              {filteredSidebarData.map((mainLabel, index) =>
-                renderMainMenuItem(mainLabel, index),
+            <ul className='sidebar-root-menu'>
+              {filteredSidebarData.map((mainItem, index) =>
+                renderMainMenuItem(mainItem, index),
               )}
             </ul>
           </div>
