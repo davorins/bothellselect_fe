@@ -1,3 +1,4 @@
+// Sidebar.tsx
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Scrollbars from 'react-custom-scrollbars-2';
@@ -30,6 +31,7 @@ interface MainMenuItem {
   submenuOpen?: boolean;
   showSubRoute?: boolean;
   submenuHdr?: string;
+  icon?: string;
   submenuItems: SubmenuItem[];
 }
 
@@ -120,40 +122,46 @@ const Sidebar = () => {
     }
   };
 
-  const handleClick = (label: string, item: SubmenuItem) => {
+  const handleClick = (label: string, item: SubmenuItem | MainMenuItem) => {
     console.log('Navigation request:', {
       label,
       userRole: user?.role,
-      itemRole: item?.accessRole,
     });
 
-    // If it's a menu header (has submenuItems), toggle expansion
-    if (item?.submenuItems && !item?.submenu) {
+    // If it's a main menu item with submenuItems, toggle expansion
+    if (item?.submenuItems && item?.submenuItems.length > 0) {
+      // Check if this is a "single item" menu (like Dashboard with only 1 visible item)
+      const visibleItems = item.submenuItems.filter(
+        (subItem) =>
+          !subItem.roles || subItem.roles.includes(user?.role || 'user'),
+      );
+
+      // If only one item and no icon on parent, treat as direct link
+      if (visibleItems.length === 1 && !item.icon) {
+        const singleItem = visibleItems[0];
+        if (singleItem.link) {
+          navigate(singleItem.link);
+        }
+        return;
+      }
+
+      // Otherwise toggle expansion
       toggleMenu(label);
       return;
     }
 
-    if (item?.label === 'Parents') {
-      if (user?.role === 'admin') {
-        console.log('Admin accessing parent list');
-        navigate(`${all_routes.parentList}?refresh=${Date.now()}`);
-        return;
-      }
-
-      if (user?.role === 'user' && user?._id) {
-        console.log('Parent accessing their profile');
-        navigate(`${all_routes.parentDetail}/${user._id}`);
-        return;
-      }
-
-      console.error('Unauthorized access attempt');
-      return;
-    }
-
-    // Default navigation
-    if (!item?.submenu && item?.link) {
+    // Default navigation for leaf items
+    if ('link' in item && item.link) {
       navigate(item.link);
     }
+  };
+
+  // Check if a main menu should be treated as a direct link (single item)
+  const isSingleItemMenu = (mainLabel: MainMenuItem): boolean => {
+    const visibleItems = mainLabel.submenuItems.filter(
+      (item) => !item.roles || item.roles.includes(user?.role || 'user'),
+    );
+    return visibleItems.length === 1 && !mainLabel.icon;
   };
 
   // Auto-expand menu containing current route on load
@@ -171,14 +179,19 @@ const Sidebar = () => {
               (sub: SubmenuItem) => sub.link === currentPath,
             ))
         ) {
-          menuToExpand.push(item.label);
+          // Only expand if it's not a single-item menu
+          if (!isSingleItemMenu(mainLabel)) {
+            menuToExpand.push(mainLabel.label);
+          }
         }
 
         // Also check nested items
         if (item.submenuItems) {
           item.submenuItems.forEach((subItem: SubmenuItem) => {
             if (subItem.link === currentPath) {
-              menuToExpand.push(item.label);
+              if (!isSingleItemMenu(mainLabel)) {
+                menuToExpand.push(mainLabel.label);
+              }
             }
           });
         }
@@ -211,17 +224,6 @@ const Sidebar = () => {
     });
   }, [location.pathname, filteredSidebarData]);
 
-  // Helper function to check if a menu item is active
-  const isMenuItemActive = (item: SubmenuItem): boolean => {
-    if (item.link === location.pathname) return true;
-    if (item.submenuItems) {
-      return item.submenuItems.some(
-        (sub: SubmenuItem) => sub.link === location.pathname,
-      );
-    }
-    return false;
-  };
-
   // Helper function to check if a nested submenu item is active
   const isNestedSubmenuActive = (item: SubmenuItem): boolean => {
     if (item.link === location.pathname) return true;
@@ -233,122 +235,76 @@ const Sidebar = () => {
     return false;
   };
 
-  // Recursive function to render menu items with icons
-  const renderMenuItem = (item: SubmenuItem, isNested: boolean = false) => {
-    const isExpanded = expandedMenus.includes(item.label);
-    const hasChildren = item.submenuItems && item.submenuItems.length > 0;
-    const isActive = isMenuItemActive(item);
+  // Check if a menu item is active
+  const isMenuItemActive = (item: SubmenuItem | MainMenuItem): boolean => {
+    if ('link' in item && item.link === location.pathname) return true;
+    if (item.submenuItems) {
+      return item.submenuItems.some((sub: SubmenuItem) => {
+        if (sub.link === location.pathname) return true;
+        if (sub.submenuItems) {
+          return sub.submenuItems.some(
+            (nested: SubmenuItem) => nested.link === location.pathname,
+          );
+        }
+        return false;
+      });
+    }
+    return false;
+  };
 
-    if (hasChildren) {
-      // This is a submenu with children
+  // Render main menu items
+  const renderMainMenuItem = (mainLabel: MainMenuItem, index: number) => {
+    const isExpanded = expandedMenus.includes(mainLabel.label);
+    const hasVisibleItems = mainLabel.submenuItems.length > 0;
+    const isSingleItem = isSingleItemMenu(mainLabel);
+    const isActive = isMenuItemActive(mainLabel);
+
+    // If it's a single item with no icon, render as direct link
+    if (isSingleItem) {
+      const singleItem = mainLabel.submenuItems[0];
       return (
-        <li
-          key={item.label}
-          className={isNested ? 'submenu submenu-two' : 'submenu'}
-        >
+        <li key={index} style={{ listStyle: 'none' }}>
           <Link
-            to='#'
-            onClick={(e) => {
-              e.preventDefault();
-              handleClick(item.label, item);
-            }}
-            className={`${isExpanded ? 'subdrop' : ''} ${isActive ? 'active' : ''}`}
-          >
-            {item.icon && <i className={item.icon}></i>}
-            <span>{item.label}</span>
-            <span className='menu-arrow' />
-          </Link>
-          {isExpanded && (
-            <ul style={{ display: 'block' }}>
-              {item.submenuItems?.map((subItem: SubmenuItem) =>
-                renderMenuItem(subItem, true),
-              )}
-            </ul>
-          )}
-        </li>
-      );
-    } else {
-      // This is a leaf menu item
-      return (
-        <li key={item.label}>
-          <Link
-            to={item.link || '#'}
-            className={`${item.link === location.pathname ? 'active' : ''}`}
+            to={singleItem.link || '#'}
+            className={`${singleItem.link === location.pathname ? 'active' : ''}`}
             onClick={() => {
-              if (item.link) {
-                navigate(item.link);
+              if (singleItem.link) {
+                navigate(singleItem.link);
               }
             }}
           >
-            {item.icon && <i className={item.icon}></i>}
-            <span>{item.label}</span>
-            {item.version && (
-              <span className='badge badge-primary badge-xs text-white fs-10 ms-auto'>
-                {item.version}
-              </span>
-            )}
+            {singleItem.icon && <i className={singleItem.icon}></i>}
+            <span>{singleItem.label}</span>
           </Link>
         </li>
       );
     }
-  };
 
-  // Legacy render method for compatibility with existing structure
-  const renderLegacyMenuItem = (
-    title: SubmenuItem,
-    mainLabel: MainMenuItem,
-  ) => {
-    const linkArray: string[] = [];
-    if (title.submenuItems) {
-      title.submenuItems.forEach((link: SubmenuItem) => {
-        if (link?.link) {
-          linkArray.push(link.link);
-        }
-        if (link?.submenu && link.submenuItems) {
-          link.submenuItems.forEach((item: SubmenuItem) => {
-            if (item?.link) {
-              linkArray.push(item.link);
-            }
-          });
-        }
-      });
-    }
-    title.links = linkArray;
-
-    const isExpanded = expandedMenus.includes(title?.label);
-    const isActive =
-      title?.links?.includes(location.pathname) ||
-      title?.submenuItems?.some(
-        (link: SubmenuItem) => link?.link === location.pathname,
-      ) ||
-      title?.link === location.pathname;
-
-    const hasChildren = title.submenuItems && title.submenuItems.length > 0;
-
+    // If it has multiple items or has an icon, render as collapsible
     return (
-      <li className='submenu' key={title.label}>
+      <li key={index} style={{ listStyle: 'none' }}>
         <Link
-          to={hasChildren ? '#' : title?.path || title?.link || '#'}
+          to='#'
           onClick={(e) => {
-            if (hasChildren) {
-              e.preventDefault();
-            }
-            handleClick(title?.label, title);
+            e.preventDefault();
+            handleClick(mainLabel.label, mainLabel);
           }}
           className={`${isExpanded ? 'subdrop' : ''} ${isActive ? 'active' : ''}`}
         >
-          {title.icon && <i className={title.icon}></i>}
-          <span>{title?.label}</span>
-          {title?.version && (
-            <span className='badge badge-primary badge-xs text-white fs-10 ms-auto'>
-              {title?.version}
-            </span>
-          )}
-          {hasChildren && <span className='menu-arrow' />}
+          {mainLabel.icon && <i className={mainLabel.icon}></i>}
+          <span>{mainLabel.label}</span>
+          <span className='menu-arrow' />
         </Link>
-        {hasChildren && isExpanded && (
-          <ul style={{ display: 'block' }}>
-            {title?.submenuItems?.map((item: SubmenuItem) => {
+        {isExpanded && (
+          <ul
+            style={{
+              display: 'block',
+              listStyle: 'none',
+              paddingLeft: 0,
+              margin: 0,
+            }}
+          >
+            {mainLabel.submenuItems.map((item: SubmenuItem) => {
               const hasNestedChildren =
                 item.submenuItems && item.submenuItems.length > 0;
 
@@ -358,7 +314,11 @@ const Sidebar = () => {
                 const isNestedActive = isNestedSubmenuActive(item);
 
                 return (
-                  <li key={item.label} className='submenu submenu-two'>
+                  <li
+                    key={item.label}
+                    className='submenu submenu-two'
+                    style={{ listStyle: 'none' }}
+                  >
                     <Link
                       to='#'
                       className={`${isNestedExpanded ? 'subdrop' : ''} ${isNestedActive ? 'active' : ''}`}
@@ -372,9 +332,16 @@ const Sidebar = () => {
                       <span className='menu-arrow' />
                     </Link>
                     {isNestedExpanded && (
-                      <ul style={{ display: 'block' }}>
+                      <ul
+                        style={{
+                          display: 'block',
+                          listStyle: 'none',
+                          paddingLeft: 0,
+                          margin: 0,
+                        }}
+                      >
                         {item.submenuItems?.map((subItem: SubmenuItem) => (
-                          <li key={subItem.label}>
+                          <li key={subItem.label} style={{ listStyle: 'none' }}>
                             <Link
                               to={subItem?.link || '#'}
                               className={`${subItem.link === location.pathname ? 'active' : ''}`}
@@ -396,7 +363,7 @@ const Sidebar = () => {
               } else {
                 // Regular submenu item
                 return (
-                  <li key={item.label}>
+                  <li key={item.label} style={{ listStyle: 'none' }}>
                     <Link
                       to={item?.link || '#'}
                       className={`${item?.link === location.pathname ? 'active' : ''}`}
@@ -424,20 +391,10 @@ const Sidebar = () => {
       <Scrollbars>
         <div className='sidebar-inner slimscroll'>
           <div id='sidebar-menu' className='sidebar-menu'>
-            <ul>
+            <ul style={{ listStyle: 'none', paddingLeft: 0, margin: 0 }}>
               {filteredSidebarData?.map(
-                (mainLabel: MainMenuItem, index: number) => (
-                  <li key={index}>
-                    <h6 className='submenu-hdr'>
-                      <span>{mainLabel?.label}</span>
-                    </h6>
-                    <ul>
-                      {mainLabel?.submenuItems?.map((title: SubmenuItem) =>
-                        renderLegacyMenuItem(title, mainLabel),
-                      )}
-                    </ul>
-                  </li>
-                ),
+                (mainLabel: MainMenuItem, index: number) =>
+                  renderMainMenuItem(mainLabel, index),
               )}
             </ul>
           </div>

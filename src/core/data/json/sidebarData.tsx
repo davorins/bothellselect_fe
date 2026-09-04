@@ -1,3 +1,4 @@
+// sidebarData.js
 import AdminDashboard from '../../../feature-module/mainMenu/adminDashboard';
 import { all_routes } from '../../../feature-module/router/all_routes';
 const routes = all_routes;
@@ -8,6 +9,7 @@ export const SidebarData = [
     submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Main',
+    icon: 'ti ti-home',
     submenuItems: [
       {
         icon: 'ti ti-home-2',
@@ -68,6 +70,7 @@ export const SidebarData = [
     submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Peoples',
+    icon: 'ti ti-users',
     submenuItems: [
       {
         label: 'Players',
@@ -95,13 +98,14 @@ export const SidebarData = [
   },
   {
     label: 'Tournaments',
-    submenu: true,
+    submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Tournaments',
+    icon: 'ti ti-trophy',
     submenuItems: [
       {
         label: 'Tournaments',
-        icon: 'ti  fa-shield',
+        icon: 'ti ti-shield',
         submenu: false,
         showSubRoute: false,
         link: routes.tournamentAdminPage,
@@ -122,6 +126,7 @@ export const SidebarData = [
     submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Peoples',
+    icon: 'ti ti-users',
     submenuItems: [
       {
         label: 'Teams',
@@ -146,6 +151,7 @@ export const SidebarData = [
     submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Schedule/Events',
+    icon: 'ti ti-calendar',
     submenuItems: [
       {
         label: 'Schedule',
@@ -159,9 +165,10 @@ export const SidebarData = [
   },
   {
     label: 'Email',
-    submenu: true,
+    submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Email',
+    icon: 'ti ti-mail',
     submenuItems: [
       {
         label: 'Templates',
@@ -191,9 +198,10 @@ export const SidebarData = [
   },
   {
     label: 'Pages',
-    submenu: true,
+    submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Pages',
+    icon: 'ti ti-file-text',
     submenuItems: [
       {
         label: 'All Pages',
@@ -223,9 +231,10 @@ export const SidebarData = [
   },
   {
     label: 'Registration',
-    submenu: true,
+    submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Registration Management',
+    icon: 'ti ti-forms',
     submenuItems: [
       {
         label: 'Registrations Manager',
@@ -248,7 +257,7 @@ export const SidebarData = [
         submenuOpen: false,
         showSubRoute: false,
         submenuHdr: 'Event Configs',
-        icon: 'ti ti-cog',
+        icon: 'ti ti-settings',
         submenuItems: [
           {
             label: 'Tryouts',
@@ -288,9 +297,10 @@ export const SidebarData = [
   },
   {
     label: 'Finance',
-    submenu: true,
+    submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Finance',
+    icon: 'ti ti-currency-dollar',
     submenuItems: [
       {
         label: 'Refund Management',
@@ -323,6 +333,7 @@ export const SidebarData = [
     submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'Marketing',
+    icon: 'ti ti-chart-bar',
     submenuItems: [
       {
         label: 'Advertisements',
@@ -344,9 +355,10 @@ export const SidebarData = [
   },
   {
     label: 'FAQ',
-    submenu: true,
+    submenuOpen: false,
     showSubRoute: false,
     submenuHdr: 'FAQ',
+    icon: 'ti ti-question-mark',
     submenuItems: [
       {
         label: 'FAQ',
