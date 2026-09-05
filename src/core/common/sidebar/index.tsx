@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import Scrollbars from 'react-custom-scrollbars-2';
 import { useSelector } from 'react-redux';
@@ -42,6 +43,12 @@ interface User {
   _id?: string;
 }
 
+interface TooltipState {
+  label: string;
+  top: number;
+  left: number;
+}
+
 const Sidebar = () => {
   const location = useLocation();
 
@@ -65,24 +72,39 @@ const Sidebar = () => {
 
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [expandedSubmenus, setExpandedSubmenus] = useState<string[]>([]);
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
   /* =========================================================
      MINI SIDEBAR STATE
      ========================================================= */
 
-  /*
-   * The sidebar is mini ONLY when:
-   *
-   *   miniSidebar === true
-   *   AND
-   *   expandMenu === false
-   *
-   * Hovering an item shows a tooltip (via data-tooltip / CSS),
-   * it does NOT expand the whole sidebar. That's intentional -
-   * a hover-driven full expand was removed because it fought
-   * with the tooltip behavior.
-   */
   const isMiniSidebar = miniSidebar && !expandMenu;
+
+  /* =========================================================
+     TOOLTIP (rendered via portal - see below)
+     ========================================================= */
+
+  /*
+   * The sidebar's scroll container (react-custom-scrollbars-2) clips
+   * any child positioned outside its own bounds, so a CSS-only
+   * ::after tooltip anchored to a link inside it can never be seen
+   * once it extends past the sidebar's edge. Rendering the tooltip
+   * through a portal straight to document.body sidesteps that
+   * clipping entirely.
+   */
+  const showTooltip = (event: React.MouseEvent<HTMLElement>, label: string) => {
+    if (!isMiniSidebar) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+
+    setTooltip({
+      label,
+      top: rect.top + rect.height / 2,
+      left: rect.right + 10,
+    });
+  };
+
+  const hideTooltip = () => setTooltip(null);
 
   /* =========================================================
      LINK HELPER
@@ -261,7 +283,8 @@ const Sidebar = () => {
             isActive ? 'active' : ''
           } ${isOpen ? 'expanded' : ''}`}
           onClick={() => toggleSubmenu(item.label)}
-          data-tooltip={item.label}
+          onMouseEnter={(e) => showTooltip(e, item.label)}
+          onMouseLeave={hideTooltip}
         >
           {item.icon && (
             <i className={`${item.icon} menu-icon`} aria-hidden='true' />
@@ -269,11 +292,6 @@ const Sidebar = () => {
 
           <span className='menu-label'>{item.label}</span>
 
-          {/*
-            Arrow is only rendered when the sidebar is expanded.
-            In mini mode it's omitted from the DOM entirely so it
-            can never appear detached/misplaced.
-          */}
           {!isMiniSidebar && (
             <i
               className={`ti ti-chevron-${isOpen ? 'up' : 'down'} menu-arrow`}
@@ -301,7 +319,8 @@ const Sidebar = () => {
                     className={`sidebar-link nested-submenu-link ${
                       active ? 'active' : ''
                     }`}
-                    data-tooltip={sub.label}
+                    onMouseEnter={(e) => showTooltip(e, sub.label)}
+                    onMouseLeave={hideTooltip}
                   >
                     {sub.icon && (
                       <i
@@ -352,7 +371,8 @@ const Sidebar = () => {
           <Link
             to={link}
             className={`sidebar-link ${active ? 'active' : ''}`}
-            data-tooltip={mainItem.label}
+            onMouseEnter={(e) => showTooltip(e, mainItem.label)}
+            onMouseLeave={hideTooltip}
           >
             {(mainItem.icon || child.icon) && (
               <i
@@ -383,7 +403,8 @@ const Sidebar = () => {
             isActive ? 'active' : ''
           } ${isOpen ? 'expanded' : ''}`}
           onClick={() => toggleMenu(mainItem.label)}
-          data-tooltip={mainItem.label}
+          onMouseEnter={(e) => showTooltip(e, mainItem.label)}
+          onMouseLeave={hideTooltip}
         >
           {mainItem.icon && (
             <i className={`${mainItem.icon} menu-icon`} aria-hidden='true' />
@@ -427,7 +448,8 @@ const Sidebar = () => {
                     className={`sidebar-link submenu-link ${
                       active ? 'active' : ''
                     }`}
-                    data-tooltip={item.label}
+                    onMouseEnter={(e) => showTooltip(e, item.label)}
+                    onMouseLeave={hideTooltip}
                   >
                     {item.icon && (
                       <i
@@ -467,6 +489,17 @@ const Sidebar = () => {
           </div>
         </div>
       </Scrollbars>
+
+      {tooltip &&
+        createPortal(
+          <div
+            className='sidebar-tooltip-portal'
+            style={{ top: tooltip.top, left: tooltip.left }}
+          >
+            {tooltip.label}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };
