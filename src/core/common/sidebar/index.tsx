@@ -291,13 +291,6 @@ const Sidebar = () => {
           )}
 
           <span className='menu-label'>{item.label}</span>
-
-          {!isMiniSidebar && (
-            <i
-              className={`ti ti-chevron-${isOpen ? 'up' : 'down'} menu-arrow`}
-              aria-hidden='true'
-            />
-          )}
         </button>
 
         {isOpen && (
@@ -411,13 +404,6 @@ const Sidebar = () => {
           )}
 
           <span className='menu-label'>{mainItem.label}</span>
-
-          {!isMiniSidebar && (
-            <i
-              className={`ti ti-chevron-${isOpen ? 'up' : 'down'} menu-arrow`}
-              aria-hidden='true'
-            />
-          )}
         </button>
 
         {isOpen && (
