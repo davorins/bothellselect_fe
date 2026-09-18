@@ -49,6 +49,19 @@ interface TooltipState {
   left: number;
 }
 
+/* =========================================================
+   INDENTATION
+   Each nested level gets pushed further right than its parent.
+   level 1 (first submenu under a top-level item) = BASE_PADDING_PX + LEVEL_STEP_PX
+   level 2 (a submenu inside that submenu)         = BASE_PADDING_PX + LEVEL_STEP_PX * 2
+   ...and so on, however deep the data goes.
+   ========================================================= */
+const BASE_PADDING_PX = 16;
+const LEVEL_STEP_PX = 30;
+
+const paddingForLevel = (level: number) =>
+  BASE_PADDING_PX + LEVEL_STEP_PX * level;
+
 const Sidebar = () => {
   const location = useLocation();
 
@@ -71,6 +84,8 @@ const Sidebar = () => {
      ========================================================= */
 
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+  // Keyed by full ancestor path (e.g. "Registration>Event Configurations"),
+  // not just label, so two branches can't collide or accidentally share state.
   const [expandedSubmenus, setExpandedSubmenus] = useState<string[]>([]);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
@@ -149,53 +164,49 @@ const Sidebar = () => {
   }, []);
 
   /* =========================================================
-     ROLE FILTERING
+     ROLE FILTERING (recursive - filters at every depth)
      ========================================================= */
+
+  const filterByRole = (items: SubmenuItem[], role: string): SubmenuItem[] => {
+    return items
+      .filter((item) => !item.roles || item.roles.includes(role))
+      .map((item) => {
+        // Special Parents behavior
+        if (item.label === 'Parents') {
+          const isAdminView = role === 'admin';
+
+          return {
+            ...item,
+            link: isAdminView
+              ? all_routes.parentList
+              : `${all_routes.parentDetail}/${user?._id || ''}`,
+            isAdminView,
+            isUserView: !isAdminView,
+            accessRole: role,
+          };
+        }
+
+        if (item.submenuItems && item.submenuItems.length > 0) {
+          return {
+            ...item,
+            submenuItems: filterByRole(item.submenuItems, role),
+          };
+        }
+
+        return item;
+      });
+  };
 
   const filteredSidebarData = useMemo<MainMenuItem[]>(() => {
     const role = user?.role || 'user';
 
     return normalizedData
-      .map((mainItem) => {
-        const filteredChildren = (mainItem.submenuItems || [])
-          .filter(
-            (item: SubmenuItem) => !item.roles || item.roles.includes(role),
-          )
-          .map((item: SubmenuItem) => {
-            // Special Parents behavior
-            if (item.label === 'Parents') {
-              const isAdminView = role === 'admin';
-
-              return {
-                ...item,
-                link: isAdminView
-                  ? all_routes.parentList
-                  : `${all_routes.parentDetail}/${user?._id || ''}`,
-                isAdminView,
-                isUserView: !isAdminView,
-                accessRole: role,
-              };
-            }
-
-            // Filter nested menus
-            if (item.submenuItems) {
-              return {
-                ...item,
-                submenuItems: item.submenuItems.filter(
-                  (sub: SubmenuItem) => !sub.roles || sub.roles.includes(role),
-                ),
-              };
-            }
-
-            return item;
-          });
-
-        return {
-          ...mainItem,
-          submenuItems: filteredChildren,
-        };
-      })
+      .map((mainItem) => ({
+        ...mainItem,
+        submenuItems: filterByRole(mainItem.submenuItems || [], role),
+      }))
       .filter((mainItem) => (mainItem.submenuItems || []).length > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [normalizedData, user]);
 
   /* =========================================================
@@ -213,14 +224,14 @@ const Sidebar = () => {
   };
 
   /* =========================================================
-     NESTED MENU TOGGLE
+     SUBMENU TOGGLE (any depth, keyed by full ancestor path)
      ========================================================= */
 
-  const toggleSubmenu = (label: string) => {
+  const toggleSubmenu = (key: string) => {
     setExpandedSubmenus((previous) =>
-      previous.includes(label)
-        ? previous.filter((item) => item !== label)
-        : [...previous, label],
+      previous.includes(key)
+        ? previous.filter((item) => item !== key)
+        : [...previous, key],
     );
   };
 
@@ -249,88 +260,128 @@ const Sidebar = () => {
   };
 
   /* =========================================================
-     AUTO OPEN ACTIVE TOP LEVEL MENU
+     COLLECT KEYS OF SUBMENU BRANCHES CONTAINING THE ACTIVE ROUTE
+     (so on navigation, every ancestor level auto-opens, not just
+     the top one)
+     ========================================================= */
+
+  const collectActiveKeys = (
+    items: SubmenuItem[],
+    parentKey: string,
+    acc: string[],
+  ) => {
+    items.forEach((item) => {
+      const key = `${parentKey}>${item.label}`;
+
+      if (item.submenuItems && item.submenuItems.length > 0) {
+        if (hasActiveChild(item)) {
+          acc.push(key);
+        }
+        collectActiveKeys(item.submenuItems, key, acc);
+      }
+    });
+  };
+
+  /* =========================================================
+     AUTO OPEN ACTIVE TOP LEVEL MENU + ACTIVE NESTED BRANCHES
      ========================================================= */
 
   useEffect(() => {
     let activeMainLabel: string | null = null;
+    const activeSubmenuKeys: string[] = [];
 
     filteredSidebarData.forEach((mainItem) => {
       if (hasActiveChild(mainItem)) {
         activeMainLabel = mainItem.label;
+        collectActiveKeys(
+          mainItem.submenuItems || [],
+          mainItem.label,
+          activeSubmenuKeys,
+        );
       }
     });
 
     setExpandedMenus(activeMainLabel ? [activeMainLabel] : []);
+    setExpandedSubmenus(activeSubmenuKeys);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, filteredSidebarData]);
 
   /* =========================================================
-     NESTED MENU RENDERER
+     RECURSIVE SUBMENU RENDERER
+     Handles any depth: a leaf item (has a link, no children)
+     renders as a <Link>; a branch item (has submenuItems)
+     renders as a toggle <button> whose children recurse at
+     level + 1, indented one step further than their parent.
      ========================================================= */
 
-  const renderNestedMenu = (item: SubmenuItem, mainItem: MainMenuItem) => {
-    const isOpen = expandedSubmenus.includes(item.label);
-    const isActive = hasActiveChild(item);
+  const renderSubmenuItems = (
+    items: SubmenuItem[],
+    level: number,
+    parentKey: string,
+  ) => {
+    return items.map((item) => {
+      const key = `${parentKey}>${item.label}`;
+      const hasChildren = !!item.submenuItems && item.submenuItems.length > 0;
+      const indentStyle: React.CSSProperties = {
+        paddingLeft: paddingForLevel(level),
+      };
 
-    return (
-      <li
-        key={`${mainItem.label}-${item.label}`}
-        className='sidebar-menu-item sidebar-nested-item'
-      >
-        <button
-          type='button'
-          className={`sidebar-link submenu-link ${
-            isActive ? 'active' : ''
-          } ${isOpen ? 'expanded' : ''}`}
-          onClick={() => toggleSubmenu(item.label)}
-          onMouseEnter={(e) => showTooltip(e, item.label)}
-          onMouseLeave={hideTooltip}
-        >
-          {item.icon && (
-            <i className={`${item.icon} menu-icon`} aria-hidden='true' />
-          )}
+      if (hasChildren) {
+        const isOpen = expandedSubmenus.includes(key);
+        const isActive = hasActiveChild(item);
 
-          <span className='menu-label'>{item.label}</span>
-        </button>
+        return (
+          <li key={key} className='sidebar-menu-item'>
+            <button
+              type='button'
+              className={`sidebar-link submenu-link ${
+                isActive ? 'active' : ''
+              } ${isOpen ? 'expanded' : ''}`}
+              style={indentStyle}
+              onClick={() => toggleSubmenu(key)}
+              onMouseEnter={(e) => showTooltip(e, item.label)}
+              onMouseLeave={hideTooltip}
+            >
+              {item.icon && (
+                <i className={`${item.icon} menu-icon`} aria-hidden='true' />
+              )}
 
-        {isOpen && (
-          <ul className='sidebar-submenu nested-submenu'>
-            {(item.submenuItems || []).map((sub) => {
-              const link = getItemLink(sub);
+              <span className='menu-label'>{item.label}</span>
+            </button>
 
-              if (!link) return null;
+            {isOpen && (
+              <ul className='sidebar-submenu'>
+                {renderSubmenuItems(item.submenuItems || [], level + 1, key)}
+              </ul>
+            )}
+          </li>
+        );
+      }
 
-              const active = isActivePath(link);
+      const link = getItemLink(item);
 
-              return (
-                <li
-                  key={`${item.label}-${sub.label}`}
-                  className='sidebar-menu-item'
-                >
-                  <Link
-                    to={link}
-                    className={`sidebar-link nested-submenu-link ${
-                      active ? 'active' : ''
-                    }`}
-                    onMouseEnter={(e) => showTooltip(e, sub.label)}
-                    onMouseLeave={hideTooltip}
-                  >
-                    {sub.icon && (
-                      <i
-                        className={`${sub.icon} menu-icon`}
-                        aria-hidden='true'
-                      />
-                    )}
+      if (!link) return null;
 
-                    <span className='menu-label'>{sub.label}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </li>
-    );
+      const active = isActivePath(link);
+
+      return (
+        <li key={key} className='sidebar-menu-item'>
+          <Link
+            to={link}
+            className={`sidebar-link submenu-link ${active ? 'active' : ''}`}
+            style={indentStyle}
+            onMouseEnter={(e) => showTooltip(e, item.label)}
+            onMouseLeave={hideTooltip}
+          >
+            {item.icon && (
+              <i className={`${item.icon} menu-icon`} aria-hidden='true' />
+            )}
+
+            <span className='menu-label'>{item.label}</span>
+          </Link>
+        </li>
+      );
+    });
   };
 
   /* =========================================================
@@ -408,47 +459,7 @@ const Sidebar = () => {
 
         {isOpen && (
           <ul className='sidebar-submenu'>
-            {children.map((item) => {
-              const hasNested =
-                !!item.submenuItems && item.submenuItems.length > 0;
-
-              if (hasNested) {
-                return renderNestedMenu(item, mainItem);
-              }
-
-              const link = getItemLink(item);
-
-              if (!link) {
-                return null;
-              }
-
-              const active = isActivePath(link);
-
-              return (
-                <li
-                  key={`${mainItem.label}-${item.label}`}
-                  className='sidebar-menu-item'
-                >
-                  <Link
-                    to={link}
-                    className={`sidebar-link submenu-link ${
-                      active ? 'active' : ''
-                    }`}
-                    onMouseEnter={(e) => showTooltip(e, item.label)}
-                    onMouseLeave={hideTooltip}
-                  >
-                    {item.icon && (
-                      <i
-                        className={`${item.icon} menu-icon`}
-                        aria-hidden='true'
-                      />
-                    )}
-
-                    <span className='menu-label'>{item.label}</span>
-                  </Link>
-                </li>
-              );
-            })}
+            {renderSubmenuItems(children, 1, mainItem.label)}
           </ul>
         )}
       </li>

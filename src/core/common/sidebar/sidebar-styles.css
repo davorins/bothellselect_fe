@@ -163,19 +163,22 @@
 
 /* =========================================================
    SUBMENUS (expanded sidebar)
+   Indentation is NOT set here - it's set per-item inline in
+   Sidebar.tsx (paddingForLevel), since depth is dynamic and
+   can go arbitrarily deep. This container only spaces rows
+   out vertically. No border/guide-line, no horizontal
+   margin/padding - the mockups don't show a rail.
    ========================================================= */
 
 .sidebar-submenu {
   list-style: none !important;
 
-  margin: 4px 0 8px 16px !important;
-  padding: 4px 0 4px 8px !important;
+  margin: 4px 0 8px 0 !important;
+  padding: 4px 0 !important;
 
   display: flex;
   flex-direction: column;
   gap: 2px;
-
-  border-left: 2px solid #e5e7eb;
 }
 
 .sidebar-submenu li {
@@ -187,25 +190,6 @@
 
 .sidebar-link.expanded {
   border-radius: 6px 6px 0 0;
-}
-
-/* First-level submenu */
-.sidebar-menu .submenu-link {
-  padding-left: 16px !important;
-}
-
-/* Second-level submenu */
-.sidebar-menu .nested-submenu-link {
-  padding-left: 16px !important;
-}
-
-.sidebar-nested-item {
-  margin-bottom: 2px !important;
-}
-
-.nested-submenu {
-  margin-top: 4px !important;
-  margin-bottom: 4px !important;
 }
 
 /* =========================================================
@@ -247,8 +231,9 @@
 }
 
 /* ---------------------------------------------------------
-   Submenu items (both levels) shown as a stack of small,
-   clearly separated icon badges when minimized
+   Submenu items (all levels) shown as a stack of small,
+   clearly separated icon badges when minimized - depth is
+   irrelevant here since labels are hidden anyway
    --------------------------------------------------------- */
 
 .sidebar.mini-sidebar .sidebar-submenu {
@@ -261,7 +246,6 @@
   width: 100%;
 
   background: transparent;
-  border-left: none !important;
   box-shadow: none;
 
   margin: 6px 0 !important;
