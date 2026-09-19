@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { formatPhoneNumber } from '../../../../utils/phone';
 import { getAvatarUrl, getDefaultAvatar } from '../../../../utils/r2Utils';
-import { getParentStatus } from '../../../../utils/parentUtils';
 import {
   formatAddress,
   Address,
@@ -36,6 +35,40 @@ interface ParentData {
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SAME RULE as ParentTableColumns.getParentPaymentLabel (Parents List):
+//   - coach              → "All Paid"
+//   - no players         → "Inactive"
+//   - every season paid  → "All Paid"
+//   - some seasons paid  → "N/M Paid"
+//   - no seasons paid    → "No Payments"
+// Reads `parent.players[].seasons[].paymentStatus` and `.paymentComplete`.
+// ─────────────────────────────────────────────────────────────────────────────
+const getParentPaymentLabel = (parent: any): string => {
+  if (parent?.isCoach) return 'All Paid';
+
+  const players: any[] = parent?.players || [];
+  if (players.length === 0) return 'Inactive';
+
+  const allSeasons: any[] = players.flatMap((p: any) => p.seasons || []);
+
+  if (allSeasons.length === 0) {
+    const anyPaid = players.some(
+      (p: any) => p.paymentComplete === true || p.paymentStatus === 'paid',
+    );
+    return anyPaid ? 'All Paid' : 'Inactive';
+  }
+
+  const paidCount = allSeasons.filter(
+    (s: any) => s.paymentStatus === 'paid' || s.paymentComplete === true,
+  ).length;
+  const total = allSeasons.length;
+
+  if (paidCount === total) return 'All Paid';
+  if (paidCount > 0) return `${paidCount}/${total} Paid`;
+  return 'No Payments';
+};
+
 interface ParentSidebarProps {
   parent: ParentData;
 }
@@ -48,7 +81,6 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
     return getAvatarUrl(parent?.avatar || parent?.imgSrc, defaultAvatar);
   });
 
-  // ── Dynamic fields ──────────────────────────────────────────────────────
   const { getVisibleFields: getParentVisibleFields } = useDynamicFormFields(
     'parent',
     { registrationYear: parent?.registrationYear || new Date().getFullYear() },
@@ -70,7 +102,6 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
   };
   const hasAnyAddressField = Object.values(addrShow).some(Boolean);
 
-  // ── Avatar fetch ────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchAvatarUrlFromBackend = async () => {
       const token = localStorage.getItem('token');
@@ -91,23 +122,6 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
     fetchAvatarUrlFromBackend();
   }, [parent?._id, parent?.isCoach, parent?.avatar, parent?.imgSrc]);
 
-  useEffect(() => {
-    if (parent) {
-      console.log('👪 ParentSidebar - Parent:', {
-        name: parent.fullName,
-        isCoach: parent.isCoach,
-        playersCount: parent.players?.length,
-        players: parent.players?.map((p) => ({
-          name: p.fullName,
-          seasons: p.seasons,
-          season: p.season,
-          registrationYear: p.registrationYear,
-          paymentComplete: p.paymentComplete,
-        })),
-      });
-    }
-  }, [parent]);
-
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     e.currentTarget.src = getDefaultAvatar(
       parent?.isCoach ? 'coach' : 'parent',
@@ -121,7 +135,16 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
   const fmtAddr = (addr: string | LooseAddress | undefined) =>
     formatAddress(addr as Address | string | null | undefined, addrShow);
 
-  const calculatedStatus = getParentStatus(parent as any);
+  // ─── REPLACED: was getParentStatus(parent) ─────────────────────────────
+  const statusLabel = getParentPaymentLabel(parent);
+  // ───────────────────────────────────────────────────────────────────────
+
+  const badgeColor =
+    statusLabel === 'All Paid'
+      ? 'success'
+      : statusLabel === 'Inactive'
+        ? 'danger'
+        : 'warning';
 
   return (
     <div className='col-xxl-3 col-xl-4 theiaStickySidebar'>
@@ -139,24 +162,12 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
               </div>
               <div className='overflow-hidden'>
                 <span
-                  className={`badge badge-soft-${
-                    calculatedStatus === 'Active'
-                      ? 'success'
-                      : calculatedStatus === 'Pending Payment'
-                        ? 'warning'
-                        : 'danger'
-                  } d-inline-flex align-items-center mb-1`}
+                  className={`badge badge-soft-${badgeColor} d-inline-flex align-items-center mb-1`}
                 >
                   <i
-                    className={`ti ti-circle-filled fs-5 me-1 ${
-                      calculatedStatus === 'Active'
-                        ? 'text-success'
-                        : calculatedStatus === 'Pending Payment'
-                          ? 'text-warning'
-                          : 'text-danger'
-                    }`}
+                    className={`ti ti-circle-filled fs-5 me-1 text-${badgeColor}`}
                   />
-                  {calculatedStatus}
+                  {statusLabel}
                 </span>
                 <h5 className='mb-1 text-truncate'>{getDisplayName()}</h5>
               </div>

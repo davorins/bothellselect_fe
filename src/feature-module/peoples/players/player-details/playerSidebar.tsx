@@ -4,12 +4,39 @@ import { Link } from 'react-router-dom';
 import { all_routes } from '../../../router/all_routes';
 import { useAuth } from '../../../../context/AuthContext';
 import { formatDate } from '../../../../utils/dateFormatter';
-import { getPlayerStatus } from '../../../../utils/season';
 import { formatPhoneNumber } from '../../../../utils/phone';
 import { Player, Guardian } from '../../../../types/playerTypes';
 import { getAvatarUrl, getDefaultAvatar } from '../../../../utils/r2Utils';
 import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
 import { Player as RegistrationPlayer } from '../../../../types/registration-types';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SAME RULE as PlayerTableColumns.getSeasonsPaymentStatus (Players List):
+//   every season paid       → "All Paid"
+//   some seasons paid       → "N/M Paid"
+//   no seasons paid         → "No Payments"
+//   no seasons at all       → "Inactive"
+// Reads `player.seasons[].paymentStatus` and `player.seasons[].paymentComplete`.
+// ─────────────────────────────────────────────────────────────────────────────
+const getPlayerPaymentLabel = (player: any): string => {
+  const seasons: any[] = Array.isArray(player?.seasons) ? player.seasons : [];
+
+  if (seasons.length === 0) {
+    // Legacy top-level fallback
+    if (player?.paymentComplete === true || player?.paymentStatus === 'paid') {
+      return 'All Paid';
+    }
+    return 'Inactive';
+  }
+
+  const paidCount = seasons.filter(
+    (s: any) => s.paymentStatus === 'paid' || s.paymentComplete === true,
+  ).length;
+
+  if (paidCount === seasons.length) return 'All Paid';
+  if (paidCount > 0) return `${paidCount}/${seasons.length} Paid`;
+  return 'No Payments';
+};
 
 interface PlayerSidebarProps {
   player: Player;
@@ -58,7 +85,6 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
 }) => {
   const { user } = useAuth();
 
-  // ── Dynamic fields ──────────────────────────────────────────────────────
   const { getVisibleFields } = useDynamicFormFields('player', {
     registrationYear: player.registrationYear || new Date().getFullYear(),
   });
@@ -107,7 +133,9 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
     return `${gradeNum}${suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]} Grade`;
   };
 
-  const playerStatus = getPlayerStatus(player);
+  // ─── REPLACED: was getPlayerStatus(player) ─────────────────────────────
+  const playerStatusLabel = getPlayerPaymentLabel(player);
+  // ───────────────────────────────────────────────────────────────────────
 
   const shouldShowSiblings = siblings?.length > 0 && user?.role !== 'admin';
 
@@ -156,41 +184,35 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
   );
   const playerAvatarSrc = getAvatarUrl(player.avatar, playerDefaultAvatar);
 
+  // ─── REPLACED: now switches on the label produced by getPlayerPaymentLabel
   const getStatusBadge = () => {
-    switch (playerStatus) {
-      case 'Active':
-        return (
-          <span
-            className='badge badge-soft-success d-inline-flex align-items-center'
-            title='Registered and paid for current season'
-          >
-            <i className='ti ti-circle-filled fs-5 me-1 text-success' />
-            Active
-          </span>
-        );
-      case 'Pending Payment':
-        return (
-          <span
-            className='badge badge-soft-warning d-inline-flex align-items-center'
-            title='Registered but payment pending for current season'
-          >
-            <i className='ti ti-circle-filled fs-5 me-1 text-warning' />
-            Pending Payment
-          </span>
-        );
-      case 'Inactive':
-      default:
-        return (
-          <span
-            className='badge badge-soft-danger d-inline-flex align-items-center'
-            title='Not registered for current season'
-          >
-            <i className='ti ti-circle-filled fs-5 me-1 text-danger' />
-            Inactive
-          </span>
-        );
-    }
+    const label = playerStatusLabel;
+
+    const badgeColor =
+      label === 'All Paid'
+        ? 'success'
+        : label === 'Inactive'
+          ? 'danger'
+          : 'warning';
+
+    const title =
+      label === 'All Paid'
+        ? 'All seasons paid'
+        : label === 'Inactive'
+          ? 'No season registrations'
+          : 'Some payments pending';
+
+    return (
+      <span
+        className={`badge badge-soft-${badgeColor} d-inline-flex align-items-center`}
+        title={title}
+      >
+        <i className={`ti ti-circle-filled fs-5 me-1 text-${badgeColor}`} />
+        {label}
+      </span>
+    );
   };
+  // ───────────────────────────────────────────────────────────────────────
 
   return (
     <div className='col-xxl-3 col-xl-4 theiaStickySidebar'>
@@ -281,7 +303,6 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                           const isPaid = paymentStatus === 'paid';
                           const isRefund = paymentStatus === 'refund';
 
-                          // Determine badge color and text
                           let badgeColor = 'warning';
                           let statusText = 'Pending';
                           if (isPaid) {
@@ -448,7 +469,16 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                         sibling.avatar,
                         siblingDefault,
                       );
-                      const siblingStatus = getPlayerStatus(sibling);
+
+                      // ─── REPLACED: use the same label rule ────────────
+                      const siblingLabel = getPlayerPaymentLabel(sibling);
+                      const siblingBadgeColor =
+                        siblingLabel === 'All Paid'
+                          ? 'success'
+                          : siblingLabel === 'Inactive'
+                            ? 'danger'
+                            : 'warning';
+                      // ──────────────────────────────────────────────────
 
                       return (
                         <li key={siblingId}>
@@ -494,15 +524,9 @@ const PlayerSidebar: React.FC<PlayerSidebarProps> = ({
                               </Link>
                               <div className='d-flex align-items-center gap-2 mt-1'>
                                 <span
-                                  className={`badge badge-soft-${
-                                    siblingStatus === 'Active'
-                                      ? 'success'
-                                      : siblingStatus === 'Pending Payment'
-                                        ? 'warning'
-                                        : 'danger'
-                                  }`}
+                                  className={`badge badge-soft-${siblingBadgeColor}`}
                                 >
-                                  {siblingStatus}
+                                  {siblingLabel}
                                 </span>
                               </div>
                               {hasField('grade') && (

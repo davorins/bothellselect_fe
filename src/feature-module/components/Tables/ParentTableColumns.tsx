@@ -49,6 +49,42 @@ const fmtAddr = (
   show?: AddressShowConfig,
 ) => formatAddress(addr as Address | string | null | undefined, show);
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Parent payment label — uses the SAME rule the Players List uses in
+// PlayerTableColumns.getSeasonsPaymentStatus:
+//   every season paid  → "All Paid"
+//   some seasons paid  → "N/M Paid"
+//   no seasons paid    → "No Payments"
+//   no players         → "Inactive"
+//   coach              → "All Paid"
+// ─────────────────────────────────────────────────────────────────────────────
+const getParentPaymentLabel = (parent: any): string => {
+  if (parent.isCoach) return 'All Paid';
+
+  const players: any[] = parent.players || [];
+  if (players.length === 0) return 'Inactive';
+
+  // Aggregate all seasons across all players
+  const allSeasons: any[] = players.flatMap((p: any) => p.seasons || []);
+
+  if (allSeasons.length === 0) {
+    // Fall back to per-player paid flags if `seasons` isn't populated
+    const anyPaid = players.some(
+      (p: any) => p.paymentComplete === true || p.paymentStatus === 'paid',
+    );
+    return anyPaid ? 'All Paid' : 'Inactive';
+  }
+
+  const paidSeasons = allSeasons.filter(
+    (s) => s.paymentStatus === 'paid' || s.paymentComplete === true,
+  ).length;
+  const totalSeasons = allSeasons.length;
+
+  if (paidSeasons === totalSeasons) return 'All Paid';
+  if (paidSeasons > 0) return `${paidSeasons}/${totalSeasons} Paid`;
+  return 'No Payments';
+};
+
 // Skeleton loader for parent table rows
 export const ParentTableSkeleton: React.FC<{ rows?: number }> = ({
   rows = 10,
@@ -119,7 +155,7 @@ export const ParentTableSkeleton: React.FC<{ rows?: number }> = ({
   );
 };
 
-// Helper: is player registered for current season
+// Helper: is player registered for current season (kept for exports)
 const isPlayerRegisteredForCurrentSeason = (player: any): boolean => {
   const currentYear = getCurrentYear();
   if (player.seasons && Array.isArray(player.seasons)) {
@@ -129,19 +165,10 @@ const isPlayerRegisteredForCurrentSeason = (player: any): boolean => {
   return player.season && player.registrationYear === currentYear;
 };
 
-// Helper: parent status
-const getParentStatus = <T extends ExtendedTableRecord>(
-  record: T,
-): 'active' | 'inactive' | 'pending' => {
-  if (record.isCoach) return 'active';
-  const hasCurrentSeasonRegistration = record.players?.some(
-    isPlayerRegisteredForCurrentSeason,
-  );
-  if (hasCurrentSeasonRegistration) return 'active';
-  const hasPendingPayments = record.players?.some(
-    (player) => player.registrationComplete && !player.paymentComplete,
-  );
-  return hasPendingPayments ? 'pending' : 'inactive';
+// Helper: parent status (kept for exports — now returns the SAME label
+// the table renders)
+const getParentStatus = <T extends ExtendedTableRecord>(record: T): string => {
+  return getParentPaymentLabel(record);
 };
 
 const getVisibleFieldsFromConfig = (visibleFields: string[] = []) => {
@@ -173,12 +200,11 @@ export const exportParentsToPDF = <T extends ExtendedTableRecord>(
     state: true,
     zip: true,
   },
-  visibleFields?: string[], // Add this parameter
+  visibleFields?: string[],
 ) => {
   const doc = new jsPDF();
   doc.text('Parents List', 14, 15);
 
-  // Define which fields to show based on visibility
   const showEmail = !visibleFields || visibleFields.includes('email');
   const showPhone = !visibleFields || visibleFields.includes('phone');
   const showAddress =
@@ -188,7 +214,6 @@ export const exportParentsToPDF = <T extends ExtendedTableRecord>(
     visibleFields.includes('state') ||
     visibleFields.includes('zip');
 
-  // Build dynamic columns - always show Name, Type, Status, Date Joined
   const tableColumn: string[] = ['Name'];
   const tableRows = data.map((item) => {
     const row: any[] = [item.fullName];
@@ -197,17 +222,15 @@ export const exportParentsToPDF = <T extends ExtendedTableRecord>(
     if (showPhone) row.push(item.phone ? formatPhoneNumber(item.phone) : 'N/A');
     if (showAddress) row.push(fmtAddr(item.address, addrShow) || 'N/A');
 
-    // Always show these core fields
     row.push(
       item.isCoach ? 'Coach' : item.type === 'guardian' ? 'Guardian' : 'Parent',
     );
-    row.push(getParentStatus(item) === 'active' ? 'Active' : 'Inactive');
+    row.push(getParentPaymentLabel(item));
     row.push(formatDate(item.createdAt));
 
     return row;
   });
 
-  // Add headers based on visibility
   if (showEmail) tableColumn.push('Email');
   if (showPhone) tableColumn.push('Phone');
   if (showAddress) tableColumn.push('Address');
@@ -258,13 +281,12 @@ export const exportParentsToExcel = <T extends ExtendedTableRecord>(
       obj.Phone = item.phone ? formatPhoneNumber(item.phone) : 'N/A';
     if (showAddress) obj.Address = fmtAddr(item.address, addrShow) || 'N/A';
 
-    // Always show these core fields
     obj.Type = item.isCoach
       ? 'Coach'
       : item.type === 'guardian'
         ? 'Guardian'
         : 'Parent';
-    obj.Status = getParentStatus(item) === 'active' ? 'Active' : 'Inactive';
+    obj.Status = getParentPaymentLabel(item);
     obj['Date Joined'] = formatDate(item.createdAt);
 
     return obj;
@@ -403,8 +425,6 @@ export const getParentTableColumns = ({
   onDeleteSuccess,
   visibleFields = [],
 }: ParentTableColumnsProps): TableProps<ExtendedTableRecord>['columns'] => {
-  // No length===0 fallback — if visibleFields is empty the caller hasn't loaded
-  // config yet; columns are simply not rendered until fields arrive.
   const isFieldVisible = (fieldName: string): boolean =>
     visibleFields.includes(fieldName);
 
@@ -645,28 +665,31 @@ export const getParentTableColumns = ({
       },
     },
 
+    // ─── Payment Status — now uses getParentPaymentLabel ────────────────
     {
       title: 'Payment Status',
       key: 'status',
       render: (_: unknown, record: ExtendedTableRecord) => {
-        const status = record.status;
+        const label = getParentPaymentLabel(record);
+
         const badgeColor =
-          status === 'Active'
+          label === 'All Paid'
             ? 'success'
-            : status === 'Pending Payment'
-              ? 'warning'
-              : 'danger';
+            : label === 'Inactive'
+              ? 'danger'
+              : 'warning';
+
         return (
           <span
             className={`badge badge-soft-${badgeColor} d-inline-flex align-items-center`}
           >
             <i className={`ti ti-circle-filled fs-5 me-1 text-${badgeColor}`} />
-            {status}
+            {label}
           </span>
         );
       },
       sorter: (a: ExtendedTableRecord, b: ExtendedTableRecord) =>
-        (a.status || '').localeCompare(b.status || ''),
+        getParentPaymentLabel(a).localeCompare(getParentPaymentLabel(b)),
     },
 
     {
@@ -734,66 +757,6 @@ export const getParentTableColumns = ({
                   )}
                 </div>
               );
-              {
-                /* Dropdown Menu - Preserved for future use */
-              }
-              {
-                /* <div className='dropdown'>
-                    <Link
-                      to='#'
-                      className='btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0'
-                      data-bs-toggle='dropdown'
-                      aria-expanded='false'
-                    >
-                      <i className='ti ti-dots-vertical fs-14' />
-                    </Link>
-                    <ul className='dropdown-menu dropdown-menu-right p-3'>
-                      <li>
-                        <div
-                          className='dropdown-item rounded-1 cursor-pointer'
-                          onClick={() => handleParentClick(targetRecord)}
-                        >
-                          <i className='ti ti-menu me-2' />
-                          View
-                        </div>
-                      </li>
-                      <li>
-                        <div
-                          className='dropdown-item rounded-1 cursor-pointer'
-                          onClick={() => handleEditClick?.(record)}
-                        >
-                          <i className='ti ti-edit me-2' />
-                          Edit
-                        </div>
-                      </li>
-                      {canDelete && (
-                        <li>
-                          <div
-                            className='dropdown-item rounded-1 cursor-pointer text-danger'
-                            onClick={() =>
-                              showDeleteConfirm(
-                                {
-                                  _id: targetRecord._id,
-                                  fullName: targetRecord.fullName,
-                                  email: targetRecord.email,
-                                  parentId: targetRecord.parentId,
-                                  type: targetRecord.type,
-                                  isCoach: targetRecord.isCoach,
-                                },
-                                {
-                                  onDeleteSuccess: onDeleteSuccess,
-                                },
-                              )
-                            }
-                          >
-                            <i className='ti ti-trash me-2' />
-                            Delete
-                          </div>
-                        </li>
-                      )}
-                    </ul>
-                  </div> */
-              }
             },
           },
         ]
