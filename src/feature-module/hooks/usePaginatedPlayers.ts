@@ -1,7 +1,6 @@
 // hooks/usePaginatedPlayers.ts
 import { useMemo, useRef } from 'react';
 import { usePaginatedData } from './usePaginatedData';
-import { getPlayerStatus } from '../../utils/season';
 import { formatGrade, calculateAge } from '../../utils/playerUtils';
 
 export interface PlayerFilters {
@@ -16,8 +15,34 @@ export interface PlayerFilters {
   sort?: string;
   dateFrom?: string;
   dateTo?: string;
-  loadAll?: boolean; // Add this flag
+  loadAll?: boolean;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SAME RULE used everywhere else in the app:
+//   all seasons paid  → "All Paid"
+//   some paid         → "N/M Paid"
+//   none paid         → "No Payments"
+//   no seasons        → "Inactive"
+// ─────────────────────────────────────────────────────────────────────────────
+const getPlayerPaymentLabel = (player: any): string => {
+  const seasons: any[] = Array.isArray(player?.seasons) ? player.seasons : [];
+
+  if (seasons.length === 0) {
+    if (player?.paymentComplete === true || player?.paymentStatus === 'paid') {
+      return 'All Paid';
+    }
+    return 'Inactive';
+  }
+
+  const paidCount = seasons.filter(
+    (s: any) => s.paymentStatus === 'paid' || s.paymentComplete === true,
+  ).length;
+
+  if (paidCount === seasons.length) return 'All Paid';
+  if (paidCount > 0) return `${paidCount}/${seasons.length} Paid`;
+  return 'No Payments';
+};
 
 export const usePaginatedPlayers = (
   filters: PlayerFilters = {},
@@ -27,7 +52,6 @@ export const usePaginatedPlayers = (
   renderCount.current += 1;
 
   const stableFilters = useMemo(() => {
-    console.log(`🔄 [${renderCount.current}] Building stable filters`, filters);
     const clean: Record<string, any> = {};
 
     if (filters.search?.trim()) clean.search = filters.search.trim();
@@ -40,7 +64,9 @@ export const usePaginatedPlayers = (
     ) {
       clean.age = filters.age;
     }
-    if (filters.status) clean.status = filters.status;
+    // NOTE: status is intentionally NOT sent to the API.
+    // The API doesn't understand our seasons-based labels, so filtering
+    // happens client-side after the data loads.
     if (filters.school?.trim()) clean.school = filters.school.trim();
     if (filters.season?.trim()) clean.season = filters.season.trim();
     if (filters.year && !isNaN(filters.year)) clean.year = filters.year;
@@ -48,10 +74,8 @@ export const usePaginatedPlayers = (
     if (filters.dateFrom?.trim()) clean.dateFrom = filters.dateFrom.trim();
     if (filters.dateTo?.trim()) clean.dateTo = filters.dateTo.trim();
 
-    // IMPORTANT: Add loadAll to the filters
     if (filters.loadAll) {
-      clean.loadAll = 'true'; // Convert to string for URL params
-      console.log('📊 loadAll=true added to filters');
+      clean.loadAll = 'true';
     }
 
     return clean;
@@ -60,24 +84,16 @@ export const usePaginatedPlayers = (
     filters.gender,
     filters.grade,
     filters.age,
-    filters.status,
     filters.school,
     filters.season,
     filters.year,
     filters.sort,
     filters.dateFrom,
     filters.dateTo,
-    filters.loadAll, // Add to dependencies
+    filters.loadAll,
   ]);
 
-  // Log the pageSize being used
   const effectivePageSize = filters.loadAll ? 0 : pageSize;
-  console.log(
-    '📊 Effective pageSize:',
-    effectivePageSize,
-    'loadAll:',
-    filters.loadAll,
-  );
 
   const result = usePaginatedData<any>({
     endpoint: '/players/paginated',
@@ -89,17 +105,12 @@ export const usePaginatedPlayers = (
   });
 
   const transformedData = useMemo(() => {
-    console.log(
-      `🔄 [${renderCount.current}] Transforming player data, count:`,
-      result.data.length,
-    );
-
     return result.data.map((player: any) => {
       const age = player.dob ? calculateAge(player.dob) : 0;
       const formattedGrade = player.grade
         ? formatGrade(Number(player.grade))
         : 'No Grade';
-      const status = getPlayerStatus(player);
+      const status = getPlayerPaymentLabel(player);
 
       return {
         id: player._id,

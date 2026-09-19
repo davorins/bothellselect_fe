@@ -89,7 +89,7 @@ const getAvatarUrl = (
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SAME RULE as PlayerTableColumns / PlayerSidebar / ParentTableColumns:
+// SAME RULE as PlayerTableColumns / PlayerSidebar / PlayerList:
 //   all seasons paid  → "All Paid"
 //   some paid         → "N/M Paid"
 //   none paid         → "No Payments"
@@ -112,6 +112,17 @@ const getPlayerPaymentLabel = (player: any): string => {
   if (paidCount === seasons.length) return 'All Paid';
   if (paidCount > 0) return `${paidCount}/${seasons.length} Paid`;
   return 'No Payments';
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Status filter — used in both paginated and non-paginated views
+// ─────────────────────────────────────────────────────────────────────────────
+const matchesStatusFilter = (status: string, filterValue: string): boolean => {
+  if (filterValue === 'All Paid') return status === 'All Paid';
+  if (filterValue === 'Pending Payment')
+    return status !== 'All Paid' && status !== 'Inactive';
+  if (filterValue === 'Inactive') return status === 'Inactive';
+  return status === filterValue;
 };
 
 const PlayerGrid = () => {
@@ -214,6 +225,7 @@ const PlayerGrid = () => {
     [],
   );
 
+  // ── Filters sent to hook — status is NOT included ────────────────────────
   const buildHookFilters = useCallback((): PlayerFiltersType => {
     let dateFrom: string | undefined;
     let dateTo: string | undefined;
@@ -235,7 +247,7 @@ const PlayerGrid = () => {
       gender: localFilters.genderFilter || undefined,
       grade: localFilters.gradeFilter || undefined,
       age: localFilters.ageFilter ?? undefined,
-      status: localFilters.statusFilter || undefined,
+      // status intentionally omitted — handled client-side
       school: localFilters.schoolFilter || undefined,
       season: localFilters.seasonParam || undefined,
       year: localFilters.yearParam
@@ -250,7 +262,6 @@ const PlayerGrid = () => {
     localFilters.genderFilter,
     localFilters.gradeFilter,
     localFilters.ageFilter,
-    localFilters.statusFilter,
     localFilters.schoolFilter,
     localFilters.seasonParam,
     localFilters.yearParam,
@@ -350,9 +361,7 @@ const PlayerGrid = () => {
         grade: gradeValue,
         aauNumber: player?.aauNumber || 'N/A',
         healthConcerns: player?.healthConcerns || 'None',
-        // ─── REPLACED: was player?.status || getPlayerStatus(player) || 'Inactive' ───
         status: getPlayerPaymentLabel(player),
-        // ─────────────────────────────────────────────────────────────────────────
         paymentStatus: player?.paymentStatus || 'pending',
         paymentComplete: player?.paymentComplete || false,
         registrationYear: player?.registrationYear || new Date().getFullYear(),
@@ -373,42 +382,43 @@ const PlayerGrid = () => {
     });
   }, [players, userPlayersList]);
 
+  // ── Filter — status ALWAYS runs client-side ──────────────────────────────
   const filteredPlayers = useMemo((): ExtendedPlayer[] => {
     let filtered = enhancedPlayers;
+
+    // Status filter — runs in every view
+    if (localFilters.statusFilter) {
+      const f = localFilters.statusFilter;
+      filtered = filtered.filter((p) => matchesStatusFilter(p.status, f));
+    }
+
     const isPaginatedView =
       currentUser?.role === 'admin' ||
       (currentUser?.isCoach && activeTab === 'all-players');
 
     if (!isPaginatedView) {
-      if (localFilters.nameFilter)
+      if (localFilters.nameFilter) {
         filtered = filtered.filter((p) =>
           p.name
             ?.toLowerCase()
             .includes(localFilters.nameFilter!.toLowerCase()),
         );
-      if (localFilters.genderFilter)
+      }
+      if (localFilters.genderFilter) {
         filtered = filtered.filter(
           (p) => p.gender === localFilters.genderFilter,
         );
-      if (localFilters.gradeFilter)
-        filtered = filtered.filter((p) => p.class === localFilters.gradeFilter);
-      if (localFilters.statusFilter) {
-        const filterVal = localFilters.statusFilter;
-        filtered = filtered.filter((p) => {
-          if (filterVal === 'Active') return p.status === 'All Paid';
-          if (filterVal === 'Pending Payment') {
-            return p.status !== 'All Paid' && p.status !== 'Inactive';
-          }
-          if (filterVal === 'Inactive') return p.status === 'Inactive';
-          return p.status === filterVal;
-        });
       }
-      if (localFilters.schoolFilter)
+      if (localFilters.gradeFilter) {
+        filtered = filtered.filter((p) => p.class === localFilters.gradeFilter);
+      }
+      if (localFilters.schoolFilter) {
         filtered = filtered.filter((p) =>
           p.section
             ?.toLowerCase()
             .includes(localFilters.schoolFilter!.toLowerCase()),
         );
+      }
     }
 
     return filtered;
@@ -758,14 +768,12 @@ const PlayerGrid = () => {
 
         <div className='row'>
           {playersToDisplay.map((player) => {
-            // ─── UPDATED: switch on new label set ─────────────────────
             const statusColor =
               player.status === 'All Paid'
                 ? 'success'
                 : player.status === 'Inactive'
                   ? 'danger'
                   : 'warning';
-            // ─────────────────────────────────────────────────────────
 
             const showEdit =
               currentUser?.role === 'admin' ||

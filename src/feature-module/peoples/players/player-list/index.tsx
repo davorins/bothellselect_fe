@@ -31,7 +31,6 @@ import { all_routes } from '../../../router/all_routes';
 import { Moment } from 'moment';
 import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 import { debounce } from 'lodash';
-import { getPlayerStatus } from '../../../../utils/season';
 import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
 import '../../player-parent-list-mobile.css';
 
@@ -73,6 +72,36 @@ interface ExtendedPlayer extends PlayerTableData {
 
 const { TabPane } = Tabs;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SAME RULE used everywhere else in the app.
+// ─────────────────────────────────────────────────────────────────────────────
+const getPlayerPaymentLabel = (player: any): string => {
+  const seasons: any[] = Array.isArray(player?.seasons) ? player.seasons : [];
+
+  if (seasons.length === 0) {
+    if (player?.paymentComplete === true || player?.paymentStatus === 'paid') {
+      return 'All Paid';
+    }
+    return 'Inactive';
+  }
+
+  const paidCount = seasons.filter(
+    (s: any) => s.paymentStatus === 'paid' || s.paymentComplete === true,
+  ).length;
+
+  if (paidCount === seasons.length) return 'All Paid';
+  if (paidCount > 0) return `${paidCount}/${seasons.length} Paid`;
+  return 'No Payments';
+};
+
+const matchesStatusFilter = (status: string, filterValue: string): boolean => {
+  if (filterValue === 'All Paid') return status === 'All Paid';
+  if (filterValue === 'Pending Payment')
+    return status !== 'All Paid' && status !== 'Inactive';
+  if (filterValue === 'Inactive') return status === 'Inactive';
+  return status === filterValue;
+};
+
 const PlayerList = () => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -85,7 +114,6 @@ const PlayerList = () => {
 
   const { handlePlayerClick } = usePlayerActions();
 
-  // ── Dynamic fields ─────────────────────────────────────────────────────────
   const { getVisibleFields: getPlayerVisibleFields } = useDynamicFormFields(
     'player',
     { registrationYear: new Date().getFullYear() },
@@ -96,14 +124,12 @@ const PlayerList = () => {
     return fields.map((f) => f.fieldName);
   }, [getPlayerVisibleFields]);
 
-  // ── State for regular users ────────────────────────────────────────────────
   const [userPlayersList, setUserPlayersList] = useState<PlayerData[]>([]);
   const [allPlayersList, setAllPlayersList] = useState<PlayerData[]>([]);
   const [userPlayersLoading, setUserPlayersLoading] = useState(false);
   const [allPlayersLoading, setAllPlayersLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('my-players');
 
-  // ── Filter state ───────────────────────────────────────────────────────────
   const [localFilters, setLocalFilters] = useState<PlayerFilterParams>(() => ({
     nameFilter: '',
     genderFilter: null,
@@ -123,7 +149,6 @@ const PlayerList = () => {
   const [tableLoading, setTableLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  // ── Load user's own players ────────────────────────────────────────────────
   useEffect(() => {
     const loadUserPlayers = async () => {
       const parentId = localStorage.getItem('parentId');
@@ -142,7 +167,6 @@ const PlayerList = () => {
     loadUserPlayers();
   }, [fetchParentPlayers]);
 
-  // ── Load all players for coaches ───────────────────────────────────────────
   useEffect(() => {
     const loadAllPlayers = async () => {
       if (currentUser?.role === 'admin' || currentUser?.isCoach) {
@@ -161,7 +185,6 @@ const PlayerList = () => {
     loadAllPlayers();
   }, [currentUser?.role, currentUser?.isCoach, fetchAllPlayers]);
 
-  // ── Debounced filter change ────────────────────────────────────────────────
   const debouncedFilterChange = useMemo(
     () =>
       debounce((newFilters: Partial<PlayerFilterParams>) => {
@@ -213,7 +236,7 @@ const PlayerList = () => {
     setCurrentPage(1);
   }, []);
 
-  // ── Build filters for the hook ────────────────────────────────────────────
+  // ── Filters sent to hook — status is NOT included ────────────────────────
   const buildHookFilters = useCallback((): PlayerFiltersType => {
     let dateFrom: string | undefined;
     let dateTo: string | undefined;
@@ -235,7 +258,6 @@ const PlayerList = () => {
       gender: localFilters.genderFilter || undefined,
       grade: localFilters.gradeFilter || undefined,
       age: localFilters.ageFilter ?? undefined,
-      status: localFilters.statusFilter || undefined,
       school: localFilters.schoolFilter || undefined,
       season: localFilters.seasonParam || undefined,
       year: localFilters.yearParam
@@ -250,7 +272,6 @@ const PlayerList = () => {
     localFilters.genderFilter,
     localFilters.gradeFilter,
     localFilters.ageFilter,
-    localFilters.statusFilter,
     localFilters.schoolFilter,
     localFilters.seasonParam,
     localFilters.yearParam,
@@ -259,24 +280,21 @@ const PlayerList = () => {
     localFilters.dateRange?.[1]?.valueOf(),
   ]);
 
-  // ── Paginated data ─────────────────────────────────────────────────────────
   const shouldUsePagination =
     currentUser?.role === 'admin' || currentUser?.isCoach;
   const hookFilters = buildHookFilters();
 
+  // ── Fetch EVERYTHING when paginated. Client-side filters + paging below. ──
   const {
     data: paginatedPlayers,
     loading: paginatedLoading,
     error: paginatedError,
-    pagination,
     refresh,
-    goToPage,
   } = usePaginatedPlayers(
-    shouldUsePagination ? hookFilters : {},
-    shouldUsePagination ? pageSize : 10,
+    shouldUsePagination ? { ...hookFilters, loadAll: true } : {},
+    shouldUsePagination ? 0 : 10,
   );
 
-  // ── Determine which players to show ───────────────────────────────────────
   const getPlayersForCurrentView = (): PlayerData[] => {
     if (currentUser?.role === 'admin') return paginatedPlayers || [];
 
@@ -310,7 +328,6 @@ const PlayerList = () => {
   const loading = getLoadingState();
   const error = currentUser?.role === 'admin' ? paginatedError : null;
 
-  // ── Transform to PlayerTableData format ───────────────────────────────────
   const enhancedPlayers = useMemo((): ExtendedPlayer[] => {
     return (players || []).map((player: PlayerData) => {
       const playerId = player?._id || player?.id || '';
@@ -352,7 +369,7 @@ const PlayerList = () => {
         grade: gradeValue,
         aauNumber: player?.aauNumber || 'N/A',
         healthConcerns: player?.healthConcerns || 'None',
-        status: player?.status || 'Inactive',
+        status: getPlayerPaymentLabel(player),
         paymentStatus: player?.paymentStatus || 'pending',
         paymentComplete: player?.paymentComplete || false,
         registrationYear: player?.registrationYear || new Date().getFullYear(),
@@ -373,65 +390,49 @@ const PlayerList = () => {
     });
   }, [players, userPlayersList]);
 
-  // ── Client-side filtering ─────────────────────────────────────────────────
+  // ── Client-side filter — runs for every view (paginated or not) ──────────
   const filteredPlayers = useMemo((): ExtendedPlayer[] => {
     let filtered = enhancedPlayers;
-    const isPaginatedView =
-      currentUser?.role === 'admin' ||
-      (currentUser?.isCoach && activeTab === 'all-players');
 
-    if (!isPaginatedView) {
-      if (localFilters.nameFilter) {
-        filtered = filtered.filter((p) =>
-          p.name
-            ?.toLowerCase()
-            .includes(localFilters.nameFilter!.toLowerCase()),
-        );
-      }
-      if (localFilters.genderFilter) {
-        filtered = filtered.filter(
-          (p) => p.gender === localFilters.genderFilter,
-        );
-      }
-      if (localFilters.gradeFilter) {
-        filtered = filtered.filter((p) => p.class === localFilters.gradeFilter);
-      }
-      if (localFilters.statusFilter) {
-        filtered = filtered.filter(
-          (p) => p.status === localFilters.statusFilter,
-        );
-      }
-      if (localFilters.schoolFilter) {
-        filtered = filtered.filter((p) =>
-          p.section
-            ?.toLowerCase()
-            .includes(localFilters.schoolFilter!.toLowerCase()),
-        );
-      }
+    if (localFilters.nameFilter) {
+      filtered = filtered.filter((p) =>
+        p.name?.toLowerCase().includes(localFilters.nameFilter!.toLowerCase()),
+      );
+    }
+    if (localFilters.genderFilter) {
+      filtered = filtered.filter((p) => p.gender === localFilters.genderFilter);
+    }
+    if (localFilters.gradeFilter) {
+      filtered = filtered.filter((p) => p.class === localFilters.gradeFilter);
+    }
+    if (localFilters.statusFilter) {
+      const f = localFilters.statusFilter;
+      filtered = filtered.filter((p) => matchesStatusFilter(p.status, f));
+    }
+    if (localFilters.schoolFilter) {
+      filtered = filtered.filter((p) =>
+        p.section
+          ?.toLowerCase()
+          .includes(localFilters.schoolFilter!.toLowerCase()),
+      );
     }
 
     return filtered;
-  }, [
-    enhancedPlayers,
-    localFilters,
-    currentUser?.role,
-    currentUser?.isCoach,
-    activeTab,
-  ]);
+  }, [enhancedPlayers, localFilters]);
 
-  const dataSource = useMemo((): ExtendedPlayer[] => {
-    let sorted = [...filteredPlayers];
+  // ── Client-side sort ────────────────────────────────────────────────────
+  const sortedPlayers = useMemo((): ExtendedPlayer[] => {
+    const sorted = [...filteredPlayers];
 
     if (localSortOrder === 'asc')
       sorted.sort((a, b) => a.name.localeCompare(b.name));
     else if (localSortOrder === 'desc')
       sorted.sort((a, b) => b.name.localeCompare(a.name));
-
-    if (localSortOrder === 'recentlyViewed') {
+    else if (localSortOrder === 'recentlyViewed') {
       const recentlyViewed: string[] = JSON.parse(
         localStorage.getItem('recentlyViewed') || '[]',
       );
-      sorted = [...sorted].sort((a, b) => {
+      sorted.sort((a, b) => {
         const aIdx = recentlyViewed.indexOf(String(a.id));
         const bIdx = recentlyViewed.indexOf(String(b.id));
         if (aIdx === -1 && bIdx === -1) return 0;
@@ -441,44 +442,25 @@ const PlayerList = () => {
       });
     }
 
-    const isPaginatedView =
-      currentUser?.role === 'admin' ||
-      (currentUser?.isCoach && activeTab === 'all-players');
-
-    if (!isPaginatedView && pageSize) {
-      const start = (currentPage - 1) * pageSize;
-      return sorted.slice(start, start + pageSize);
-    }
-
     return sorted;
-  }, [
-    filteredPlayers,
-    localSortOrder,
-    currentPage,
-    pageSize,
-    currentUser?.role,
-    currentUser?.isCoach,
-    activeTab,
-  ]);
+  }, [filteredPlayers, localSortOrder]);
+
+  // ── Client-side pagination of the filtered+sorted set ───────────────────
+  const dataSource = useMemo((): ExtendedPlayer[] => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedPlayers.slice(start, start + pageSize);
+  }, [sortedPlayers, currentPage, pageSize]);
 
   const totalCount = useMemo((): number => {
-    const isPaginatedView =
-      currentUser?.role === 'admin' ||
-      (currentUser?.isCoach && activeTab === 'all-players');
-    if (isPaginatedView && pagination) return pagination.total;
-    return filteredPlayers.length;
-  }, [
-    filteredPlayers.length,
-    pagination,
-    currentUser?.role,
-    currentUser?.isCoach,
-    activeTab,
-  ]);
+    return sortedPlayers.length;
+  }, [sortedPlayers.length]);
 
   const statusSummary = useMemo(() => {
-    const active = enhancedPlayers.filter((p) => p.status === 'Active').length;
+    const active = enhancedPlayers.filter(
+      (p) => p.status === 'All Paid',
+    ).length;
     const pending = enhancedPlayers.filter(
-      (p) => p.status === 'Pending Payment',
+      (p) => p.status !== 'All Paid' && p.status !== 'Inactive',
     ).length;
     const inactive = enhancedPlayers.filter(
       (p) => p.status === 'Inactive',
@@ -486,7 +468,6 @@ const PlayerList = () => {
     return { active, pending, inactive, total: enhancedPlayers.length };
   }, [enhancedPlayers]);
 
-  // ── Columns — depend on actions, role, AND dynamic field names ────────────
   const columns = useMemo(() => {
     try {
       const cols = getPlayerTableColumns({
@@ -514,7 +495,6 @@ const PlayerList = () => {
     playerVisibleFieldNames,
   ]);
 
-  // ── Grid URL ──────────────────────────────────────────────────────────────
   const getGridUrl = useCallback(() => {
     const params = new URLSearchParams();
     if (localFilters.schoolFilter)
@@ -530,69 +510,30 @@ const PlayerList = () => {
     localFilters.yearParam,
   ]);
 
-  // ── Callbacks ──────────────────────────────────────────────────────────────
+  // ── Pagination — client-side, no API call ────────────────────────────────
   const handleTableChange = useCallback(
     (newPagination: any) => {
-      const isPaginatedView =
-        currentUser?.role === 'admin' ||
-        (currentUser?.isCoach && activeTab === 'all-players');
-
-      if (!isPaginatedView) {
-        setTableLoading(true);
-        setCurrentPage(newPagination.current);
-        if (newPagination.pageSize !== pageSize) {
-          setPageSize(newPagination.pageSize);
-          setCurrentPage(1);
-        }
-        setTimeout(() => setTableLoading(false), 300);
-        return;
-      }
-
       setTableLoading(true);
-      const newPageSize = newPagination.pageSize;
-      const newPage = newPagination.current;
-
-      if (newPageSize !== pageSize) {
-        setPageSize(newPageSize);
-        if (goToPage) goToPage(1);
+      setCurrentPage(newPagination.current);
+      if (newPagination.pageSize !== pageSize) {
+        setPageSize(newPagination.pageSize);
         setCurrentPage(1);
-      } else {
-        if (goToPage) goToPage(newPage);
-        setCurrentPage(newPage);
       }
-
       setTimeout(() => setTableLoading(false), 300);
     },
-    [goToPage, pageSize, currentUser?.role, currentUser?.isCoach, activeTab],
+    [pageSize],
   );
 
   const handleRefresh = useCallback(() => {
-    if (
-      currentUser?.role === 'admin' ||
-      (currentUser?.isCoach && activeTab === 'all-players')
-    ) {
-      if (refresh) refresh();
-    } else {
-      const parentId = localStorage.getItem('parentId');
-      if (parentId) fetchParentPlayers(parentId).then(setUserPlayersList);
-      if (currentUser?.isCoach) fetchAllPlayers().then(setAllPlayersList);
-    }
+    if (refresh) refresh();
     message.success('Refreshing players...');
-  }, [
-    currentUser?.role,
-    currentUser?.isCoach,
-    activeTab,
-    refresh,
-    fetchParentPlayers,
-    fetchAllPlayers,
-  ]);
+  }, [refresh]);
 
   const handleTabChange = useCallback((tab: string) => {
     setActiveTab(tab);
     setCurrentPage(1);
   }, []);
 
-  // ── Effects ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (error) {
       setApiError(error);
@@ -610,7 +551,6 @@ const PlayerList = () => {
     }));
   }, [seasonParam, yearParam, schoolParam]);
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   if (loading && players.length === 0 && !currentUser?.isCoach) {
     return (
       <div className='page-wrapper player-list-page'>
