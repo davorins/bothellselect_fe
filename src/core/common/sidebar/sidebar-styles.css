@@ -42,7 +42,6 @@
 .sidebar {
   width: 240px;
   overflow-x: hidden;
-  transition: width 0.25s ease;
 }
 
 .sidebar-inner {
@@ -56,33 +55,20 @@
 #sidebar .sidebar-link {
   width: 100%;
   box-sizing: border-box;
-
   display: flex;
   align-items: center;
-
   min-height: 42px;
   padding: 10px 16px;
-
   border: 0;
   border-radius: 6px;
   background: transparent;
-
   overflow: hidden;
-
   color: #6b7280 !important;
   font-weight: 500 !important;
   text-decoration: none;
-
   font: inherit;
   text-align: left;
-
   cursor: pointer;
-
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
-    padding 0.25s ease,
-    justify-content 0.25s ease;
 }
 
 #sidebar .sidebar-link:hover {
@@ -105,18 +91,12 @@
 
 .sidebar-link .menu-icon {
   flex: 0 0 20px;
-
   width: 20px;
   margin-right: 12px;
-
   font-size: 18px;
   line-height: 1;
-
   text-align: center;
-
   color: inherit;
-
-  transition: margin 0.25s ease;
 }
 
 /* =========================================================
@@ -136,24 +116,26 @@
    ========================================================= */
 
 #sidebar .sidebar-link .menu-label {
-  display: inline !important;
+  display: inline-block !important; /* force override of template's display:none */
   flex: 1 1 auto;
   min-width: 0;
   max-width: 200px;
+  margin: 0; /* keep consistent */
 
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 
   opacity: 1;
+  /* transition both properties so they stay in sync with the sidebar width */
+  transition:
+    opacity 0.25s ease,
+    max-width 0.25s ease,
+    margin 0.25s ease;
 
   font-weight: inherit !important;
   color: inherit !important;
   font-size: inherit !important;
-
-  transition:
-    opacity 0.25s ease,
-    max-width 0.25s ease;
 }
 
 /* =========================================================
@@ -236,9 +218,10 @@
   max-width: 0 !important;
   margin: 0 !important;
   pointer-events: none;
+  /* display stays inline-block so the transition can run */
 }
 
-/* Center icons in mini mode */
+/* Keep the icon-centred layout you already have */
 #sidebar.mini-sidebar .sidebar-link {
   justify-content: center !important;
   padding: 12px !important;
@@ -248,6 +231,11 @@
 #sidebar.mini-sidebar .sidebar-link .menu-icon {
   margin-right: 0 !important;
   font-size: 20px;
+}
+
+/* Submenu badges in mini mode – labels stay hidden */
+#sidebar.mini-sidebar .sidebar-submenu .menu-label {
+  display: none !important; /* intentional for the small icon badges */
 }
 
 /* ---------------------------------------------------------
