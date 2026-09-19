@@ -1,6 +1,12 @@
 import { TableRecord } from './types';
 
-export type StatusType = 'Active' | 'Inactive' | 'Pending Payment';
+export type StatusType =
+  | 'Active'
+  | 'Inactive'
+  | 'Pending Payment'
+  | 'All Paid'
+  | 'No Payments'
+  | `${number}/${number} Paid`;
 
 export interface ExtendedTableRecord extends TableRecord {
   type: 'parent' | 'guardian' | 'coach';

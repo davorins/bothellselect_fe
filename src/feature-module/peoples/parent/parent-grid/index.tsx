@@ -28,7 +28,7 @@ import {
 import { showDeleteConfirm } from '../../../components/modals/DeleteConfirmModal';
 import { message } from 'antd';
 import { debounce } from 'lodash';
-import { ExtendedTableRecord } from '../../../../types/table.types';
+import { StatusType, ExtendedTableRecord } from '../../../../types/table.types';
 import { useActiveSeasonEvents } from '../../../../context/SeasonEventsContext';
 import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
 import { formatPhoneNumber } from '../../../../utils/phone';
@@ -44,7 +44,7 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 //   some seasons paid  → "N/M Paid"
 //   no seasons paid    → "No Payments"
 // ─────────────────────────────────────────────────────────────────────────────
-const getParentPaymentLabel = (parent: any): string => {
+const getParentPaymentLabel = (parent: any): StatusType => {
   if (parent?.isCoach) return 'All Paid';
 
   const players: any[] = parent?.players || [];
@@ -65,7 +65,7 @@ const getParentPaymentLabel = (parent: any): string => {
   const total = allSeasons.length;
 
   if (paidCount === total) return 'All Paid';
-  if (paidCount > 0) return `${paidCount}/${total} Paid`;
+  if (paidCount > 0) return `${paidCount}/${total} Paid` as StatusType;
   return 'No Payments';
 };
 
