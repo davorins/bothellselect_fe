@@ -382,6 +382,11 @@ const PlayerGrid = () => {
     });
   }, [players, userPlayersList]);
 
+  const normalizeGrade = (g: string | number | undefined | null): string => {
+    if (g === undefined || g === null) return '';
+    return String(g).replace(/\D/g, '');
+  };
+
   // ── Filter — status ALWAYS runs client-side ──────────────────────────────
   const filteredPlayers = useMemo((): ExtendedPlayer[] => {
     let filtered = enhancedPlayers;
@@ -410,7 +415,12 @@ const PlayerGrid = () => {
         );
       }
       if (localFilters.gradeFilter) {
-        filtered = filtered.filter((p) => p.class === localFilters.gradeFilter);
+        const target = normalizeGrade(localFilters.gradeFilter);
+        filtered = filtered.filter(
+          (p) =>
+            normalizeGrade(p.class) === target ||
+            normalizeGrade(p.grade) === target,
+        );
       }
       if (localFilters.schoolFilter) {
         filtered = filtered.filter((p) =>

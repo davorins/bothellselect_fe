@@ -390,6 +390,11 @@ const PlayerList = () => {
     });
   }, [players, userPlayersList]);
 
+  const normalizeGrade = (g: string | number | undefined | null): string => {
+    if (g === undefined || g === null) return '';
+    return String(g).replace(/\D/g, '');
+  };
+
   // ── Client-side filter — runs for every view (paginated or not) ──────────
   const filteredPlayers = useMemo((): ExtendedPlayer[] => {
     let filtered = enhancedPlayers;
@@ -403,7 +408,12 @@ const PlayerList = () => {
       filtered = filtered.filter((p) => p.gender === localFilters.genderFilter);
     }
     if (localFilters.gradeFilter) {
-      filtered = filtered.filter((p) => p.class === localFilters.gradeFilter);
+      const target = normalizeGrade(localFilters.gradeFilter);
+      filtered = filtered.filter(
+        (p) =>
+          normalizeGrade(p.class) === target ||
+          normalizeGrade(p.grade) === target,
+      );
     }
     if (localFilters.statusFilter) {
       const f = localFilters.statusFilter;
