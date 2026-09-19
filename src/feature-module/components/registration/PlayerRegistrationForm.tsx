@@ -710,7 +710,7 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   // ── Render success ────────────────────────────────────────────────────────────
 
   const renderSuccessMessage = () => {
-    const registeredPlayers =
+    const registeredPlayers: Player[] =
       localSavedPlayers.length > 0 ? localSavedPlayers : userPlayers || [];
 
     // Remove duplicates based on _id if needed (safety measure)

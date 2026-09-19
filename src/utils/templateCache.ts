@@ -1,3 +1,4 @@
+// utils/templateCache.ts
 import { emailTemplateService } from '../services/emailTemplateService';
 import { EmailTemplate } from '../types/types';
 
@@ -17,12 +18,12 @@ class TemplateCache {
   }
 
   static async getTemplatesByCategory(
-    category: string
+    category: string,
   ): Promise<EmailTemplate[]> {
     try {
       await this.checkCache();
       return Array.from(this.cache.values()).filter(
-        (t: EmailTemplate) => t.category === category && t.status
+        (t: EmailTemplate) => t.category === category && t.status,
       );
     } catch (error) {
       console.error('Cache error:', error);
@@ -47,9 +48,11 @@ class TemplateCache {
   private static async refreshCache(): Promise<void> {
     try {
       const templates: EmailTemplate[] =
-        await emailTemplateService.getAllActiveTemplates();
+        await emailTemplateService.getAllActive();
       this.cache.clear();
-      templates.forEach((t: EmailTemplate) => this.cache.set(t._id, t));
+      templates.forEach((t: EmailTemplate) => {
+        if (t._id) this.cache.set(t._id, t);
+      });
       this.lastUpdated = Date.now();
     } catch (error) {
       console.error('Cache refresh failed:', error);

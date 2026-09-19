@@ -36,10 +36,8 @@ const CoachList = () => {
   const { currentUser } = useAuth();
   const { handleCoachClick } = useCoachActions();
 
-  // ── Dynamic fields ─────────────────────────────────────────────────────────
-  // Use 'parent' type since coaches are stored as parents with isCoach=true
   const { getVisibleFields: getCoachVisibleFields } = useDynamicFormFields(
-    'parent', // Changed from 'coach' to 'parent'
+    'parent',
     { registrationYear: new Date().getFullYear() },
   );
 
@@ -48,7 +46,6 @@ const CoachList = () => {
     return fields.map((f) => f.fieldName);
   }, [getCoachVisibleFields]);
 
-  // ── Filter state ───────────────────────────────────────────────────────────
   const [filters, setFilters] = useState<CoachFilterParams>({
     nameFilter: '',
     emailFilter: '',
@@ -63,7 +60,7 @@ const CoachList = () => {
   const [tableLoading, setTableLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  // ── Hook filters ───────────────────────────────────────────────────────────
+  // ── Server-side filters — status omitted (client-side only) ─────────────
   const hookFilters = useMemo(() => {
     let dateFrom: string | undefined;
     let dateTo: string | undefined;
@@ -86,7 +83,6 @@ const CoachList = () => {
       name: filters.nameFilter || undefined,
       email: filters.emailFilter || undefined,
       phone: filters.phoneFilter || undefined,
-      status: filters.statusFilter || undefined,
       aauNumber: filters.aauNumberFilter || undefined,
       sort: sortOrder || undefined,
       dateFrom,
@@ -96,7 +92,6 @@ const CoachList = () => {
     filters.nameFilter,
     filters.emailFilter,
     filters.phoneFilter,
-    filters.statusFilter,
     filters.aauNumberFilter,
     sortOrder,
     filters.dateRange?.[0]?.valueOf(),
@@ -112,7 +107,14 @@ const CoachList = () => {
     goToPage,
   } = useCoachData(hookFilters, pageSize);
 
-  // ── Debounced filter change ────────────────────────────────────────────────
+  // ── Client-side status filter (coaches are always Active) ──────────────
+  const filteredCoaches = useMemo(() => {
+    if (!filters.statusFilter) return coaches;
+    if (filters.statusFilter === 'Active') return coaches;
+    // Coaches are always Active — Inactive / Certified have no matches
+    return [];
+  }, [coaches, filters.statusFilter]);
+
   const debouncedFilterChange = useMemo(
     () =>
       debounce((newFilters: Partial<CoachFilterParams>) => {
@@ -182,7 +184,6 @@ const CoachList = () => {
     message.success('Refreshing coaches...');
   }, [refresh]);
 
-  // ── Effects ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (error) {
       setApiError(error);
@@ -191,24 +192,22 @@ const CoachList = () => {
     }
   }, [error]);
 
-  // ── Columns — depend on both actions AND dynamic field names ───────────────
   const columns = useMemo(
     () =>
       getCoachTableColumns(
         handleCoachClick,
         currentUser?.role,
         handleRefresh,
-        coachVisibleFieldNames, // Changed from visibleFieldNames
+        coachVisibleFieldNames,
       ),
     [
       handleCoachClick,
       currentUser?.role,
       handleRefresh,
       coachVisibleFieldNames,
-    ], // Changed dependency
+    ],
   );
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   if (loading && coaches.length === 0) {
     return (
       <div className='page-wrapper parent-list-page'>
@@ -341,14 +340,14 @@ const CoachList = () => {
             )}
 
             <Table
-              dataSource={coaches}
+              dataSource={filteredCoaches}
               columns={columns}
               rowKey='_id'
               loading={tableLoading || (loading && coaches.length === 0)}
               pagination={{
                 current: pagination.page,
                 pageSize: pagination.limit,
-                total: pagination.total,
+                total: filteredCoaches.length,
                 showSizeChanger: true,
                 pageSizeOptions: ['10', '25', '50', '100'],
               }}

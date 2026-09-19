@@ -36,7 +36,6 @@ const CoachGrid = () => {
   const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
   const { currentUser } = useAuth();
 
-  // ── Dynamic fields ─────────────────────────────────────────────────────────
   const { getVisibleFields: getParentVisibleFields } = useDynamicFormFields(
     'parent',
     { registrationYear: new Date().getFullYear() },
@@ -50,7 +49,6 @@ const CoachGrid = () => {
   const hasField = (name: string) =>
     parentVisibleFields.some((f) => f.fieldName === name);
 
-  // ── Filter state ───────────────────────────────────────────────────────────
   const [filters, setFilters] = useState<CoachFilterParams>({
     nameFilter: '',
     emailFilter: '',
@@ -66,12 +64,12 @@ const CoachGrid = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
+  // ── Server-side filters — status omitted ────────────────────────────────
   const hookFilters = useMemo(() => {
     return {
       name: filters.nameFilter || undefined,
       email: filters.emailFilter || undefined,
       phone: filters.phoneFilter || undefined,
-      status: filters.statusFilter || undefined,
       aauNumber: filters.aauNumberFilter || undefined,
       sort: sortOrder || undefined,
     };
@@ -79,7 +77,6 @@ const CoachGrid = () => {
     filters.nameFilter,
     filters.emailFilter,
     filters.phoneFilter,
-    filters.statusFilter,
     filters.aauNumberFilter,
     sortOrder,
   ]);
@@ -92,6 +89,13 @@ const CoachGrid = () => {
   } = useCoachData(hookFilters, 50);
 
   const { handleCoachClick } = useCoachActions();
+
+  // ── Client-side status filter (coaches are always Active) ───────────────
+  const filteredCoaches = useMemo(() => {
+    if (!filters.statusFilter) return coaches;
+    if (filters.statusFilter === 'Active') return coaches;
+    return [];
+  }, [coaches, filters.statusFilter]);
 
   const debouncedFilterChange = useMemo(
     () =>
@@ -153,11 +157,13 @@ const CoachGrid = () => {
   }, [error]);
 
   const coachesToDisplay = useMemo(() => {
-    return coaches.slice(0, displayCount);
-  }, [coaches, displayCount]);
+    return filteredCoaches.slice(0, displayCount);
+  }, [filteredCoaches, displayCount]);
 
   const handleLoadMore = () => {
-    setDisplayCount((prev) => Math.min(prev + itemsPerLoad, coaches.length));
+    setDisplayCount((prev) =>
+      Math.min(prev + itemsPerLoad, filteredCoaches.length),
+    );
   };
 
   if (loading && coaches.length === 0) return <LoadingSpinner />;
@@ -373,14 +379,12 @@ const CoachGrid = () => {
                               </span>
                             </h5>
                             <p className='mb-1'>
-                              {/* Email — gated */}
                               {hasField('email') && coach.email && (
                                 <>
                                   {coach.email}
                                   <br />
                                 </>
                               )}
-                              {/* Phone — gated + formatted */}
                               {hasField('phone') && coach.phone && (
                                 <small>{formatPhoneNumber(coach.phone)}</small>
                               )}
@@ -389,7 +393,6 @@ const CoachGrid = () => {
                               <small className='text-muted'>
                                 Players: {coach.players?.length || 0}
                               </small>
-                              {/* AAU always shown for coaches since they are always coaches */}
                               {coach.aauNumber && coach.aauNumber !== 'N/A' && (
                                 <small className='text-muted'>
                                   AAU: {coach.aauNumber}
@@ -405,11 +408,11 @@ const CoachGrid = () => {
               );
             })}
 
-            {displayCount < coaches.length && (
+            {displayCount < filteredCoaches.length && (
               <div className='col-md-12 text-center'>
                 <button className='btn btn-primary' onClick={handleLoadMore}>
                   <i className='ti ti-loader-3 me-2' />
-                  Load More ({displayCount} of {coaches.length})
+                  Load More ({displayCount} of {filteredCoaches.length})
                 </button>
               </div>
             )}

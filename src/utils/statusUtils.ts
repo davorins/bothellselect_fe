@@ -78,7 +78,6 @@ export function getPlayerStatusFromEvents(
 
   let hasAnyReg = false;
   let hasPaid = false;
-  let hasUnpaid = false;
 
   for (const event of activeEvents) {
     const reg = getPlayerRegForEvent(player, event);
@@ -86,8 +85,6 @@ export function getPlayerStatusFromEvents(
       hasAnyReg = true;
       if (reg.paymentComplete === true) {
         hasPaid = true;
-      } else {
-        hasUnpaid = true;
       }
     }
   }
