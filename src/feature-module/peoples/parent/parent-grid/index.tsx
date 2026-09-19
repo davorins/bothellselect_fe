@@ -28,16 +28,13 @@ import {
 import { showDeleteConfirm } from '../../../components/modals/DeleteConfirmModal';
 import { message } from 'antd';
 import { debounce } from 'lodash';
-import { StatusType, ExtendedTableRecord } from '../../../../types/table.types';
+import { ExtendedTableRecord, StatusType } from '../../../../types/table.types';
 import { useActiveSeasonEvents } from '../../../../context/SeasonEventsContext';
 import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
 import { formatPhoneNumber } from '../../../../utils/phone';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-
 // ─────────────────────────────────────────────────────────────────────────────
-// SAME RULE as ParentTableColumns.getParentPaymentLabel and
-// ParentSidebar.getParentPaymentLabel:
+// SAME RULE as ParentTableColumns / ParentSidebar / ParentList:
 //   coach              → "All Paid"
 //   no players         → "Inactive"
 //   every season paid  → "All Paid"
@@ -67,6 +64,14 @@ const getParentPaymentLabel = (parent: any): StatusType => {
   if (paidCount === total) return 'All Paid';
   if (paidCount > 0) return `${paidCount}/${total} Paid` as StatusType;
   return 'No Payments';
+};
+
+const matchesStatusFilter = (status: string, filterValue: string): boolean => {
+  if (filterValue === 'All Paid') return status === 'All Paid';
+  if (filterValue === 'Pending Payment')
+    return status !== 'All Paid' && status !== 'Inactive';
+  if (filterValue === 'Inactive') return status === 'Inactive';
+  return status === filterValue;
 };
 
 const ParentGrid = () => {
@@ -106,6 +111,7 @@ const ParentGrid = () => {
   const [displayCount, setDisplayCount] = useState(12);
   const itemsPerLoad = 12;
 
+  // ── Server-side filters — status omitted ────────────────────────────────
   const hookFilters = useMemo(() => {
     let dateFrom: string | undefined;
     let dateTo: string | undefined;
@@ -128,7 +134,6 @@ const ParentGrid = () => {
       name: filters.nameFilter || undefined,
       email: filters.emailFilter || undefined,
       phone: filters.phoneFilter || undefined,
-      status: filters.statusFilter || undefined,
       role: filters.roleFilter || undefined,
       dateFrom,
       dateTo,
@@ -137,7 +142,6 @@ const ParentGrid = () => {
     filters.nameFilter,
     filters.emailFilter,
     filters.phoneFilter,
-    filters.statusFilter,
     filters.roleFilter,
     filters.dateRange?.[0]?.valueOf(),
     filters.dateRange?.[1]?.valueOf(),
@@ -163,22 +167,29 @@ const ParentGrid = () => {
     }
   }, [error]);
 
-  const enhancedParentData = useMemo(() => {
-    return allParentData.map((item: ExtendedTableRecord) => {
-      const statusLabel = getParentPaymentLabel(item);
-      return {
-        ...item,
-        status: statusLabel,
-      };
-    });
+  // ── Enhanced data with recomputed status ────────────────────────────────
+  const enhancedParentData = useMemo((): ExtendedTableRecord[] => {
+    return allParentData.map((item: ExtendedTableRecord) => ({
+      ...item,
+      status: getParentPaymentLabel(item),
+    }));
   }, [allParentData]);
 
-  const sortedData = useMemo(() => {
-    if (!sortOrder || enhancedParentData.length === 0)
-      return enhancedParentData;
-    return sortParentData(enhancedParentData, sortOrder);
-  }, [enhancedParentData, sortOrder]);
+  // ── Client-side status filter ───────────────────────────────────────────
+  const filteredParentData = useMemo(() => {
+    if (!filters.statusFilter) return enhancedParentData;
+    const f = filters.statusFilter;
+    return enhancedParentData.filter((p) => matchesStatusFilter(p.status, f));
+  }, [enhancedParentData, filters.statusFilter]);
 
+  // ── Client-side sort ────────────────────────────────────────────────────
+  const sortedData = useMemo(() => {
+    if (!sortOrder || filteredParentData.length === 0)
+      return filteredParentData;
+    return sortParentData(filteredParentData, sortOrder);
+  }, [filteredParentData, sortOrder]);
+
+  // ── Client-side "load more" pagination ──────────────────────────────────
   const parentsToDisplay = useMemo(() => {
     return sortedData.slice(0, displayCount);
   }, [sortedData, displayCount]);
@@ -422,14 +433,12 @@ const ParentGrid = () => {
               const status = item.status;
               const paymentStatus = item.paymentStatus;
 
-              // ─── UPDATED: switch on the new label set ────────────────
               const badgeColor =
                 status === 'All Paid'
                   ? 'success'
                   : status === 'Inactive'
                     ? 'danger'
                     : 'warning';
-              // ─────────────────────────────────────────────────────────
 
               return (
                 <div

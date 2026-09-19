@@ -29,13 +29,51 @@ import { useAuth } from '../../../../context/AuthContext';
 import { all_routes } from '../../../router/all_routes';
 import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 import { debounce } from 'lodash';
-import axios from 'axios';
-import { ExtendedTableRecord } from '../../../../types/table.types';
+import { ExtendedTableRecord, StatusType } from '../../../../types/table.types';
 import { useActiveSeasonEvents } from '../../../../context/SeasonEventsContext';
 import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
 import '../../player-parent-list-mobile.css';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+// ─────────────────────────────────────────────────────────────────────────────
+// SAME RULE as ParentTableColumns / ParentSidebar / ParentGrid:
+//   coach              → "All Paid"
+//   no players         → "Inactive"
+//   every season paid  → "All Paid"
+//   some seasons paid  → "N/M Paid"
+//   no seasons paid    → "No Payments"
+// ─────────────────────────────────────────────────────────────────────────────
+const getParentPaymentLabel = (parent: any): StatusType => {
+  if (parent?.isCoach) return 'All Paid';
+
+  const players: any[] = parent?.players || [];
+  if (players.length === 0) return 'Inactive';
+
+  const allSeasons: any[] = players.flatMap((p: any) => p.seasons || []);
+
+  if (allSeasons.length === 0) {
+    const anyPaid = players.some(
+      (p: any) => p.paymentComplete === true || p.paymentStatus === 'paid',
+    );
+    return anyPaid ? 'All Paid' : 'Inactive';
+  }
+
+  const paidCount = allSeasons.filter(
+    (s: any) => s.paymentStatus === 'paid' || s.paymentComplete === true,
+  ).length;
+  const total = allSeasons.length;
+
+  if (paidCount === total) return 'All Paid';
+  if (paidCount > 0) return `${paidCount}/${total} Paid` as StatusType;
+  return 'No Payments';
+};
+
+const matchesStatusFilter = (status: string, filterValue: string): boolean => {
+  if (filterValue === 'All Paid') return status === 'All Paid';
+  if (filterValue === 'Pending Payment')
+    return status !== 'All Paid' && status !== 'Inactive';
+  if (filterValue === 'Inactive') return status === 'Inactive';
+  return status === filterValue;
+};
 
 const ParentList = () => {
   const [searchParams] = useSearchParams();
@@ -47,7 +85,6 @@ const ParentList = () => {
   const seasonParam = useMemo(() => searchParams.get('season'), [searchParams]);
   const yearParam = useMemo(() => searchParams.get('year'), [searchParams]);
 
-  // ── Dynamic fields ──────────────────────────────────────────────────────
   const { getVisibleFields: getParentVisibleFields } = useDynamicFormFields(
     'parent',
     { registrationYear: new Date().getFullYear() },
@@ -58,7 +95,6 @@ const ParentList = () => {
     return fields.map((f) => f.fieldName);
   }, [getParentVisibleFields]);
 
-  // ── Filter state ───────────────────────────────────────────────────────────
   const [filters, setFilters] = useState<ParentFilterParams>({
     nameFilter: '',
     emailFilter: '',
@@ -77,7 +113,7 @@ const ParentList = () => {
   const [tableLoading, setTableLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  // ── Fetch all data ─────────────────────────────────────────────────────────
+  // ── Server-side filters — status is NOT sent to the API ─────────────────
   const hookFilters = useMemo(() => {
     let dateFrom: string | undefined;
     let dateTo: string | undefined;
@@ -102,7 +138,6 @@ const ParentList = () => {
       name: filters.nameFilter || undefined,
       email: filters.emailFilter || undefined,
       phone: filters.phoneFilter || undefined,
-      status: filters.statusFilter || undefined,
       role: filters.roleFilter || undefined,
       dateFrom,
       dateTo,
@@ -113,7 +148,6 @@ const ParentList = () => {
     filters.nameFilter,
     filters.emailFilter,
     filters.phoneFilter,
-    filters.statusFilter,
     filters.roleFilter,
     filters.dateRange?.[0]?.valueOf(),
     filters.dateRange?.[1]?.valueOf(),
@@ -123,33 +157,31 @@ const ParentList = () => {
     data: allData,
     loading,
     error,
-    total,
     refresh,
   } = useAllParents(hookFilters, activeEvents);
 
   const { handleParentClick } = useParentActions();
 
-  useEffect(() => {
-    console.log('📊 ParentList Debug:', {
-      totalItems: allData.length,
-      parents: allData.filter(
-        (p: ExtendedTableRecord) => p.type === 'parent' || p.type === 'coach',
-      ).length,
-      guardians: allData.filter(
-        (p: ExtendedTableRecord) => p.type === 'guardian',
-      ).length,
-      loading,
-    });
-  }, [allData, loading]);
+  // ── Recompute status client-side ────────────────────────────────────────
+  const enhancedData = useMemo((): ExtendedTableRecord[] => {
+    return allData.map((item: ExtendedTableRecord) => ({
+      ...item,
+      status: getParentPaymentLabel(item),
+    }));
+  }, [allData]);
 
-  // ── Client-side pagination ────────────────────────────────────────────────
+  // ── Client-side status filter ───────────────────────────────────────────
+  const filteredData = useMemo(() => {
+    if (!filters.statusFilter) return enhancedData;
+    const f = filters.statusFilter;
+    return enhancedData.filter((p) => matchesStatusFilter(p.status, f));
+  }, [enhancedData, filters.statusFilter]);
+
+  // ── Client-side pagination ──────────────────────────────────────────────
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    return allData.slice(start, end);
-  }, [allData, currentPage, pageSize]);
-
-  const totalPages = Math.ceil(allData.length / pageSize);
+    return filteredData.slice(start, start + pageSize);
+  }, [filteredData, currentPage, pageSize]);
 
   const handleTableChange = useCallback(
     (newPagination: any) => {
@@ -169,8 +201,6 @@ const ParentList = () => {
     [pageSize],
   );
 
-  // ── Callbacks ──────────────────────────────────────────────────────────────
-
   const handleRefresh = useCallback(async () => {
     setTableLoading(true);
     try {
@@ -188,17 +218,7 @@ const ParentList = () => {
   const handleEditClick = useCallback(
     async (record: ExtendedTableRecord) => {
       try {
-        console.log('📝 handleEditClick - record:', {
-          _id: record._id,
-          type: record.type,
-          isCoach: record.isCoach,
-          isCoachType: typeof record.isCoach,
-          parentId: record.parentId,
-          fullName: record.fullName,
-        });
-
         if (record.type === 'guardian' && record.parentId) {
-          console.log('→ CASE 1: Guardian');
           navigate(`${all_routes.editParent}/${record.parentId}`, {
             state: {
               parent: { _id: record.parentId },
@@ -219,17 +239,10 @@ const ParentList = () => {
 
         // eslint-disable-next-line eqeqeq
         if (record.type === 'coach' || record.isCoach == true) {
-          console.log(
-            '→ CASE 2: Coach, navigating to:',
-            `${all_routes.editCoach}/${record._id}`,
-          );
-
           if (!record._id) {
-            console.error('❌ Coach record missing _id');
             message.error('Cannot edit coach: missing ID');
             return;
           }
-
           navigate(`${all_routes.editCoach}/${record._id}`, {
             state: {
               parent: {
@@ -248,13 +261,7 @@ const ParentList = () => {
           return;
         }
 
-        console.log(
-          '→ CASE 3: Parent, navigating to:',
-          `${all_routes.editParent}/${record._id}`,
-        );
-
         if (!record._id) {
-          console.error('❌ Parent record missing _id');
           message.error('Cannot edit parent: missing ID');
           return;
         }
@@ -324,20 +331,9 @@ const ParentList = () => {
     }
   }, [loading]);
 
-  // ── Derived values ─────────────────────────────────────────────────────────
-
   const sortedParents = useMemo(() => {
     if (!sortOrder || paginatedData.length === 0) return paginatedData;
-    console.log(
-      '🔄 Applying sort:',
-      sortOrder,
-      'to',
-      paginatedData.length,
-      'items',
-    );
-    const sorted = sortParentData(paginatedData, sortOrder);
-    console.log('✅ Sorted result:', sorted.length, 'items');
-    return sorted;
+    return sortParentData(paginatedData, sortOrder);
   }, [paginatedData, sortOrder]);
 
   const dataSource = useMemo(
@@ -375,7 +371,6 @@ const ParentList = () => {
     [handleEditClick],
   );
 
-  // ── Columns — depend on both actions AND dynamic field names ───────────────
   const columns = useMemo(
     () =>
       getParentTableColumns({
@@ -397,8 +392,6 @@ const ParentList = () => {
     ],
   );
 
-  // ── Effects ────────────────────────────────────────────────────────────────
-
   useEffect(() => {
     if (error) {
       setApiError(error);
@@ -412,8 +405,6 @@ const ParentList = () => {
       debouncedFilterChange.cancel();
     };
   }, [debouncedFilterChange]);
-
-  // ── Render ─────────────────────────────────────────────────────────────────
 
   if (loading && allData.length === 0) {
     return (
@@ -566,7 +557,7 @@ const ParentList = () => {
                 pagination={{
                   current: currentPage,
                   pageSize: pageSize,
-                  total: allData.length,
+                  total: filteredData.length,
                   showSizeChanger: true,
                   pageSizeOptions: ['10', '20', '50', '100'],
                 }}
