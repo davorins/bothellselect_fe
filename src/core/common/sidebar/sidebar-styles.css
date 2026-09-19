@@ -269,3 +269,80 @@
   background-color: #f3f4f6;
   border-radius: 4px;
 }
+
+/* =========================================================
+   TOOLTIP PORTAL (mini sidebar)
+   =========================================================
+   Rendered via createPortal into document.body so it can
+   escape the sidebar's overflow:hidden. Positioned with
+   `position: fixed` and coordinates computed from
+   getBoundingClientRect() in React.
+   ========================================================= */
+
+.sidebar-tooltip-portal {
+  position: fixed;
+  z-index: 9999;
+  transform: translateY(-50%);
+
+  padding: 6px 10px;
+  border-radius: 6px;
+
+  background-color: #111827;
+  color: #ffffff;
+
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  animation: sidebar-tooltip-fade 0.12s ease-out;
+}
+
+/* Arrow — default points LEFT toward the icon (tooltip on right side) */
+.sidebar-tooltip-portal::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -4px;
+  transform: translateY(-50%);
+
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-right: 5px solid #111827;
+}
+
+/* Flipped placement: tooltip is on the LEFT of the icon,
+   so arrow points RIGHT */
+.sidebar-tooltip-portal--left {
+  transform: translateY(-50%) translateX(-100%);
+}
+
+.sidebar-tooltip-portal--left::before {
+  left: auto;
+  right: -4px;
+  border-right: none;
+  border-left: 5px solid #111827;
+}
+
+@keyframes sidebar-tooltip-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* =========================================================
+   MINI SIDEBAR - optional visual hint for tooltip triggers
+   =========================================================
+   In mini mode the label is hidden but the button/link still
+   owns the full hit area; nothing extra is strictly required.
+   If you want a subtle affordance, keep this commented out
+   or tweak to taste.
+   ========================================================= */
+
+/* #sidebar.mini-sidebar .sidebar-link { cursor: pointer; } */

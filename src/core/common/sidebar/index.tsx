@@ -47,6 +47,7 @@ interface TooltipState {
   label: string;
   top: number;
   left: number;
+  placement: 'right' | 'left';
 }
 
 /* =========================================================
@@ -57,6 +58,12 @@ const LEVEL_STEP_PX = 30;
 
 const paddingForLevel = (level: number) =>
   BASE_PADDING_PX + LEVEL_STEP_PX * level;
+
+/* =========================================================
+   TOOLTIP MEASUREMENT HELPERS
+   ========================================================= */
+const TOOLTIP_GAP_PX = 10;
+const TOOLTIP_ESTIMATED_WIDTH_PX = 160; // used only for early flip decision
 
 const Sidebar = () => {
   const location = useLocation();
@@ -98,14 +105,57 @@ const Sidebar = () => {
 
     const rect = event.currentTarget.getBoundingClientRect();
 
+    // Decide placement: prefer right, flip to left if it would overflow.
+    const wouldOverflowRight =
+      rect.right + TOOLTIP_GAP_PX + TOOLTIP_ESTIMATED_WIDTH_PX >
+      window.innerWidth;
+
+    const placement: 'right' | 'left' = wouldOverflowRight ? 'left' : 'right';
+
+    const left =
+      placement === 'right'
+        ? rect.right + TOOLTIP_GAP_PX
+        : rect.left - TOOLTIP_GAP_PX;
+
     setTooltip({
       label,
       top: rect.top + rect.height / 2,
-      left: rect.right + 10,
+      left,
+      placement,
     });
   };
 
   const hideTooltip = () => setTooltip(null);
+
+  /* =========================================================
+     SAFETY: hide tooltip whenever we leave mini mode
+     ========================================================= */
+
+  useEffect(() => {
+    if (!isMiniSidebar) {
+      setTooltip(null);
+    }
+  }, [isMiniSidebar]);
+
+  /* =========================================================
+     SAFETY: hide tooltip if the sidebar scrolls or the window
+     resizes while a tooltip is visible (prevents stale
+     positions since tooltip is position: fixed)
+     ========================================================= */
+
+  useEffect(() => {
+    if (!tooltip) return;
+
+    const handle = () => setTooltip(null);
+
+    window.addEventListener('resize', handle);
+    window.addEventListener('scroll', handle, true);
+
+    return () => {
+      window.removeEventListener('resize', handle);
+      window.removeEventListener('scroll', handle, true);
+    };
+  }, [tooltip]);
 
   /* =========================================================
      LINK HELPER
@@ -318,6 +368,7 @@ const Sidebar = () => {
           <li key={key} className='sidebar-menu-item'>
             <button
               type='button'
+              aria-label={item.label}
               className={`sidebar-link submenu-link ${
                 isActive ? 'active' : ''
               } ${isOpen ? 'expanded' : ''}`}
@@ -352,6 +403,7 @@ const Sidebar = () => {
         <li key={key} className='sidebar-menu-item'>
           <Link
             to={link}
+            aria-label={item.label}
             className={`sidebar-link submenu-link ${active ? 'active' : ''}`}
             style={indentStyle}
             onMouseEnter={(e) => showTooltip(e, item.label)}
@@ -396,6 +448,7 @@ const Sidebar = () => {
         <li key={`${mainItem.label}-${index}`} className='sidebar-menu-item'>
           <Link
             to={link}
+            aria-label={mainItem.label}
             className={`sidebar-link ${active ? 'active' : ''}`}
             onMouseEnter={(e) => showTooltip(e, mainItem.label)}
             onMouseLeave={hideTooltip}
@@ -424,6 +477,7 @@ const Sidebar = () => {
       <li key={`${mainItem.label}-${index}`} className='sidebar-menu-item'>
         <button
           type='button'
+          aria-label={mainItem.label}
           className={`sidebar-link sidebar-parent-link ${
             isActive ? 'active' : ''
           } ${isOpen ? 'expanded' : ''}`}
@@ -471,8 +525,9 @@ const Sidebar = () => {
       {tooltip &&
         createPortal(
           <div
-            className='sidebar-tooltip-portal'
+            className={`sidebar-tooltip-portal sidebar-tooltip-portal--${tooltip.placement}`}
             style={{ top: tooltip.top, left: tooltip.left }}
+            role='tooltip'
           >
             {tooltip.label}
           </div>,
