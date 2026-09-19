@@ -53,7 +53,7 @@
    LINKS + BUTTONS
    ========================================================= */
 
-.sidebar-link {
+#sidebar .sidebar-link {
   width: 100%;
   box-sizing: border-box;
 
@@ -69,7 +69,8 @@
 
   overflow: hidden;
 
-  color: #6b7280;
+  color: #6b7280 !important;
+  font-weight: 500 !important;
   text-decoration: none;
 
   font: inherit;
@@ -84,17 +85,17 @@
     justify-content 0.25s ease;
 }
 
-.sidebar-link:hover {
+#sidebar .sidebar-link:hover {
   background-color: #f3f4f6;
-  color: #111827;
+  color: #111827 !important;
 }
 
-.sidebar-link.active {
-  color: #2563eb;
+#sidebar .sidebar-link.active {
+  color: #2563eb !important;
   background-color: #eff6ff;
 }
 
-.sidebar-link.expanded {
+#sidebar .sidebar-link.expanded {
   background-color: #f3f4f6;
 }
 
@@ -120,9 +121,22 @@
 
 /* =========================================================
    LABEL
+   font-weight/color/font-size are forced to `inherit` here
+   because the base template has its own rule targeting
+   `a span` directly (_sidebar.scss:121) which otherwise wins
+   over anything set on .sidebar-link itself - inherit makes
+   this span always match whatever state its parent link is
+   in (rest/hover/active) instead of fighting that rule with
+   a hardcoded value.
+   Transition duration matches .sidebar's own width transition
+   (0.25s ease) on both opacity and max-width so they finish
+   in lockstep with the sidebar narrowing, instead of one
+   property lagging the other and producing a blank "ghost
+   row" mid-toggle.
    ========================================================= */
 
-.sidebar-link .menu-label {
+#sidebar .sidebar-link .menu-label {
+  display: inline !important;
   flex: 1 1 auto;
   min-width: 0;
   max-width: 200px;
@@ -133,8 +147,12 @@
 
   opacity: 1;
 
+  font-weight: inherit !important;
+  color: inherit !important;
+  font-size: inherit !important;
+
   transition:
-    opacity 0.15s ease,
+    opacity 0.25s ease,
     max-width 0.25s ease;
 }
 
@@ -163,11 +181,10 @@
 
 /* =========================================================
    SUBMENUS (expanded sidebar)
-   Indentation is NOT set here - it's set per-item inline in
-   Sidebar.tsx (paddingForLevel), since depth is dynamic and
-   can go arbitrarily deep. This container only spaces rows
-   out vertically. No border/guide-line, no horizontal
-   margin/padding - the mockups don't show a rail.
+   Indentation is set per-item inline in Sidebar.tsx
+   (paddingForLevel), since depth is dynamic. This container
+   only spaces rows out vertically - no guide-line, no
+   horizontal margin/padding.
    ========================================================= */
 
 .sidebar-submenu {
@@ -194,38 +211,41 @@
 
 /* =========================================================
    MINI SIDEBAR
+   Every rule here is anchored to #sidebar.mini-sidebar (ID +
+   class), not just .sidebar.mini-sidebar (class only). An ID
+   selector always beats a class-only selector regardless of
+   how many classes are chained on, so without the ID here
+   these rules were silently losing to the base #sidebar
+   .sidebar-link / .menu-label rules above - which is exactly
+   why some rows collapsed correctly (nothing in the base
+   rules conflicted yet) while others kept showing their full
+   label text (opacity/max-width lost the specificity fight).
    ========================================================= */
 
-.sidebar.mini-sidebar {
+#sidebar.mini-sidebar {
   width: 70px !important;
-  overflow: visible !important;
 }
 
-.sidebar.mini-sidebar .sidebar-inner {
-  overflow: visible !important;
-}
-
-.sidebar.mini-sidebar .sidebar-root-menu {
+#sidebar.mini-sidebar .sidebar-root-menu {
   width: 70px;
-  overflow: visible;
 }
 
 /* Shrink label to nothing (arrow is simply absent from the DOM here) */
-.sidebar.mini-sidebar .sidebar-link .menu-label {
-  opacity: 0;
-  max-width: 0;
+#sidebar.mini-sidebar .sidebar-link .menu-label {
+  opacity: 0 !important;
+  max-width: 0 !important;
   margin: 0 !important;
   pointer-events: none;
 }
 
 /* Center icons in mini mode */
-.sidebar.mini-sidebar .sidebar-link {
+#sidebar.mini-sidebar .sidebar-link {
   justify-content: center !important;
   padding: 12px !important;
-  min-height: 44px;
+  min-height: 44px !important;
 }
 
-.sidebar.mini-sidebar .sidebar-link .menu-icon {
+#sidebar.mini-sidebar .sidebar-link .menu-icon {
   margin-right: 0 !important;
   font-size: 20px;
 }
@@ -236,7 +256,7 @@
    irrelevant here since labels are hidden anyway
    --------------------------------------------------------- */
 
-.sidebar.mini-sidebar .sidebar-submenu {
+#sidebar.mini-sidebar .sidebar-submenu {
   display: flex !important;
   flex-direction: column;
   align-items: center;
@@ -252,13 +272,13 @@
   padding: 6px 0 !important;
 }
 
-.sidebar.mini-sidebar .sidebar-submenu .sidebar-menu-item {
+#sidebar.mini-sidebar .sidebar-submenu .sidebar-menu-item {
   display: flex;
   justify-content: center;
   width: 100%;
 }
 
-.sidebar.mini-sidebar .sidebar-submenu .sidebar-link {
+#sidebar.mini-sidebar .sidebar-submenu .sidebar-link {
   width: 36px !important;
   height: 36px !important;
   min-height: 36px !important;
@@ -274,97 +294,39 @@
   border: 1px solid #e5e7eb;
 }
 
-.sidebar.mini-sidebar .sidebar-submenu .sidebar-link:hover {
+#sidebar.mini-sidebar .sidebar-submenu .sidebar-link:hover {
   background-color: #f3f4f6;
   border-color: #d1d5db;
 }
 
-.sidebar.mini-sidebar .sidebar-submenu .sidebar-link.active {
+#sidebar.mini-sidebar .sidebar-submenu .sidebar-link.active {
   background-color: none;
   border-color: #2563eb;
   color: #ffffff;
 }
 
-.sidebar.mini-sidebar .sidebar-submenu .menu-icon {
+#sidebar.mini-sidebar .sidebar-submenu .menu-icon {
   flex: 0 0 auto;
   width: auto;
   margin-right: 0 !important;
   font-size: 16px;
 }
 
-.sidebar.mini-sidebar .sidebar-submenu .menu-label {
+#sidebar.mini-sidebar .sidebar-submenu .menu-label {
   display: none !important;
-}
-
-/* =========================================================
-   TOOLTIPS via data-tooltip attribute
-   This is the ONLY thing that shows a label in mini mode -
-   there is no separate hover-expand behavior anymore.
-   ========================================================= */
-
-.sidebar.mini-sidebar .sidebar-link {
-  position: relative;
-}
-
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  left: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%) translateX(-4px);
-  background: #2c2416;
-  color: #fff;
-  font-family: 'Jost', sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  white-space: nowrap;
-  padding: 6px 10px;
-  border-radius: 6px;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 0.15s ease,
-    transform 0.15s ease;
-  transition-delay: 0.1s;
-  z-index: 1100;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-}
-
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  left: calc(100% + 4px);
-  top: 50%;
-  transform: translateY(-50%);
-  border: 5px solid transparent;
-  border-right-color: #2c2416;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.15s ease;
-  transition-delay: 0.1s;
-  z-index: 1100;
-}
-
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::after,
-.sidebar.mini-sidebar .sidebar-link[data-tooltip]:hover::before {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(-50%) translateX(0);
 }
 
 /* ---------------------------------------------------------
    Active and hover states in mini mode (top-level items)
    --------------------------------------------------------- */
 
-.sidebar.mini-sidebar .sidebar-link.active {
+#sidebar.mini-sidebar .sidebar-link.active {
   background-color: #eff6ff;
   color: #2563eb;
   border-radius: 4px;
 }
 
-.sidebar.mini-sidebar .sidebar-link:hover {
+#sidebar.mini-sidebar .sidebar-link:hover {
   background-color: #f3f4f6;
   border-radius: 4px;
 }

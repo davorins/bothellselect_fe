@@ -51,10 +51,6 @@ interface TooltipState {
 
 /* =========================================================
    INDENTATION
-   Each nested level gets pushed further right than its parent.
-   level 1 (first submenu under a top-level item) = BASE_PADDING_PX + LEVEL_STEP_PX
-   level 2 (a submenu inside that submenu)         = BASE_PADDING_PX + LEVEL_STEP_PX * 2
-   ...and so on, however deep the data goes.
    ========================================================= */
 const BASE_PADDING_PX = 16;
 const LEVEL_STEP_PX = 30;
@@ -84,8 +80,6 @@ const Sidebar = () => {
      ========================================================= */
 
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
-  // Keyed by full ancestor path (e.g. "Registration>Event Configurations"),
-  // not just label, so two branches can't collide or accidentally share state.
   const [expandedSubmenus, setExpandedSubmenus] = useState<string[]>([]);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
@@ -96,17 +90,9 @@ const Sidebar = () => {
   const isMiniSidebar = miniSidebar && !expandMenu;
 
   /* =========================================================
-     TOOLTIP (rendered via portal - see below)
+     TOOLTIP (rendered via portal)
      ========================================================= */
 
-  /*
-   * The sidebar's scroll container (react-custom-scrollbars-2) clips
-   * any child positioned outside its own bounds, so a CSS-only
-   * ::after tooltip anchored to a link inside it can never be seen
-   * once it extends past the sidebar's edge. Rendering the tooltip
-   * through a portal straight to document.body sidesteps that
-   * clipping entirely.
-   */
   const showTooltip = (event: React.MouseEvent<HTMLElement>, label: string) => {
     if (!isMiniSidebar) return;
 
@@ -137,8 +123,6 @@ const Sidebar = () => {
 
   const normalizedData = useMemo<MainMenuItem[]>(() => {
     return SidebarData.map((item: any) => {
-      // Convert a top-level item that only has a link
-      // into the same structure as the other menu items.
       if (item.link && !item.submenuItems) {
         return {
           ...item,
@@ -164,14 +148,13 @@ const Sidebar = () => {
   }, []);
 
   /* =========================================================
-     ROLE FILTERING (recursive - filters at every depth)
+     ROLE FILTERING
      ========================================================= */
 
   const filterByRole = (items: SubmenuItem[], role: string): SubmenuItem[] => {
     return items
       .filter((item) => !item.roles || item.roles.includes(role))
       .map((item) => {
-        // Special Parents behavior
         if (item.label === 'Parents') {
           const isAdminView = role === 'admin';
 
@@ -218,13 +201,12 @@ const Sidebar = () => {
       if (previous.includes(label)) {
         return [];
       }
-
       return [label];
     });
   };
 
   /* =========================================================
-     SUBMENU TOGGLE (any depth, keyed by full ancestor path)
+     SUBMENU TOGGLE
      ========================================================= */
 
   const toggleSubmenu = (key: string) => {
@@ -260,9 +242,7 @@ const Sidebar = () => {
   };
 
   /* =========================================================
-     COLLECT KEYS OF SUBMENU BRANCHES CONTAINING THE ACTIVE ROUTE
-     (so on navigation, every ancestor level auto-opens, not just
-     the top one)
+     COLLECT ACTIVE SUBMENU KEYS
      ========================================================= */
 
   const collectActiveKeys = (
@@ -283,7 +263,7 @@ const Sidebar = () => {
   };
 
   /* =========================================================
-     AUTO OPEN ACTIVE TOP LEVEL MENU + ACTIVE NESTED BRANCHES
+     AUTO OPEN ACTIVE BRANCHES
      ========================================================= */
 
   useEffect(() => {
@@ -308,10 +288,14 @@ const Sidebar = () => {
 
   /* =========================================================
      RECURSIVE SUBMENU RENDERER
-     Handles any depth: a leaf item (has a link, no children)
-     renders as a <Link>; a branch item (has submenuItems)
-     renders as a toggle <button> whose children recurse at
-     level + 1, indented one step further than their parent.
+     Toggle items with children are plain <button> elements -
+     no href, no navigation semantics, no preventDefault/
+     onKeyDown workarounds needed. A native <button> already
+     activates on Enter/Space and never matches an `a`-scoped
+     selector in the base template's stylesheet, which is
+     exactly what was causing these items to pick up the
+     template's bold/anchor-specific styling once they'd been
+     switched to <Link>.
      ========================================================= */
 
   const renderSubmenuItems = (
@@ -395,13 +379,11 @@ const Sidebar = () => {
       return null;
     }
 
-    // If there is only one direct child, make the parent itself a direct link
     const isDirectMenu =
       children.length === 1 && !!children[0].link && !children[0].submenuItems;
 
     if (isDirectMenu) {
       const child = children[0];
-
       const link = getItemLink(child);
 
       if (!link) {
@@ -432,11 +414,10 @@ const Sidebar = () => {
     }
 
     /* -------------------------------------------------------
-       Regular parent menu
+       Regular parent menu - plain <button>, no href
        ------------------------------------------------------- */
 
     const isOpen = expandedMenus.includes(mainItem.label);
-
     const isActive = hasActiveChild(mainItem);
 
     return (
