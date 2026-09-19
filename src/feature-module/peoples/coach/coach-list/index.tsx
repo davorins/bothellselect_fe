@@ -60,7 +60,7 @@ const CoachList = () => {
   const [tableLoading, setTableLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  // ── Server-side filters — status omitted (client-side only) ─────────────
+  // ── Server-side filters — status omitted (coaches are always Active) ────
   const hookFilters = useMemo(() => {
     let dateFrom: string | undefined;
     let dateTo: string | undefined;
@@ -107,7 +107,7 @@ const CoachList = () => {
     goToPage,
   } = useCoachData(hookFilters, pageSize);
 
-  // ── Client-side status filter (coaches are always Active) ──────────────
+  // ── Client-side status filter (runs on the current page only) ──────────
   const filteredCoaches = useMemo(() => {
     if (!filters.statusFilter) return coaches;
     if (filters.statusFilter === 'Active') return coaches;
@@ -347,7 +347,7 @@ const CoachList = () => {
               pagination={{
                 current: pagination.page,
                 pageSize: pagination.limit,
-                total: filteredCoaches.length,
+                total: pagination.total, // server total — pagination footer shows all pages
                 showSizeChanger: true,
                 pageSizeOptions: ['10', '25', '50', '100'],
               }}

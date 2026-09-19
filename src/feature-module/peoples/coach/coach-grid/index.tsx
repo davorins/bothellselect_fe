@@ -90,7 +90,7 @@ const CoachGrid = () => {
 
   const { handleCoachClick } = useCoachActions();
 
-  // ── Client-side status filter (coaches are always Active) ───────────────
+  // ── Client-side status filter ───────────────────────────────────────────
   const filteredCoaches = useMemo(() => {
     if (!filters.statusFilter) return coaches;
     if (filters.statusFilter === 'Active') return coaches;
@@ -300,7 +300,6 @@ const CoachGrid = () => {
                         <span>Coach</span>
                       </div>
                       <div className='d-flex align-items-center'>
-                        {/* Coaches are always Active */}
                         <span className='badge badge-soft-success d-inline-flex align-items-center me-1'>
                           <i className='ti ti-circle-filled fs-5 me-1 text-success' />
                           Active

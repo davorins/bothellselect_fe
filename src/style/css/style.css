@@ -1719,9 +1719,6 @@ ul .btn-primary:not(:disabled):not(.disabled).active:focus {
   .mini-sidebar .chat-user {
     display: none !important;
   }
-  .mini-sidebar .user-menu .badge {
-    display: flex !important;
-  }
   .mini-sidebar.expand-menu .menu-arrow {
     display: block !important;
   }
