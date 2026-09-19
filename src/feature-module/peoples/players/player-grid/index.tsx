@@ -32,7 +32,6 @@ import { Moment } from 'moment';
 import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 import { debounce } from 'lodash';
 import { message, Tabs } from 'antd';
-import { getPlayerStatus } from '../../../../utils/season';
 import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
 
 const { TabPane } = Tabs;
@@ -89,6 +88,32 @@ const getAvatarUrl = (
   return avatar;
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SAME RULE as PlayerTableColumns / PlayerSidebar / ParentTableColumns:
+//   all seasons paid  → "All Paid"
+//   some paid         → "N/M Paid"
+//   none paid         → "No Payments"
+//   no seasons        → "Inactive"
+// ─────────────────────────────────────────────────────────────────────────────
+const getPlayerPaymentLabel = (player: any): string => {
+  const seasons: any[] = Array.isArray(player?.seasons) ? player.seasons : [];
+
+  if (seasons.length === 0) {
+    if (player?.paymentComplete === true || player?.paymentStatus === 'paid') {
+      return 'All Paid';
+    }
+    return 'Inactive';
+  }
+
+  const paidCount = seasons.filter(
+    (s: any) => s.paymentStatus === 'paid' || s.paymentComplete === true,
+  ).length;
+
+  if (paidCount === seasons.length) return 'All Paid';
+  if (paidCount > 0) return `${paidCount}/${seasons.length} Paid`;
+  return 'No Payments';
+};
+
 const PlayerGrid = () => {
   const routes = all_routes;
   const location = useLocation();
@@ -101,7 +126,6 @@ const PlayerGrid = () => {
   const seasonParam = useMemo(() => searchParams.get('season'), [searchParams]);
   const yearParam = useMemo(() => searchParams.get('year'), [searchParams]);
 
-  // ── Dynamic fields ─────────────────────────────────────────────────────────
   const { getVisibleFields: getPlayerVisibleFields } = useDynamicFormFields(
     'player',
     { registrationYear: new Date().getFullYear() },
@@ -115,7 +139,6 @@ const PlayerGrid = () => {
   const hasField = (name: string) =>
     playerVisibleFields.some((f) => f.fieldName === name);
 
-  // ── State ──────────────────────────────────────────────────────────────────
   const [userPlayersList, setUserPlayersList] = useState<PlayerData[]>([]);
   const [allPlayersList, setAllPlayersList] = useState<PlayerData[]>([]);
   const [userPlayersLoading, setUserPlayersLoading] = useState(false);
@@ -327,7 +350,9 @@ const PlayerGrid = () => {
         grade: gradeValue,
         aauNumber: player?.aauNumber || 'N/A',
         healthConcerns: player?.healthConcerns || 'None',
-        status: player?.status || getPlayerStatus(player) || 'Inactive',
+        // ─── REPLACED: was player?.status || getPlayerStatus(player) || 'Inactive' ───
+        status: getPlayerPaymentLabel(player),
+        // ─────────────────────────────────────────────────────────────────────────
         paymentStatus: player?.paymentStatus || 'pending',
         paymentComplete: player?.paymentComplete || false,
         registrationYear: player?.registrationYear || new Date().getFullYear(),
@@ -367,10 +392,17 @@ const PlayerGrid = () => {
         );
       if (localFilters.gradeFilter)
         filtered = filtered.filter((p) => p.class === localFilters.gradeFilter);
-      if (localFilters.statusFilter)
-        filtered = filtered.filter(
-          (p) => p.status === localFilters.statusFilter,
-        );
+      if (localFilters.statusFilter) {
+        const filterVal = localFilters.statusFilter;
+        filtered = filtered.filter((p) => {
+          if (filterVal === 'Active') return p.status === 'All Paid';
+          if (filterVal === 'Pending Payment') {
+            return p.status !== 'All Paid' && p.status !== 'Inactive';
+          }
+          if (filterVal === 'Inactive') return p.status === 'Inactive';
+          return p.status === filterVal;
+        });
+      }
       if (localFilters.schoolFilter)
         filtered = filtered.filter((p) =>
           p.section
@@ -418,9 +450,11 @@ const PlayerGrid = () => {
   );
 
   const statusSummary = useMemo(() => {
-    const active = enhancedPlayers.filter((p) => p.status === 'Active').length;
+    const active = enhancedPlayers.filter(
+      (p) => p.status === 'All Paid',
+    ).length;
     const pending = enhancedPlayers.filter(
-      (p) => p.status === 'Pending Payment',
+      (p) => p.status !== 'All Paid' && p.status !== 'Inactive',
     ).length;
     const inactive = enhancedPlayers.filter(
       (p) => p.status === 'Inactive',
@@ -724,12 +758,14 @@ const PlayerGrid = () => {
 
         <div className='row'>
           {playersToDisplay.map((player) => {
+            // ─── UPDATED: switch on new label set ─────────────────────
             const statusColor =
-              player.status === 'Active'
+              player.status === 'All Paid'
                 ? 'success'
-                : player.status === 'Pending Payment'
-                  ? 'warning'
-                  : 'danger';
+                : player.status === 'Inactive'
+                  ? 'danger'
+                  : 'warning';
+            // ─────────────────────────────────────────────────────────
 
             const showEdit =
               currentUser?.role === 'admin' ||
@@ -803,19 +839,16 @@ const PlayerGrid = () => {
                             </span>
                           </h5>
                           <p className='mb-1 text-muted small'>
-                            {/* Gender — gated */}
                             {hasField('gender') &&
                               player.gender &&
                               player.gender !== 'N/A' && (
                                 <span className='me-2'>{player.gender}</span>
                               )}
-                            {/* Age derived from dob — gated on dob */}
                             {hasField('dob') && player.age > 0 && (
                               <span className='me-2'>Age {player.age}</span>
                             )}
                           </p>
                           <p className='mb-1 text-muted small'>
-                            {/* School — gated */}
                             {hasField('schoolName') &&
                               player.section &&
                               player.section !== 'No School' && (
@@ -824,7 +857,6 @@ const PlayerGrid = () => {
                                   {player.section}
                                 </span>
                               )}
-                            {/* Grade — gated */}
                             {hasField('grade') &&
                               player.class &&
                               player.class !== 'N/A' && (
@@ -832,7 +864,6 @@ const PlayerGrid = () => {
                               )}
                           </p>
                           <div className='d-flex gap-2 mt-1 flex-wrap'>
-                            {/* AAU — gated */}
                             {hasField('aauNumber') &&
                               player.aauNumber &&
                               player.aauNumber !== 'N/A' && (
@@ -850,7 +881,6 @@ const PlayerGrid = () => {
                         </div>
                       </div>
                     </div>
-                    {/* Inline action buttons — matching parent/coach grid style */}
                     <div className='d-flex align-items-center gap-2'>
                       <button
                         onClick={() => handlePlayerView(player)}

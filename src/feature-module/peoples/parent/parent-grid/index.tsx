@@ -12,11 +12,7 @@ import PredefinedDateRanges from '../../../../core/common/datePicker';
 import { useAuth } from '../../../../context/AuthContext';
 import { useAllParents } from '../../../hooks/useAllParents';
 import { useParentActions } from '../../../hooks/useParentActions';
-import {
-  sortParentData,
-  getParentStatusFromRecord,
-  getPaymentStatusFromRecord,
-} from '../../../../utils/parentUtils';
+import { sortParentData } from '../../../../utils/parentUtils';
 import { ParentFilterParams } from '../../../../types/parentTypes';
 import { ParentListHeader } from '../../../components/Headers/ParentListHeader';
 import { ParentFilters } from '../../../components/Filters/ParentFilters';
@@ -39,6 +35,40 @@ import { formatPhoneNumber } from '../../../../utils/phone';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SAME RULE as ParentTableColumns.getParentPaymentLabel and
+// ParentSidebar.getParentPaymentLabel:
+//   coach              → "All Paid"
+//   no players         → "Inactive"
+//   every season paid  → "All Paid"
+//   some seasons paid  → "N/M Paid"
+//   no seasons paid    → "No Payments"
+// ─────────────────────────────────────────────────────────────────────────────
+const getParentPaymentLabel = (parent: any): string => {
+  if (parent?.isCoach) return 'All Paid';
+
+  const players: any[] = parent?.players || [];
+  if (players.length === 0) return 'Inactive';
+
+  const allSeasons: any[] = players.flatMap((p: any) => p.seasons || []);
+
+  if (allSeasons.length === 0) {
+    const anyPaid = players.some(
+      (p: any) => p.paymentComplete === true || p.paymentStatus === 'paid',
+    );
+    return anyPaid ? 'All Paid' : 'Inactive';
+  }
+
+  const paidCount = allSeasons.filter(
+    (s: any) => s.paymentStatus === 'paid' || s.paymentComplete === true,
+  ).length;
+  const total = allSeasons.length;
+
+  if (paidCount === total) return 'All Paid';
+  if (paidCount > 0) return `${paidCount}/${total} Paid`;
+  return 'No Payments';
+};
+
 const ParentGrid = () => {
   const routes = all_routes;
   const location = useLocation();
@@ -47,7 +77,6 @@ const ParentGrid = () => {
   const { currentUser } = useAuth();
   const { activeEvents } = useActiveSeasonEvents();
 
-  // ── Dynamic fields ──────────────────────────────────────────────────────
   const { getVisibleFields: getParentVisibleFields } = useDynamicFormFields(
     'parent',
     { registrationYear: new Date().getFullYear() },
@@ -61,7 +90,6 @@ const ParentGrid = () => {
   const hasField = (name: string) =>
     parentVisibleFields.some((f) => f.fieldName === name);
 
-  // ── Filter state ───────────────────────────────────────────────────────────
   const [filters, setFilters] = useState<ParentFilterParams>({
     nameFilter: '',
     emailFilter: '',
@@ -128,48 +156,28 @@ const ParentGrid = () => {
   const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('🔍 Sort order changed to:', sortOrder);
-    if (sortOrder === 'recentlyViewed') {
-      const recentlyViewed = JSON.parse(
-        localStorage.getItem('recentlyViewedParents') || '[]',
-      );
-      console.log('📋 Recently viewed from localStorage:', recentlyViewed);
+    if (error) {
+      setApiError(error);
+      const timer = setTimeout(() => setApiError(null), 5000);
+      return () => clearTimeout(timer);
     }
-  }, [sortOrder]);
-
-  useEffect(() => {
-    console.log('🎯 ParentGrid Debug:', {
-      hookFilters,
-      totalItems: allParentData?.length,
-      loading,
-      error,
-      parents: allParentData?.filter(
-        (p: ExtendedTableRecord) => p.type === 'parent' || p.type === 'coach',
-      ).length,
-      guardians: allParentData?.filter(
-        (p: ExtendedTableRecord) => p.type === 'guardian',
-      ).length,
-    });
-  }, [hookFilters, allParentData, loading, error]);
+  }, [error]);
 
   const enhancedParentData = useMemo(() => {
     return allParentData.map((item: ExtendedTableRecord) => {
-      const calculatedStatus = getParentStatusFromRecord(item);
-      const calculatedPaymentStatus = getPaymentStatusFromRecord(item);
+      const statusLabel = getParentPaymentLabel(item);
       return {
         ...item,
-        calculatedStatus,
-        calculatedPaymentStatus,
-        status: item.status || calculatedStatus,
-        paymentStatus: item.paymentStatus || calculatedPaymentStatus,
+        status: statusLabel,
       };
     });
   }, [allParentData]);
 
   const sortedData = useMemo(() => {
-    if (!sortOrder || allParentData.length === 0) return allParentData;
-    return sortParentData(allParentData, sortOrder);
-  }, [allParentData, sortOrder]);
+    if (!sortOrder || enhancedParentData.length === 0)
+      return enhancedParentData;
+    return sortParentData(enhancedParentData, sortOrder);
+  }, [enhancedParentData, sortOrder]);
 
   const parentsToDisplay = useMemo(() => {
     return sortedData.slice(0, displayCount);
@@ -261,38 +269,34 @@ const ParentGrid = () => {
   }, [refresh]);
 
   useEffect(() => {
-    if (error) {
-      setApiError(error);
-      const timer = setTimeout(() => setApiError(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [error]);
-
-  useEffect(() => {
     return () => {
       debouncedFilterChange.cancel();
     };
   }, [debouncedFilterChange]);
 
   const statusSummary = useMemo(() => {
-    const active = allParentData.filter((p) => p.status === 'Active').length;
-    const pending = allParentData.filter(
-      (p) => p.status === 'Pending Payment',
+    const active = enhancedParentData.filter(
+      (p) => p.status === 'All Paid',
     ).length;
-    const inactive = allParentData.filter(
+    const pending = enhancedParentData.filter(
+      (p) => p.status !== 'All Paid' && p.status !== 'Inactive',
+    ).length;
+    const inactive = enhancedParentData.filter(
       (p) => p.status === 'Inactive',
     ).length;
-    const coaches = allParentData.filter((p) => p.isCoach).length;
-    const guardians = allParentData.filter((p) => p.type === 'guardian').length;
+    const coaches = enhancedParentData.filter((p) => p.isCoach).length;
+    const guardians = enhancedParentData.filter(
+      (p) => p.type === 'guardian',
+    ).length;
     return {
       active,
       pending,
       inactive,
       coaches,
       guardians,
-      total: allParentData.length,
+      total: enhancedParentData.length,
     };
-  }, [allParentData]);
+  }, [enhancedParentData]);
 
   if (loading && allParentData.length === 0) return <LoadingSpinner />;
   if (apiError && allParentData.length === 0)
@@ -418,12 +422,14 @@ const ParentGrid = () => {
               const status = item.status;
               const paymentStatus = item.paymentStatus;
 
+              // ─── UPDATED: switch on the new label set ────────────────
               const badgeColor =
-                status === 'Active'
+                status === 'All Paid'
                   ? 'success'
-                  : status === 'Pending Payment'
-                    ? 'warning'
-                    : 'danger';
+                  : status === 'Inactive'
+                    ? 'danger'
+                    : 'warning';
+              // ─────────────────────────────────────────────────────────
 
               return (
                 <div
@@ -579,18 +585,15 @@ const ParentGrid = () => {
                               </span>
                             </h5>
                             <p className='mb-1'>
-                              {/* Email — gated */}
                               {hasField('email') && item.email && (
                                 <>
                                   {item.email}
                                   <br />
                                 </>
                               )}
-                              {/* Phone — gated */}
                               {hasField('phone') && item.phone && (
                                 <small>{formatPhoneNumber(item.phone)}</small>
                               )}
-                              {/* Relationship — always shown for guardians */}
                               {item.type === 'guardian' &&
                                 (item as any).relationship && (
                                   <>
@@ -605,7 +608,6 @@ const ParentGrid = () => {
                               <small className='text-muted'>
                                 Players: {item.players?.length || 0}
                               </small>
-                              {/* AAU — gated on isCoach field or if parent is a coach */}
                               {(hasField('isCoach') || item.isCoach) &&
                                 item.aauNumber &&
                                 item.aauNumber !== 'N/A' && (
