@@ -42,6 +42,7 @@
 .sidebar {
   width: 240px;
   overflow-x: hidden;
+  transition: width 0.25s ease; /* must match label transition */
 }
 
 .sidebar-inner {
@@ -49,7 +50,7 @@
 }
 
 /* =========================================================
-   LINKS + BUTTONS
+   LINKS + BUTTONS  (clean reset – no all:unset)
    ========================================================= */
 
 #sidebar .sidebar-link {
@@ -59,7 +60,7 @@
   align-items: center;
   min-height: 42px;
   padding: 10px 16px;
-  border: 0;
+  border: none !important; /* kills black borders */
   border-radius: 6px;
   background: transparent;
   overflow: hidden;
@@ -69,6 +70,10 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
+  outline: none !important;
+  box-shadow: none !important;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 #sidebar .sidebar-link:hover {
@@ -83,6 +88,7 @@
 
 #sidebar .sidebar-link.expanded {
   background-color: #f3f4f6;
+  border-radius: 6px 6px 0 0;
 }
 
 /* =========================================================
@@ -101,33 +107,19 @@
 
 /* =========================================================
    LABEL
-   font-weight/color/font-size are forced to `inherit` here
-   because the base template has its own rule targeting
-   `a span` directly (_sidebar.scss:121) which otherwise wins
-   over anything set on .sidebar-link itself - inherit makes
-   this span always match whatever state its parent link is
-   in (rest/hover/active) instead of fighting that rule with
-   a hardcoded value.
-   Transition duration matches .sidebar's own width transition
-   (0.25s ease) on both opacity and max-width so they finish
-   in lockstep with the sidebar narrowing, instead of one
-   property lagging the other and producing a blank "ghost
-   row" mid-toggle.
    ========================================================= */
 
 #sidebar .sidebar-link .menu-label {
-  display: inline-block !important; /* force override of template's display:none */
+  display: inline-block !important; /* defeats template a span {display:none} */
   flex: 1 1 auto;
   min-width: 0;
-  max-width: 200px;
-  margin: 0; /* keep consistent */
+  max-width: 180px;
 
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 
   opacity: 1;
-  /* transition both properties so they stay in sync with the sidebar width */
   transition:
     opacity 0.25s ease,
     max-width 0.25s ease,
@@ -136,24 +128,20 @@
   font-weight: inherit !important;
   color: inherit !important;
   font-size: inherit !important;
+  line-height: 1.25;
 }
 
 /* =========================================================
-   ARROW
-   (only ever rendered in the DOM when the sidebar is expanded -
-   see Sidebar.tsx - so no mini-mode override is needed here)
+   ARROW (if you ever re-enable it)
    ========================================================= */
 
 .sidebar-link .menu-arrow {
   flex: 0 0 14px;
   width: 14px;
-
   margin-left: 8px;
-
   font-size: 14px;
   line-height: 1;
   text-align: center;
-
   transition: transform 0.2s ease;
 }
 
@@ -163,18 +151,12 @@
 
 /* =========================================================
    SUBMENUS (expanded sidebar)
-   Indentation is set per-item inline in Sidebar.tsx
-   (paddingForLevel), since depth is dynamic. This container
-   only spaces rows out vertically - no guide-line, no
-   horizontal margin/padding.
    ========================================================= */
 
 .sidebar-submenu {
   list-style: none !important;
-
   margin: 4px 0 8px 0 !important;
   padding: 4px 0 !important;
-
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -182,26 +164,12 @@
 
 .sidebar-submenu li {
   list-style: none !important;
-
   margin: 0 !important;
   padding: 0 !important;
 }
 
-.sidebar-link.expanded {
-  border-radius: 6px 6px 0 0;
-}
-
 /* =========================================================
    MINI SIDEBAR
-   Every rule here is anchored to #sidebar.mini-sidebar (ID +
-   class), not just .sidebar.mini-sidebar (class only). An ID
-   selector always beats a class-only selector regardless of
-   how many classes are chained on, so without the ID here
-   these rules were silently losing to the base #sidebar
-   .sidebar-link / .menu-label rules above - which is exactly
-   why some rows collapsed correctly (nothing in the base
-   rules conflicted yet) while others kept showing their full
-   label text (opacity/max-width lost the specificity fight).
    ========================================================= */
 
 #sidebar.mini-sidebar {
@@ -212,8 +180,10 @@
   width: 70px;
 }
 
-/* Shrink label to nothing (arrow is simply absent from the DOM here) */
-#sidebar.mini-sidebar .sidebar-link .menu-label {
+/* Hide labels with the same transition (works for both <a> and <button>) */
+#sidebar.mini-sidebar .sidebar-link .menu-label,
+#sidebar.mini-sidebar a.sidebar-link .menu-label,
+#sidebar.mini-sidebar button.sidebar-link .menu-label {
   opacity: 0 !important;
   max-width: 0 !important;
   margin: 0 !important;
@@ -221,10 +191,10 @@
   /* display stays inline-block so the transition can run */
 }
 
-/* Keep the icon-centred layout you already have */
+/* Center icons */
 #sidebar.mini-sidebar .sidebar-link {
   justify-content: center !important;
-  padding: 12px !important;
+  padding: 12px 8px !important;
   min-height: 44px !important;
 }
 
@@ -233,29 +203,16 @@
   font-size: 20px;
 }
 
-/* Submenu badges in mini mode – labels stay hidden */
-#sidebar.mini-sidebar .sidebar-submenu .menu-label {
-  display: none !important; /* intentional for the small icon badges */
-}
-
-/* ---------------------------------------------------------
-   Submenu items (all levels) shown as a stack of small,
-   clearly separated icon badges when minimized - depth is
-   irrelevant here since labels are hidden anyway
-   --------------------------------------------------------- */
-
+/* Submenu items become small icon badges */
 #sidebar.mini-sidebar .sidebar-submenu {
   display: flex !important;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-
   position: static !important;
   width: 100%;
-
   background: transparent;
   box-shadow: none;
-
   margin: 6px 0 !important;
   padding: 6px 0 !important;
 }
@@ -272,14 +229,10 @@
   min-height: 36px !important;
   padding: 0 !important;
   margin: 0 !important;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
   border-radius: 8px;
   background-color: #ffffff;
   border: 1px solid #e5e7eb;
+  justify-content: center;
 }
 
 #sidebar.mini-sidebar .sidebar-submenu .sidebar-link:hover {
@@ -288,9 +241,9 @@
 }
 
 #sidebar.mini-sidebar .sidebar-submenu .sidebar-link.active {
-  background-color: none;
+  background-color: #eff6ff;
   border-color: #2563eb;
-  color: #ffffff;
+  color: #2563eb;
 }
 
 #sidebar.mini-sidebar .sidebar-submenu .menu-icon {
@@ -300,14 +253,12 @@
   font-size: 16px;
 }
 
+/* In mini mode the badge labels stay completely hidden */
 #sidebar.mini-sidebar .sidebar-submenu .menu-label {
   display: none !important;
 }
 
-/* ---------------------------------------------------------
-   Active and hover states in mini mode (top-level items)
-   --------------------------------------------------------- */
-
+/* Active / hover for top-level items in mini */
 #sidebar.mini-sidebar .sidebar-link.active {
   background-color: #eff6ff;
   color: #2563eb;
