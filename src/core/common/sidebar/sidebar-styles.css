@@ -336,6 +336,12 @@
   }
 }
 
+@media (min-width: 992px) {
+  .mini-sidebar .user-menu .badge {
+    display: inherit !important;
+  }
+}
+
 /* =========================================================
    MINI SIDEBAR - optional visual hint for tooltip triggers
    =========================================================
