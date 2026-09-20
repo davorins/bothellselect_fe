@@ -257,7 +257,7 @@
 
 @media (max-width: 768px) {
   .ad-gallery-section {
-    padding: 40px 0 30px;
+    display: none !important;
   }
 
   .ad-gallery-section__inner {

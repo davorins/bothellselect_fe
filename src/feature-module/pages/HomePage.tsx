@@ -256,9 +256,10 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         console.error('Failed to fetch gallery ads:', err);
       }
     };
-
-    fetchGalleryAds();
-  }, [parent?.role, authToken, closedGalleryAds]);
+    if (!isMobile) {
+      fetchGalleryAds();
+    }
+  }, [parent?.role, authToken, closedGalleryAds, isMobile]);
 
   const handleCloseGalleryAd = useCallback((adId: string) => {
     setClosedGalleryAds((prev) => ({
@@ -1123,7 +1124,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       </section>
 
       {/* ─── AD GALLERY SECTION ────────────────────────────────────────────── */}
-      {galleryAds.length > 0 && (
+      {!isMobile && galleryAds.length > 0 && (
         <AdGallery
           ads={galleryAds}
           authToken={authToken}
