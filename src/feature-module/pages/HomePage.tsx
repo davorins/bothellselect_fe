@@ -198,6 +198,9 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const videoSectionRef = useRef<HTMLDivElement | null>(null);
   const valueSectionRef = useRef<HTMLDivElement | null>(null);
 
+  const [isGalleryInView, setIsGalleryInView] = useState(false);
+  const adGalleryRef = useRef<HTMLDivElement | null>(null);
+
   const setSectionRef0 = useCallback((el: HTMLDivElement | null) => {
     sectionsRef.current[0] = el;
     videoSectionRef.current = el;
@@ -220,6 +223,35 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         .catch(() => setAuthToken(undefined));
     }
   }, [parent, getAuthToken]);
+
+  useEffect(() => {
+    const el = adGalleryRef.current;
+    if (!el || isMobile) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // "In view" once the gallery occupies enough of the viewport
+        // to feel like the user has arrived at the ads section.
+        setIsGalleryInView(
+          entry.isIntersecting && entry.intersectionRatio > 0.25,
+        );
+      },
+      {
+        threshold: [0, 0.25, 0.5, 0.75, 1],
+        rootMargin: '-10% 0px -10% 0px',
+      },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isMobile, galleryAds.length]);
+
+  useEffect(() => {
+    document.body.classList.toggle('hp-chrome-hidden', isGalleryInView);
+    return () => {
+      document.body.classList.remove('hp-chrome-hidden');
+    };
+  }, [isGalleryInView]);
 
   useEffect(() => {
     const fetchGalleryAds = async () => {
@@ -1125,13 +1157,15 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
 
       {/* ─── AD GALLERY SECTION ────────────────────────────────────────────── */}
       {!isMobile && galleryAds.length > 0 && (
-        <AdGallery
-          ads={galleryAds}
-          authToken={authToken}
-          onCloseAd={handleCloseGalleryAd}
-          onExpandAd={handleExpandGalleryAd}
-          minimizedAds={minimizedGalleryAds}
-        />
+        <div ref={adGalleryRef} className='hp-ad-gallery-anchor'>
+          <AdGallery
+            ads={galleryAds}
+            authToken={authToken}
+            onCloseAd={handleCloseGalleryAd}
+            onExpandAd={handleExpandGalleryAd}
+            minimizedAds={minimizedGalleryAds}
+          />
+        </div>
       )}
 
       {/* ─── TODAY'S EVENTS SECTION ─────────────────────────────────────────── */}

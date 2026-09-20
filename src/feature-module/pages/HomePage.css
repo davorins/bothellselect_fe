@@ -2022,3 +2022,66 @@
     font-size: 1.4rem;
   }
 }
+
+/* ─── Fade chrome when ad gallery is in view ─────────────────────── */
+
+.hp-chrome-hidden header,
+.hp-chrome-hidden .site-header,
+.hp-chrome-hidden .topbar,
+.hp-chrome-hidden .sidebar,
+.hp-chrome-hidden aside,
+.hp-chrome-hidden footer,
+.hp-chrome-hidden .site-footer {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(var(--hp-chrome-shift, 0));
+  transition:
+    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Give each chrome element its natural hide direction */
+.hp-chrome-hidden .site-header,
+.hp-chrome-hidden header {
+  --hp-chrome-shift: -12px;
+}
+
+.hp-chrome-hidden .site-footer,
+.hp-chrome-hidden footer {
+  --hp-chrome-shift: 12px;
+}
+
+.hp-chrome-hidden .sidebar,
+.hp-chrome-hidden aside {
+  --hp-chrome-shift: -12px;
+}
+
+/* Keep a smooth fade back in when the class is removed */
+header,
+.site-header,
+.topbar,
+.sidebar,
+aside,
+footer,
+.site-footer {
+  transition:
+    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Anchor wrapper should not affect layout */
+.hp-ad-gallery-anchor {
+  position: relative;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hp-chrome-hidden header,
+  .hp-chrome-hidden .site-header,
+  .hp-chrome-hidden .topbar,
+  .hp-chrome-hidden .sidebar,
+  .hp-chrome-hidden aside,
+  .hp-chrome-hidden footer,
+  .hp-chrome-hidden .site-footer {
+    transition: none;
+  }
+}
