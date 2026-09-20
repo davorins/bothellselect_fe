@@ -6,6 +6,8 @@ import HomeTileRenderer from './HomeTileRenderer';
 import FormEmbed from '../../components/FormEmbed';
 import TodayEvents from '../components/TodayEvents/TodayEvents';
 import VideoGallery from '../components/VideoGallery/VideoGallery';
+import AdGallery from '../components/ads/AdGallery/AdGallery';
+import { Advertisement } from '../../types/advertisement-types';
 import './HomePage.css';
 
 const API_BASE_URL =
@@ -116,7 +118,7 @@ interface VideoControlsState {
 }
 
 const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
-  const { isLoading, parent } = useAuth();
+  const { isLoading, parent, getAuthToken } = useAuth();
   const navigate = useNavigate();
   const isAdmin = parent?.role === 'admin';
   const token = localStorage.getItem('token');
@@ -155,6 +157,16 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const [videoProgress, setVideoProgress] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const [showVideoPopup, setShowVideoPopup] = useState(false);
+
+  // ── Ad Gallery State ───────────────────────────────────────────────────────
+  const [galleryAds, setGalleryAds] = useState<Advertisement[]>([]);
+  const [authToken, setAuthToken] = useState<string | undefined>();
+  const [minimizedGalleryAds, setMinimizedGalleryAds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [closedGalleryAds, setClosedGalleryAds] = useState<Record<string, any>>(
+    {},
+  );
 
   // ── Scroll to registration tile ──────────────────────────────────────────
   const [scrollToTileIndex, setScrollToTileIndex] = useState<number | null>(
@@ -200,7 +212,71 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     valueSectionRef.current = el;
   }, []);
 
-  // ── Effects ──────────────────────────────────────────────────────────────────
+  // ── Ad Gallery Effects ─────────────────────────────────────────────────────
+  useEffect(() => {
+    if (parent) {
+      getAuthToken()
+        .then((token) => setAuthToken(token ?? undefined))
+        .catch(() => setAuthToken(undefined));
+    }
+  }, [parent, getAuthToken]);
+
+  useEffect(() => {
+    const fetchGalleryAds = async () => {
+      try {
+        const userRole = parent?.role || 'guest';
+        const params = new URLSearchParams({
+          placement: 'footer', // Fetching footer ads as requested
+          role: userRole,
+          pageSlug: 'home',
+        });
+
+        const isLocalDev =
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1';
+        if (isLocalDev) params.append('preview', 'true');
+
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+        const url = `${API_BASE_URL}/ads/active?${params}`;
+        const response = await fetch(url, { headers });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Filter out closed ads
+          const activeAds = (data.ads || []).filter(
+            (ad: Advertisement) => !closedGalleryAds[ad._id],
+          );
+          setGalleryAds(activeAds);
+        }
+      } catch (err) {
+        console.error('Failed to fetch gallery ads:', err);
+      }
+    };
+
+    fetchGalleryAds();
+  }, [parent?.role, authToken, closedGalleryAds]);
+
+  const handleCloseGalleryAd = useCallback((adId: string) => {
+    setClosedGalleryAds((prev) => ({
+      ...prev,
+      [adId]: { closedAt: Date.now() },
+    }));
+    setGalleryAds((prev) => prev.filter((ad) => ad._id !== adId));
+  }, []);
+
+  const handleExpandGalleryAd = useCallback((adId: string) => {
+    setMinimizedGalleryAds((prev) => {
+      const next = new Set(prev);
+      next.delete(adId);
+      return next;
+    });
+  }, []);
+
+  // ── Effects (Existing) ─────────────────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -233,7 +309,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     return () => clearTimeout(timer);
   }, [arcDone]);
 
-  // ── FIXED: scroll to tile AND open it (simulate click) ──────────────────
   useEffect(() => {
     if (
       scrollToTileIndex === null ||
@@ -258,14 +333,10 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       const targetTile = tiles[scrollToTileIndex] as HTMLElement;
 
       if (targetTile) {
-        // Scroll to the tile
         targetTile.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-        // After a short delay (to let the scroll begin), click the tile to open it
         setTimeout(() => {
           targetTile.click();
         }, 400);
-
         setScrollToTileIndex(null);
       } else {
         attempts++;
@@ -277,7 +348,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       }
     };
 
-    // Start the first attempt after a tiny delay
     const timer = setTimeout(tryScrollAndClick, 100);
     return () => clearTimeout(timer);
   }, [scrollToTileIndex, tilesVisible]);
@@ -319,7 +389,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     fetchPromoVideo();
   }, [preloadBackgroundImage]);
 
-  // ── Intersection Observer for Hero Video ──────────────────────────────────
   useEffect(() => {
     const heroElement = heroRef.current;
     if (!heroElement) return;
@@ -350,7 +419,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     return () => observer.disconnect();
   }, [promoVideoUrl, videoLoaded, videoError, isMobile, arcDone]);
 
-  // ── Intersection Observer for Section Video ──────────────────────────────
   useEffect(() => {
     const sectionElement = videoSectionRef.current;
     if (!sectionElement) return;
@@ -388,7 +456,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     return () => observer.disconnect();
   }, [promoVideoUrl, videoLoaded, videoError, isMobile, arcDone]);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleContactChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const { name, value } = e.target;
@@ -667,7 +734,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     }
   }, [showVideoPopup, isMobile, resumeSectionVideo]);
 
-  // ── Tile interaction: pause hero video ─────────────────────────────────────
   const handleTileInteraction = useCallback(() => {
     const heroVideo = heroVideoRef.current;
     if (heroVideo && !heroVideo.paused) {
@@ -676,7 +742,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     }
   }, []);
 
-  // ── Video controls ──────────────────────────────────────────────────────────
   const togglePlayPause = useCallback(() => {
     if (!sectionVideoRef.current || isMobile) return;
     const video = sectionVideoRef.current;
@@ -860,21 +925,11 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         className={`hp-hero ${arcDone && isMobile ? 'hp-hero--hidden' : ''}`}
         ref={heroRef}
       >
-        {/* <div className='hp-hero__bg-wrapper'>
-          <img
-            src='/assets/img/theme/bg-main.png'
-            alt='Basketball court background'
-            className='hp-hero__bg'
-          />
-        </div>
-        <div className='hp-hero__overlay' /> */}
-
         <canvas
           ref={canvasRef}
           className={`hp-arc-canvas${arcDone ? ' hp-arc-canvas--done' : ''}`}
         />
 
-        {/* Hero video only appears after arcDone and on non‑mobile */}
         {!isMobile &&
           promoVideoUrl &&
           videoLoaded &&
@@ -937,7 +992,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       {/* ─── WHY BOTHELL SELECT ────────────────────────────────────────────── */}
       <section className='hp-value-section' ref={setValueSectionRef}>
         <div className='hp-value__inner'>
-          {/* Left: Player image */}
           <div className='hp-value__media'>
             <div className='hp-value__player'>
               <img
@@ -948,7 +1002,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
             </div>
           </div>
 
-          {/* Right: Copy */}
           <div className='hp-value__copy'>
             <span className='hp-value__tag'>More Than Basketball</span>
             <h2 className='hp-value__title'>A Foundation for Life</h2>
@@ -992,7 +1045,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
           </div>
         </div>
 
-        {/* Glassmorphism Cards */}
         <div className='hp-value__cards'>
           <div className='hp-value-card'>
             <i className='ti ti-ball-basketball fs-2'></i>
@@ -1046,7 +1098,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         </div>
         <div className='hp-cut-reverse' aria-hidden='true' />
 
-        {/* ── Full‑width CTA Banner ── */}
         <div className='hp-value__banner'>
           <div className='hp-value__banner-content'>
             <h3>Help Your Child Reach Their Full Potential</h3>
@@ -1071,6 +1122,17 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         </div>
       </section>
 
+      {/* ─── AD GALLERY SECTION ────────────────────────────────────────────── */}
+      {galleryAds.length > 0 && (
+        <AdGallery
+          ads={galleryAds}
+          authToken={authToken}
+          onCloseAd={handleCloseGalleryAd}
+          onExpandAd={handleExpandGalleryAd}
+          minimizedAds={minimizedGalleryAds}
+        />
+      )}
+
       {/* ─── TODAY'S EVENTS SECTION ─────────────────────────────────────────── */}
       <section className='hp-section hp-section--today-events'>
         <div className='hp-cut' aria-hidden='false' />
@@ -1083,218 +1145,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       {/* ─── VIDEO CONTENT ────────────────────────────────────────────────────── */}
       <main className='hp-main'>
         <div className='hp-main__content'>
-          {showVideoSection && (
-            // <section
-            //   className='hp-section hp-section--video hp-visible'
-            //   ref={setSectionRef0}
-            // >
-            //   <div className='hp-section__inner'>
-            //     <header className='hp-section__head'>
-            //       <span className='hp-section__label'>Watch</span>
-            //       <h2 className='hp-section__title'>Program Highlights</h2>
-            //       <p className='hp-section__sub'>
-            //         Experience the energy and excellence of Bothell Select
-            //         Basketball
-            //       </p>
-            //     </header>
-            //     <div className='hp-video-wrapper'>
-            //       <video
-            //         ref={sectionVideoRef}
-            //         className={`hp-video__player${videoLoaded ? ' hp-video__player--loaded' : ''}`}
-            //         src={promoVideoUrl}
-            //         muted
-            //         loop
-            //         playsInline
-            //         preload='metadata'
-            //         onLoadedMetadata={handleLoadedMetadata}
-            //         onError={handleVideoError}
-            //         onTimeUpdate={handleTimeUpdate}
-            //       />
-
-            //       {!showControlsPanel && (
-            //         <button
-            //           className='hp-controls-open'
-            //           onClick={openControlsPanel}
-            //           aria-label='Open Video Controls'
-            //           title='Video Controls'
-            //         >
-            //           <svg
-            //             width='20'
-            //             height='20'
-            //             viewBox='0 0 24 24'
-            //             fill='currentColor'
-            //           >
-            //             <path d='M8 5v14l11-7z' />
-            //           </svg>
-            //         </button>
-            //       )}
-
-            //       <div
-            //         className={`hp-controls${showControlsPanel ? ' hp-controls--visible' : ''}`}
-            //       >
-            //         <div className='hp-controls__panel'>
-            //           <div className='hp-controls__progress'>
-            //             <input
-            //               type='range'
-            //               min='0'
-            //               max='100'
-            //               value={videoProgress}
-            //               onChange={handleProgressChange}
-            //               className='hp-controls__slider'
-            //               style={{
-            //                 background: `linear-gradient(to right, rgba(255,255,255,0.95) ${videoProgress}%, rgba(255,255,255,0.2) ${videoProgress}%)`,
-            //               }}
-            //             />
-            //           </div>
-            //           <div className='hp-controls__row'>
-            //             <div className='hp-controls__left'>
-            //               <button
-            //                 className='hp-ctrl-btn'
-            //                 onClick={togglePlayPause}
-            //                 aria-label={
-            //                   videoControls.isPlaying ? 'Pause' : 'Play'
-            //                 }
-            //               >
-            //                 {videoControls.isPlaying ? (
-            //                   <svg
-            //                     width='16'
-            //                     height='16'
-            //                     viewBox='0 0 24 24'
-            //                     fill='currentColor'
-            //                   >
-            //                     <rect
-            //                       x='6'
-            //                       y='5'
-            //                       width='4'
-            //                       height='14'
-            //                       rx='1'
-            //                     />
-            //                     <rect
-            //                       x='14'
-            //                       y='5'
-            //                       width='4'
-            //                       height='14'
-            //                       rx='1'
-            //                     />
-            //                   </svg>
-            //                 ) : (
-            //                   <svg
-            //                     width='16'
-            //                     height='16'
-            //                     viewBox='0 0 24 24'
-            //                     fill='currentColor'
-            //                   >
-            //                     <path d='M8 5v14l11-7z' />
-            //                   </svg>
-            //                 )}
-            //               </button>
-            //               <button
-            //                 className='hp-ctrl-btn'
-            //                 onClick={toggleMute}
-            //                 aria-label={
-            //                   videoControls.isMuted ? 'Unmute' : 'Mute'
-            //                 }
-            //               >
-            //                 {videoControls.isMuted ? (
-            //                   <svg
-            //                     width='16'
-            //                     height='16'
-            //                     viewBox='0 0 24 24'
-            //                     fill='currentColor'
-            //                   >
-            //                     <path d='M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zM3 9v6h4l5 5V4L7 9H3z' />
-            //                   </svg>
-            //                 ) : (
-            //                   <svg
-            //                     width='16'
-            //                     height='16'
-            //                     viewBox='0 0 24 24'
-            //                     fill='currentColor'
-            //                   >
-            //                     <path d='M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z' />
-            //                   </svg>
-            //                 )}
-            //               </button>
-            //               <span className='hp-controls__time'>
-            //                 {formatTime((videoProgress / 100) * videoDuration)}
-            //                 <span className='hp-controls__sep'>/</span>
-            //                 {formatTime(videoDuration)}
-            //               </span>
-            //             </div>
-            //             <div className='hp-controls__right'>
-            //               <button
-            //                 className='hp-ctrl-btn'
-            //                 onClick={openVideoPopup}
-            //                 aria-label='Open in popup'
-            //                 title='Expand'
-            //               >
-            //                 <svg
-            //                   width='16'
-            //                   height='16'
-            //                   viewBox='0 0 24 24'
-            //                   fill='currentColor'
-            //                 >
-            //                   <path d='M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z' />
-            //                 </svg>
-            //               </button>
-            //               <button
-            //                 className='hp-ctrl-btn'
-            //                 onClick={toggleFullscreen}
-            //                 aria-label={
-            //                   videoControls.isFullscreen
-            //                     ? 'Exit fullscreen'
-            //                     : 'Fullscreen'
-            //                 }
-            //               >
-            //                 {videoControls.isFullscreen ? (
-            //                   <svg
-            //                     width='16'
-            //                     height='16'
-            //                     viewBox='0 0 24 24'
-            //                     fill='currentColor'
-            //                   >
-            //                     <path d='M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z' />
-            //                   </svg>
-            //                 ) : (
-            //                   <svg
-            //                     width='16'
-            //                     height='16'
-            //                     viewBox='0 0 24 24'
-            //                     fill='currentColor'
-            //                   >
-            //                     <path d='M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z' />
-            //                   </svg>
-            //                 )}
-            //               </button>
-            //               <button
-            //                 className='hp-ctrl-btn hp-ctrl-btn--close'
-            //                 onClick={closeControlsPanel}
-            //                 aria-label='Close controls'
-            //               >
-            //                 <svg
-            //                   width='16'
-            //                   height='16'
-            //                   viewBox='0 0 24 24'
-            //                   fill='currentColor'
-            //                 >
-            //                   <path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z' />
-            //                 </svg>
-            //               </button>
-            //             </div>
-            //           </div>
-            //         </div>
-            //       </div>
-
-            //       {!videoLoaded && (
-            //         <div className='hp-video__shimmer'>
-            //           <div className='hp-video__shimmer-inner' />
-            //         </div>
-            //       )}
-            //     </div>
-            //   </div>
-            // </section>
-            <VideoGallery initialLimit={4} />
-          )}
+          {showVideoSection && <VideoGallery initialLimit={4} />}
 
           {/* ─── ABOUT SECTION ──────────────────────────────────────────────────── */}
           <section

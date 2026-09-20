@@ -1,0 +1,311 @@
+/* ─── Ad Gallery Section ────────────────────────────────────────── */
+.ad-gallery-section {
+  background: var(--dark-0);
+  padding: 60px 0 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.ad-gallery-section__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.ad-gallery-section__header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.ad-gallery-section__label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold, #d4812a);
+  margin-bottom: 8px;
+}
+
+.ad-gallery-section__title {
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.ad-gallery-section .ad-banner__controls {
+  display: none !important;
+}
+
+/* ─── Base Gallery Layout ────────────────────────────────────────── */
+.ad-gallery {
+  display: grid;
+  gap: 20px;
+  justify-content: center;
+  align-items: stretch;
+  width: 100%;
+}
+
+.ad-gallery--vertical {
+  /* vertical override for stacked layout (e.g. sidebar) */
+  grid-template-columns: 1fr !important;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* ─── Card wrapper (round corners, background, shadow) ─────────── */
+.ad-gallery__card {
+  background: rgba(255, 255, 255, 1);
+  border: 1px solid rgba(255, 255, 255, 1);
+  border-radius: 16px;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.ad-gallery__card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(212, 129, 42, 0.4);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* The AdBanner fills the card but can grow past min-height */
+.ad-gallery__item .ad-banner {
+  width: 100%;
+  height: auto;
+  min-height: unset;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ad-gallery__item .ad-banner:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* The image inside the banner shouldn't force a fixed height */
+.ad-gallery__item .ad-banner__image-wrap {
+  border-radius: 0;
+  height: 160px; /* reduced from ~200px */
+  min-height: 160px;
+  flex-shrink: 0;
+}
+
+.ad-gallery__item .ad-banner__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ad-gallery__item .ad-banner__info {
+  flex: 1;
+  padding: 54px 16px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ad-gallery__item .ad-banner__description {
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 10px;
+  color: #666;
+}
+
+/* ─── 1 Ad: Centered, Landscape ─────────────────────────────────── */
+.ad-gallery--single {
+  grid-template-columns: 1fr;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.ad-gallery--single .ad-gallery__item .ad-banner__image-wrap {
+  height: 220px;
+  min-height: 220px;
+}
+
+/* ─── 2 Ads: Side-by-side, Landscape ────────────────────────────── */
+.ad-gallery--double {
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.ad-gallery--double .ad-gallery__item .ad-banner__image-wrap {
+  height: 180px;
+  min-height: 180px;
+}
+
+/* ─── 3 Ads: Three columns, Square-ish ──────────────────────────── */
+.ad-gallery--triple {
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.ad-gallery--triple .ad-gallery__item .ad-banner__image-wrap {
+  height: 170px;
+  min-height: 170px;
+}
+
+.ad-gallery__item .ad-banner__title {
+  font-size: 0.95rem;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ad-gallery__item .ad-banner__business {
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+  color: #888;
+}
+
+.ad-gallery__item .ad-banner__cta {
+  margin-top: auto;
+  align-self: flex-start;
+  font-size: 0.75rem;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(37, 99, 235, 0.12);
+  color: #60a5fa;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ad-gallery__item .ad-banner:hover .ad-banner__cta {
+  background: rgba(37, 99, 235, 0.22);
+}
+
+/* ─── 4+ Ads: Horizontal Scroll ─────────────────────────────────── */
+.ad-gallery--scroll {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 129, 42, 0.4) transparent;
+  padding-bottom: 16px;
+  margin: 0 -40px;
+  padding-left: 40px;
+  padding-right: 40px;
+}
+
+.ad-gallery--scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.ad-gallery--scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ad-gallery--scroll::-webkit-scrollbar-thumb {
+  background: rgba(212, 129, 42, 0.4);
+  border-radius: 3px;
+}
+.ad-gallery--scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 129, 42, 0.6);
+}
+
+.ad-gallery--scroll .ad-gallery__item {
+  flex: 0 0 260px; /* slightly wider for readable text */
+  scroll-snap-align: start;
+}
+
+.ad-gallery--scroll .ad-gallery__item .ad-banner__image-wrap {
+  height: 150px;
+  min-height: 150px;
+}
+
+/* ─── Responsive Adjustments ─────────────────────────────────────── */
+@media (max-width: 968px) {
+  .ad-gallery-section__inner {
+    padding: 0 24px;
+  }
+
+  .ad-gallery--double {
+    grid-template-columns: 1fr;
+    max-width: 500px;
+  }
+
+  .ad-gallery--triple {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 700px;
+  }
+
+  .ad-gallery--triple .ad-gallery__item:last-child {
+    grid-column: span 2;
+    max-width: 50%;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .ad-gallery-section {
+    padding: 40px 0 30px;
+  }
+
+  .ad-gallery-section__inner {
+    padding: 0 16px;
+  }
+
+  .ad-gallery--triple {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+  }
+
+  .ad-gallery--triple .ad-gallery__item:last-child {
+    grid-column: auto;
+    max-width: 100%;
+  }
+
+  .ad-gallery--scroll {
+    margin: 0 -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .ad-gallery--scroll .ad-gallery__item {
+    flex: 0 0 220px;
+  }
+
+  /* Slightly smaller on mobile */
+  .ad-gallery--single .ad-gallery__item .ad-banner__image-wrap,
+  .ad-gallery--double .ad-gallery__item .ad-banner__image-wrap {
+    height: 160px;
+    min-height: 160px;
+  }
+
+  .ad-gallery--triple .ad-gallery__item .ad-banner__image-wrap {
+    height: 150px;
+    min-height: 150px;
+  }
+
+  .ad-gallery--scroll .ad-gallery__item .ad-banner__image-wrap {
+    height: 130px;
+    min-height: 130px;
+  }
+}
+
+/* ─── Dark mode (already dark, kept for consistency) ────────────── */
+@media (prefers-color-scheme: dark) {
+  .ad-gallery__card {
+    background: rgba(255, 255, 255, 1);
+    border-color: rgba(255, 255, 255, 1);
+  }
+}
