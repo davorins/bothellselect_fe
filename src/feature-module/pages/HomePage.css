@@ -2023,65 +2023,76 @@
   }
 }
 
-/* ─── Fade chrome when ad gallery is in view ─────────────────────── */
+/* ─── Fade other ad sections when the AdGallery is in view ─────────── */
 
-.hp-chrome-hidden header,
-.hp-chrome-hidden .site-header,
-.hp-chrome-hidden .topbar,
-.hp-chrome-hidden .sidebar,
-.hp-chrome-hidden aside,
-.hp-chrome-hidden footer,
-.hp-chrome-hidden .site-footer {
+/* 1. Give every ad section a smooth transition by default */
+.ad-sidebar,
+.ad-topbar,
+.ad-header,
+.ad-footer,
+[data-ad-placement='sidebar'],
+[data-ad-placement='topbar'],
+[data-ad-placement='header'],
+[data-ad-placement='footer'] {
+  transition:
+    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0.45s;
+  will-change: opacity, transform;
+}
+
+/* 2. When the gallery is in view, fade them out */
+body.hp-ads-focus .ad-sidebar,
+body.hp-ads-focus .ad-topbar,
+body.hp-ads-focus .ad-header,
+body.hp-ads-focus .ad-footer,
+body.hp-ads-focus [data-ad-placement='sidebar'],
+body.hp-ads-focus [data-ad-placement='topbar'],
+body.hp-ads-focus [data-ad-placement='header'],
+body.hp-ads-focus [data-ad-placement='footer'] {
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  transform: translateY(var(--hp-chrome-shift, 0));
-  transition:
-    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Give each chrome element its natural hide direction */
-.hp-chrome-hidden .site-header,
-.hp-chrome-hidden header {
-  --hp-chrome-shift: -12px;
+/* 3. Optional: give each placement a natural hide direction */
+body.hp-ads-focus .ad-topbar,
+body.hp-ads-focus .ad-header,
+body.hp-ads-focus [data-ad-placement='topbar'],
+body.hp-ads-focus [data-ad-placement='header'] {
+  transform: translateY(-12px);
 }
 
-.hp-chrome-hidden .site-footer,
-.hp-chrome-hidden footer {
-  --hp-chrome-shift: 12px;
+body.hp-ads-focus .ad-footer,
+body.hp-ads-focus [data-ad-placement='footer'] {
+  transform: translateY(12px);
 }
 
-.hp-chrome-hidden .sidebar,
-.hp-chrome-hidden aside {
-  --hp-chrome-shift: -12px;
+body.hp-ads-focus .ad-sidebar,
+body.hp-ads-focus [data-ad-placement='sidebar'] {
+  transform: translateX(-12px);
 }
 
-/* Keep a smooth fade back in when the class is removed */
-header,
-.site-header,
-.topbar,
-.sidebar,
-aside,
-footer,
-.site-footer {
-  transition:
-    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+/* 4. Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .ad-sidebar,
+  .ad-topbar,
+  .ad-header,
+  .ad-footer,
+  [data-ad-placement] {
+    transition: opacity 0.2s linear;
+  }
+
+  body.hp-ads-focus .ad-sidebar,
+  body.hp-ads-focus .ad-topbar,
+  body.hp-ads-focus .ad-header,
+  body.hp-ads-focus .ad-footer,
+  body.hp-ads-focus [data-ad-placement] {
+    transform: none;
+  }
 }
 
-/* Anchor wrapper should not affect layout */
+/* 5. Anchor wrapper should not affect layout */
 .hp-ad-gallery-anchor {
   position: relative;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hp-chrome-hidden header,
-  .hp-chrome-hidden .site-header,
-  .hp-chrome-hidden .topbar,
-  .hp-chrome-hidden .sidebar,
-  .hp-chrome-hidden aside,
-  .hp-chrome-hidden footer,
-  .hp-chrome-hidden .site-footer {
-    transition: none;
-  }
 }
