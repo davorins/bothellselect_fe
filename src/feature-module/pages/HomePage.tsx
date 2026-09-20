@@ -168,6 +168,10 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     {},
   );
 
+  // ── NEW: Ad-focus state (hides other ad slots when gallery is in view) ────
+  const [isGalleryInView, setIsGalleryInView] = useState(false);
+  const adGalleryRef = useRef<HTMLDivElement | null>(null);
+
   // ── Scroll to registration tile ──────────────────────────────────────────
   const [scrollToTileIndex, setScrollToTileIndex] = useState<number | null>(
     null,
@@ -198,9 +202,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const videoSectionRef = useRef<HTMLDivElement | null>(null);
   const valueSectionRef = useRef<HTMLDivElement | null>(null);
 
-  const [isGalleryInView, setIsGalleryInView] = useState(false);
-  const adGalleryRef = useRef<HTMLDivElement | null>(null);
-
   const setSectionRef0 = useCallback((el: HTMLDivElement | null) => {
     sectionsRef.current[0] = el;
     videoSectionRef.current = el;
@@ -225,40 +226,11 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   }, [parent, getAuthToken]);
 
   useEffect(() => {
-    const el = adGalleryRef.current;
-    if (!el || isMobile) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // "In view" once the gallery occupies enough of the viewport
-        // to feel like the user has arrived at the ads section.
-        setIsGalleryInView(
-          entry.isIntersecting && entry.intersectionRatio > 0.25,
-        );
-      },
-      {
-        threshold: [0, 0.25, 0.5, 0.75, 1],
-        rootMargin: '-10% 0px -10% 0px',
-      },
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [isMobile, galleryAds.length]);
-
-  useEffect(() => {
-    document.body.classList.toggle('hp-chrome-hidden', isGalleryInView);
-    return () => {
-      document.body.classList.remove('hp-chrome-hidden');
-    };
-  }, [isGalleryInView]);
-
-  useEffect(() => {
     const fetchGalleryAds = async () => {
       try {
         const userRole = parent?.role || 'guest';
         const params = new URLSearchParams({
-          placement: 'footer', // Fetching footer ads as requested
+          placement: 'footer',
           role: userRole,
           pageSlug: 'home',
         });
@@ -278,7 +250,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
 
         if (response.ok) {
           const data = await response.json();
-          // Filter out closed ads
           const activeAds = (data.ads || []).filter(
             (ad: Advertisement) => !closedGalleryAds[ad._id],
           );
@@ -292,6 +263,44 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       fetchGalleryAds();
     }
   }, [parent?.role, authToken, closedGalleryAds, isMobile]);
+
+  // ── NEW: Observe when the AdGallery enters/exits the viewport ─────────────
+  useEffect(() => {
+    const el = adGalleryRef.current;
+    if (!el || isMobile) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Measure how much of the *viewport* the gallery covers.
+        // This is more reliable than intersectionRatio for tall elements.
+        const viewportRatio =
+          entry.intersectionRect.height / window.innerHeight;
+
+        setIsGalleryInView((prev) => {
+          // Enter: 30% of viewport covered → hide other ads
+          if (!prev && viewportRatio >= 0.3) return true;
+          // Exit: below 10% → show them again
+          if (prev && viewportRatio <= 0.1) return false;
+          return prev;
+        });
+      },
+      {
+        threshold: Array.from({ length: 21 }, (_, i) => i / 20),
+        rootMargin: '-10% 0px -10% 0px',
+      },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isMobile, galleryAds.length]);
+
+  // ── NEW: Toggle body class so global ad slots can be styled from CSS ──────
+  useEffect(() => {
+    document.body.classList.toggle('hp-ads-focus', isGalleryInView);
+    return () => {
+      document.body.classList.remove('hp-ads-focus');
+    };
+  }, [isGalleryInView]);
 
   const handleCloseGalleryAd = useCallback((adId: string) => {
     setClosedGalleryAds((prev) => ({

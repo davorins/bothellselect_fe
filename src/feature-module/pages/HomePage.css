@@ -2096,3 +2096,62 @@ body.hp-ads-focus [data-ad-placement='sidebar'] {
 .hp-ad-gallery-anchor {
   position: relative;
 }
+
+/* 1. Every ad slot gets a smooth transition by default */
+[data-ad-placement] {
+  transition:
+    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0.45s;
+  will-change: opacity, transform;
+}
+
+/* 2. When the gallery is in view, fade them all out */
+body.hp-ads-focus [data-ad-placement] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* 3. Directional exit per placement (nice touch) */
+body.hp-ads-focus [data-ad-placement='topbar'],
+body.hp-ads-focus [data-ad-placement='header'] {
+  transform: translateY(-12px);
+}
+
+body.hp-ads-focus [data-ad-placement='footer'] {
+  transform: translateY(12px);
+}
+
+body.hp-ads-focus [data-ad-placement='sidebar'] {
+  transform: translateX(-12px);
+}
+
+body.hp-ads-focus [data-ad-placement='inline'],
+body.hp-ads-focus [data-ad-placement='popup'] {
+  transform: scale(0.96);
+}
+
+/* 4. Never fade the gallery itself */
+body.hp-ads-focus .hp-ad-gallery-anchor [data-ad-placement],
+body.hp-ads-focus .hp-ad-gallery-anchor {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: none !important;
+}
+
+/* 5. Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  [data-ad-placement] {
+    transition: opacity 0.2s linear;
+  }
+  body.hp-ads-focus [data-ad-placement] {
+    transform: none;
+  }
+}
+
+/* 6. Anchor wrapper for the gallery */
+.hp-ad-gallery-anchor {
+  position: relative;
+}
