@@ -227,8 +227,8 @@
 /* Close button for footerbar - matches sidebar style */
 .ad-banner--footerbar .ad-banner__controls {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 10px;
+  right: 14px;
   z-index: 5;
   display: flex;
   align-items: center;
