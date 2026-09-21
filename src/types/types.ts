@@ -741,6 +741,7 @@ export interface Spotlight {
   createdBy: string;
   createdAt?: string;
   updatedAt?: string;
+  fullSizeImages?: string[];
 }
 
 export interface SpotlightForm {

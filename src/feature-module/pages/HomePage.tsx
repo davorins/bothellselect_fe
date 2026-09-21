@@ -8,6 +8,7 @@ import TodayEvents from '../components/TodayEvents/TodayEvents';
 import VideoGallery from '../components/VideoGallery/VideoGallery';
 import AdGallery from '../components/ads/AdGallery/AdGallery';
 import { Advertisement } from '../../types/advertisement-types';
+import { tagAdSlots } from '../../utils/adFocusTagger';
 import './HomePage.css';
 
 const API_BASE_URL =
@@ -17,7 +18,7 @@ interface HomePageProps {
   onSplashClose: () => void;
 }
 
-// ─── Arc animation (unchanged) ───────────────────────────────────────────────
+// ─── Arc animation ───────────────────────────────────────────────────────────
 function easeOutQuart(t: number): number {
   return 1 - Math.pow(1 - t, 4);
 }
@@ -168,17 +169,17 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     {},
   );
 
-  // ── NEW: Ad-focus state (hides other ad slots when gallery is in view) ────
+  // ── Ad-focus state ─────────────────────────────────────────────────────────
   const [isGalleryInView, setIsGalleryInView] = useState(false);
   const adGalleryRef = useRef<HTMLDivElement | null>(null);
 
-  // ── Scroll to registration tile ──────────────────────────────────────────
+  // ── Scroll to registration tile ────────────────────────────────────────────
   const [scrollToTileIndex, setScrollToTileIndex] = useState<number | null>(
     null,
   );
   const tileWrapperRef = useRef<HTMLDivElement>(null);
 
-  // ── Refs ────────────────────────────────────────────────────────────────────
+  // ── Refs ───────────────────────────────────────────────────────────────────
   const heroVideoRef = useRef<HTMLVideoElement | null>(null);
   const sectionVideoRef = useRef<HTMLVideoElement | null>(null);
   const popupVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -264,22 +265,18 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     }
   }, [parent?.role, authToken, closedGalleryAds, isMobile]);
 
-  // ── NEW: Observe when the AdGallery enters/exits the viewport ─────────────
+  // ── Observe when the AdGallery enters/exits the viewport ──────────────────
   useEffect(() => {
     const el = adGalleryRef.current;
     if (!el || isMobile) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Measure how much of the *viewport* the gallery covers.
-        // This is more reliable than intersectionRatio for tall elements.
         const viewportRatio =
           entry.intersectionRect.height / window.innerHeight;
 
         setIsGalleryInView((prev) => {
-          // Enter: 30% of viewport covered → hide other ads
           if (!prev && viewportRatio >= 0.3) return true;
-          // Exit: below 10% → show them again
           if (prev && viewportRatio <= 0.1) return false;
           return prev;
         });
@@ -294,13 +291,41 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
     return () => observer.disconnect();
   }, [isMobile, galleryAds.length]);
 
-  // ── NEW: Toggle body class so global ad slots can be styled from CSS ──────
+  // ── Toggle body class so global ad slots can be styled from CSS ───────────
   useEffect(() => {
     document.body.classList.toggle('hp-ads-focus', isGalleryInView);
     return () => {
       document.body.classList.remove('hp-ads-focus');
     };
   }, [isGalleryInView]);
+
+  // ── Auto-tag ad slots in the DOM (header/sidebar/footer/topbar/etc.) ──────
+  useEffect(() => {
+    if (isMobile) return;
+
+    const cleanup = tagAdSlots();
+
+    const mo = new MutationObserver(() => {
+      tagAdSlots();
+    });
+
+    mo.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    const timers = [
+      window.setTimeout(() => tagAdSlots(), 500),
+      window.setTimeout(() => tagAdSlots(), 2000),
+      window.setTimeout(() => tagAdSlots(), 5000),
+    ];
+
+    return () => {
+      mo.disconnect();
+      timers.forEach((id) => window.clearTimeout(id));
+      cleanup();
+    };
+  }, [isMobile]);
 
   const handleCloseGalleryAd = useCallback((adId: string) => {
     setClosedGalleryAds((prev) => ({

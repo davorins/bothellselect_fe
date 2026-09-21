@@ -1571,7 +1571,6 @@
     display: none !important;
   }
 
-  /* Arc canvas fades out after done */
   .hp-arc-canvas {
     transition: opacity 0.8s ease;
   }
@@ -1580,20 +1579,17 @@
     pointer-events: none;
   }
 
-  /* Spark disappears after animation */
   .hp-spark--active {
     animation: sparkFlash 0.4s ease forwards;
   }
 
-  /* Ensure tiles are visible after arcDone */
   .hp-tiles-container.slide-up {
     opacity: 1 !important;
     transform: translateY(0) !important;
   }
 
-  /* Hero content remains visible */
   .hp-hero__inner {
-    display: block !important; /* ensure it's visible */
+    display: block !important;
   }
 
   .hp-hero__title {
@@ -1806,7 +1802,6 @@
   align-items: center;
 }
 
-/* ── Left: Player ── */
 .hp-value__media {
   display: flex;
   justify-content: center;
@@ -1850,7 +1845,6 @@
   }
 }
 
-/* ── Right: Copy ── */
 .hp-value__copy {
   position: relative;
 }
@@ -1895,7 +1889,6 @@
   margin-top: 24px;
 }
 
-/* ── Glassmorphism Cards ── */
 .hp-value__cards {
   max-width: 1200px;
   margin: 60px auto 0;
@@ -1944,7 +1937,6 @@
   margin: 0;
 }
 
-/* ── Full‑width CTA Banner ── */
 .hp-value__banner {
   background: var(--dark-0);
   padding: 48px 0 0;
@@ -1981,7 +1973,6 @@
   box-shadow: 0 10px 30px rgba(212, 129, 42, 0.5) !important;
 }
 
-/* ── Responsive ── */
 @media (max-width: 968px) {
   .hp-value__inner {
     grid-template-columns: 1fr;
@@ -2023,81 +2014,14 @@
   }
 }
 
-/* ─── Fade other ad sections when the AdGallery is in view ─────────── */
+/* ════════════════════════════════════════════════════════════════
+   AD-FOCUS MODE
+   When the AdGallery is in view, fade out *other* ad slots.
+   Ad slots must be tagged with `data-ad-placement` (either from
+   AdSlot JSX, or automatically via tagAdSlots()).
+   ════════════════════════════════════════════════════════════════ */
 
-/* 1. Give every ad section a smooth transition by default */
-.ad-sidebar,
-.ad-topbar,
-.ad-header,
-.ad-footer,
-[data-ad-placement='sidebar'],
-[data-ad-placement='topbar'],
-[data-ad-placement='header'],
-[data-ad-placement='footer'] {
-  transition:
-    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    visibility 0.45s;
-  will-change: opacity, transform;
-}
-
-/* 2. When the gallery is in view, fade them out */
-body.hp-ads-focus .ad-sidebar,
-body.hp-ads-focus .ad-topbar,
-body.hp-ads-focus .ad-header,
-body.hp-ads-focus .ad-footer,
-body.hp-ads-focus [data-ad-placement='sidebar'],
-body.hp-ads-focus [data-ad-placement='topbar'],
-body.hp-ads-focus [data-ad-placement='header'],
-body.hp-ads-focus [data-ad-placement='footer'] {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-/* 3. Optional: give each placement a natural hide direction */
-body.hp-ads-focus .ad-topbar,
-body.hp-ads-focus .ad-header,
-body.hp-ads-focus [data-ad-placement='topbar'],
-body.hp-ads-focus [data-ad-placement='header'] {
-  transform: translateY(-12px);
-}
-
-body.hp-ads-focus .ad-footer,
-body.hp-ads-focus [data-ad-placement='footer'] {
-  transform: translateY(12px);
-}
-
-body.hp-ads-focus .ad-sidebar,
-body.hp-ads-focus [data-ad-placement='sidebar'] {
-  transform: translateX(-12px);
-}
-
-/* 4. Respect reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .ad-sidebar,
-  .ad-topbar,
-  .ad-header,
-  .ad-footer,
-  [data-ad-placement] {
-    transition: opacity 0.2s linear;
-  }
-
-  body.hp-ads-focus .ad-sidebar,
-  body.hp-ads-focus .ad-topbar,
-  body.hp-ads-focus .ad-header,
-  body.hp-ads-focus .ad-footer,
-  body.hp-ads-focus [data-ad-placement] {
-    transform: none;
-  }
-}
-
-/* 5. Anchor wrapper should not affect layout */
-.hp-ad-gallery-anchor {
-  position: relative;
-}
-
-/* 1. Every ad slot gets a smooth transition by default */
+/* 1. Smooth transitions by default */
 [data-ad-placement] {
   transition:
     opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
@@ -2106,35 +2030,39 @@ body.hp-ads-focus [data-ad-placement='sidebar'] {
   will-change: opacity, transform;
 }
 
-/* 2. When the gallery is in view, fade them all out */
+/* 2. Fade them out when the gallery is focused */
 body.hp-ads-focus [data-ad-placement] {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
 
-/* 3. Directional exit per placement (nice touch) */
+/* 3. Directional exit per placement */
 body.hp-ads-focus [data-ad-placement='topbar'],
 body.hp-ads-focus [data-ad-placement='header'] {
   transform: translateY(-12px);
 }
-
 body.hp-ads-focus [data-ad-placement='footer'] {
   transform: translateY(12px);
 }
-
 body.hp-ads-focus [data-ad-placement='sidebar'] {
   transform: translateX(-12px);
 }
-
 body.hp-ads-focus [data-ad-placement='inline'],
 body.hp-ads-focus [data-ad-placement='popup'] {
   transform: scale(0.96);
 }
 
-/* 4. Never fade the gallery itself */
+/* 4. HARD OVERRIDE: the AdGallery itself never fades */
+body.hp-ads-focus .hp-ad-gallery-anchor,
+body.hp-ads-focus .hp-ad-gallery-anchor *,
 body.hp-ads-focus .hp-ad-gallery-anchor [data-ad-placement],
-body.hp-ads-focus .hp-ad-gallery-anchor {
+body.hp-ads-focus .hp-ad-gallery-anchor [data-ad-placement='footer'],
+body.hp-ads-focus .hp-ad-gallery-anchor [data-ad-placement='sidebar'],
+body.hp-ads-focus .hp-ad-gallery-anchor [data-ad-placement='header'],
+body.hp-ads-focus .hp-ad-gallery-anchor [data-ad-placement='topbar'],
+body.hp-ads-focus .hp-ad-gallery-anchor [data-ad-placement='inline'],
+body.hp-ads-focus .hp-ad-gallery-anchor [data-ad-placement='popup'] {
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto !important;
@@ -2151,7 +2079,7 @@ body.hp-ads-focus .hp-ad-gallery-anchor {
   }
 }
 
-/* 6. Anchor wrapper for the gallery */
+/* 6. Anchor wrapper */
 .hp-ad-gallery-anchor {
   position: relative;
 }
