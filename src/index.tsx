@@ -19,6 +19,9 @@ import { AuthProvider } from './context/AuthContext';
 import '../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js';
 import ThemeSettings from './core/common/theme-settings';
 
+// ✅ RECAPTCHA INTEGRATION
+import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
+
 // ✅ META PIXEL INTEGRATION
 import ReactPixel from 'react-facebook-pixel';
 
@@ -43,8 +46,10 @@ root.render(
     <Provider store={store}>
       <BrowserRouter basename={base_path}>
         <AuthProvider>
-          <App />
-          <ThemeSettings />
+          <GoogleReCaptchaProvider reCaptchaKey='YOUR_SITE_KEY_FROM_GOOGLE_DASHBOARD'>
+            <App />
+            <ThemeSettings />
+          </GoogleReCaptchaProvider>
         </AuthProvider>
       </BrowserRouter>
     </Provider>
