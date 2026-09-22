@@ -9,6 +9,7 @@ export const all_routes = {
   studentDashboard: '/student-dashboard',
   coachDashboard: '/coach-dashboard',
   adminMarketing: '/admin/marketing',
+  aiEmailAssistant: '/admin/ai-email-assistant',
 
   blankPage: '/blank-page',
   calendar: '/calendar',

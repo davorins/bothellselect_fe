@@ -13,6 +13,7 @@ import ForgotPassword from '../auth/forgotPassword/forgotPassword';
 import Pages from '../content/pages';
 import AdminDashboard from '../mainMenu/adminDashboard';
 import MarketingDashboard from '../mainMenu/adminDashboard/MarketingDashboard';
+import AiEmailAssistant from '../mainMenu/aiEmailAssistant';
 import AlertUi from '../uiInterface/base-ui/alert-ui';
 import CoachDashboard from '../mainMenu/coachDashboard';
 import ParentDashboard from '../mainMenu/parentDashboard';
@@ -115,6 +116,15 @@ export const publicRoutes = [
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
         <AdminDashboard />
+      </ProtectedRoute>
+    ),
+    route: Route,
+  },
+  {
+    path: routes.aiEmailAssistant,
+    element: (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <AiEmailAssistant />
       </ProtectedRoute>
     ),
     route: Route,
