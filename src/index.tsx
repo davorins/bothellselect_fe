@@ -46,7 +46,7 @@ root.render(
     <Provider store={store}>
       <BrowserRouter basename={base_path}>
         <AuthProvider>
-          <GoogleReCaptchaProvider reCaptchaKey='YOUR_SITE_KEY_FROM_GOOGLE_DASHBOARD'>
+          <GoogleReCaptchaProvider reCaptchaKey='6LctU8ktAAAAAOIsaTSYp498gm7oK81PVJZep6sS'>
             <App />
             <ThemeSettings />
           </GoogleReCaptchaProvider>
