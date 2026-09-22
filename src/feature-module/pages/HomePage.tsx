@@ -225,22 +225,31 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 🛡️ A. Check if verification system is ready
-    if (!executeRecaptcha) {
-      console.warn('reCAPTCHA is not loaded or active yet.');
-      return;
-    }
-
     setIsSubmittingContact(true);
 
     try {
-      // 🛡️ B. Generate an invisible tracking token specifically for contact submissions
-      const recaptchaToken = await executeRecaptcha('contact_form_submit');
+      let recaptchaToken = '';
 
-      // 🛡️ C. Append token to your payload payload parameters
+      // 🛡️ Safe check: Only generate token if the Google global script has completely loaded
+      if (executeRecaptcha) {
+        try {
+          recaptchaToken = await executeRecaptcha('home_page_submit');
+        } catch (recaptchaError) {
+          console.warn(
+            'reCAPTCHA execution timed out, bypassing token verification:',
+            recaptchaError,
+          );
+        }
+      } else {
+        console.warn(
+          'reCAPTCHA hook not fully initialized on landing mount yet.',
+        );
+      }
+
+      // Append token safely (will be empty string if reCAPTCHA didn't load in time)
       const payload = {
         ...contactFormData,
-        recaptchaToken: recaptchaToken, // Added token tracking here
+        recaptchaToken: recaptchaToken,
       };
 
       const response = await fetch(`${API_BASE_URL}/contact`, {
@@ -259,14 +268,15 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
         });
       } else {
         console.error('Submission failed from API verification response.');
+        alert('Failed to send message. Please try again.');
       }
     } catch (error) {
       console.error('Error during secure form processing:', error);
+      alert('Something went wrong. Please try again.');
     } finally {
       setIsSubmittingContact(false);
     }
   };
-
   // ── Ad Gallery Effects ─────────────────────────────────────────────────────
   useEffect(() => {
     if (parent) {
