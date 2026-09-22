@@ -32,48 +32,38 @@ const ContactPage = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    if (!executeRecaptcha) {
-      alert(
-        'Security system is initializing. Please try submitting again in a moment.',
-      );
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      const token = await executeRecaptcha('contact_page_submit');
+      let recaptchaToken = '';
 
-      const payload = {
-        ...formData,
-        recaptchaToken: token,
-      };
+      // Gracefully handle reCAPTCHA not being ready
+      if (executeRecaptcha) {
+        try {
+          recaptchaToken = await executeRecaptcha('contact_page_submit');
+        } catch (recaptchaError) {
+          console.warn('reCAPTCHA execution failed:', recaptchaError);
+        }
+      } else {
+        console.warn('reCAPTCHA hook not ready yet');
+      }
+
+      const payload = { ...formData, recaptchaToken };
 
       const response = await fetch(`${API_BASE_URL}/contact`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       if (response.ok) {
         setShowSuccess(true);
-        setFormData({
-          fullName: '',
-          email: '',
-          subject: '',
-          message: '',
-        });
-
-        setTimeout(() => {
-          navigate('/');
-        }, 5000);
+        setFormData({ fullName: '', email: '', subject: '', message: '' });
+        setTimeout(() => navigate('/'), 5000);
       } else {
-        const errorData = await response.json();
-        console.error('Error sending message:', errorData);
-        alert('Failed to send message. Please try again.');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Server error:', errorData);
+        alert(errorData.error || 'Failed to send message. Please try again.');
       }
     } catch (error) {
       console.error('Error sending message:', error);
