@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import ImageWithBasePath from '../../core/common/imageWithBasePath';
 import './ContactPage.css';
 
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+
 const ContactPage = () => {
   const [formData, setFormData] = useState({
     fullName: '',
@@ -13,6 +15,8 @@ const ContactPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const navigate = useNavigate();
+
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -28,15 +32,30 @@ const ContactPage = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!executeRecaptcha) {
+      alert(
+        'Security system is initializing. Please try submitting again in a moment.',
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
+      const token = await executeRecaptcha('contact_page_submit');
+
+      const payload = {
+        ...formData,
+        recaptchaToken: token,
+      };
+
       const response = await fetch(`${API_BASE_URL}/contact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
