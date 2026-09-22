@@ -11,6 +11,8 @@ import { Advertisement } from '../../types/advertisement-types';
 import { tagAdSlots } from '../../utils/adFocusTagger';
 import './HomePage.css';
 
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -124,6 +126,8 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const isAdmin = parent?.role === 'admin';
   const token = localStorage.getItem('token');
 
+  const { executeRecaptcha } = useGoogleReCaptcha();
+
   // ── State ──────────────────────────────────────────────────────────────────
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [arcDone, setArcDone] = useState(false);
@@ -216,6 +220,52 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
   const setValueSectionRef = useCallback((el: HTMLDivElement | null) => {
     valueSectionRef.current = el;
   }, []);
+
+  // ── Contact Submission ──────────────────────────────────────────
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // 🛡️ A. Check if verification system is ready
+    if (!executeRecaptcha) {
+      console.warn('reCAPTCHA is not loaded or active yet.');
+      return;
+    }
+
+    setIsSubmittingContact(true);
+
+    try {
+      // 🛡️ B. Generate an invisible tracking token specifically for contact submissions
+      const recaptchaToken = await executeRecaptcha('contact_form_submit');
+
+      // 🛡️ C. Append token to your payload payload parameters
+      const payload = {
+        ...contactFormData,
+        recaptchaToken: recaptchaToken, // Added token tracking here
+      };
+
+      const response = await fetch(`${API_BASE_URL}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        setShowContactSuccess(true);
+        setContactFormData({
+          fullName: '',
+          email: '',
+          subject: '',
+          message: '',
+        });
+      } else {
+        console.error('Submission failed from API verification response.');
+      }
+    } catch (error) {
+      console.error('Error during secure form processing:', error);
+    } finally {
+      setIsSubmittingContact(false);
+    }
+  };
 
   // ── Ad Gallery Effects ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -529,37 +579,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSplashClose }) => {
       setContactFormData((prev) => ({ ...prev, [name]: value }));
     },
     [],
-  );
-
-  const handleContactSubmit = useCallback(
-    async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      setIsSubmittingContact(true);
-      try {
-        const response = await fetch(`${API_BASE_URL}/contact`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(contactFormData),
-        });
-        if (response.ok) {
-          setShowContactSuccess(true);
-          setContactFormData({
-            fullName: '',
-            email: '',
-            subject: '',
-            message: '',
-          });
-          setTimeout(() => setShowContactSuccess(false), 5000);
-        } else {
-          alert('Failed to send message. Please try again.');
-        }
-      } catch {
-        alert('Something went wrong. Please try again later.');
-      } finally {
-        setIsSubmittingContact(false);
-      }
-    },
-    [contactFormData],
   );
 
   const openFormModal = useCallback((formId: string) => {
