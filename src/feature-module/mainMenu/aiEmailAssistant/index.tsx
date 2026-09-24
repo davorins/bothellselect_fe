@@ -5,6 +5,7 @@ import { Modal } from 'react-bootstrap';
 interface AiEmail {
   _id: string;
   from: string;
+  replyToEmail?: string;
   to?: string;
   subject?: string;
   body: string;
@@ -235,7 +236,12 @@ const AiEmailAssistant: React.FC = () => {
                         style={{ cursor: 'pointer' }}
                       >
                         <td>
-                          <strong>{email.from}</strong>
+                          <strong>
+                            {email.replyToEmail &&
+                            email.replyToEmail !== email.from
+                              ? email.replyToEmail
+                              : email.from}
+                          </strong>
                         </td>
                         <td>{email.subject || '(No subject)'}</td>
                         <td>
@@ -268,6 +274,12 @@ const AiEmailAssistant: React.FC = () => {
               <div className='mb-2'>
                 <strong>From:</strong> {selected.from}
               </div>
+              {selected.replyToEmail &&
+                selected.replyToEmail !== selected.from && (
+                  <div className='mb-2'>
+                    <strong>Replying to:</strong> {selected.replyToEmail}
+                  </div>
+                )}
               <div className='mb-2'>
                 <strong>To:</strong> {selected.to || '-'}
               </div>
