@@ -2,6 +2,17 @@ import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { Modal } from 'react-bootstrap';
 
+interface PopulatedParent {
+  _id: string;
+  fullName?: string;
+  email?: string;
+}
+
+interface PopulatedPlayer {
+  _id: string;
+  fullName?: string;
+}
+
 interface AiEmail {
   _id: string;
   from: string;
@@ -22,8 +33,8 @@ interface AiEmail {
   autoSent?: boolean;
   sentAt?: string;
   receivedAt: string;
-  parentId?: string | null;
-  playerIds?: string[];
+  parentId?: string | PopulatedParent | null;
+  playerIds?: Array<string | PopulatedPlayer>;
 }
 
 interface AiSettings {
@@ -40,6 +51,24 @@ interface Pagination {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+function parentLabel(parent: AiEmail['parentId']): string {
+  if (!parent) return '';
+  if (typeof parent === 'string') return parent;
+  if (parent.fullName) {
+    return parent.email
+      ? `${parent.fullName} (${parent.email})`
+      : parent.fullName;
+  }
+  return parent._id;
+}
+
+function playerLabels(players: AiEmail['playerIds']): string {
+  if (!players || players.length === 0) return '';
+  return players
+    .map((p) => (typeof p === 'string' ? p : p.fullName || p._id))
+    .join(', ');
 }
 
 const AiEmailAssistant: React.FC = () => {
@@ -375,11 +404,13 @@ const AiEmailAssistant: React.FC = () => {
               )}
               {selected.parentId && (
                 <div className='mb-2 text-muted' style={{ fontSize: 13 }}>
-                  <strong>Matched parent:</strong> {selected.parentId}
+                  <strong>Matched parent:</strong>{' '}
+                  {parentLabel(selected.parentId)}
                   {selected.playerIds && selected.playerIds.length > 0 && (
                     <>
                       <span className='mx-1'>|</span>
-                      <strong>Players:</strong> {selected.playerIds.join(', ')}
+                      <strong>Players:</strong>{' '}
+                      {playerLabels(selected.playerIds)}
                     </>
                   )}
                 </div>
