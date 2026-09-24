@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
+import { Modal } from 'react-bootstrap';
 
 interface AiEmail {
   _id: string;
@@ -44,7 +45,6 @@ const AiEmailAssistant: React.FC = () => {
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
   const token = localStorage.getItem('token');
-
   const authHeader = { Authorization: `Bearer ${token}` };
 
   const fetchEmails = useCallback(async () => {
@@ -169,17 +169,21 @@ const AiEmailAssistant: React.FC = () => {
   return (
     <div className='page-wrapper'>
       <div className='content'>
-        <div className='page-header d-flex justify-content-between align-items-center'>
-          <div className='page-title'>
-            <h4>AI Email Assistant</h4>
-            <h6>Review and manage AI-generated email responses</h6>
+        <div className='d-md-flex d-block align-items-center justify-content-between mb-3'>
+          <div className='my-auto mb-2'>
+            <h4 className='mb-1'>AI Email Assistant</h4>
+            <h6 className='text-muted'>
+              Review and manage AI-generated email responses
+            </h6>
           </div>
-          <button
-            className='btn btn-outline-primary'
-            onClick={() => setShowSettings(true)}
-          >
-            <i className='ti ti-settings' /> Settings
-          </button>
+          <div>
+            <button
+              className='btn btn-outline-primary'
+              onClick={() => setShowSettings(true)}
+            >
+              <i className='ti ti-settings me-1' /> Settings
+            </button>
+          </div>
         </div>
 
         <div className='card'>
@@ -253,217 +257,211 @@ const AiEmailAssistant: React.FC = () => {
         </div>
       </div>
 
-      {/* Email detail modal */}
-      {selected && (
-        <div className='modal-overlay' onClick={closeEmail}>
-          <div
-            className='modal'
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              maxWidth: 720,
-              width: '90%',
-              background: '#fff',
-              borderRadius: 8,
-              padding: 24,
-            }}
-          >
-            <div className='d-flex justify-content-between align-items-start mb-3'>
-              <h4 className='mb-0'>Review & Send</h4>
-              <button className='btn btn-sm btn-light' onClick={closeEmail}>
-                ✕
-              </button>
-            </div>
+      {/* ── Email Detail Modal ── */}
+      <Modal show={!!selected} onHide={closeEmail} size='lg' centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Review &amp; Send</Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+          {selected && (
+            <>
+              <div className='mb-2'>
+                <strong>From:</strong> {selected.from}
+              </div>
+              <div className='mb-2'>
+                <strong>To:</strong> {selected.to || '-'}
+              </div>
+              <div className='mb-2'>
+                <strong>Subject:</strong> {selected.subject || '(none)'}
+              </div>
+              <div className='mb-2'>
+                <strong>Category:</strong> {selected.category} (
+                {selected.confidence}%)
+              </div>
+              {selected.reviewReason && (
+                <div className='mb-2 text-muted'>
+                  <strong>Reason:</strong> {selected.reviewReason}
+                </div>
+              )}
 
-            <p className='mb-1'>
-              <strong>From:</strong> {selected.from}
-            </p>
-            <p className='mb-1'>
-              <strong>To:</strong> {selected.to || '-'}
-            </p>
-            <p className='mb-1'>
-              <strong>Subject:</strong> {selected.subject || '(none)'}
-            </p>
-            <p className='mb-1'>
-              <strong>Category:</strong> {selected.category} (
-              {selected.confidence}
-              %)
-            </p>
-            {selected.reviewReason && (
-              <p className='mb-1 text-muted'>
-                <strong>Reason:</strong> {selected.reviewReason}
-              </p>
-            )}
+              <hr />
 
-            <hr />
-
-            <h6>Original message</h6>
-            <div
-              style={{
-                maxHeight: 180,
-                overflow: 'auto',
-                background: '#f7f7f7',
-                padding: 12,
-                borderRadius: 4,
-                whiteSpace: 'pre-wrap',
-                fontSize: 13,
-              }}
-            >
-              {selected.body}
-            </div>
-
-            <hr />
-
-            <h6>AI draft (editable)</h6>
-            <textarea
-              rows={10}
-              value={editedDraft}
-              onChange={(e) => setEditedDraft(e.target.value)}
-              style={{ width: '100%', fontFamily: 'inherit' }}
-            />
-
-            <div className='d-flex justify-content-end gap-2 mt-3'>
-              <button
-                className='btn btn-outline-danger'
-                onClick={handleReject}
-                disabled={sending || selected.status === 'sent'}
+              <h6>Original message</h6>
+              <div
+                className='bg-light p-3 rounded mb-3'
+                style={{
+                  maxHeight: 180,
+                  overflow: 'auto',
+                  whiteSpace: 'pre-wrap',
+                  fontSize: 13,
+                }}
               >
-                Reject
-              </button>
-              <button
-                className='btn btn-primary'
-                onClick={handleManualSend}
-                disabled={sending || selected.status === 'sent'}
-              >
-                {sending
-                  ? 'Sending...'
-                  : selected.status === 'sent'
-                    ? 'Already sent'
-                    : 'Approve & Send'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                {selected.body}
+              </div>
 
-      {/* Settings modal */}
-      {showSettings && settings && (
-        <div className='modal-overlay' onClick={() => setShowSettings(false)}>
-          <div
-            className='modal'
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              maxWidth: 560,
-              width: '90%',
-              background: '#fff',
-              borderRadius: 8,
-              padding: 24,
-            }}
-          >
-            <h4>AI Assistant Settings</h4>
-
-            <div className='form-check form-switch mb-2'>
-              <input
-                className='form-check-input'
-                type='checkbox'
-                checked={settings.enabled}
-                onChange={() => toggleSetting('enabled')}
-                id='enabled'
-              />
-              <label className='form-check-label' htmlFor='enabled'>
-                AI assistant enabled
-              </label>
-            </div>
-
-            <div className='form-check form-switch mb-3'>
-              <input
-                className='form-check-input'
-                type='checkbox'
-                checked={settings.automaticRepliesEnabled}
-                onChange={() => toggleSetting('automaticRepliesEnabled')}
-                id='autoReplies'
-              />
-              <label className='form-check-label' htmlFor='autoReplies'>
-                Enable automatic replies (auto-send when confident)
-              </label>
-            </div>
-
-            <div className='mb-3'>
-              <label className='form-label'>
-                Confidence threshold: {settings.confidenceThreshold}%
-              </label>
-              <input
-                type='range'
-                min={0}
-                max={100}
-                value={settings.confidenceThreshold}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    confidenceThreshold: Number(e.target.value),
-                  })
-                }
-                className='form-range'
-              />
-            </div>
-
-            <div className='mb-3'>
-              <label className='form-label'>
-                Categories that always require human review
-              </label>
-              <input
-                type='text'
+              <h6>AI draft (editable)</h6>
+              <textarea
                 className='form-control'
-                value={settings.alwaysRequireHumanReview.join(', ')}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    alwaysRequireHumanReview: e.target.value
-                      .split(',')
-                      .map((s) => s.trim())
-                      .filter(Boolean),
-                  })
-                }
+                rows={10}
+                value={editedDraft}
+                onChange={(e) => setEditedDraft(e.target.value)}
               />
-            </div>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            className='btn btn-light me-2'
+            onClick={closeEmail}
+            disabled={sending}
+          >
+            Cancel
+          </button>
+          <button
+            className='btn btn-outline-danger me-2'
+            onClick={handleReject}
+            disabled={sending || selected?.status === 'sent'}
+          >
+            Reject
+          </button>
+          <button
+            className='btn btn-primary'
+            onClick={handleManualSend}
+            disabled={sending || selected?.status === 'sent'}
+          >
+            {sending
+              ? 'Sending...'
+              : selected?.status === 'sent'
+                ? 'Already sent'
+                : 'Approve & Send'}
+          </button>
+        </Modal.Footer>
+      </Modal>
 
-            <div className='mb-3'>
-              <label className='form-label'>
-                Allowed automatic categories (empty = allow all except blocked)
-              </label>
-              <input
-                type='text'
-                className='form-control'
-                value={settings.allowedAutomaticCategories.join(', ')}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    allowedAutomaticCategories: e.target.value
-                      .split(',')
-                      .map((s) => s.trim())
-                      .filter(Boolean),
-                  })
-                }
-              />
-            </div>
+      {/* ── Settings Modal ── */}
+      <Modal
+        show={showSettings && !!settings}
+        onHide={() => setShowSettings(false)}
+        size='lg'
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>AI Assistant Settings</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {settings && (
+            <>
+              <div className='form-check form-switch mb-3'>
+                <input
+                  className='form-check-input'
+                  type='checkbox'
+                  checked={settings.enabled}
+                  onChange={() => toggleSetting('enabled')}
+                  id='enabled'
+                />
+                <label className='form-check-label' htmlFor='enabled'>
+                  AI assistant enabled
+                </label>
+              </div>
 
-            <div className='d-flex justify-content-end gap-2'>
-              <button
-                className='btn btn-outline-secondary'
-                onClick={() => setShowSettings(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className='btn btn-primary'
-                onClick={saveSettings}
-                disabled={savingSettings}
-              >
-                {savingSettings ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <div className='form-check form-switch mb-3'>
+                <input
+                  className='form-check-input'
+                  type='checkbox'
+                  checked={settings.automaticRepliesEnabled}
+                  onChange={() => toggleSetting('automaticRepliesEnabled')}
+                  id='autoReplies'
+                />
+                <label className='form-check-label' htmlFor='autoReplies'>
+                  Enable automatic replies (auto-send when confident)
+                </label>
+              </div>
+
+              <div className='mb-3'>
+                <label className='form-label'>
+                  Confidence threshold: {settings.confidenceThreshold}%
+                </label>
+                <input
+                  type='range'
+                  min={0}
+                  max={100}
+                  value={settings.confidenceThreshold}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      confidenceThreshold: Number(e.target.value),
+                    })
+                  }
+                  className='form-range'
+                />
+              </div>
+
+              <div className='mb-3'>
+                <label className='form-label'>
+                  Categories that always require human review
+                </label>
+                <input
+                  type='text'
+                  className='form-control'
+                  value={settings.alwaysRequireHumanReview.join(', ')}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      alwaysRequireHumanReview: e.target.value
+                        .split(',')
+                        .map((s) => s.trim())
+                        .filter(Boolean),
+                    })
+                  }
+                />
+                <small className='text-muted'>
+                  Comma-separated. These categories never auto-send.
+                </small>
+              </div>
+
+              <div className='mb-3'>
+                <label className='form-label'>
+                  Allowed automatic categories
+                </label>
+                <input
+                  type='text'
+                  className='form-control'
+                  value={settings.allowedAutomaticCategories.join(', ')}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      allowedAutomaticCategories: e.target.value
+                        .split(',')
+                        .map((s) => s.trim())
+                        .filter(Boolean),
+                    })
+                  }
+                />
+                <small className='text-muted'>
+                  Leave empty to allow all categories (except the ones above).
+                  If set, only these categories may auto-send.
+                </small>
+              </div>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            className='btn btn-light me-2'
+            onClick={() => setShowSettings(false)}
+            disabled={savingSettings}
+          >
+            Cancel
+          </button>
+          <button
+            className='btn btn-primary'
+            onClick={saveSettings}
+            disabled={savingSettings}
+          >
+            {savingSettings ? 'Saving...' : 'Save'}
+          </button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };
