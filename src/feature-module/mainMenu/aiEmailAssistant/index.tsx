@@ -31,10 +31,20 @@ interface AiSettings {
   alwaysRequireHumanReview: string[];
 }
 
+interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 const AiEmailAssistant: React.FC = () => {
   const [emails, setEmails] = useState<AiEmail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [pagination, setPagination] = useState<Pagination | null>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
 
   const [settings, setSettings] = useState<AiSettings | null>(null);
   const [savingSettings, setSavingSettings] = useState(false);
@@ -54,8 +64,10 @@ const AiEmailAssistant: React.FC = () => {
       setError('');
       const response = await axios.get(`${API_BASE_URL}/admin/ai-emails`, {
         headers: authHeader,
+        params: { page, limit: pageSize },
       });
       setEmails(response.data.emails || []);
+      setPagination(response.data.pagination || null);
     } catch (err) {
       console.error('Error loading AI emails:', err);
       setError('Failed to load AI emails.');
@@ -63,7 +75,7 @@ const AiEmailAssistant: React.FC = () => {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL, page]);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -192,7 +204,10 @@ const AiEmailAssistant: React.FC = () => {
             <div className='d-flex justify-content-between align-items-center mb-3'>
               <h5 className='mb-0'>AI Email Inbox</h5>
               <span className='badge bg-primary'>
-                {emails.length} email{emails.length === 1 ? '' : 's'}
+                {pagination ? pagination.total : emails.length} email
+                {(pagination ? pagination.total : emails.length) === 1
+                  ? ''
+                  : 's'}
               </span>
             </div>
 
@@ -257,6 +272,32 @@ const AiEmailAssistant: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {pagination && pagination.totalPages > 1 && (
+              <div className='d-flex justify-content-between align-items-center mt-3'>
+                <span className='text-muted' style={{ fontSize: 13 }}>
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+                <div>
+                  <button
+                    className='btn btn-outline-secondary btn-sm me-2'
+                    disabled={page <= 1 || loading}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    className='btn btn-outline-secondary btn-sm'
+                    disabled={page >= pagination.totalPages || loading}
+                    onClick={() =>
+                      setPage((p) => Math.min(pagination.totalPages, p + 1))
+                    }
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
           </div>
