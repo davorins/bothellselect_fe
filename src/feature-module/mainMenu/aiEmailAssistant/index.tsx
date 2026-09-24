@@ -12,6 +12,8 @@ interface AiEmail {
   category: string;
   confidence: number;
   aiDraft: string;
+  aiReason?: string;
+  dataUsed?: string[];
   humanEditedDraft?: string;
   finalResponse?: string;
   status: string;
@@ -20,6 +22,8 @@ interface AiEmail {
   autoSent?: boolean;
   sentAt?: string;
   receivedAt: string;
+  parentId?: string | null;
+  playerIds?: string[];
 }
 
 interface AiSettings {
@@ -52,6 +56,7 @@ const AiEmailAssistant: React.FC = () => {
   const [selected, setSelected] = useState<AiEmail | null>(null);
   const [editedDraft, setEditedDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
@@ -105,8 +110,40 @@ const AiEmailAssistant: React.FC = () => {
     setEditedDraft('');
   };
 
+  const refreshSelected = async (id: string) => {
+    const res = await axios.get(`${API_BASE_URL}/admin/ai-emails/${id}`, {
+      headers: authHeader,
+    });
+    const fresh: AiEmail = res.data.email;
+    setSelected(fresh);
+    setEditedDraft(fresh.humanEditedDraft || fresh.aiDraft || '');
+    return fresh;
+  };
+
+  const handleRegenerate = async () => {
+    if (!selected) return;
+    setRegenerating(true);
+    try {
+      await axios.post(
+        `${API_BASE_URL}/admin/ai-emails/${selected._id}/regenerate`,
+        {},
+        { headers: authHeader },
+      );
+      await refreshSelected(selected._id);
+      fetchEmails();
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Regenerate failed');
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const handleManualSend = async () => {
     if (!selected) return;
+    if (!editedDraft.trim()) {
+      alert('Draft is empty. Write a response before sending.');
+      return;
+    }
     setSending(true);
     try {
       await axios.post(
@@ -331,6 +368,22 @@ const AiEmailAssistant: React.FC = () => {
                 <strong>Category:</strong> {selected.category} (
                 {selected.confidence}%)
               </div>
+              {selected.dataUsed && selected.dataUsed.length > 0 && (
+                <div className='mb-2 text-muted' style={{ fontSize: 13 }}>
+                  <strong>Data used:</strong> {selected.dataUsed.join(', ')}
+                </div>
+              )}
+              {selected.parentId && (
+                <div className='mb-2 text-muted' style={{ fontSize: 13 }}>
+                  <strong>Matched parent:</strong> {selected.parentId}
+                  {selected.playerIds && selected.playerIds.length > 0 && (
+                    <>
+                      <span className='mx-1'>|</span>
+                      <strong>Players:</strong> {selected.playerIds.join(', ')}
+                    </>
+                  )}
+                </div>
+              )}
               {selected.reviewReason && (
                 <div className='mb-2 text-muted'>
                   <strong>Reason:</strong> {selected.reviewReason}
@@ -352,12 +405,40 @@ const AiEmailAssistant: React.FC = () => {
                 {selected.body}
               </div>
 
-              <h6>AI draft (editable)</h6>
+              <div className='d-flex justify-content-between align-items-center mb-2'>
+                <h6 className='mb-0'>AI draft (editable)</h6>
+                <button
+                  className='btn btn-sm btn-outline-secondary'
+                  onClick={handleRegenerate}
+                  disabled={
+                    regenerating || sending || selected.status === 'sent'
+                  }
+                >
+                  {regenerating ? 'Regenerating...' : 'Regenerate'}
+                </button>
+              </div>
+
+              {!selected.aiDraft && (
+                <div
+                  className='alert alert-warning py-2 mb-2'
+                  style={{ fontSize: 13 }}
+                >
+                  No AI draft was generated. You can write a response manually
+                  below, or click <strong>Regenerate</strong>, or reject this
+                  email.
+                </div>
+              )}
+
               <textarea
                 className='form-control'
                 rows={10}
                 value={editedDraft}
                 onChange={(e) => setEditedDraft(e.target.value)}
+                placeholder={
+                  selected.aiDraft
+                    ? ''
+                    : 'Write your response here, or reject this email...'
+                }
               />
             </>
           )}
@@ -380,7 +461,9 @@ const AiEmailAssistant: React.FC = () => {
           <button
             className='btn btn-primary'
             onClick={handleManualSend}
-            disabled={sending || selected?.status === 'sent'}
+            disabled={
+              sending || selected?.status === 'sent' || !editedDraft.trim()
+            }
           >
             {sending
               ? 'Sending...'
