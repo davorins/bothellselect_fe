@@ -87,6 +87,8 @@ const AiEmailAssistant: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [polling, setPolling] = useState(false);
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
   const token = localStorage.getItem('token');
@@ -129,9 +131,81 @@ const AiEmailAssistant: React.FC = () => {
     fetchSettings();
   }, [fetchEmails, fetchSettings]);
 
-  const openEmail = (email: AiEmail) => {
+  // ── Poll while the modal is open and the AI draft is still missing ──
+  useEffect(() => {
+    if (!selected) return;
+    if (selected.aiDraft && selected.aiDraft.trim()) return;
+    if (selected.status !== 'new' && selected.status !== 'draft_ready') return;
+
+    let cancelled = false;
+    let attempts = 0;
+    const MAX_ATTEMPTS = 10; // 10 × 3s = 30s
+
+    setPolling(true);
+
+    const tick = async () => {
+      if (cancelled) return;
+      attempts += 1;
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/admin/ai-emails/${selected._id}`,
+          { headers: authHeader },
+        );
+        const fresh: AiEmail = res.data.email;
+        if (cancelled) return;
+
+        if (fresh.aiDraft && fresh.aiDraft.trim()) {
+          setSelected(fresh);
+          setEditedDraft(fresh.humanEditedDraft || fresh.aiDraft || '');
+          setPolling(false);
+          fetchEmails();
+          return;
+        }
+
+        if (attempts >= MAX_ATTEMPTS) {
+          setPolling(false);
+          return;
+        }
+
+        setTimeout(tick, 3000);
+      } catch (err) {
+        console.error('Polling AI email failed:', err);
+        setPolling(false);
+      }
+    };
+
+    const handle = setTimeout(tick, 3000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+      setPolling(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?._id, selected?.aiDraft, selected?.status]);
+
+  const openEmail = async (email: AiEmail) => {
+    // Show the row we already have so the modal feels instant.
     setSelected(email);
     setEditedDraft(email.humanEditedDraft || email.aiDraft || '');
+
+    // Then fetch the freshest version from the server. If the AI has already
+    // finished, this will show the draft immediately; if not, the polling
+    // effect above will pick it up within a few seconds.
+    try {
+      setLoadingDetail(true);
+      const res = await axios.get(
+        `${API_BASE_URL}/admin/ai-emails/${email._id}`,
+        { headers: authHeader },
+      );
+      const fresh: AiEmail = res.data.email;
+      setSelected(fresh);
+      setEditedDraft(fresh.humanEditedDraft || fresh.aiDraft || '');
+    } catch (err) {
+      console.error('Error refreshing AI email detail:', err);
+    } finally {
+      setLoadingDetail(false);
+    }
   };
 
   const closeEmail = () => {
@@ -244,6 +318,8 @@ const AiEmailAssistant: React.FC = () => {
       </span>
     );
   };
+
+  const busy = sending || loadingDetail || polling;
 
   return (
     <div className='page-wrapper'>
@@ -437,19 +513,24 @@ const AiEmailAssistant: React.FC = () => {
               </div>
 
               <div className='d-flex justify-content-between align-items-center mb-2'>
-                <h6 className='mb-0'>AI draft (editable)</h6>
+                <h6 className='mb-0'>
+                  AI draft (editable)
+                  {(loadingDetail || polling) && (
+                    <span className='text-muted ms-2' style={{ fontSize: 12 }}>
+                      {polling ? 'AI is drafting…' : 'Loading…'}
+                    </span>
+                  )}
+                </h6>
                 <button
                   className='btn btn-sm btn-outline-secondary'
                   onClick={handleRegenerate}
-                  disabled={
-                    regenerating || sending || selected.status === 'sent'
-                  }
+                  disabled={regenerating || busy || selected.status === 'sent'}
                 >
                   {regenerating ? 'Regenerating...' : 'Regenerate'}
                 </button>
               </div>
 
-              {!selected.aiDraft && (
+              {!selected.aiDraft && !polling && !loadingDetail && (
                 <div
                   className='alert alert-warning py-2 mb-2'
                   style={{ fontSize: 13 }}
@@ -466,10 +547,11 @@ const AiEmailAssistant: React.FC = () => {
                 value={editedDraft}
                 onChange={(e) => setEditedDraft(e.target.value)}
                 placeholder={
-                  selected.aiDraft
-                    ? ''
+                  polling || loadingDetail
+                    ? 'Waiting for the AI to finish drafting…'
                     : 'Write your response here, or reject this email...'
                 }
+                disabled={polling || loadingDetail}
               />
             </>
           )}
@@ -485,7 +567,7 @@ const AiEmailAssistant: React.FC = () => {
           <button
             className='btn btn-outline-danger me-2'
             onClick={handleReject}
-            disabled={sending || selected?.status === 'sent'}
+            disabled={busy || selected?.status === 'sent'}
           >
             Reject
           </button>
@@ -493,14 +575,16 @@ const AiEmailAssistant: React.FC = () => {
             className='btn btn-primary'
             onClick={handleManualSend}
             disabled={
-              sending || selected?.status === 'sent' || !editedDraft.trim()
+              busy || selected?.status === 'sent' || !editedDraft.trim()
             }
           >
             {sending
               ? 'Sending...'
               : selected?.status === 'sent'
                 ? 'Already sent'
-                : 'Approve & Send'}
+                : polling || loadingDetail
+                  ? 'Waiting for AI…'
+                  : 'Approve & Send'}
           </button>
         </Modal.Footer>
       </Modal>
