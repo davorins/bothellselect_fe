@@ -24,7 +24,8 @@ interface AiEmail {
   confidence: number;
   aiDraft: string;
   aiReason?: string;
-  dataUsed?: string[];
+  // FIXED: Changed from string[] to object to match the new schema
+  dataUsed?: Record<string, any>;
   humanEditedDraft?: string;
   finalResponse?: string;
   status: string;
@@ -110,7 +111,6 @@ const AiEmailAssistant: React.FC = () => {
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [API_BASE_URL, page]);
 
   const fetchSettings = useCallback(async () => {
@@ -123,7 +123,6 @@ const AiEmailAssistant: React.FC = () => {
     } catch (err) {
       console.error('Error loading AI settings:', err);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [API_BASE_URL]);
 
   useEffect(() => {
@@ -131,7 +130,6 @@ const AiEmailAssistant: React.FC = () => {
     fetchSettings();
   }, [fetchEmails, fetchSettings]);
 
-  // ── Poll while the modal is open and the AI draft is still missing ──
   useEffect(() => {
     if (!selected) return;
     if (selected.aiDraft && selected.aiDraft.trim()) return;
@@ -139,7 +137,7 @@ const AiEmailAssistant: React.FC = () => {
 
     let cancelled = false;
     let attempts = 0;
-    const MAX_ATTEMPTS = 10; // 10 × 3s = 30s
+    const MAX_ATTEMPTS = 10;
 
     setPolling(true);
 
@@ -166,7 +164,6 @@ const AiEmailAssistant: React.FC = () => {
           setPolling(false);
           return;
         }
-
         setTimeout(tick, 3000);
       } catch (err) {
         console.error('Polling AI email failed:', err);
@@ -175,23 +172,17 @@ const AiEmailAssistant: React.FC = () => {
     };
 
     const handle = setTimeout(tick, 3000);
-
     return () => {
       cancelled = true;
       clearTimeout(handle);
       setPolling(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?._id, selected?.aiDraft, selected?.status]);
 
   const openEmail = async (email: AiEmail) => {
-    // Show the row we already have so the modal feels instant.
     setSelected(email);
     setEditedDraft(email.humanEditedDraft || email.aiDraft || '');
 
-    // Then fetch the freshest version from the server. If the AI has already
-    // finished, this will show the draft immediately; if not, the polling
-    // effect above will pick it up within a few seconds.
     try {
       setLoadingDetail(true);
       const res = await axios.get(
@@ -473,11 +464,16 @@ const AiEmailAssistant: React.FC = () => {
                 <strong>Category:</strong> {selected.category} (
                 {selected.confidence}%)
               </div>
-              {selected.dataUsed && selected.dataUsed.length > 0 && (
-                <div className='mb-2 text-muted' style={{ fontSize: 13 }}>
-                  <strong>Data used:</strong> {selected.dataUsed.join(', ')}
-                </div>
-              )}
+
+              {/* FIXED: Safe rendering of dataUsed object */}
+              {selected.dataUsed &&
+                Object.keys(selected.dataUsed).length > 0 && (
+                  <div className='mb-2 text-muted' style={{ fontSize: 13 }}>
+                    <strong>Data used:</strong>{' '}
+                    {JSON.stringify(selected.dataUsed)}
+                  </div>
+                )}
+
               {selected.parentId && (
                 <div className='mb-2 text-muted' style={{ fontSize: 13 }}>
                   <strong>Matched parent:</strong>{' '}
