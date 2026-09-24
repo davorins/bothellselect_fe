@@ -64,6 +64,14 @@ export const SidebarData = [
         link: routes.coachDashboard,
         roles: ['coach'],
       },
+      {
+        label: 'AI Email Assistant',
+        icon: 'ti ti-sparkles',
+        submenu: false,
+        showSubRoute: false,
+        link: routes.aiEmailAssistant,
+        roles: ['admin'],
+      },
     ],
   },
   {
