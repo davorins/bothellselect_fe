@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import './AiEmailAssistant.css';
 
 interface AiEmail {
   _id: string;
