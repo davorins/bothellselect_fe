@@ -16,6 +16,7 @@ interface PopulatedPlayer {
 interface AiEmail {
   _id: string;
   from: string;
+  originalFrom?: string;
   replyToEmail?: string;
   to?: string;
   subject?: string;
@@ -24,7 +25,6 @@ interface AiEmail {
   confidence: number;
   aiDraft: string;
   aiReason?: string;
-  // FIXED: Changed from string[] to object to match the new schema
   dataUsed?: Record<string, any>;
   humanEditedDraft?: string;
   finalResponse?: string;
@@ -54,6 +54,18 @@ interface Pagination {
   totalPages: number;
 }
 
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: '', label: 'Pending (default)' },
+  { value: 'new', label: 'New' },
+  { value: 'draft_ready', label: 'Draft Ready' },
+  { value: 'reviewed', label: 'Reviewed' },
+  { value: 'sent', label: 'Sent' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'ignored', label: 'Ignored' },
+  { value: 'skipped', label: 'Skipped' },
+];
+
 function parentLabel(parent: AiEmail['parentId']): string {
   if (!parent) return '';
   if (typeof parent === 'string') return parent;
@@ -78,6 +90,7 @@ const AiEmailAssistant: React.FC = () => {
   const [error, setError] = useState('');
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<string>('all'); // 'all' | '' | 'new' | ...
   const pageSize = 25;
 
   const [settings, setSettings] = useState<AiSettings | null>(null);
@@ -99,9 +112,15 @@ const AiEmailAssistant: React.FC = () => {
     try {
       setLoading(true);
       setError('');
+
+      const params: Record<string, any> = { page, limit: pageSize };
+      // Only send `status` if it's a non-empty string. Empty string means
+      // "use server default (pending)".
+      if (statusFilter) params.status = statusFilter;
+
       const response = await axios.get(`${API_BASE_URL}/admin/ai-emails`, {
         headers: authHeader,
-        params: { page, limit: pageSize },
+        params,
       });
       setEmails(response.data.emails || []);
       setPagination(response.data.pagination || null);
@@ -111,7 +130,7 @@ const AiEmailAssistant: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [API_BASE_URL, page]);
+  }, [API_BASE_URL, page, statusFilter]);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -177,6 +196,7 @@ const AiEmailAssistant: React.FC = () => {
       clearTimeout(handle);
       setPolling(false);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?._id, selected?.aiDraft, selected?.status]);
 
   const openEmail = async (email: AiEmail) => {
@@ -301,6 +321,8 @@ const AiEmailAssistant: React.FC = () => {
       reviewed: 'bg-info text-dark',
       sent: 'bg-success',
       rejected: 'bg-danger',
+      ignored: 'bg-dark',
+      skipped: 'bg-light text-dark',
     };
     return (
       <span className={`badge ${map[email.status] || 'bg-light text-dark'}`}>
@@ -334,14 +356,34 @@ const AiEmailAssistant: React.FC = () => {
 
         <div className='card'>
           <div className='card-body'>
-            <div className='d-flex justify-content-between align-items-center mb-3'>
+            <div className='d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2'>
               <h5 className='mb-0'>AI Email Inbox</h5>
-              <span className='badge bg-primary'>
-                {pagination ? pagination.total : emails.length} email
-                {(pagination ? pagination.total : emails.length) === 1
-                  ? ''
-                  : 's'}
-              </span>
+              <div className='d-flex align-items-center gap-2'>
+                <label className='mb-0 text-muted' style={{ fontSize: 13 }}>
+                  Filter:
+                </label>
+                <select
+                  className='form-select form-select-sm'
+                  style={{ width: 180 }}
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setPage(1);
+                    setStatusFilter(e.target.value);
+                  }}
+                >
+                  {STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.value || 'pending'} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <span className='badge bg-primary'>
+                  {pagination ? pagination.total : emails.length} email
+                  {(pagination ? pagination.total : emails.length) === 1
+                    ? ''
+                    : 's'}
+                </span>
+              </div>
             </div>
 
             {loading && (
@@ -358,8 +400,9 @@ const AiEmailAssistant: React.FC = () => {
               <div className='text-center py-5'>
                 <h6>No AI emails yet</h6>
                 <p className='text-muted mb-0'>
-                  New parent emails processed by the AI assistant will appear
-                  here.
+                  {statusFilter === 'all'
+                    ? 'No emails have been ingested yet. Check that the Resend webhook is delivering.'
+                    : 'No emails match the selected filter.'}
                 </p>
               </div>
             )}
@@ -388,7 +431,7 @@ const AiEmailAssistant: React.FC = () => {
                             {email.replyToEmail &&
                             email.replyToEmail !== email.from
                               ? email.replyToEmail
-                              : email.from}
+                              : email.originalFrom || email.from}
                           </strong>
                         </td>
                         <td>{email.subject || '(No subject)'}</td>
@@ -446,8 +489,14 @@ const AiEmailAssistant: React.FC = () => {
           {selected && (
             <>
               <div className='mb-2'>
-                <strong>From:</strong> {selected.from}
+                <strong>From:</strong> {selected.originalFrom || selected.from}
               </div>
+              {selected.originalFrom &&
+                selected.originalFrom !== selected.from && (
+                  <div className='mb-2 text-muted' style={{ fontSize: 13 }}>
+                    <strong>Forwarded from:</strong> {selected.from}
+                  </div>
+                )}
               {selected.replyToEmail &&
                 selected.replyToEmail !== selected.from && (
                   <div className='mb-2'>
@@ -465,7 +514,6 @@ const AiEmailAssistant: React.FC = () => {
                 {selected.confidence}%)
               </div>
 
-              {/* FIXED: Safe rendering of dataUsed object */}
               {selected.dataUsed &&
                 Object.keys(selected.dataUsed).length > 0 && (
                   <div className='mb-2 text-muted' style={{ fontSize: 13 }}>
@@ -508,6 +556,16 @@ const AiEmailAssistant: React.FC = () => {
                 {selected.body}
               </div>
 
+              {selected.status === 'ignored' && (
+                <div
+                  className='alert alert-dark py-2 mb-3'
+                  style={{ fontSize: 13 }}
+                >
+                  This email was <strong>ignored</strong> by the pre-AI filter.
+                  Reason: {selected.reviewReason || 'n/a'}
+                </div>
+              )}
+
               <div className='d-flex justify-content-between align-items-center mb-2'>
                 <h6 className='mb-0'>
                   AI draft (editable)
@@ -520,7 +578,12 @@ const AiEmailAssistant: React.FC = () => {
                 <button
                   className='btn btn-sm btn-outline-secondary'
                   onClick={handleRegenerate}
-                  disabled={regenerating || busy || selected.status === 'sent'}
+                  disabled={
+                    regenerating ||
+                    busy ||
+                    selected.status === 'sent' ||
+                    selected.status === 'ignored'
+                  }
                 >
                   {regenerating ? 'Regenerating...' : 'Regenerate'}
                 </button>
@@ -571,7 +634,10 @@ const AiEmailAssistant: React.FC = () => {
             className='btn btn-primary'
             onClick={handleManualSend}
             disabled={
-              busy || selected?.status === 'sent' || !editedDraft.trim()
+              busy ||
+              selected?.status === 'sent' ||
+              selected?.status === 'ignored' ||
+              !editedDraft.trim()
             }
           >
             {sending
@@ -650,7 +716,7 @@ const AiEmailAssistant: React.FC = () => {
                 <input
                   type='text'
                   className='form-control'
-                  value={settings.alwaysRequireHumanReview.join(', ')}
+                  value={(settings.alwaysRequireHumanReview || []).join(', ')}
                   onChange={(e) =>
                     setSettings({
                       ...settings,
@@ -673,7 +739,7 @@ const AiEmailAssistant: React.FC = () => {
                 <input
                   type='text'
                   className='form-control'
-                  value={settings.allowedAutomaticCategories.join(', ')}
+                  value={(settings.allowedAutomaticCategories || []).join(', ')}
                   onChange={(e) =>
                     setSettings({
                       ...settings,
