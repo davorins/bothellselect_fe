@@ -14,50 +14,111 @@ interface MarketingStats {
   byEventType: Record<string, { count: number; revenue: number; paid: number }>;
 }
 
+interface SeasonOption {
+  season: string;
+  year: number;
+  label: string;
+  count: number;
+}
+
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const MarketingDashboard: React.FC = () => {
   const [stats, setStats] = useState<MarketingStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Filters
   const [selectedCampaign, setSelectedCampaign] = useState<string>('');
   const [campaigns, setCampaigns] = useState<string[]>([]);
 
+  const [selectedSeason, setSelectedSeason] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [seasonOptions, setSeasonOptions] = useState<SeasonOption[]>([]);
+
+  // ── Fetch stats whenever any filter changes ──────────────────────────
   useEffect(() => {
+    const fetchStats = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const token = localStorage.getItem('token');
+        const params = new URLSearchParams();
+        if (selectedCampaign) params.set('campaign', selectedCampaign);
+        if (selectedSeason) params.set('season', selectedSeason);
+        if (selectedYear) params.set('year', selectedYear);
+        const qs = params.toString();
+        const url = `${API_BASE_URL}/marketing/attribution/stats${qs ? `?${qs}` : ''}`;
+
+        const response = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        setStats(response.data.stats);
+      } catch (err: any) {
+        console.error('Error fetching marketing stats:', err);
+        setError(err.response?.data?.error || 'Failed to load marketing data');
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchStats();
+  }, [selectedCampaign, selectedSeason, selectedYear]);
+
+  // ── Campaigns: fetched once, stays stable regardless of other filters ──
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${API_BASE_URL}/marketing/campaigns`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setCampaigns(res.data.campaigns || []);
+      } catch (err) {
+        console.error('Failed to load marketing campaigns:', err);
+      }
+    };
+    fetchCampaigns();
+  }, []);
+
+  // ── Seasons: refetch when campaign changes so dropdown reflects the campaign ──
+  useEffect(() => {
+    const fetchSeasons = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const params = new URLSearchParams();
+        if (selectedCampaign) params.set('campaign', selectedCampaign);
+        const qs = params.toString();
+        const url = `${API_BASE_URL}/marketing/seasons${qs ? `?${qs}` : ''}`;
+
+        const res = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const seasons: SeasonOption[] = res.data.seasons || [];
+        setSeasonOptions(seasons);
+
+        // If the current season selection no longer exists in the new list,
+        // clear it so we don't filter by a stale value.
+        if (selectedSeason) {
+          const stillExists = seasons.some(
+            (s) =>
+              s.season === selectedSeason && String(s.year) === selectedYear,
+          );
+          if (!stillExists) {
+            setSelectedSeason('');
+            setSelectedYear('');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load marketing seasons:', err);
+      }
+    };
+    fetchSeasons();
+    // We intentionally re-run when selectedCampaign changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCampaign]);
 
-  const fetchStats = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem('token');
-      const url = selectedCampaign
-        ? `${API_BASE_URL}/marketing/attribution/stats?campaign=${selectedCampaign}`
-        : `${API_BASE_URL}/marketing/attribution/stats`;
-
-      const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      setStats(response.data.stats);
-
-      // Extract campaign list for filter
-      if (response.data.stats?.byCampaign) {
-        const campaignList = Object.keys(response.data.stats.byCampaign).filter(
-          (c) => c !== 'none',
-        );
-        setCampaigns(campaignList);
-      }
-    } catch (err: any) {
-      console.error('Error fetching marketing stats:', err);
-      setError(err.response?.data?.error || 'Failed to load marketing data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Calculate metrics
+  // ── Derived metrics ───────────────────────────────────────────────────
   const costPerRegistration =
     stats?.totalRegistrations && stats.totalRegistrations > 0
       ? (stats.totalRevenue / stats.totalRegistrations).toFixed(2)
@@ -68,7 +129,8 @@ const MarketingDashboard: React.FC = () => {
       ? ((stats.paidRegistrations / stats.totalRegistrations) * 100).toFixed(1)
       : '0.0';
 
-  if (loading) {
+  // ── Early states ──────────────────────────────────────────────────────
+  if (loading && !stats) {
     return (
       <div className='page-wrapper admin-dashboard-page'>
         <div className='content'>
@@ -86,22 +148,24 @@ const MarketingDashboard: React.FC = () => {
     );
   }
 
-  if (error || !stats) {
+  if (error && !stats) {
     return (
       <div className='page-wrapper admin-dashboard-page'>
         <div className='content'>
           <div className='alert alert-danger'>
             <h5>Error Loading Marketing Data</h5>
-            <p>{error || 'No marketing data available'}</p>
-            <button className='btn btn-primary' onClick={fetchStats}>
-              <i className='ti ti-refresh me-2'></i>Retry
-            </button>
+            <p>{error}</p>
           </div>
         </div>
       </div>
     );
   }
 
+  if (!stats) {
+    return null;
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────
   return (
     <div className='page-wrapper admin-dashboard-page'>
       <div className='content'>
@@ -120,12 +184,87 @@ const MarketingDashboard: React.FC = () => {
               </ol>
             </nav>
           </div>
-          <div className='d-flex my-xl-auto right-content align-items-center flex-wrap'>
-            <div className='mb-2 me-3'>
-              <button className='btn btn-outline-primary' onClick={fetchStats}>
-                <i className='ti ti-refresh me-2'></i>Refresh
+        </div>
+
+        {/* Filter bar */}
+        <div className='card border-0 mb-3'>
+          <div className='card-body d-flex flex-wrap gap-2 align-items-center'>
+            <span className='text-muted me-2'>
+              <i className='ti ti-filter me-1'></i>
+              Filters:
+            </span>
+
+            {seasonOptions.length > 0 && (
+              <select
+                className='form-select form-select-sm'
+                style={{ width: 'auto', minWidth: 220 }}
+                value={
+                  selectedSeason ? `${selectedSeason}|${selectedYear}` : ''
+                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) {
+                    setSelectedSeason('');
+                    setSelectedYear('');
+                  } else {
+                    const [s, y] = val.split('|');
+                    setSelectedSeason(s);
+                    setSelectedYear(y);
+                  }
+                }}
+              >
+                <option value=''>All Seasons</option>
+                {seasonOptions.map((opt) => (
+                  <option
+                    key={`${opt.season}|${opt.year}`}
+                    value={`${opt.season}|${opt.year}`}
+                  >
+                    {opt.label} ({opt.count})
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {campaigns.length > 0 && (
+              <select
+                className='form-select form-select-sm'
+                style={{ width: 'auto', minWidth: 200 }}
+                value={selectedCampaign}
+                onChange={(e) => setSelectedCampaign(e.target.value)}
+              >
+                <option value=''>All Campaigns</option>
+                {campaigns.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {(selectedSeason || selectedCampaign) && (
+              <button
+                className='btn btn-sm btn-outline-secondary'
+                onClick={() => {
+                  setSelectedSeason('');
+                  setSelectedYear('');
+                  setSelectedCampaign('');
+                }}
+              >
+                <i className='ti ti-x me-1'></i>
+                Clear filters
               </button>
-            </div>
+            )}
+
+            {loading && (
+              <span className='ms-auto text-muted small'>
+                <span
+                  className='spinner-border spinner-border-sm me-1'
+                  role='status'
+                  aria-hidden='true'
+                ></span>
+                Updating…
+              </span>
+            )}
           </div>
         </div>
 
@@ -326,7 +465,7 @@ const MarketingDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Revenue Overview - Matching your admin dashboard style */}
+        {/* Marketing Performance Overview */}
         <div className='row'>
           <div className='col-12'>
             <div className='card flex-fill border-0'>
@@ -364,7 +503,7 @@ const MarketingDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Data Tables Section - Matching your admin dashboard style */}
+        {/* Data Tables */}
         <div className='row'>
           {/* By Source */}
           <div className='col-xxl-6 d-flex'>
@@ -430,23 +569,6 @@ const MarketingDashboard: React.FC = () => {
             <div className='card flex-fill'>
               <div className='card-header d-flex align-items-center justify-content-between'>
                 <h4 className='card-title'>Registrations by Campaign</h4>
-                <div className='d-flex gap-2'>
-                  {campaigns.length > 0 && (
-                    <select
-                      className='form-select form-select-sm'
-                      style={{ width: 'auto' }}
-                      value={selectedCampaign}
-                      onChange={(e) => setSelectedCampaign(e.target.value)}
-                    >
-                      <option value=''>All Campaigns</option>
-                      {campaigns.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
               </div>
               <div className='card-body'>
                 <div className='dashboard-table-wrapper'>
@@ -551,7 +673,7 @@ const MarketingDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Help/Info Card */}
+        {/* Help Card */}
         <div className='row mt-4'>
           <div className='col-12'>
             <div className='card border-0 bg-light'>
@@ -564,32 +686,41 @@ const MarketingDashboard: React.FC = () => {
                   <div className='col-md-6'>
                     <ul className='mb-0'>
                       <li>
-                        Add <strong>utm_source</strong>,{' '}
-                        <strong>utm_medium</strong>, and{' '}
-                        <strong>utm_campaign</strong> parameters to your ad URLs
+                        Use the <strong>Season</strong> dropdown to scope the
+                        dashboard to a specific tryout, training program, or
+                        season.
                       </li>
                       <li>
-                        Example:{' '}
-                        <code className='bg-white p-1 rounded'>
-                          https://bothellselect.com/tryout-registration?utm_source=instagram&utm_medium=paid_social&utm_campaign=fall_tryouts_2026
-                        </code>
+                        Use the <strong>Campaign</strong> dropdown to scope to a
+                        specific ad campaign.
+                      </li>
+                      <li>
+                        Combine both to see, e.g., only{' '}
+                        <em>Bothell Select Tryouts 2026</em> traffic from a
+                        specific Facebook campaign.
+                      </li>
+                      <li>
+                        Click <strong>Clear filters</strong> to reset.
                       </li>
                     </ul>
                   </div>
                   <div className='col-md-6'>
                     <ul className='mb-0'>
                       <li>
-                        Registrations are automatically attributed to the
-                        correct source and campaign
+                        Add <strong>utm_source</strong>,{' '}
+                        <strong>utm_medium</strong>, and{' '}
+                        <strong>utm_campaign</strong> parameters to your ad
+                        URLs.
                       </li>
                       <li>
-                        Use the campaign filter above to view performance for
-                        specific campaigns
+                        Example:{' '}
+                        <code className='bg-white p-1 rounded'>
+                          https://bothellselect.com/tryout-registration?utm_source=facebook&utm_medium=paid_social&utm_campaign=fall_tryouts_2026
+                        </code>
                       </li>
                       <li>
-                        To calculate <strong>Cost per Registration</strong> and{' '}
-                        <strong>ROAS</strong>, import your ad spend data from
-                        Meta Ads Manager
+                        To calculate <strong>ROAS</strong>, import your ad spend
+                        from Meta Ads Manager.
                       </li>
                     </ul>
                   </div>
