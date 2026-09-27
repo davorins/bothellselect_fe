@@ -337,6 +337,7 @@ export const exportPlayersToPDF = <T extends PlayerTableData>(
 // Full Name, a blank Comments column, and an empty checkbox in
 // "Selected for Team?", with the active Gender/Grade filters called
 // out in large print at the top. Condensed to fit 20+ rows per page.
+// Opens the browser's print dialog automatically instead of downloading.
 export const printPlayerRoster = <T extends PlayerTableData>(
   data: T[],
   filters?: { gender?: string | null; grade?: string | null },
@@ -403,7 +404,11 @@ export const printPlayerRoster = <T extends PlayerTableData>(
     },
   });
 
-  doc.save(`player_roster_${new Date().toISOString().slice(0, 10)}.pdf`);
+  // Trigger the browser's print dialog automatically instead of
+  // downloading a file.
+  doc.autoPrint();
+  const blobUrl = doc.output('bloburl');
+  window.open(blobUrl as unknown as string, '_blank');
 };
 
 // exportPlayersToExcel
