@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { all_routes } from '../../router/all_routes';
 import ImageWithBasePath from '../../../core/common/imageWithBasePath';
 import axios from 'axios';
+import './ResetPassword.css';
 
 type PasswordField = 'newPassword' | 'confirmPassword';
 
@@ -10,6 +11,9 @@ const ResetPassword = () => {
   const routes = all_routes;
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+  const navigate = useNavigate();
+  const currentYear = new Date().getFullYear();
+
   const [passwordVisibility, setPasswordVisibility] = useState({
     newPassword: false,
     confirmPassword: false,
@@ -20,8 +24,34 @@ const ResetPassword = () => {
   });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
-  const currentYear = new Date().getFullYear();
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
+
+  useEffect(() => {
+    // Preload image and trigger entrance animation
+    const img = new Image();
+    img.src = 'assets/img/bg/bg_forgotPassword.png';
+    img.onload = () => {
+      setIsImageLoaded(true);
+    };
+
+    const timer = setTimeout(() => {
+      setIsImageLoaded(true);
+    }, 500);
+
+    // Mouse move effect for parallax
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      setMousePosition({ x, y });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
 
   const togglePasswordVisibility = (field: PasswordField) => {
     setPasswordVisibility((prev) => ({
@@ -64,7 +94,7 @@ const ResetPassword = () => {
         {
           token,
           newPassword: passwords.newPassword,
-        }
+        },
       );
 
       if (response.data.success) {
@@ -88,7 +118,7 @@ const ResetPassword = () => {
       setError(
         error.response?.data?.error ||
           error.response?.data?.message ||
-          'Failed to reset password. Please try again.'
+          'Failed to reset password. Please try again.',
       );
     } finally {
       setIsSubmitting(false);
@@ -96,128 +126,167 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className='container-fluid'>
-      <div className='login-wrapper w-100 overflow-hidden position-relative flex-wrap d-block vh-100'>
-        <div className='row'>
-          <div className='col-lg-6 d-none d-lg-flex align-items-center justify-content-center bg-light-300 vh-100'>
-            <div>
-              <ImageWithBasePath
-                src='assets/img/authentication/authentication.png'
-                alt='Authentication Illustration'
-              />
-            </div>
+    <div className='reset-white-container'>
+      {/* Background Image with dramatic entrance */}
+      <div
+        className={`reset-background-image ${isImageLoaded ? 'loaded' : ''}`}
+      >
+        <div
+          className='reset-bg-parallax'
+          style={{
+            transform: `translate(${(mousePosition.x - 50) * -0.02}px, ${(mousePosition.y - 50) * -0.02}px)`,
+          }}
+        >
+          <ImageWithBasePath
+            src='assets/img/bg/bg_forgotPassword.png'
+            alt='Background'
+            className='reset-bg-img'
+          />
+        </div>
+      </div>
+
+      {/* Animated gradient orbs */}
+      <div className='reset-orb-white reset-orb-white-1' />
+      <div className='reset-orb-white reset-orb-white-2' />
+      <div className='reset-orb-white reset-orb-white-3' />
+
+      {/* Floating particles */}
+      <div className='reset-particles'>
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className='reset-particle'
+            style={{
+              animationDelay: `${i * 0.5}s`,
+              left: `${Math.random() * 100}%`,
+              animationDuration: `${3 + Math.random() * 5}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className='reset-content-wrapper-white'>
+        <div className='reset-grid-white'>
+          {/* Left column - Image */}
+          <div className='reset-image-col'>
+            <div className='reset-image-card' />
           </div>
-          <div className='col-lg-6 col-md-12 col-sm-12'>
-            <div className='row justify-content-center align-items-center vh-100 overflow-auto'>
-              <div className='col-md-8 mx-auto p-4'>
-                <form onSubmit={handleSubmit}>
-                  <div className='mx-auto mb-5 text-center'>
-                    <ImageWithBasePath
-                      src='assets/img/logo.png'
-                      className='img-fluid'
-                      alt='Logo'
+
+          {/* Right column - Reset Password Form */}
+          <div className='reset-form-col'>
+            <div className='reset-form-card-white'>
+              <div className='reset-header-white'>
+                <div className='reset-header-icon-white'>
+                  <i className='ti ti-lock-question' />
+                </div>
+                <h1>Reset Password</h1>
+                <p>Enter your new password below</p>
+              </div>
+
+              {error && (
+                <div className='reset-alert-white reset-alert-error'>
+                  <i className='ti ti-alert-circle' />
+                  <span>{error}</span>
+                  <button
+                    type='button'
+                    className='reset-alert-close'
+                    onClick={() => setError('')}
+                  >
+                    <i className='ti ti-x' />
+                  </button>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className='reset-form-white'>
+                <div className='form-group-reset'>
+                  <label className='form-label-reset'>
+                    <i className='ti ti-lock' />
+                    New Password
+                  </label>
+                  <div className='password-input-wrapper-reset'>
+                    <input
+                      type={
+                        passwordVisibility.newPassword ? 'text' : 'password'
+                      }
+                      className='form-control-reset'
+                      value={passwords.newPassword}
+                      onChange={(e) =>
+                        handlePasswordChange('newPassword', e.target.value)
+                      }
+                      required
+                      minLength={8}
+                    />
+                    <span
+                      className={`ti password-toggle-reset ${
+                        passwordVisibility.newPassword ? 'ti-eye' : 'ti-eye-off'
+                      }`}
+                      onClick={() => togglePasswordVisibility('newPassword')}
                     />
                   </div>
-                  <div className='card'>
-                    <div className='card-body p-4'>
-                      <div className='mb-4'>
-                        <h2 className='mb-2'>Reset Password</h2>
-                        <p className='mb-0'>Enter your new password below</p>
-                      </div>
-                      <div className='mb-3'>
-                        <label className='form-label'>New Password</label>
-                        <div className='pass-group'>
-                          <input
-                            type={
-                              passwordVisibility.newPassword
-                                ? 'text'
-                                : 'password'
-                            }
-                            className='pass-input form-control'
-                            value={passwords.newPassword}
-                            onChange={(e) =>
-                              handlePasswordChange(
-                                'newPassword',
-                                e.target.value
-                              )
-                            }
-                            required
-                            minLength={8}
-                          />
-                          <span
-                            className={`ti toggle-passwords ${
-                              passwordVisibility.newPassword
-                                ? 'ti-eye'
-                                : 'ti-eye-off'
-                            }`}
-                            onClick={() =>
-                              togglePasswordVisibility('newPassword')
-                            }
-                          ></span>
-                        </div>
-                      </div>
-                      <div className='mb-3'>
-                        <label className='form-label'>Confirm Password</label>
-                        <div className='pass-group'>
-                          <input
-                            type={
-                              passwordVisibility.confirmPassword
-                                ? 'text'
-                                : 'password'
-                            }
-                            className='pass-input form-control'
-                            value={passwords.confirmPassword}
-                            onChange={(e) =>
-                              handlePasswordChange(
-                                'confirmPassword',
-                                e.target.value
-                              )
-                            }
-                            required
-                            minLength={8}
-                          />
-                          <span
-                            className={`ti toggle-passwords ${
-                              passwordVisibility.confirmPassword
-                                ? 'ti-eye'
-                                : 'ti-eye-off'
-                            }`}
-                            onClick={() =>
-                              togglePasswordVisibility('confirmPassword')
-                            }
-                          ></span>
-                        </div>
-                      </div>
-                      {error && (
-                        <div className='alert alert-danger'>{error}</div>
-                      )}
-                      <div className='mb-3'>
-                        <button
-                          type='submit'
-                          className='btn btn-primary w-100'
-                          disabled={isSubmitting}
-                        >
-                          {isSubmitting ? 'Processing...' : 'Reset Password'}
-                        </button>
-                      </div>
-                      <div className='text-center'>
-                        <h6 className='fw-normal text-dark mb-0'>
-                          Return to{' '}
-                          <Link to={routes.login} className='hover-a'>
-                            Login
-                          </Link>
-                        </h6>
-                      </div>
-                    </div>
+                </div>
+
+                <div className='form-group-reset'>
+                  <label className='form-label-reset'>
+                    <i className='ti ti-lock' />
+                    Confirm Password
+                  </label>
+                  <div className='password-input-wrapper-reset'>
+                    <input
+                      type={
+                        passwordVisibility.confirmPassword ? 'text' : 'password'
+                      }
+                      className='form-control-reset'
+                      value={passwords.confirmPassword}
+                      onChange={(e) =>
+                        handlePasswordChange('confirmPassword', e.target.value)
+                      }
+                      required
+                      minLength={8}
+                    />
+                    <span
+                      className={`ti password-toggle-reset ${
+                        passwordVisibility.confirmPassword
+                          ? 'ti-eye'
+                          : 'ti-eye-off'
+                      }`}
+                      onClick={() =>
+                        togglePasswordVisibility('confirmPassword')
+                      }
+                    />
                   </div>
-                  <div className='mt-5 text-center'>
-                    <p className='mb-0'>
-                      © {currentYear} Your Company by{' '}
-                      <a href='https://example.com'>Your Team</a>
-                    </p>
-                  </div>
-                </form>
-              </div>
+                </div>
+
+                <button
+                  type='submit'
+                  className='reset-submit-btn-white'
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className='spinner-reset' />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      Reset Password
+                      <i className='ti ti-arrow-right' />
+                    </>
+                  )}
+                </button>
+
+                <div className='reset-footer-white'>
+                  <p>
+                    Return to{' '}
+                    <Link to={routes.login} className='login-link-reset'>
+                      Login
+                    </Link>
+                  </p>
+                </div>
+
+                <div className='reset-copyright-white'>
+                  <p>© {currentYear} Bothell Select by Rainboots</p>
+                </div>
+              </form>
             </div>
           </div>
         </div>
