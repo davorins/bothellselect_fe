@@ -334,9 +334,9 @@ export const exportPlayersToPDF = <T extends PlayerTableData>(
 };
 
 // printPlayerRoster — tryout/evaluation sheet for coaches:
-// Full Name, Payment Status, a blank Comments column, and a blank
-// "Selected for Team?" column, with the active Gender/Grade filters
-// called out in large print at the top of the page.
+// Full Name, a blank Comments column, and a blank "Selected for Team?"
+// column, with the active Gender/Grade filters called out in large
+// print at the top of the page.
 export const printPlayerRoster = <T extends PlayerTableData>(
   data: T[],
   filters?: { gender?: string | null; grade?: string | null },
@@ -362,22 +362,12 @@ export const printPlayerRoster = <T extends PlayerTableData>(
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  doc.text(`Printed: ${new Date().toLocaleDateString()}`, 14, cursorY);
+  doc.text(new Date().toLocaleDateString(), 14, cursorY);
   cursorY += 6;
 
-  const tableColumn = [
-    'Full Name',
-    'Payment Status',
-    'Comments',
-    'Selected for Team?',
-  ];
+  const tableColumn = ['Full Name', 'Comments', 'Selected for Team?'];
 
-  const tableRows = data.map((item) => [
-    item.name ?? 'N/A',
-    getPlayerStatus(item),
-    '',
-    '',
-  ]);
+  const tableRows = data.map((item) => [item.name ?? 'N/A', '', '']);
 
   autoTable(doc, {
     head: [tableColumn],
@@ -390,10 +380,9 @@ export const printPlayerRoster = <T extends PlayerTableData>(
       fontStyle: 'bold',
     },
     columnStyles: {
-      0: { cellWidth: 45 },
-      1: { cellWidth: 35 },
-      2: { cellWidth: 65 }, // Comments - room for handwriting
-      3: { cellWidth: 35 }, // Selected for Team? - room to circle Y/N
+      0: { cellWidth: 55 },
+      1: { cellWidth: 80 }, // Comments - room for handwriting
+      2: { cellWidth: 45 }, // Selected for Team? - room to circle Y/N
     },
   });
 
