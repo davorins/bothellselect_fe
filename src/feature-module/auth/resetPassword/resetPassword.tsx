@@ -138,7 +138,7 @@ const ResetPassword = () => {
           }}
         >
           <ImageWithBasePath
-            src='assets/img/bg/bg_forgotPassword.png'
+            src='assets/img/bg/bg_resetPassword.png'
             alt='Background'
             className='reset-bg-img'
           />
