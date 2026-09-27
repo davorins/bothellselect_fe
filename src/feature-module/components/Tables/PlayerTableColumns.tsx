@@ -334,21 +334,21 @@ export const exportPlayersToPDF = <T extends PlayerTableData>(
 };
 
 // printPlayerRoster — tryout/evaluation sheet for coaches:
-// Full Name, a blank Comments column, and a blank "Selected for Team?"
-// column, with the active Gender/Grade filters called out in large
-// print at the top of the page.
+// Full Name, a blank Comments column, and an empty checkbox in
+// "Selected for Team?", with the active Gender/Grade filters called
+// out in large print at the top. Condensed to fit 20+ rows per page.
 export const printPlayerRoster = <T extends PlayerTableData>(
   data: T[],
   filters?: { gender?: string | null; grade?: string | null },
 ) => {
   const doc = new jsPDF();
 
-  let cursorY = 18;
+  let cursorY = 16;
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
   doc.text('Player Roster', 14, cursorY);
-  cursorY += 10;
+  cursorY += 8;
 
   const filterLines: string[] = [];
   if (filters?.gender) filterLines.push(`Gender: ${filters.gender}`);
@@ -357,13 +357,13 @@ export const printPlayerRoster = <T extends PlayerTableData>(
   if (filterLines.length > 0) {
     doc.setFontSize(16);
     doc.text(filterLines.join('   |   '), 14, cursorY);
-    cursorY += 8;
+    cursorY += 7;
   }
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.text(new Date().toLocaleDateString(), 14, cursorY);
-  cursorY += 6;
+  cursorY += 4;
 
   const tableColumn = ['Full Name', 'Comments', 'Selected for Team?'];
 
@@ -372,17 +372,34 @@ export const printPlayerRoster = <T extends PlayerTableData>(
   autoTable(doc, {
     head: [tableColumn],
     body: tableRows,
-    startY: cursorY + 4,
-    styles: { fontSize: 10, cellPadding: 4, overflow: 'linebreak' },
+    startY: cursorY + 3,
+    styles: {
+      fontSize: 9,
+      cellPadding: { top: 2, right: 3, bottom: 2, left: 3 },
+      overflow: 'linebreak',
+      minCellHeight: 9,
+    },
     headStyles: {
       fillColor: [41, 128, 185],
       textColor: 255,
       fontStyle: 'bold',
+      fontSize: 9,
+      cellPadding: { top: 2, right: 3, bottom: 2, left: 3 },
     },
     columnStyles: {
       0: { cellWidth: 55 },
-      1: { cellWidth: 80 }, // Comments - room for handwriting
-      2: { cellWidth: 45 }, // Selected for Team? - room to circle Y/N
+      1: { cellWidth: 90 }, // Comments - room for handwriting
+      2: { cellWidth: 35, halign: 'center' }, // Selected for Team? - checkbox
+    },
+    didDrawCell: (data) => {
+      // Draw an empty square checkbox in the "Selected for Team?" column
+      if (data.section === 'body' && data.column.index === 2) {
+        const size = 4;
+        const x = data.cell.x + data.cell.width / 2 - size / 2;
+        const y = data.cell.y + data.cell.height / 2 - size / 2;
+        doc.setDrawColor(0);
+        doc.rect(x, y, size, size);
+      }
     },
   });
 
