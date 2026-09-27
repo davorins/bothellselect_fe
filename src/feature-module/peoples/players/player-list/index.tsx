@@ -604,6 +604,9 @@ const PlayerList = () => {
           seasonParam={seasonParam}
           yearParam={yearParam}
           playerData={enhancedPlayers}
+          printData={sortedPlayers}
+          genderFilter={localFilters.genderFilter}
+          gradeFilter={localFilters.gradeFilter}
           onRefresh={handleRefresh}
           visibleFields={playerVisibleFieldNames}
         />

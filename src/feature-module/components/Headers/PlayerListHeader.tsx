@@ -9,12 +9,16 @@ import {
   exportPlayersToExcel,
   exportPlayerParentEmails,
   copyPlayerParentEmailsToClipboard,
+  printPlayerRoster,
 } from '../../components/Tables/PlayerTableColumns';
 
 interface PlayerListHeaderProps {
   seasonParam: string | null;
   yearParam: string | null;
   playerData: any[];
+  printData?: any[];
+  genderFilter?: string | null;
+  gradeFilter?: string | null;
   onRefresh?: () => void;
   visibleFields?: string[];
 }
@@ -23,6 +27,9 @@ export const PlayerListHeader: React.FC<PlayerListHeaderProps> = ({
   seasonParam,
   yearParam,
   playerData,
+  printData,
+  genderFilter,
+  gradeFilter,
   onRefresh,
   visibleFields = [],
 }) => {
@@ -46,6 +53,13 @@ export const PlayerListHeader: React.FC<PlayerListHeaderProps> = ({
       (msg) => alert(msg),
       (msg) => alert(msg),
     );
+  };
+
+  const handlePrint = () => {
+    printPlayerRoster(printData ?? playerData, {
+      gender: genderFilter,
+      grade: gradeFilter,
+    });
   };
 
   return (
@@ -77,6 +91,7 @@ export const PlayerListHeader: React.FC<PlayerListHeaderProps> = ({
             onExportEmails={handleExportEmail}
             onCopyEmails={handleCopyEmails}
             onRefresh={onRefresh}
+            onPrint={handlePrint}
             showEmailExport={true}
             showCopyEmails={true}
             showRefresh={true}

@@ -333,6 +333,73 @@ export const exportPlayersToPDF = <T extends PlayerTableData>(
   doc.save(`players_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
 
+// printPlayerRoster — tryout/evaluation sheet for coaches:
+// Full Name, Payment Status, a blank Comments column, and a blank
+// "Selected for Team?" column, with the active Gender/Grade filters
+// called out in large print at the top of the page.
+export const printPlayerRoster = <T extends PlayerTableData>(
+  data: T[],
+  filters?: { gender?: string | null; grade?: string | null },
+) => {
+  const doc = new jsPDF();
+
+  let cursorY = 18;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.text('Player Roster', 14, cursorY);
+  cursorY += 10;
+
+  const filterLines: string[] = [];
+  if (filters?.gender) filterLines.push(`Gender: ${filters.gender}`);
+  if (filters?.grade) filterLines.push(`Grade: ${filters.grade}`);
+
+  if (filterLines.length > 0) {
+    doc.setFontSize(16);
+    doc.text(filterLines.join('   |   '), 14, cursorY);
+    cursorY += 8;
+  }
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(`Printed: ${new Date().toLocaleDateString()}`, 14, cursorY);
+  cursorY += 6;
+
+  const tableColumn = [
+    'Full Name',
+    'Payment Status',
+    'Comments',
+    'Selected for Team?',
+  ];
+
+  const tableRows = data.map((item) => [
+    item.name ?? 'N/A',
+    getPlayerStatus(item),
+    '',
+    '',
+  ]);
+
+  autoTable(doc, {
+    head: [tableColumn],
+    body: tableRows,
+    startY: cursorY + 4,
+    styles: { fontSize: 10, cellPadding: 4, overflow: 'linebreak' },
+    headStyles: {
+      fillColor: [41, 128, 185],
+      textColor: 255,
+      fontStyle: 'bold',
+    },
+    columnStyles: {
+      0: { cellWidth: 45 },
+      1: { cellWidth: 35 },
+      2: { cellWidth: 65 }, // Comments - room for handwriting
+      3: { cellWidth: 35 }, // Selected for Team? - room to circle Y/N
+    },
+  });
+
+  doc.save(`player_roster_${new Date().toISOString().slice(0, 10)}.pdf`);
+};
+
 // exportPlayersToExcel
 export const exportPlayersToExcel = <T extends PlayerTableData>(
   data: T[],

@@ -9,6 +9,7 @@ interface TooltipOptionProps {
   onExportEmails?: () => void;
   onCopyEmails?: () => void;
   onRefresh?: () => void;
+  onPrint?: () => void;
   showEmailExport?: boolean;
   showCopyEmails?: boolean;
   showCalendarHelp?: boolean;
@@ -22,6 +23,7 @@ const TooltipOption = ({
   onExportEmails,
   onCopyEmails,
   onRefresh,
+  onPrint,
   showEmailExport = false,
   showCopyEmails = false,
   showCalendarHelp = false,
@@ -34,6 +36,12 @@ const TooltipOption = ({
       onRefresh();
     } else {
       window.location.reload();
+    }
+  };
+
+  const handlePrint = () => {
+    if (onPrint) {
+      onPrint();
     }
   };
 
@@ -85,6 +93,7 @@ const TooltipOption = ({
           <button
             type='button'
             className='btn btn-outline-light bg-white btn-icon me-1'
+            onClick={handlePrint}
           >
             <i className='ti ti-printer' />
           </button>

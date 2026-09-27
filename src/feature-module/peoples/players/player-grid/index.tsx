@@ -624,9 +624,12 @@ const PlayerGrid = () => {
     <div className='page-wrapper'>
       <div className='content content-two'>
         <PlayerListHeader
-          seasonParam={localFilters.seasonParam}
-          yearParam={localFilters.yearParam}
+          seasonParam={seasonParam}
+          yearParam={yearParam}
           playerData={enhancedPlayers}
+          printData={sortedPlayers}
+          genderFilter={localFilters.genderFilter}
+          gradeFilter={localFilters.gradeFilter}
           onRefresh={handleRefresh}
         />
 
