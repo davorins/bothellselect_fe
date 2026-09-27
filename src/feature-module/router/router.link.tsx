@@ -656,11 +656,6 @@ export const protectedRoutes = [
     route: Route,
   },
   {
-    path: routes.resetPassword,
-    element: <ResetPassword />,
-    route: Route,
-  },
-  {
     path: routes.adminFormConfigs,
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
