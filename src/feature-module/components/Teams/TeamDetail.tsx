@@ -319,7 +319,6 @@ const TeamDetail: React.FC = () => {
   };
 
   // ── Send Acceptance Email ─────────────────────────────────────────────────
-  // ── Send Acceptance Email ─────────────────────────────────────────────────
   const handleSendAcceptanceEmail = async (payload: EmailPayload) => {
     const token = await getAuthToken();
 
@@ -364,7 +363,7 @@ const TeamDetail: React.FC = () => {
       Swal.fire({
         icon: 'warning',
         title: 'No Email Addresses Found',
-        text: 'No parent email addresses were found for the players on this team.',
+        text: 'No parent email addresses were found for the selected players.',
         confirmButtonColor: '#3085d6',
       });
       return;
