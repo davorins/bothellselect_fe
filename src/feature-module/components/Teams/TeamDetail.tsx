@@ -321,7 +321,14 @@ const TeamDetail: React.FC = () => {
   // ── Send Acceptance Email ─────────────────────────────────────────────────
   const handleSendAcceptanceEmail = async (payload: EmailPayload) => {
     const token = await getAuthToken();
-    const playerList = team?.playerIds || [];
+
+    // Only the players that were left checked in the modal
+    const { selectedPlayerIds, ...emailSettings } = payload;
+    const selectedSet = new Set(selectedPlayerIds);
+    const playerList = (team?.playerIds || []).filter((player: any) =>
+      selectedSet.has(String(player._id || player.id)),
+    );
+
     const recipientEmails: Array<{ email: string; playerName: string }> = [];
 
     for (const player of playerList) {
@@ -356,7 +363,7 @@ const TeamDetail: React.FC = () => {
       Swal.fire({
         icon: 'warning',
         title: 'No Email Addresses Found',
-        text: 'No parent email addresses were found for the players on this team.',
+        text: 'No parent email addresses were found for the selected players.',
         confirmButtonColor: '#3085d6',
       });
       return;
@@ -364,7 +371,7 @@ const TeamDetail: React.FC = () => {
 
     await axios.post(
       `${API_BASE_URL}/internal-teams/${team._id}/send-acceptance-email`,
-      { ...payload, recipients: recipientEmails },
+      { ...emailSettings, recipients: recipientEmails },
       { headers: { Authorization: `Bearer ${token}` } },
     );
 

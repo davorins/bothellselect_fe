@@ -14,6 +14,7 @@ export interface EmailPayload {
   squareLink: string;
   zelleInfo: string;
   paymentDeadlineHours: number;
+  selectedPlayerIds: string[];
 }
 
 interface AcceptanceEmailModalProps {
@@ -27,6 +28,9 @@ interface AcceptanceEmailModalProps {
   onSend: (payload: EmailPayload) => Promise<void>;
   onClose: () => void;
 }
+
+const getPlayerKey = (p: Player, i: number): string =>
+  String(p._id || p.id || i);
 
 const AcceptanceEmailModal: React.FC<AcceptanceEmailModalProps> = ({
   team,
@@ -45,7 +49,25 @@ const AcceptanceEmailModal: React.FC<AcceptanceEmailModalProps> = ({
   const [sending, setSending] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // All players are selected by default
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    () => new Set(players.map((p, i) => getPlayerKey(p, i))),
+  );
+
   const teamDisplayName = `${team.name}${team.year ? ` ${team.year}` : ''}`;
+
+  const togglePlayer = (key: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const selectAll = () =>
+    setSelectedIds(new Set(players.map((p, i) => getPlayerKey(p, i))));
+  const deselectAll = () => setSelectedIds(new Set());
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
@@ -151,13 +173,17 @@ const AcceptanceEmailModal: React.FC<AcceptanceEmailModalProps> = ({
         squareLink,
         zelleInfo,
         paymentDeadlineHours,
+        selectedPlayerIds: players
+          .map((p, i) => getPlayerKey(p, i))
+          .filter((key) => selectedIds.has(key)),
       });
     } finally {
       setSending(false);
     }
   };
 
-  const recipientCount = players.length;
+  const totalCount = players.length;
+  const recipientCount = selectedIds.size;
 
   return (
     <div
@@ -224,14 +250,40 @@ const AcceptanceEmailModal: React.FC<AcceptanceEmailModalProps> = ({
               <div>
                 {/* Recipients */}
                 <div className='mb-4'>
-                  <label className='form-label fw-semibold'>
-                    <i className='ti ti-users me-1 text-muted' />
-                    Recipients
-                  </label>
+                  <div className='d-flex align-items-center justify-content-between mb-2'>
+                    <label className='form-label fw-semibold mb-0'>
+                      <i className='ti ti-users me-1 text-muted' />
+                      Recipients
+                      <span className='text-muted fw-normal ms-2 small'>
+                        ({recipientCount} of {totalCount} selected)
+                      </span>
+                    </label>
+                    {players.length > 0 && (
+                      <div className='d-flex align-items-center gap-2 small'>
+                        <button
+                          type='button'
+                          className='btn btn-link btn-sm p-0'
+                          onClick={selectAll}
+                          disabled={sending || recipientCount === totalCount}
+                        >
+                          Select all
+                        </button>
+                        <span className='text-muted'>|</span>
+                        <button
+                          type='button'
+                          className='btn btn-link btn-sm p-0'
+                          onClick={deselectAll}
+                          disabled={sending || recipientCount === 0}
+                        >
+                          Deselect all
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <div
                     className='border rounded p-2'
                     style={{
-                      maxHeight: '100px',
+                      maxHeight: '140px',
                       overflowY: 'auto',
                       background: '#f8f9fa',
                     }}
@@ -244,21 +296,38 @@ const AcceptanceEmailModal: React.FC<AcceptanceEmailModalProps> = ({
                       <div className='d-flex flex-wrap gap-1'>
                         {players.map((p, i) => {
                           const name = p.fullName || p.name || 'Unknown';
+                          const key = getPlayerKey(p, i);
+                          const checked = selectedIds.has(key);
                           return (
-                            <span
-                              key={p._id || p.id || i}
-                              className='badge bg-light text-dark border'
+                            <label
+                              key={key}
+                              className='badge bg-light text-dark border d-inline-flex align-items-center gap-1 mb-0'
+                              style={{
+                                cursor: sending ? 'default' : 'pointer',
+                                opacity: checked ? 1 : 0.5,
+                                textDecoration: checked
+                                  ? 'none'
+                                  : 'line-through',
+                              }}
                             >
+                              <input
+                                type='checkbox'
+                                className='form-check-input mt-0'
+                                style={{ cursor: 'inherit' }}
+                                checked={checked}
+                                disabled={sending}
+                                onChange={() => togglePlayer(key)}
+                              />
                               {name}
-                            </span>
+                            </label>
                           );
                         })}
                       </div>
                     )}
                   </div>
                   <div className='form-text'>
-                    Emails will be sent to the parents/guardians of each player
-                    above.
+                    Emails will be sent to the parents/guardians of each checked
+                    player. Uncheck anyone who should be skipped.
                   </div>
                 </div>
 
