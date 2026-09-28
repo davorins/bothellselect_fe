@@ -65,10 +65,6 @@ const AcceptanceEmailModal: React.FC<AcceptanceEmailModalProps> = ({
     });
   };
 
-  const selectAll = () =>
-    setSelectedIds(new Set(players.map((p, i) => getPlayerKey(p, i))));
-  const deselectAll = () => setSelectedIds(new Set());
-
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
     if (
@@ -182,7 +178,6 @@ const AcceptanceEmailModal: React.FC<AcceptanceEmailModalProps> = ({
     }
   };
 
-  const totalCount = players.length;
   const recipientCount = selectedIds.size;
 
   return (
@@ -250,40 +245,14 @@ const AcceptanceEmailModal: React.FC<AcceptanceEmailModalProps> = ({
               <div>
                 {/* Recipients */}
                 <div className='mb-4'>
-                  <div className='d-flex align-items-center justify-content-between mb-2'>
-                    <label className='form-label fw-semibold mb-0'>
-                      <i className='ti ti-users me-1 text-muted' />
-                      Recipients
-                      <span className='text-muted fw-normal ms-2 small'>
-                        ({recipientCount} of {totalCount} selected)
-                      </span>
-                    </label>
-                    {players.length > 0 && (
-                      <div className='d-flex align-items-center gap-2 small'>
-                        <button
-                          type='button'
-                          className='btn btn-link btn-sm p-0'
-                          onClick={selectAll}
-                          disabled={sending || recipientCount === totalCount}
-                        >
-                          Select all
-                        </button>
-                        <span className='text-muted'>|</span>
-                        <button
-                          type='button'
-                          className='btn btn-link btn-sm p-0'
-                          onClick={deselectAll}
-                          disabled={sending || recipientCount === 0}
-                        >
-                          Deselect all
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <label className='form-label fw-semibold'>
+                    <i className='ti ti-users me-1 text-muted' />
+                    Recipients
+                  </label>
                   <div
                     className='border rounded p-2'
                     style={{
-                      maxHeight: '140px',
+                      maxHeight: '100px',
                       overflowY: 'auto',
                       background: '#f8f9fa',
                     }}
@@ -326,8 +295,8 @@ const AcceptanceEmailModal: React.FC<AcceptanceEmailModalProps> = ({
                     )}
                   </div>
                   <div className='form-text'>
-                    Emails will be sent to the parents/guardians of each checked
-                    player. Uncheck anyone who should be skipped.
+                    Emails will be sent to the parents/guardians of each player
+                    above.
                   </div>
                 </div>
 
