@@ -5,6 +5,7 @@ import CountUp from 'react-countup';
 import axios from 'axios';
 import { all_routes } from '../../router/all_routes';
 import RevenueOverview from '../../../components/RevenueOverview';
+import SeasonEventsPanel from '../../../components/admin/SeasonEventsPanel';
 import './admin-dashboard.css';
 import './admin-dashboard-mobile.css';
 
@@ -454,6 +455,13 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* ─── Season Events Panel ────────────────────────────── */}
+        <div className='row'>
+          <div className='col-12'>
+            <SeasonEventsPanel />
           </div>
         </div>
 
