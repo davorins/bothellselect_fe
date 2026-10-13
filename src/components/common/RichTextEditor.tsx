@@ -15,11 +15,10 @@ const markdownToHtml = (markdown: string): string => {
 
   let html = markdown;
 
-  // First, handle special patterns
   // Pattern: ****[text](url)**** -> <strong><a>text</a></strong>
   html = html.replace(
     /\*\*\*\*\[([^\]]+)\]\(([^)]+)\)\*\*\*\*/g,
-    '<strong><a href="$2" target="_blank" rel="noopener noreferrer">$1</a></strong>'
+    '<strong><a href="$2" target="_blank" rel="noopener noreferrer">$1</a></strong>',
   );
 
   // Pattern: **text** -> <strong>text</strong>
@@ -31,32 +30,25 @@ const markdownToHtml = (markdown: string): string => {
   // Links: [text](url)
   html = html.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>',
   );
 
-  // IMPORTANT: Handle paragraphs properly
-  // Split by double newlines to preserve paragraphs
+  // Handle paragraphs
   const paragraphs = html.split(/\n\s*\n/);
 
   if (paragraphs.length > 1) {
-    // Multiple paragraphs - wrap each in <p> tags
     html = paragraphs
       .map((p) => p.trim())
       .filter((p) => p.length > 0)
-      .map((p) => {
-        // Handle single newlines within paragraphs (convert to <br>)
-        return `<p>${p.replace(/\n/g, '<br>')}</p>`;
-      })
+      .map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`)
       .join('');
   } else {
-    // Single paragraph
     const trimmed = html.trim();
     if (trimmed) {
       html = `<p>${trimmed.replace(/\n/g, '<br>')}</p>`;
     }
   }
 
-  // Clean up
   html = html.replace(/<p><\/p>/g, '');
   html = html.replace(/<p>\s*<br>\s*<\/p>/g, '');
 
@@ -69,20 +61,17 @@ const htmlToMarkdown = (html: string): string => {
 
   let markdown = html;
 
-  // Remove <p> tags but keep the content with double newlines
-  markdown = markdown.replace(/<p>(.*?)<\/p>/g, (match, content) => {
-    // Replace <br> with single newlines within paragraphs
+  markdown = markdown.replace(/<p>(.*?)<\/p>/g, (_match, content) => {
     const text = content.replace(/<br\s*\/?>/g, '\n');
     return text + '\n\n';
   });
 
-  // Remove other HTML tags
   markdown = markdown
     .replace(/<strong>(.*?)<\/strong>/g, '**$1**')
     .replace(/<em>(.*?)<\/em>/g, '*$1*')
     .replace(
       /<a href="(.*?)" target="_blank" rel="noopener noreferrer">(.*?)<\/a>/g,
-      '[$2]($1)'
+      '[$2]($1)',
     )
     .replace(/<[^>]*>/g, '')
     .trim();
@@ -90,7 +79,6 @@ const htmlToMarkdown = (html: string): string => {
   return markdown;
 };
 
-// Sanitize HTML
 const sanitizeHtml = (html: string): string => {
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [
@@ -129,16 +117,20 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const [markdown, setMarkdown] = useState(htmlToMarkdown(value));
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // ✅ Only resync when the incoming value genuinely differs from local content.
+  //    This stops the parent's echo from clobbering what the user is typing.
   useEffect(() => {
-    setContent(value);
-    setMarkdown(htmlToMarkdown(value));
+    if (value !== content) {
+      setContent(value);
+      setMarkdown(htmlToMarkdown(value));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   const handleMarkdownChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newMarkdown = e.target.value;
     setMarkdown(newMarkdown);
 
-    // Convert to HTML with proper paragraph handling
     const html = markdownToHtml(newMarkdown);
     const sanitizedHtml = sanitizeHtml(html);
 
@@ -171,7 +163,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         cursorOffset = -1;
         break;
       case 'paragraph':
-        // Add paragraph break (two newlines)
         newText = selectedText ? `${selectedText}\n\n` : '\n\n';
         cursorOffset = 2;
         break;
@@ -184,7 +175,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
     setMarkdown(updatedMarkdown);
 
-    // Convert to HTML
     const html = markdownToHtml(updatedMarkdown);
     const sanitizedHtml = sanitizeHtml(html);
 
