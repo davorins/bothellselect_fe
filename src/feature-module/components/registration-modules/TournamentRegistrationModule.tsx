@@ -12,6 +12,7 @@ import {
   WizardStepCommonProps,
   TournamentSpecificConfig,
 } from '../../../types/registration-types';
+import { isoToMMDDYYYY } from '../../../utils/dateFormatter';
 
 interface TournamentRegistrationModuleProps extends WizardStepCommonProps {
   isExistingUser?: boolean;
@@ -54,7 +55,7 @@ const TournamentRegistrationModule: React.FC<
   const [hasValidTeam, setHasValidTeam] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [teamExistsWarning, setTeamExistsWarning] = useState<string | null>(
-    null
+    null,
   );
   const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
   const [tournamentError, setTournamentError] = useState<string | null>(null);
@@ -139,13 +140,13 @@ const TournamentRegistrationModule: React.FC<
           `${API_BASE_URL}/registrations/check/${
             currentUser._id
           }/${teamId}/${encodeURIComponent(
-            memoizedTournamentEvent.tournament
+            memoizedTournamentEvent.tournament,
           )}/${memoizedTournamentEvent.year}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
-          }
+          },
         );
 
         if (!response.ok) {
@@ -169,7 +170,7 @@ const TournamentRegistrationModule: React.FC<
       memoizedTournamentEvent.tournament,
       memoizedTournamentEvent.year,
       API_BASE_URL,
-    ]
+    ],
   );
 
   // Function to get team payment status
@@ -178,7 +179,7 @@ const TournamentRegistrationModule: React.FC<
       if (!team._id) return 'not-registered';
 
       const { isRegistered, isPaid } = await checkExistingRegistration(
-        team._id
+        team._id,
       );
 
       if (isRegistered && isPaid) {
@@ -188,7 +189,7 @@ const TournamentRegistrationModule: React.FC<
       }
       return 'not-registered';
     },
-    [checkExistingRegistration]
+    [checkExistingRegistration],
   );
 
   // Function to refresh team payment status
@@ -203,7 +204,7 @@ const TournamentRegistrationModule: React.FC<
 
           try {
             const { isRegistered, isPaid } = await checkExistingRegistration(
-              team._id
+              team._id,
             );
 
             return {
@@ -212,17 +213,17 @@ const TournamentRegistrationModule: React.FC<
               paymentStatus: isPaid
                 ? 'paid'
                 : isRegistered
-                ? 'pending'
-                : 'not-registered',
+                  ? 'pending'
+                  : 'not-registered',
             };
           } catch (error) {
             console.warn(
               `Error refreshing status for team ${team._id}:`,
-              error
+              error,
             );
             return team;
           }
-        })
+        }),
       );
 
       setExistingTeamsState(updatedExistingTeams);
@@ -232,10 +233,10 @@ const TournamentRegistrationModule: React.FC<
         prevTeams.map((team) => {
           if (!team._id) return team;
           const updatedTeam = updatedExistingTeams.find(
-            (t) => t._id === team._id
+            (t) => t._id === team._id,
           );
           return updatedTeam || team;
-        })
+        }),
       );
 
       console.log('✅ Team payment status refreshed');
@@ -280,7 +281,7 @@ const TournamentRegistrationModule: React.FC<
               headers: {
                 Authorization: `Bearer ${token}`,
               },
-            }
+            },
           );
 
           if (response.ok) {
@@ -326,7 +327,7 @@ const TournamentRegistrationModule: React.FC<
               } catch (error) {
                 console.warn(
                   `Error checking registration for team ${team._id}:`,
-                  error
+                  error,
                 );
                 unregisteredTeams.push(team);
               }
@@ -370,7 +371,7 @@ const TournamentRegistrationModule: React.FC<
       loadExistingTeams();
     } else {
       setTournamentError(
-        'Tournament information is missing. Please try again later.'
+        'Tournament information is missing. Please try again later.',
       );
       setHasLoadedExistingTeams(true);
     }
@@ -385,7 +386,7 @@ const TournamentRegistrationModule: React.FC<
   // Validation function - memoized
   const validateTeams = useCallback(
     (
-      teamsToValidate: Team[]
+      teamsToValidate: Team[],
     ): { errors: Record<string, string>; isValid: boolean } => {
       const errors: Record<string, string> = {};
       let hasValid = false;
@@ -423,7 +424,7 @@ const TournamentRegistrationModule: React.FC<
 
       return { errors, isValid: hasValid };
     },
-    [availableDivisions]
+    [availableDivisions],
   );
 
   // Run validation when teams change
@@ -481,7 +482,7 @@ const TournamentRegistrationModule: React.FC<
       if (isRegistered && isPaid) {
         setIsAlreadyRegistered(true);
         setSaveError(
-          'You have already registered and paid for this team in the tournament.'
+          'You have already registered and paid for this team in the tournament.',
         );
         return;
       }
@@ -556,7 +557,7 @@ const TournamentRegistrationModule: React.FC<
           return newIds;
         });
         setTeamsToRegister((prev) =>
-          prev.filter((team) => team._id !== teamId)
+          prev.filter((team) => team._id !== teamId),
         );
 
         // Remove from teams
@@ -567,7 +568,7 @@ const TournamentRegistrationModule: React.FC<
       setIsAlreadyRegistered(false);
       setShowWelcomeBackPrompt(false);
     },
-    [existingTeamsState, memoizedTournamentEvent, checkExistingRegistration]
+    [existingTeamsState, memoizedTournamentEvent, checkExistingRegistration],
   );
 
   const handleTeamChange = useCallback(
@@ -588,7 +589,7 @@ const TournamentRegistrationModule: React.FC<
         return updatedTeams;
       });
     },
-    []
+    [],
   );
 
   const addNewTeam = useCallback(() => {
@@ -617,17 +618,17 @@ const TournamentRegistrationModule: React.FC<
           const removedTeam = prev[index];
           if (removedTeam._id) {
             setSelectedTeamIds((prevIds) =>
-              prevIds.filter((id) => id !== removedTeam._id)
+              prevIds.filter((id) => id !== removedTeam._id),
             );
             setTeamsToRegister((prevTeams) =>
-              prevTeams.filter((team) => team._id !== removedTeam._id)
+              prevTeams.filter((team) => team._id !== removedTeam._id),
             );
           }
           return updatedTeams;
         });
       }
     },
-    [teams.length]
+    [teams.length],
   );
 
   const calculateTotalAmount = useCallback((): number => {
@@ -636,7 +637,7 @@ const TournamentRegistrationModule: React.FC<
         team.name?.trim() &&
         team.grade?.trim() &&
         ['Male', 'Female'].includes(team.sex) &&
-        availableDivisions.includes(team.levelOfCompetition)
+        availableDivisions.includes(team.levelOfCompetition),
     );
     return validTeams.length * tournamentFee;
   }, [teams, availableDivisions, tournamentFee]);
@@ -691,13 +692,13 @@ const TournamentRegistrationModule: React.FC<
           if (!selectedTeam.levelOfCompetition) {
             console.error(`❌ Team missing levelOfCompetition:`, selectedTeam);
             throw new Error(
-              `Team "${selectedTeam.name}" is missing division/level of competition`
+              `Team "${selectedTeam.name}" is missing division/level of competition`,
             );
           }
 
           // Ensure levelOfCompetition is valid
           const validLevel = availableDivisions.includes(
-            selectedTeam.levelOfCompetition
+            selectedTeam.levelOfCompetition,
           )
             ? selectedTeam.levelOfCompetition
             : availableDivisions[0];
@@ -728,7 +729,7 @@ const TournamentRegistrationModule: React.FC<
                 Authorization: `Bearer ${token}`,
               },
               body: JSON.stringify(requestBody),
-            }
+            },
           );
 
           console.log('🔍 DEBUG: Response received:', {
@@ -797,7 +798,7 @@ const TournamentRegistrationModule: React.FC<
       currentUser,
       tournamentConfig,
       API_BASE_URL,
-    ]
+    ],
   );
 
   // Save all teams function
@@ -836,7 +837,7 @@ const TournamentRegistrationModule: React.FC<
               id: t._id,
               name: t.name,
             })),
-          }
+          },
         );
 
         // CRITICAL: Filter out teams that are already registered AND paid
@@ -852,9 +853,8 @@ const TournamentRegistrationModule: React.FC<
           }
 
           // Check registration status
-          const { isRegistered, isPaid } = await checkExistingRegistration(
-            teamId
-          );
+          const { isRegistered, isPaid } =
+            await checkExistingRegistration(teamId);
 
           console.log(`Team "${team.name}" status check:`, {
             isRegistered,
@@ -874,7 +874,7 @@ const TournamentRegistrationModule: React.FC<
           } else if (isRegistered && !isPaid) {
             // Registered but payment pending - just needs payment
             console.log(
-              `💰 Team "${team.name}" is registered but payment pending`
+              `💰 Team "${team.name}" is registered but payment pending`,
             );
             teamsAlreadyRegistered.push({
               ...team,
@@ -898,7 +898,7 @@ const TournamentRegistrationModule: React.FC<
           teamsToProcess: teamsToProcess.length,
           teamsNeedingRegistration,
           teamsAlreadyRegistered: teamsAlreadyRegistered.map(
-            (t: Team) => t.name
+            (t: Team) => t.name,
           ),
         });
 
@@ -910,7 +910,7 @@ const TournamentRegistrationModule: React.FC<
           try {
             const newlyRegisteredTeams =
               await registerExistingTeamsForTournament(
-                teamsNeedingRegistration
+                teamsNeedingRegistration,
               );
 
             console.log('✅ Newly registered teams:', {
@@ -936,20 +936,20 @@ const TournamentRegistrationModule: React.FC<
 
             if (registeredTeams.length === 0) {
               throw new Error(
-                'No valid teams were returned after registration'
+                'No valid teams were returned after registration',
               );
             }
           } catch (registrationError: any) {
             console.error('❌ Team registration failed:', registrationError);
             throw new Error(
-              `Failed to register teams: ${registrationError.message}`
+              `Failed to register teams: ${registrationError.message}`,
             );
           }
         }
 
         // Combine teams: Keep existing teams + newly registered teams
         const existingTeamsInState = teams.filter(
-          (t) => t._id && !selectedTeamIds.includes(t._id)
+          (t) => t._id && !selectedTeamIds.includes(t._id),
         );
         const allTeams = [
           ...existingTeamsInState,
@@ -978,13 +978,13 @@ const TournamentRegistrationModule: React.FC<
       // SCENARIO 2: Creating brand new teams (first-time registration OR adding to existing)
       else {
         console.log(
-          '🆕 SCENARIO 2: Creating new teams (preserving existing teams)'
+          '🆕 SCENARIO 2: Creating new teams (preserving existing teams)',
         );
 
         // Separate existing teams from new teams
         const existingTeamsInState = teams.filter((team) => team._id);
         const teamsToCreate = teams.filter(
-          (team) => !team._id && team.name?.trim()
+          (team) => !team._id && team.name?.trim(),
         );
 
         console.log('📋 Team breakdown:', {
@@ -1032,7 +1032,7 @@ const TournamentRegistrationModule: React.FC<
 
             if (validNewTeams.length === 0) {
               throw new Error(
-                'Team creation failed - no valid team ID returned'
+                'Team creation failed - no valid team ID returned',
               );
             }
 
@@ -1047,7 +1047,7 @@ const TournamentRegistrationModule: React.FC<
                 totalTeams: allTeams.length,
                 teamId: validNewTeams[0]._id,
                 teamName: validNewTeams[0].name,
-              }
+              },
             );
 
             // Update local state - PRESERVE EXISTING TEAMS
@@ -1073,7 +1073,7 @@ const TournamentRegistrationModule: React.FC<
             } catch (fallbackError: any) {
               console.error('❌ Fallback team creation failed:', fallbackError);
               throw new Error(
-                `Failed to create team: ${fallbackError.message}`
+                `Failed to create team: ${fallbackError.message}`,
               );
             }
           }
@@ -1096,13 +1096,13 @@ const TournamentRegistrationModule: React.FC<
 
             if (validNewTeams.length === 0) {
               throw new Error(
-                'Team creation failed - no valid team IDs returned'
+                'Team creation failed - no valid team IDs returned',
               );
             }
 
             if (validNewTeams.length !== teamsToCreate.length) {
               console.warn(
-                `⚠️ Created ${validNewTeams.length} out of ${teamsToCreate.length} new teams`
+                `⚠️ Created ${validNewTeams.length} out of ${teamsToCreate.length} new teams`,
               );
             }
 
@@ -1121,7 +1121,7 @@ const TournamentRegistrationModule: React.FC<
                   name: t.name,
                   isNew: !existingTeamsInState.some((et) => et._id === t._id),
                 })),
-              }
+              },
             );
 
             // Update local state - PRESERVE EXISTING TEAMS
@@ -1145,7 +1145,7 @@ const TournamentRegistrationModule: React.FC<
               } catch (individualError: any) {
                 console.error(
                   `❌ Failed to create team ${team.name}:`,
-                  individualError
+                  individualError,
                 );
                 // Continue with other teams
               }
@@ -1164,7 +1164,7 @@ const TournamentRegistrationModule: React.FC<
                 existingTeamsPreserved: existingTeamsInState.length,
                 newTeamsCreated: createdTeams.length,
                 totalTeams: allTeams.length,
-              }
+              },
             );
 
             setTeams(allTeams);
@@ -1289,12 +1289,12 @@ const TournamentRegistrationModule: React.FC<
           errorText.includes('different team names')
         ) {
           throw new Error(
-            `A team with name "${team.name}" already exists. Please use a different team name.`
+            `A team with name "${team.name}" already exists. Please use a different team name.`,
           );
         }
 
         throw new Error(
-          `Failed to create team (${response.status}): ${errorText}`
+          `Failed to create team (${response.status}): ${errorText}`,
         );
       }
 
@@ -1313,7 +1313,7 @@ const TournamentRegistrationModule: React.FC<
         if (!teamId) {
           console.error(
             '⚠️ Team created but no ID field returned:',
-            result.team
+            result.team,
           );
           throw new Error('Team created but no ID returned from server');
         }
@@ -1331,7 +1331,7 @@ const TournamentRegistrationModule: React.FC<
         return [savedTeam];
       } else {
         throw new Error(
-          result.error || 'Team creation failed - no team returned'
+          result.error || 'Team creation failed - no team returned',
         );
       }
     } catch (error: any) {
@@ -1342,7 +1342,7 @@ const TournamentRegistrationModule: React.FC<
 
   // Helper function for multiple teams creation - FIXED VERSION
   const createMultipleTeams = async (
-    teamsToCreate: Team[]
+    teamsToCreate: Team[],
   ): Promise<Team[]> => {
     try {
       const token = localStorage.getItem('token');
@@ -1363,7 +1363,7 @@ const TournamentRegistrationModule: React.FC<
       const uniqueTeamNames = new Set(teamNames);
       if (teamNames.length !== uniqueTeamNames.size) {
         throw new Error(
-          'Duplicate team names found in your request. Please use unique names for each team.'
+          'Duplicate team names found in your request. Please use unique names for each team.',
         );
       }
 
@@ -1422,7 +1422,7 @@ const TournamentRegistrationModule: React.FC<
             Authorization: token ? `Bearer ${token}` : '',
           },
           body: JSON.stringify(requestData),
-        }
+        },
       );
 
       console.log('📥 Multiple team creation response:', {
@@ -1443,14 +1443,14 @@ const TournamentRegistrationModule: React.FC<
               errorText.includes('Duplicate registration'))
           ) {
             throw new Error(
-              'One or more team names already exist. Please use different team names.'
+              'One or more team names already exist. Please use different team names.',
             );
           }
         } catch {
           errorText = await response.text();
         }
         throw new Error(
-          `Failed to create teams (${response.status}): ${errorText}`
+          `Failed to create teams (${response.status}): ${errorText}`,
         );
       }
 
@@ -1488,7 +1488,7 @@ const TournamentRegistrationModule: React.FC<
 
         if (teamsWithIds.length === 0) {
           throw new Error(
-            'No valid team IDs returned from multiple team creation'
+            'No valid team IDs returned from multiple team creation',
           );
         }
 
@@ -1501,7 +1501,7 @@ const TournamentRegistrationModule: React.FC<
         return teamsWithIds;
       } else {
         throw new Error(
-          result.error || 'Teams creation failed - no teams returned'
+          result.error || 'Teams creation failed - no teams returned',
         );
       }
     } catch (error: any) {
@@ -1542,7 +1542,7 @@ const TournamentRegistrationModule: React.FC<
           team.name?.trim() &&
           team.grade?.trim() &&
           ['Male', 'Female'].includes(team.sex) &&
-          availableDivisions.includes(team.levelOfCompetition)
+          availableDivisions.includes(team.levelOfCompetition),
       );
 
       console.log('🔍 DEBUG handleContinue: Valid teams:', {
@@ -1560,7 +1560,7 @@ const TournamentRegistrationModule: React.FC<
       for (const team of validTeams) {
         if (team._id) {
           const { isRegistered, isPaid } = await checkExistingRegistration(
-            team._id
+            team._id,
           );
 
           console.log(`Team "${team.name}" payment status:`, {
@@ -1572,7 +1572,7 @@ const TournamentRegistrationModule: React.FC<
           // Only throw error if BOTH registered AND paid
           if (isRegistered && isPaid) {
             throw new Error(
-              `Team "${team.name}" is already registered and PAID for this tournament.`
+              `Team "${team.name}" is already registered and PAID for this tournament.`,
             );
           }
 
@@ -1657,7 +1657,7 @@ const TournamentRegistrationModule: React.FC<
       const teamsWithIds = savedTeams.filter((team) => team._id);
       if (teamsWithIds.length === 0) {
         throw new Error(
-          'Failed to save teams properly. Teams do not have valid IDs. Please try again.'
+          'Failed to save teams properly. Teams do not have valid IDs. Please try again.',
         );
       }
 
@@ -1710,8 +1710,8 @@ const TournamentRegistrationModule: React.FC<
         error instanceof Error
           ? error.message
           : typeof error === 'string'
-          ? error
-          : 'Failed to process registration. Please try again.';
+            ? error
+            : 'Failed to process registration. Please try again.';
 
       setValidationErrors((prev) => ({
         ...prev,
@@ -1769,9 +1769,7 @@ const TournamentRegistrationModule: React.FC<
               {tournamentConfig.registrationDeadline && (
                 <p className='mb-2'>
                   <strong>Registration Deadline:</strong>{' '}
-                  {new Date(
-                    tournamentConfig.registrationDeadline
-                  ).toLocaleDateString()}
+                  {isoToMMDDYYYY(tournamentConfig.registrationDeadline)}
                 </p>
               )}
             </div>
@@ -1781,7 +1779,7 @@ const TournamentRegistrationModule: React.FC<
                   <p className='mb-2'>
                     <strong>Dates:</strong>{' '}
                     {tournamentConfig.tournamentDates
-                      .map((d) => new Date(d).toLocaleDateString())
+                      .map((d) => isoToMMDDYYYY(d))
                       .join(', ')}
                   </p>
                 )}
@@ -1827,7 +1825,7 @@ const TournamentRegistrationModule: React.FC<
     if (showWelcomeBackPrompt && teamsToRegister.length > 0) {
       console.log(
         'Showing welcome back prompt with teams:',
-        teamsToRegister.length
+        teamsToRegister.length,
       );
     }
   }, [showWelcomeBackPrompt, teamsToRegister]);
@@ -1945,7 +1943,7 @@ const TournamentRegistrationModule: React.FC<
                   {existingTeamsState.map((team) => {
                     const isSelected = selectedTeamIds.includes(team._id!);
                     const isPending = teamsToRegister.some(
-                      (t) => t._id === team._id
+                      (t) => t._id === team._id,
                     );
                     const isPaid = team.paymentStatus === 'paid';
                     const isDisabled = isPaid; // Disable if already paid
@@ -1982,8 +1980,8 @@ const TournamentRegistrationModule: React.FC<
                                     isDisabled
                                       ? 'Already paid for this tournament'
                                       : isPending
-                                      ? 'Payment pending - click to complete'
-                                      : 'Select team for registration'
+                                        ? 'Payment pending - click to complete'
+                                        : 'Select team for registration'
                                   }
                                 />
                               </div>
@@ -2164,7 +2162,7 @@ const TournamentRegistrationModule: React.FC<
                           placeholder='Enter team name (e.g., Thunder Hawks)'
                           required
                           disabled={Boolean(
-                            team._id && selectedTeamIds.includes(team._id)
+                            team._id && selectedTeamIds.includes(team._id),
                           )}
                         />
                         {validationErrors[`teamName-${index}`] && (
@@ -2190,7 +2188,7 @@ const TournamentRegistrationModule: React.FC<
                           }
                           required
                           disabled={Boolean(
-                            team._id && selectedTeamIds.includes(team._id)
+                            team._id && selectedTeamIds.includes(team._id),
                           )}
                         >
                           <option value=''>Select Grade</option>
@@ -2201,7 +2199,7 @@ const TournamentRegistrationModule: React.FC<
                               <option key={grade} value={grade.toString()}>
                                 {grade} Grade
                               </option>
-                            )
+                            ),
                           )}
                         </select>
                         {validationErrors[`teamGrade-${index}`] && (
@@ -2227,7 +2225,7 @@ const TournamentRegistrationModule: React.FC<
                           }
                           required
                           disabled={Boolean(
-                            team._id && selectedTeamIds.includes(team._id)
+                            team._id && selectedTeamIds.includes(team._id),
                           )}
                         >
                           <option value=''>Select Gender</option>
@@ -2256,7 +2254,7 @@ const TournamentRegistrationModule: React.FC<
                             handleTeamChange(
                               index,
                               'levelOfCompetition',
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           required
@@ -2301,7 +2299,7 @@ const TournamentRegistrationModule: React.FC<
                           team.name?.trim() &&
                           team.grade?.trim() &&
                           ['Male', 'Female'].includes(team.sex) &&
-                          availableDivisions.includes(team.levelOfCompetition)
+                          availableDivisions.includes(team.levelOfCompetition),
                       ).length
                     }{' '}
                     Valid Team(s)
@@ -2319,7 +2317,9 @@ const TournamentRegistrationModule: React.FC<
                             team.name?.trim() &&
                             team.grade?.trim() &&
                             ['Male', 'Female'].includes(team.sex) &&
-                            availableDivisions.includes(team.levelOfCompetition)
+                            availableDivisions.includes(
+                              team.levelOfCompetition,
+                            ),
                         ).length
                       }{' '}
                       team(s) × ${tournamentFee}
