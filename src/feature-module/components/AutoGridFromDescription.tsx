@@ -100,6 +100,21 @@ interface RegistrationFormConfig {
   tryoutYear?: number;
   tryoutFee?: number;
   displayName?: string;
+  // Tournament fields (TournamentConfig)
+  tournamentName?: string;
+  tournamentYear?: number;
+  tournamentFee?: number;
+  tournamentDates?: string[];
+  locations?: string[];
+  divisions?: string[];
+  ageGroups?: string[];
+  registrationDeadline?: string;
+  paymentDeadline?: string;
+  requiresRoster?: boolean;
+  requiresInsurance?: boolean;
+  refundPolicy?: string;
+  rulesDocumentUrl?: string;
+  scheduleDocumentUrl?: string;
 }
 
 interface AutoGridFromDescriptionProps {
@@ -128,6 +143,15 @@ const formatDateRange = (startDate: string, endDate: string): string => {
     return `${startDate} – ${endDate}`;
   }
   return startDate || endDate || '';
+};
+
+// Timezone-safe: turns "2026-12-26" into "12/26/2026" without using Date,
+// so the day can never shift.
+const formatYMD = (value?: string): string => {
+  if (!value) return '';
+  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[2]}/${m[3]}/${m[1]}`;
+  return value;
 };
 
 const formatDays = (days: string[]): string => {
@@ -195,6 +219,14 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
   const trainingDetails = config?.trainingDetails;
   const tryoutDetails = config?.tryoutDetails;
   const isTryout = !!tryoutDetails;
+  const isTournament =
+    !isTryout &&
+    !trainingDetails &&
+    !!(
+      config?.tournamentName ||
+      config?.tournamentFee ||
+      (config?.tournamentDates?.length || 0) > 0
+    );
 
   // Helper function to get tryout locations (handles both old and new format)
   const getTryoutLocations = (): TryoutLocation[] => {
@@ -1035,6 +1067,269 @@ const AutoGridFromDescription: React.FC<AutoGridFromDescriptionProps> = ({
           <div className='agd-tile agd-tile--cta-bottom'>
             <button className='agd-cta-bottom' onClick={handleRegister}>
               <i className='ti ti-user-plus' /> Register for Tryout{' '}
+              <i className='ti ti-arrow-right' />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // TOURNAMENT VIEW
+  if (isTournament) {
+    const accent = '#22c55e';
+    const handleRegister = () => onRegister?.();
+
+    const tournamentTitle =
+      config.displayName ||
+      `${config.tournamentName || 'Tournament'} ${config.tournamentYear || ''}`.trim();
+
+    // YYYY-MM-DD strings sort correctly as plain text
+    const tournamentDates = [...(config.tournamentDates || [])]
+      .filter(Boolean)
+      .sort();
+    const dateRange =
+      tournamentDates.length > 1
+        ? formatDateRange(
+            formatYMD(tournamentDates[0]),
+            formatYMD(tournamentDates[tournamentDates.length - 1]),
+          )
+        : tournamentDates.length === 1
+          ? formatYMD(tournamentDates[0])
+          : '';
+
+    const tournamentLocations = (config.locations || []).filter(Boolean);
+    const divisionsDisplay = (config.divisions || [])
+      .filter(Boolean)
+      .join(', ');
+    const ageGroupsDisplay = (config.ageGroups || [])
+      .filter(Boolean)
+      .join(', ');
+    const hasFee =
+      typeof config.tournamentFee === 'number' && config.tournamentFee > 0;
+
+    const hasDetails =
+      divisionsDisplay ||
+      ageGroupsDisplay ||
+      config.registrationDeadline ||
+      config.paymentDeadline ||
+      config.requiresRoster ||
+      config.requiresInsurance;
+
+    return (
+      <div className='agd-root'>
+        <div className='agd-event'>
+          <div
+            className='agd-tile agd-tile--hdr'
+            style={{ borderTop: `3px solid ${accent}` }}
+          >
+            <div
+              className='agd-hdr-icon'
+              style={{
+                color: accent,
+                background: `${accent}18`,
+                borderColor: `${accent}44`,
+              }}
+            >
+              <i className='ti ti-trophy' />
+            </div>
+            <h2 className='agd-title'>{tournamentTitle}</h2>
+            {dateRange && (
+              <p className='agd-sub'>
+                <i className='ti ti-calendar' style={{ opacity: 0.5 }} />{' '}
+                {dateRange}
+              </p>
+            )}
+          </div>
+
+          {/* Top CTA Button */}
+          <div className='agd-tile agd-tile--cta'>
+            <button
+              className='agd-cta'
+              style={{
+                background: accent,
+                boxShadow: `0 6px 20px ${accent}44`,
+              }}
+              onClick={handleRegister}
+            >
+              <i className='ti ti-user-plus' /> Register Your Team{' '}
+              <i className='ti ti-arrow-right' />
+            </button>
+          </div>
+
+          {/* About the Tournament */}
+          {hasValidDescription(config?.description) && (
+            <div className='agd-tile'>
+              <TileHead icon='ti-article' label='About the Tournament' />
+              <div
+                className='agd-desc'
+                dangerouslySetInnerHTML={{ __html: config.description! }}
+              />
+            </div>
+          )}
+
+          {/* Tournament Details */}
+          {hasDetails && (
+            <div className='agd-tile'>
+              <TileHead icon='ti-info-circle' label='Tournament Details' />
+              <ul className='agd-list'>
+                {divisionsDisplay && (
+                  <InfoRow icon='ti-medal'>
+                    <strong>Divisions:</strong> {divisionsDisplay}
+                  </InfoRow>
+                )}
+                {ageGroupsDisplay && (
+                  <InfoRow icon='ti-school'>
+                    <strong>Age Groups:</strong> {ageGroupsDisplay}
+                  </InfoRow>
+                )}
+                {config.registrationDeadline && (
+                  <InfoRow icon='ti-calendar-due'>
+                    <strong>Registration Deadline:</strong>{' '}
+                    {formatYMD(config.registrationDeadline)}
+                  </InfoRow>
+                )}
+                {config.paymentDeadline && (
+                  <InfoRow icon='ti-credit-card'>
+                    <strong>Payment Deadline:</strong>{' '}
+                    {formatYMD(config.paymentDeadline)}
+                  </InfoRow>
+                )}
+                {config.requiresRoster && (
+                  <InfoRow icon='ti-clipboard-list'>
+                    <strong>Roster:</strong> Teams must submit a complete roster
+                  </InfoRow>
+                )}
+                {config.requiresInsurance && (
+                  <InfoRow icon='ti-shield'>
+                    <strong>Insurance:</strong> Teams must provide proof of
+                    insurance
+                  </InfoRow>
+                )}
+              </ul>
+            </div>
+          )}
+
+          {/* Pricing */}
+          {hasFee && (
+            <div className='agd-tile'>
+              <TileHead icon='ti-currency-dollar' label='Price' />
+              <div className='agd-base-price'>
+                <span className='agd-base-price-amount'>
+                  ${config.tournamentFee}
+                </span>
+                <span className='agd-base-price-label'>per team</span>
+              </div>
+            </div>
+          )}
+
+          {/* Tournament Dates */}
+          {tournamentDates.length > 0 && (
+            <div className='agd-tile'>
+              <TileHead
+                icon='ti-calendar-event'
+                label={
+                  tournamentDates.length === 1
+                    ? 'Tournament Date'
+                    : 'Tournament Dates'
+                }
+              />
+              <div className='agd-sessions-simple-list'>
+                {tournamentDates.map((d, idx) => (
+                  <div key={`${d}-${idx}`} className='agd-session-simple'>
+                    <div className='agd-session-simple-content'>
+                      <span className='agd-session-simple-date'>
+                        <i className='ti ti-calendar' />
+                        {formatYMD(d)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Locations */}
+          {tournamentLocations.length > 0 && (
+            <div className='agd-tile'>
+              <TileHead
+                icon='ti-map-pin'
+                label={
+                  tournamentLocations.length === 1 ? 'Location' : 'Locations'
+                }
+              />
+              <div className='agd-locations'>
+                {tournamentLocations.map((loc, idx) => (
+                  <div key={`${loc}-${idx}`} className='agd-location-item'>
+                    <ul className='agd-list'>
+                      <InfoRow icon='ti-location-pin'>
+                        <strong>{loc}</strong>
+                      </InfoRow>
+                    </ul>
+                    <a
+                      className='agd-map-link'
+                      href={`https://www.google.com/maps/search/${encodeURIComponent(loc)}`}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                    >
+                      <i className='ti ti-external-link' /> Open in Google Maps
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Documents */}
+          {(config.rulesDocumentUrl || config.scheduleDocumentUrl) && (
+            <div className='agd-tile'>
+              <TileHead icon='ti-file-text' label='Documents' />
+              <ul className='agd-list'>
+                {config.rulesDocumentUrl && (
+                  <InfoRow icon='ti-file-description'>
+                    <a
+                      href={config.rulesDocumentUrl}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      style={{ color: accent, textDecoration: 'none' }}
+                    >
+                      Tournament Rules
+                    </a>
+                  </InfoRow>
+                )}
+                {config.scheduleDocumentUrl && (
+                  <InfoRow icon='ti-calendar-time'>
+                    <a
+                      href={config.scheduleDocumentUrl}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      style={{ color: accent, textDecoration: 'none' }}
+                    >
+                      Tournament Schedule
+                    </a>
+                  </InfoRow>
+                )}
+              </ul>
+            </div>
+          )}
+
+          {/* Refund Policy */}
+          {config.refundPolicy && (
+            <div className='agd-tile'>
+              <TileHead icon='ti-receipt-refund' label='Refund Policy' />
+              <ul className='agd-list'>
+                <InfoRow icon='ti-info-square'>{config.refundPolicy}</InfoRow>
+              </ul>
+            </div>
+          )}
+
+          {/* FAQ Section */}
+          <FAQSection />
+
+          {/* Bottom Orange CTA Button */}
+          <div className='agd-tile agd-tile--cta-bottom'>
+            <button className='agd-cta-bottom' onClick={handleRegister}>
+              <i className='ti ti-user-plus' /> Register Your Team{' '}
               <i className='ti ti-arrow-right' />
             </button>
           </div>
