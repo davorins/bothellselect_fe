@@ -646,7 +646,7 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
                       key={index}
                       className='list-group-item d-flex justify-content-between align-items-center'
                     >
-                      <span>{new Date(date).toLocaleDateString()}</span>
+                      <span>{date}</span>
                       <button
                         className='btn btn-sm btn-outline-danger'
                         onClick={() => removeDate(index)}
