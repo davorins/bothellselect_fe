@@ -1,7 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   HomeTileRenderer.css - Vertical Tiles on ALL Desktop Screens
-   Tiles remain VERTICAL for any desktop (width ≥ 769px)
-   Scales based on both width AND height to prevent page coverage
+   HomeTileRenderer.css
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ── Reset & Base ───────────────────────────────────────────────── */
@@ -327,7 +325,7 @@
    ══════════════════════════════════════════════════════════════════ */
 .htr-expanded-container .step-indicator {
   margin-bottom: 3rem;
-  width: 100%;
+  max-width: 600px;
 }
 
 .htr-expanded-container .step-indicator > .d-flex {
@@ -344,7 +342,7 @@
   justify-content: center;
   text-align: center;
   flex: 0 0 auto;
-  min-width: 70px;
+  min-width: 20px;
 }
 
 .htr-expanded-container .step-icon {
