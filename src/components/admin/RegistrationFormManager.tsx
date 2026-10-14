@@ -88,8 +88,15 @@ const RegistrationFormManager: React.FC = () => {
         },
       });
       if (response.ok) {
-        const events = await response.json();
-        console.log('✅ Season events loaded:', events);
+        const payload = await response.json();
+        console.log('✅ Season events loaded:', payload);
+
+        const events: SeasonEvent[] = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.events)
+            ? payload.events
+            : [];
+
         setSeasonEvents(events);
         if (events.length > 0 && !selectedSeason) {
           setSelectedSeason(events[0]);
