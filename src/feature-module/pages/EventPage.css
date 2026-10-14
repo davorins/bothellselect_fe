@@ -362,37 +362,119 @@
   border-bottom: 1px solid #e5e7eb !important;
 }
 
-/* Step indicator */
+/* ══════════════════════════════════════════════════════════════
+   STEP INDICATOR — matches DOM: .step-icon (not .step-number)
+   Same visual language as HomeTileRenderer.css
+   ══════════════════════════════════════════════════════════════ */
 .event-registration-container .step-indicator {
-  color: #1a1a2e !important;
+  width: 100%;
+  margin-bottom: 3rem;
+  color: #1a1a2e;
 }
 
-.event-registration-container .step-number {
-  background: #f3f4f6 !important;
-  color: #506ee4 !important;
-  font-weight: 700;
+.event-registration-container .step-indicator > .d-flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
-.event-registration-container .step-number.active {
-  background: #506ee4 !important;
-  color: #ffffff !important;
+.event-registration-container .step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex: 0 0 auto;
+  min-width: 70px;
 }
 
-.event-registration-container .step-number.completed {
-  background: #4ade80 !important;
-  color: #ffffff !important;
+.event-registration-container .step-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: #6b7280;
+  font-size: 20px;
+  margin: 0 auto 12px;
+  border: 2px solid #d1d5db;
+  background-color: #f9fafb;
+  transition: all 0.3s ease;
+  position: relative;
 }
 
-.event-registration-container .step-label,
-h2.mt-3 {
-  color: #fff !important;
+.event-registration-container .step-icon i {
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* Active step — brand blue fill, white icon */
+.event-registration-container .step.active .step-icon {
+  background-color: #506ee4;
+  border: 2px solid #506ee4;
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+/* Completed step — green fill, white icon */
+.event-registration-container .step.completed .step-icon {
+  background-color: #4ade80;
+  border: 2px solid #4ade80;
+  color: #ffffff;
+}
+
+.event-registration-container .step-icon::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.event-registration-container .step.active .step-icon::before {
+  border-color: rgba(80, 110, 228, 0.25);
+}
+
+.event-registration-container .step-label {
+  font-size: 0.72rem;
   font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #9ca3af;
+  white-space: nowrap;
+  transition: color 0.3s ease;
+  text-transform: none;
 }
 
-.event-registration-container .step-label.active {
-  color: #506ee4 !important;
+.event-registration-container .step.active .step-label {
+  color: #506ee4;
 }
 
+.event-registration-container .step.completed .step-label {
+  color: #4ade80;
+}
+
+.event-registration-container .step-connector {
+  flex: 1 1 auto;
+  height: 3px;
+  background-color: #e5e7eb;
+  margin: 0 0.5rem;
+  margin-top: 18px;
+  min-width: 20px;
+  border-radius: 2px;
+  transition: background-color 0.3s ease;
+}
+
+.event-registration-container .step.completed + .step-connector {
+  background-color: #4ade80;
+}
+
+/* ── Step title / subtitle (light card context) ───────────── */
 .event-registration-container .step-title {
   color: #1a1a2e !important;
   font-weight: 700;
@@ -403,7 +485,7 @@ h2.mt-3 {
   color: #6b7280 !important;
 }
 
-/* Form elements */
+/* ── Form elements ────────────────────────────────────────── */
 .event-registration-container .form-label {
   color: #1a1a2e !important;
   font-weight: 600;
@@ -414,7 +496,6 @@ h2.mt-3 {
   border: 1px solid #d1d5db !important;
   border-radius: 12px;
   color: #1a1a2e !important;
-  /* padding: 12px 16px; */
 }
 
 .event-registration-container .form-control:focus {
@@ -1162,6 +1243,34 @@ h2.mt-3 {
   .event-registration-container .player-card {
     padding: 12px !important;
   }
+
+  /* Step indicator — compact on mobile */
+  .event-registration-container .step-indicator {
+    margin-bottom: 2rem;
+  }
+
+  .event-registration-container .step {
+    min-width: 54px;
+  }
+
+  .event-registration-container .step-icon {
+    width: 34px;
+    height: 34px;
+    margin-bottom: 8px;
+  }
+
+  .event-registration-container .step-icon i {
+    font-size: 18px;
+  }
+
+  .event-registration-container .step-label {
+    font-size: 0.6rem;
+  }
+
+  .event-registration-container .step-connector {
+    margin-top: 15px;
+    min-width: 12px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1210,6 +1319,26 @@ h2.mt-3 {
   .event-coming-soon h2 {
     font-size: 1.3rem;
   }
+
+  /* Step indicator — extra small */
+  .event-registration-container .step {
+    min-width: 46px;
+  }
+
+  .event-registration-container .step-icon {
+    width: 30px;
+    height: 30px;
+    margin-bottom: 6px;
+  }
+
+  .event-registration-container .step-icon i {
+    font-size: 15px;
+  }
+
+  .event-registration-container .step-label {
+    font-size: 0.55rem;
+    letter-spacing: 0;
+  }
 }
 
 /* ── Reduced Motion ───────────────────────────────────────── */
@@ -1221,7 +1350,9 @@ h2.mt-3 {
   .event-btn-primary,
   .notify-button,
   .details-card,
-  .event-image {
+  .event-image,
+  .event-registration-container .step-icon,
+  .event-registration-container .step-connector {
     animation: none !important;
     transition: none !important;
   }
