@@ -1882,15 +1882,13 @@ const TournamentRegistrationModule: React.FC<
                 <>
                   <strong>{teamsToRegister[0].name}</strong> for the{' '}
                   <strong>{memoizedTournamentEvent.tournament}</strong>{' '}
-                  tournament
                 </>
               ) : (
                 <>
                   <strong>{teamsToRegister.length} teams</strong> for the{' '}
                   <strong>{memoizedTournamentEvent.tournament}</strong>{' '}
-                  tournament
                 </>
-              )}
+              )}{' '}
               but haven't completed payment yet. Please complete your payment
               below to finalize your registration.
             </p>
