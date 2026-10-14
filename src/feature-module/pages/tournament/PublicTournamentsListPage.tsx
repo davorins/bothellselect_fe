@@ -314,6 +314,23 @@ const PublicTournamentsListPage: React.FC = () => {
             </Col>
             <Col xs={24} md={8}>
               <div className='glass-stats-badge'>
+                {/* Register CTA — above the stat, same glass container */}
+                <Button
+                  type='primary'
+                  size='large'
+                  block
+                  icon={<PlayCircleOutlined />}
+                  className='glass-btn-primary register-cta'
+                  href='https://bothellselect.com/tournament'
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  style={{ marginBottom: 16 }}
+                >
+                  Register for a Tournament
+                </Button>
+
+                <Divider className='cta-divider' />
+
                 <Statistic
                   title={<span className='stat-title'>Active Tournaments</span>}
                   value={

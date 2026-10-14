@@ -66,6 +66,7 @@ const AdminEventConfig: React.FC<AdminEventConfigProps> = ({
     price: eventType === 'tryout' ? 50 : eventType === 'training' ? 75 : 425,
     registrationOpen: false,
     whatToBring: [
+      'Basketball',
       'Basketball shoes',
       'Water bottle',
       'Athletic wear',
