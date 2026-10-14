@@ -707,9 +707,9 @@
 }
 
 /* Space Customization */
-.ant-space {
+/* .ant-space {
   width: 100%;
-}
+} */
 
 .ant-space-vertical {
   gap: 8px !important;
