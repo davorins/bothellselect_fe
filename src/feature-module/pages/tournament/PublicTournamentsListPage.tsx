@@ -315,7 +315,7 @@ const PublicTournamentsListPage: React.FC = () => {
             <Col xs={24} md={8}>
               <div className='glass-stats-badge'>
                 {/* Register CTA — above the stat, same glass container */}
-                <h4>Winter Classic 2026</h4>
+                <h4 className='glass-card-loading'>Winter Classic 2026</h4>
                 <Button
                   type='primary'
                   size='large'

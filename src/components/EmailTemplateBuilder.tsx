@@ -923,13 +923,17 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
         imageSize: 'medium',
         showIcons: true,
       };
-      const cols = layout.columns;
-      const gap = layout.gap;
+      const cols = Math.max(1, layout.columns || 1);
+      const gap = layout.gap ?? 24;
+      const halfGap = gap / 2;
       const alignment = layout.alignment;
       const cardStyle = layout.cardStyle;
       const imagePosition = layout.imagePosition;
       const imageSize = layout.imageSize;
       const showIcons = layout.showIcons !== false;
+      const isLeftRight = imagePosition === 'left' || imagePosition === 'right';
+      const flexDirection = imagePosition === 'right' ? 'row-reverse' : 'row';
+      const cellWidth = `${(100 / cols).toFixed(4)}%`;
 
       const cardStyles: Record<string, string> = {
         flat: 'border:none;padding:12px;',
@@ -952,25 +956,14 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
         right: 'text-align:right;',
       };
 
-      const cardWidth = `calc(${100 / cols}% - ${(gap * (cols - 1)) / cols}px)`;
+      const renderCard = (feature: FeatureItem): string => {
+        const imageHtml = feature.image
+          ? `<img src="${feature.image}" alt="${feature.headline}" style="${imageSizeStyles[imageSize]}object-fit:cover;border-radius:8px;flex-shrink:0;${imagePosition === 'top' ? 'margin-bottom:12px;' : isLeftRight ? 'margin-right:16px;' : ''}" />`
+          : showIcons && feature.icon
+            ? `<div style="font-size:${imageSize === 'large' ? '48px' : imageSize === 'medium' ? '36px' : '24px'};line-height:1;">${feature.icon}</div>`
+            : '';
 
-      const featuresHtml = el.features
-        .map((feature: FeatureItem) => {
-          const isLeftRight =
-            imagePosition === 'left' || imagePosition === 'right';
-          const flexDirection =
-            imagePosition === 'left'
-              ? 'row'
-              : imagePosition === 'right'
-                ? 'row-reverse'
-                : 'column';
-          const imageHtml = feature.image
-            ? `<img src="${feature.image}" alt="${feature.headline}" style="${imageSizeStyles[imageSize]}object-fit:cover;border-radius:8px;flex-shrink:0;${imagePosition === 'top' ? 'margin-bottom:12px;' : isLeftRight ? 'margin-right:16px;' : ''}" />`
-            : showIcons && feature.icon
-              ? `<div style="font-size:${imageSize === 'large' ? '48px' : imageSize === 'medium' ? '36px' : '24px'};line-height:1;">${feature.icon}</div>`
-              : '';
-
-          const contentHtml = `
+        const contentHtml = `
           ${feature.badge ? `<span style="display:inline-block;background:${globalStyles.primaryColor};color:#fff;font-size:11px;font-weight:600;padding:2px 12px;border-radius:20px;margin-bottom:8px;">${feature.badge}</span>` : ''}
           <h3 style="font-size:${imageSize === 'large' ? '22px' : imageSize === 'medium' ? '18px' : '16px'};font-weight:700;color:#222;margin:0 0 4px 0;">${feature.headline}</h3>
           ${feature.subHeadline ? `<p style="font-size:13px;color:#888;margin:0 0 8px 0;">${feature.subHeadline}</p>` : ''}
@@ -978,12 +971,33 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
           ${feature.ctaText && feature.ctaUrl ? `<a href="${feature.ctaUrl}" style="display:inline-block;margin-top:12px;color:${globalStyles.primaryColor};font-weight:600;text-decoration:none;">${feature.ctaText} →</a>` : ''}
         `;
 
-          return `
-          <div style="width:${cardWidth};margin-bottom:${gap}px;${cardStyles[cardStyle]}${textAlignMap[alignment]}${isLeftRight ? 'display:flex;' : ''}${isLeftRight && imagePosition === 'right' ? 'flex-direction:row-reverse;' : isLeftRight ? 'flex-direction:row;' : 'flex-direction:column;'}align-items:${isLeftRight ? 'center' : alignment};">
+        return `<div style="box-sizing:border-box;width:100%;${cardStyles[cardStyle]}${textAlignMap[alignment]}${isLeftRight ? `display:flex;flex-direction:${flexDirection};align-items:center;` : ''}">
             ${imageHtml}
             <div style="${isLeftRight ? 'flex:1;' : ''}">${contentHtml}</div>
-          </div>
-        `;
+          </div>`;
+      };
+
+      // One table row per `cols` cards; short last row is padded with empty cells
+      const rows: FeatureItem[][] = [];
+      for (let i = 0; i < el.features.length; i += cols) {
+        rows.push(el.features.slice(i, i + cols));
+      }
+
+      const rowsHtml = rows
+        .map((row) => {
+          const cells = row
+            .map(
+              (feature) =>
+                `<td width="${cellWidth}" valign="top" style="width:${cellWidth};padding:0 ${halfGap}px ${gap}px ${halfGap}px;vertical-align:top;">${renderCard(feature)}</td>`,
+            )
+            .join('');
+          const fillers = Array.from({ length: cols - row.length })
+            .map(
+              () =>
+                `<td width="${cellWidth}" style="width:${cellWidth};padding:0 ${halfGap}px;"></td>`,
+            )
+            .join('');
+          return `<tr>${cells}${fillers}</tr>`;
         })
         .join('');
 
@@ -997,8 +1011,10 @@ const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
       return `
         <div style="${styleToCssString(el.style)}">
           ${sectionTitle}
-          <div style="display:flex;flex-wrap:wrap;margin:0 -${gap / 2}px;">
-            ${featuresHtml}
+          <div style="margin:0 -${halfGap}px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;table-layout:fixed;">
+              ${rowsHtml}
+            </table>
           </div>
           ${layout.showDivider ? `<hr style="border:none;border-top:1px solid #eaeaea;margin:8px 0 0;" />` : ''}
         </div>
