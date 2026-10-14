@@ -42,9 +42,15 @@ export const SeasonEventsProvider: React.FC<{ children: React.ReactNode }> = ({
       const res = await axios.get(`${API_BASE_URL}/admin/season-events`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const events: SeasonEvent[] = (res.data || []).filter(
-        (e: SeasonEvent) => e.registrationOpen === true,
-      );
+
+      const raw = res.data;
+      const list: SeasonEvent[] = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.events)
+          ? raw.events
+          : [];
+
+      const events = list.filter((e) => e.registrationOpen === true);
       setActiveEvents(events);
     } catch (err) {
       console.error('Failed to fetch season events:', err);
