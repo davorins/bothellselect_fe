@@ -1,5 +1,6 @@
 // src/components/registration-modules/AccountCreationModule.tsx
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 interface Props {
   onComplete: (data: { email: string; password: string }) => void;
@@ -241,9 +242,9 @@ const AccountCreationModule: React.FC<Props> = ({
         {/* ✅ Already have an account? Log in */}
         <div className='account-login-prompt'>
           Already have an account?{' '}
-          <a href='/login' className='account-login-link'>
+          <Link to='/login' className='account-login-link'>
             Log in
-          </a>
+          </Link>
         </div>
       </div>
     </div>
