@@ -315,6 +315,7 @@ const PublicTournamentsListPage: React.FC = () => {
             <Col xs={24} md={8}>
               <div className='glass-stats-badge'>
                 {/* Register CTA — above the stat, same glass container */}
+                <h4>Winter Classic 2026</h4>
                 <Button
                   type='primary'
                   size='large'
@@ -329,7 +330,7 @@ const PublicTournamentsListPage: React.FC = () => {
                   Register for a Tournament
                 </Button>
 
-                <Divider className='cta-divider' />
+                {/* <Divider className='cta-divider' />
 
                 <Statistic
                   title={<span className='stat-title'>Active Tournaments</span>}
@@ -343,7 +344,7 @@ const PublicTournamentsListPage: React.FC = () => {
                   }
                   valueStyle={{ color: '#fbbf24', fontSize: 32 }}
                   prefix={<TeamOutlined />}
-                />
+                /> */}
               </div>
             </Col>
           </Row>
