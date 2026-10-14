@@ -238,14 +238,13 @@ const AccountCreationModule: React.FC<Props> = ({
             </button>
           </div>
         </form>
-
-        {/* ✅ Already have an account? Log in */}
-        <div className='account-login-prompt'>
-          Already have an account?{' '}
-          <Link to='/login' className='account-login-link'>
-            Log in
-          </Link>
-        </div>
+      </div>
+      {/* ✅ Already have an account? Log in */}
+      <div className='account-login-prompt'>
+        Already have an account?{' '}
+        <Link to='/login' className='account-login-link'>
+          Log in
+        </Link>
       </div>
     </div>
   );
