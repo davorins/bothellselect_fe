@@ -82,12 +82,7 @@ const RegistrationFormManager: React.FC = () => {
   const loadSeasonEvents = async () => {
     try {
       console.log('📅 Loading season events...');
-      // ✅ FIX: added Authorization header
-      const response = await fetch(`${API_BASE_URL}/admin/season-events`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      const response = await fetch(`${API_BASE_URL}/admin/season-events`);
       if (response.ok) {
         const events = await response.json();
         console.log('✅ Season events loaded:', events);
@@ -151,6 +146,7 @@ const RegistrationFormManager: React.FC = () => {
       }
     } catch (error) {
       console.error('❌ Error loading tournament configs:', error);
+      // Don't throw error - this is optional data
     }
   };
 
@@ -178,6 +174,7 @@ const RegistrationFormManager: React.FC = () => {
       }
     } catch (error) {
       console.error('❌ Error loading tryout configs:', error);
+      // Don't throw error - this is optional data
     }
   };
 
@@ -233,6 +230,7 @@ const RegistrationFormManager: React.FC = () => {
         packages: savedConfig.pricing?.packages,
       });
 
+      // Update local state
       const key = getFormKey(selectedSeason);
       setFormConfigs((prev) => ({
         ...prev,
@@ -270,8 +268,6 @@ const RegistrationFormManager: React.FC = () => {
         scheduleDocumentUrl: config.scheduleDocumentUrl,
         tournamentFee: config.tournamentFee,
         isActive: config.isActive,
-        // ✅ FIX: include description so it reaches the backend
-        description: config.description || '',
       };
 
       const response = await fetch(`${API_BASE_URL}/admin/tournament-configs`, {
@@ -293,6 +289,7 @@ const RegistrationFormManager: React.FC = () => {
       const savedConfig = await response.json();
       console.log('✅ Tournament config saved successfully:', savedConfig);
 
+      // Update local state
       setTournamentConfigs((prev) => ({
         ...prev,
         [config.tournamentName]: savedConfig,
@@ -351,6 +348,7 @@ const RegistrationFormManager: React.FC = () => {
       const savedConfig = await response.json();
       console.log('✅ Tryout config saved successfully:', savedConfig);
 
+      // Update local state
       setTryoutConfigs((prev) => ({
         ...prev,
         [config.tryoutName]: savedConfig,
@@ -450,6 +448,7 @@ const RegistrationFormManager: React.FC = () => {
     loadData();
   };
 
+  // Add timeout to prevent infinite loading
   useEffect(() => {
     const timer = setTimeout(() => {
       if (isLoading) {
@@ -497,6 +496,7 @@ const RegistrationFormManager: React.FC = () => {
       )}
 
       <Card>
+        {/* Navigation Tabs */}
         <Card.Header className='bg-light'>
           <Nav
             variant='tabs'
@@ -538,6 +538,7 @@ const RegistrationFormManager: React.FC = () => {
 
         <Card.Body>
           <Tab.Content>
+            {/* Training Configuration Tab */}
             <Tab.Pane active={activeTab === 'forms'}>
               <div className='row'>
                 <div className='col-md-3'>
@@ -619,6 +620,7 @@ const RegistrationFormManager: React.FC = () => {
               </div>
             </Tab.Pane>
 
+            {/* Tournament Configuration Tab */}
             <Tab.Pane active={activeTab === 'tournaments'}>
               <div className='row'>
                 <div className='col-md-3'>
@@ -795,6 +797,7 @@ const RegistrationFormManager: React.FC = () => {
               </div>
             </Tab.Pane>
 
+            {/* Tryout Configuration Tab */}
             <Tab.Pane active={activeTab === 'tryouts'}>
               <div className='row'>
                 <div className='col-md-3'>
@@ -997,6 +1000,7 @@ const RegistrationFormManager: React.FC = () => {
               </div>
             </Tab.Pane>
 
+            {/* Season Events Tab */}
             <Tab.Pane active={activeTab === 'seasons'}>
               <SeasonEventManager
                 seasonEvents={seasonEvents}
@@ -1005,6 +1009,7 @@ const RegistrationFormManager: React.FC = () => {
               />
             </Tab.Pane>
 
+            {/* Preview Tab */}
             <Tab.Pane active={activeTab === 'preview'}>
               <div className='row'>
                 <div className='col-md-3'>
