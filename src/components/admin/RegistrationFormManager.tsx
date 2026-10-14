@@ -82,7 +82,11 @@ const RegistrationFormManager: React.FC = () => {
   const loadSeasonEvents = async () => {
     try {
       console.log('📅 Loading season events...');
-      const response = await fetch(`${API_BASE_URL}/admin/season-events`);
+      const response = await fetch(`${API_BASE_URL}/admin/season-events`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
       if (response.ok) {
         const events = await response.json();
         console.log('✅ Season events loaded:', events);
@@ -132,6 +136,9 @@ const RegistrationFormManager: React.FC = () => {
           configMap[config.tournamentName] = {
             ...config,
             ageGroups: config.ageGroups || [],
+            tournamentDates: config.tournamentDates || [],
+            locations: config.locations || [],
+            divisions: config.divisions || [],
           };
         });
 
@@ -268,6 +275,7 @@ const RegistrationFormManager: React.FC = () => {
         scheduleDocumentUrl: config.scheduleDocumentUrl,
         tournamentFee: config.tournamentFee,
         isActive: config.isActive,
+        description: config.description || '',
       };
 
       const response = await fetch(`${API_BASE_URL}/admin/tournament-configs`, {

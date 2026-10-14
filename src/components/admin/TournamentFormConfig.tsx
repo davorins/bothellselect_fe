@@ -34,28 +34,36 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
     },
   );
 
+  // ✅ FIXED: normalize arrays so undefined fields never reach the render tree
   const [tournamentConfig, setTournamentConfig] =
-    useState<TournamentSpecificConfig>(
-      () =>
-        initialTournamentConfig || {
-          tournamentName: '',
-          tournamentYear: new Date().getFullYear(),
-          displayName: '',
-          registrationDeadline: '',
-          tournamentDates: [],
-          locations: [],
-          divisions: ['Gold', 'Silver'],
-          ageGroups: [],
-          requiresRoster: true,
-          requiresInsurance: true,
-          paymentDeadline: '',
-          refundPolicy: 'No refunds after registration deadline',
-          rulesDocumentUrl: '',
-          scheduleDocumentUrl: '',
-          tournamentFee: 425,
-          isActive: false,
-        },
-    );
+    useState<TournamentSpecificConfig>(() => {
+      const base: TournamentSpecificConfig = initialTournamentConfig || {
+        tournamentName: '',
+        tournamentYear: new Date().getFullYear(),
+        displayName: '',
+        registrationDeadline: '',
+        tournamentDates: [],
+        locations: [],
+        divisions: ['Gold', 'Silver'],
+        ageGroups: [],
+        requiresRoster: true,
+        requiresInsurance: true,
+        paymentDeadline: '',
+        refundPolicy: 'No refunds after registration deadline',
+        rulesDocumentUrl: '',
+        scheduleDocumentUrl: '',
+        tournamentFee: 425,
+        isActive: false,
+      };
+
+      return {
+        ...base,
+        tournamentDates: base.tournamentDates || [],
+        locations: base.locations || [],
+        divisions: base.divisions || [],
+        ageGroups: base.ageGroups || [],
+      };
+    });
 
   const [newDate, setNewDate] = useState('');
   const [newLocation, setNewLocation] = useState('');
@@ -65,7 +73,6 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
     useState<string>('');
   const [nameError, setNameError] = useState<string>('');
 
-  // Add these new state variables
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<
     'idle' | 'saving' | 'success' | 'error'
@@ -77,7 +84,6 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
     updateTournamentConfig({ description: html });
   };
 
-  // Track original tournament name and setup initial config ref
   useEffect(() => {
     if (initialTournamentConfig?.tournamentName) {
       setOriginalTournamentName(initialTournamentConfig.tournamentName);
@@ -90,7 +96,6 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
     }
   }, [initialTournamentConfig]);
 
-  // Track changes
   useEffect(() => {
     if (!initialConfigRef.current) return;
 
@@ -100,7 +105,6 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
     setHasChanges(currentConfigStr !== initialConfigStr);
   }, [tournamentConfig]);
 
-  // Warn about unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasChanges) {
@@ -118,7 +122,6 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
     };
   }, [hasChanges]);
 
-  // Update config if needed (for backward compatibility)
   const updateConfig = (updates: Partial<RegistrationFormConfig>) => {
     const updated = { ...config, ...updates };
     setConfig(updated);
@@ -132,13 +135,11 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
   ) => {
     setTournamentConfig((prev) => ({ ...prev, ...updates }));
 
-    // Clear name error when user types
     if (updates.tournamentName !== undefined) {
       setNameError('');
     }
   };
 
-  // Validate tournament name before saving
   const validateTournamentName = (name: string): boolean => {
     if (!name.trim()) {
       setNameError('Tournament name is required');
@@ -163,14 +164,14 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
   const addDate = () => {
     if (newDate) {
       updateTournamentConfig({
-        tournamentDates: [...tournamentConfig.tournamentDates, newDate],
+        tournamentDates: [...(tournamentConfig.tournamentDates || []), newDate],
       });
       setNewDate('');
     }
   };
 
   const removeDate = (index: number) => {
-    const dates = [...tournamentConfig.tournamentDates];
+    const dates = [...(tournamentConfig.tournamentDates || [])];
     dates.splice(index, 1);
     updateTournamentConfig({ tournamentDates: dates });
   };
@@ -178,14 +179,14 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
   const addLocation = () => {
     if (newLocation) {
       updateTournamentConfig({
-        locations: [...tournamentConfig.locations, newLocation],
+        locations: [...(tournamentConfig.locations || []), newLocation],
       });
       setNewLocation('');
     }
   };
 
   const removeLocation = (index: number) => {
-    const locations = [...tournamentConfig.locations];
+    const locations = [...(tournamentConfig.locations || [])];
     locations.splice(index, 1);
     updateTournamentConfig({ locations });
   };
@@ -193,14 +194,14 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
   const addDivision = () => {
     if (newDivision) {
       updateTournamentConfig({
-        divisions: [...tournamentConfig.divisions, newDivision],
+        divisions: [...(tournamentConfig.divisions || []), newDivision],
       });
       setNewDivision('');
     }
   };
 
   const removeDivision = (index: number) => {
-    const divisions = [...tournamentConfig.divisions];
+    const divisions = [...(tournamentConfig.divisions || [])];
     divisions.splice(index, 1);
     updateTournamentConfig({ divisions });
   };
@@ -208,21 +209,19 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
   const addAgeGroup = () => {
     if (newAgeGroup) {
       updateTournamentConfig({
-        ageGroups: [...tournamentConfig.ageGroups, newAgeGroup],
+        ageGroups: [...(tournamentConfig.ageGroups || []), newAgeGroup],
       });
       setNewAgeGroup('');
     }
   };
 
   const removeAgeGroup = (index: number) => {
-    const ageGroups = [...tournamentConfig.ageGroups];
+    const ageGroups = [...(tournamentConfig.ageGroups || [])];
     ageGroups.splice(index, 1);
     updateTournamentConfig({ ageGroups });
   };
 
-  // Save handler
   const handleSave = async () => {
-    // Validate required fields
     if (!validateTournamentName(tournamentConfig.tournamentName)) {
       return;
     }
@@ -249,7 +248,6 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
       setHasChanges(false);
       initialConfigRef.current = JSON.parse(JSON.stringify(tournamentConfig));
 
-      // Reset success status after 3 seconds
       setTimeout(() => {
         setSaveStatus('idle');
       }, 3000);
@@ -261,7 +259,6 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
     }
   };
 
-  // Cancel handler
   const handleCancel = () => {
     if (initialConfigRef.current) {
       setTournamentConfig(JSON.parse(JSON.stringify(initialConfigRef.current)));
@@ -297,7 +294,6 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
             </label>
           </div>
 
-          {/* Save Status Indicator */}
           {saveStatus === 'success' && (
             <span className='text-success'>
               <i className='ti ti-circle-check me-1'></i>
@@ -313,7 +309,6 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
         </div>
       </div>
 
-      {/* Save/Cancel Buttons */}
       <div className='card mb-4'>
         <div className='card-body'>
           <div className='d-flex justify-content-between align-items-center'>
@@ -383,7 +378,6 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
             </small>
           </div>
 
-          {/* Enhanced Preview Section */}
           <div className='alert alert-info mt-4'>
             <i className='ti ti-info-circle me-2'></i>
             <strong>How it will appear to parents:</strong>
@@ -413,7 +407,6 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
         </div>
       </div>
 
-      {/* Tournament Information Card */}
       <div className='card mb-4'>
         <div className='card-header'>
           <h5>Basic Tournament Information</h5>
@@ -509,7 +502,6 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
         </div>
       </div>
 
-      {/* Tournament Schedule */}
       <div className='row mb-4'>
         <div className='col-md-6'>
           <div className='card'>
@@ -613,7 +605,6 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
         </div>
       </div>
 
-      {/* Tournament Details - Four columns layout */}
       <div className='row mb-4'>
         <div className='col-md-3'>
           <div className='card h-100'>
@@ -639,23 +630,25 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
                 </button>
               </div>
 
-              {tournamentConfig.tournamentDates.length > 0 ? (
+              {(tournamentConfig.tournamentDates || []).length > 0 ? (
                 <div className='list-group'>
-                  {tournamentConfig.tournamentDates.map((date, index) => (
-                    <div
-                      key={index}
-                      className='list-group-item d-flex justify-content-between align-items-center'
-                    >
-                      <span>{date}</span>
-                      <button
-                        className='btn btn-sm btn-outline-danger'
-                        onClick={() => removeDate(index)}
-                        disabled={isSaving}
+                  {(tournamentConfig.tournamentDates || []).map(
+                    (date, index) => (
+                      <div
+                        key={index}
+                        className='list-group-item d-flex justify-content-between align-items-center'
                       >
-                        <i className='ti ti-trash'></i>
-                      </button>
-                    </div>
-                  ))}
+                        <span>{date}</span>
+                        <button
+                          className='btn btn-sm btn-outline-danger'
+                          onClick={() => removeDate(index)}
+                          disabled={isSaving}
+                        >
+                          <i className='ti ti-trash'></i>
+                        </button>
+                      </div>
+                    ),
+                  )}
                 </div>
               ) : (
                 <p className='text-muted small mb-0'>No dates added yet</p>
@@ -688,9 +681,9 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
                 </button>
               </div>
 
-              {tournamentConfig.locations.length > 0 ? (
+              {(tournamentConfig.locations || []).length > 0 ? (
                 <div className='list-group'>
-                  {tournamentConfig.locations.map((location, index) => (
+                  {(tournamentConfig.locations || []).map((location, index) => (
                     <div
                       key={index}
                       className='list-group-item d-flex justify-content-between align-items-center'
@@ -737,9 +730,9 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
                 </button>
               </div>
 
-              {tournamentConfig.divisions.length > 0 ? (
+              {(tournamentConfig.divisions || []).length > 0 ? (
                 <div className='list-group'>
-                  {tournamentConfig.divisions.map((division, index) => (
+                  {(tournamentConfig.divisions || []).map((division, index) => (
                     <div
                       key={index}
                       className='list-group-item d-flex justify-content-between align-items-center'
@@ -786,9 +779,9 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
                 </button>
               </div>
 
-              {tournamentConfig.ageGroups.length > 0 ? (
+              {(tournamentConfig.ageGroups || []).length > 0 ? (
                 <div className='list-group'>
-                  {tournamentConfig.ageGroups.map((ageGroup, index) => (
+                  {(tournamentConfig.ageGroups || []).map((ageGroup, index) => (
                     <div
                       key={index}
                       className='list-group-item d-flex justify-content-between align-items-center'
@@ -812,7 +805,6 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
         </div>
       </div>
 
-      {/* Tournament Documents */}
       <div className='card mb-4'>
         <div className='card-header'>
           <h5>Tournament Documents</h5>
@@ -861,7 +853,6 @@ const TournamentFormConfig: React.FC<TournamentFormConfigProps> = ({
         </div>
       </div>
 
-      {/* Payment Configuration */}
       <div className='card'>
         <div className='card-header'>
           <h5>Payment Configuration</h5>
