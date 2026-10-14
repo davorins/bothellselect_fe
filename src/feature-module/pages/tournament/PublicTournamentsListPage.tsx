@@ -656,7 +656,7 @@ const PublicTournamentsListPage: React.FC = () => {
               description={
                 <div>
                   <Title level={4}>No tournaments found</Title>
-                  <Text>
+                  <Text style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
                     {filters.search || filters.status || filters.format
                       ? 'Try adjusting your filters or search terms'
                       : 'No tournaments are currently available'}
