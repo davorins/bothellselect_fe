@@ -1073,36 +1073,6 @@ h2.mt-3 {
   overflow: auto;
 }
 
-/* ── Already have an account? Log in prompt ─────────────── */
-.account-login-prompt {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  text-align: center;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.65);
-  font-weight: 500;
-}
-
-.account-login-link {
-  color: #7b94f0;
-  font-weight: 700;
-  text-decoration: none;
-  margin-left: 4px;
-  transition: color 0.2s ease;
-}
-
-.account-login-link:hover {
-  color: #a5b8ff;
-  text-decoration: underline;
-}
-
-.account-login-link:focus-visible {
-  outline: 2px solid #506ee4;
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 1024px) {
   .event-hero-content {

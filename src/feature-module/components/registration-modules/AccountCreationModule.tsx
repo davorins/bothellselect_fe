@@ -19,13 +19,11 @@ const AccountCreationModule: React.FC<Props> = ({
   const [isValid, setIsValid] = useState(false);
   const [hasUserEngaged, setHasUserEngaged] = useState(false);
 
-  // Password visibility state
   const [passwordVisibility, setPasswordVisibility] = useState({
     password: false,
     confirmPassword: false,
   });
 
-  // Validation functions matching other modules
   const validateEmail = (email: string): string => {
     if (!email.trim()) return 'Email is required';
     if (!/^\S+@\S+\.\S+$/.test(email))
@@ -48,15 +46,12 @@ const AccountCreationModule: React.FC<Props> = ({
     return '';
   };
 
-  // Main validation function
   const validateForm = () => {
     const err: Record<string, string> = {};
-
     err.email = validateEmail(email);
     err.password = validatePassword(password);
     err.confirm = validateConfirmPassword(confirmPassword, password);
 
-    // Remove empty error fields
     Object.keys(err).forEach((key) => {
       if (!err[key]) delete err[key];
     });
@@ -69,7 +64,6 @@ const AccountCreationModule: React.FC<Props> = ({
     return formIsValid;
   };
 
-  // Real-time validation only after user has engaged
   useEffect(() => {
     if (hasUserEngaged) {
       validateForm();
@@ -104,7 +98,6 @@ const AccountCreationModule: React.FC<Props> = ({
 
     console.log('🔐 [AccountCreationModule] Form submitted');
 
-    // Always validate on submit, regardless of engagement
     if (!validateForm()) {
       console.log('❌ [AccountCreationModule] Form validation failed');
       return;
@@ -116,7 +109,6 @@ const AccountCreationModule: React.FC<Props> = ({
         '✅ [AccountCreationModule] Form validated, calling onComplete',
       );
 
-      // JUST pass the data to the parent - let the wizard handle the API call
       onComplete({
         email: email.toLowerCase().trim(),
         password: password,
@@ -168,7 +160,6 @@ const AccountCreationModule: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* Password */}
             <div className='col-md-6 mb-3'>
               <label className='form-label'>Password</label>
               <div className='pass-group'>
@@ -193,7 +184,6 @@ const AccountCreationModule: React.FC<Props> = ({
               )}
             </div>
 
-            {/* Confirm Password */}
             <div className='col-md-6 mb-3'>
               <label className='form-label'>Confirm Password</label>
               <div className='pass-group'>
@@ -220,7 +210,6 @@ const AccountCreationModule: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Submit button */}
           <div className='d-flex justify-content-end mt-4'>
             <button
               type='submit'
@@ -238,14 +227,47 @@ const AccountCreationModule: React.FC<Props> = ({
             </button>
           </div>
         </form>
+
+        {/* ✅ Already have an account? Log in */}
+        <div className='account-login-prompt'>
+          Already have an account?{' '}
+          <Link to='/login' className='account-login-link'>
+            Log in
+          </Link>
+        </div>
       </div>
-      {/* ✅ Already have an account? Log in */}
-      <div className='account-login-prompt'>
-        Already have an account?{' '}
-        <Link to='/login' className='account-login-link'>
-          Log in
-        </Link>
-      </div>
+
+      {/* Scoped styles for the login prompt */}
+      <style>{`
+        .account-login-prompt {
+          margin-top: 24px;
+          padding-top: 20px;
+          border-top: 1px solid rgba(0, 0, 0, 0.08);
+          text-align: center;
+          font-size: 0.9rem;
+          color: rgba(0, 0, 0, 0.6);
+          font-weight: 500;
+        }
+
+        .account-login-link {
+          color: #506ee4;
+          font-weight: 700;
+          text-decoration: none;
+          margin-left: 4px;
+          transition: color 0.2s ease;
+        }
+
+        .account-login-link:hover {
+          color: #3f5cd6;
+          text-decoration: underline;
+        }
+
+        .account-login-link:focus-visible {
+          outline: 2px solid #506ee4;
+          outline-offset: 2px;
+          border-radius: 4px;
+        }
+      `}</style>
     </div>
   );
 };
