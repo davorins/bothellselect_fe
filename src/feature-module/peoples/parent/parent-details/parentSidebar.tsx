@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { formatPhoneNumber } from '../../../../utils/phone';
-import { getAvatarUrl, getDefaultAvatar } from '../../../../utils/r2Utils';
+import { getAvatarUrl } from '../../../../utils/r2Utils';
+import { getParentAvatar, getCoachAvatar } from '../../../../utils/avatarUtils';
 import {
   formatAddress,
   Address,
@@ -31,6 +32,7 @@ interface ParentData {
   registrationComplete?: boolean;
   paymentComplete?: boolean;
   isCoach?: boolean;
+  relationship?: string;
 }
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
@@ -75,9 +77,11 @@ interface ParentSidebarProps {
 
 const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
   const [avatarSrc, setAvatarSrc] = useState<string>(() => {
-    const defaultAvatar = getDefaultAvatar(
-      parent?.isCoach ? 'coach' : 'parent',
-    );
+    // Determine the correct fallback based on role & relationship
+    const defaultAvatar = parent?.isCoach
+      ? getCoachAvatar(null)
+      : getParentAvatar(null, parent?.relationship);
+
     return getAvatarUrl(parent?.avatar || parent?.imgSrc, defaultAvatar);
   });
 
@@ -111,21 +115,33 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
         const response = await axios.get(`${API_BASE_URL}/parent/${parentId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const defaultAvatar = getDefaultAvatar(
-          parent?.isCoach ? 'coach' : 'parent',
-        );
+
+        // The API returns both the avatar and the relationship
+        const fetchedRelationship =
+          response.data.relationship || parent?.relationship;
+
+        const defaultAvatar = parent?.isCoach
+          ? getCoachAvatar(null)
+          : getParentAvatar(null, fetchedRelationship);
+
         setAvatarSrc(getAvatarUrl(response.data.avatar, defaultAvatar));
       } catch (err) {
         console.error('Failed to fetch avatar:', err);
       }
     };
     fetchAvatarUrlFromBackend();
-  }, [parent?._id, parent?.isCoach, parent?.avatar, parent?.imgSrc]);
+  }, [
+    parent?._id,
+    parent?.isCoach,
+    parent?.avatar,
+    parent?.imgSrc,
+    parent?.relationship,
+  ]);
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.src = getDefaultAvatar(
-      parent?.isCoach ? 'coach' : 'parent',
-    );
+    e.currentTarget.src = parent?.isCoach
+      ? getCoachAvatar(null)
+      : getParentAvatar(null, parent?.relationship);
   };
 
   if (!parent) return <div>No parent data found.</div>;
