@@ -15,6 +15,7 @@ import SearchBar from './SearchBar';
 import FullscreenToggle from './FullscreenToggle';
 import NotificationDropdown from './NotificationDropdown';
 import axios from 'axios';
+import { getParentAvatar } from '../../../utils/avatarUtils';
 
 const Header = () => {
   const { parent, role, logout } = useAuth();
@@ -32,9 +33,6 @@ const Header = () => {
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-  const DEFAULT_AVATAR =
-    'https://bothell-select.onrender.com/uploads/avatars/parents.png';
-
   useEffect(() => {
     dispatch(setMobileSidebar(false));
   }, [location.pathname, dispatch]);
@@ -50,7 +48,11 @@ const Header = () => {
     const token = localStorage.getItem('token');
     const parentId = localStorage.getItem('parentId');
 
-    if (!token || !parentId) return;
+    if (!token || !parentId) {
+      // Even if they have no token, fallback to the dynamic default based on the context `parent` object
+      setAvatarSrc(getParentAvatar(parent?.avatar, parent?.relationship));
+      return;
+    }
 
     try {
       const response = await axios.get(`${API_BASE_URL}/parent/${parentId}`, {
@@ -59,19 +61,24 @@ const Header = () => {
         },
       });
 
-      const avatarUrl = response.data.avatar;
+      const data = response.data;
 
-      if (avatarUrl && avatarUrl.startsWith('http')) {
-        setAvatarSrc(avatarUrl);
-        localStorage.setItem('avatarUrl', avatarUrl);
+      // Use the helper to resolve: upload > relationship default > guardian fallback
+      const resolvedAvatar = getParentAvatar(data.avatar, data.relationship);
+
+      setAvatarSrc(resolvedAvatar);
+
+      // Only save to local storage if it's an actual upload (starts with http)
+      if (data.avatar && data.avatar.startsWith('http')) {
+        localStorage.setItem('avatarUrl', data.avatar);
       } else {
-        setAvatarSrc(DEFAULT_AVATAR);
+        localStorage.removeItem('avatarUrl');
       }
     } catch (err) {
       console.error('Failed to fetch avatar:', err);
-      setAvatarSrc(DEFAULT_AVATAR);
+      setAvatarSrc(getParentAvatar(parent?.avatar, parent?.relationship));
     }
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL, parent?.avatar, parent?.relationship]);
 
   useEffect(() => {
     fetchAvatarUrlFromBackend();
@@ -171,10 +178,10 @@ const Header = () => {
   const renderUserDropdown = () => {
     if (!parent) return null;
 
-    const avatarUrl =
-      parent.avatar && parent.avatar.trim() !== ''
-        ? `https://bothell-select.onrender.com${parent.avatar}`
-        : avatarSrc || DEFAULT_AVATAR;
+    const avatarUrl = getParentAvatar(
+      parent.avatar || avatarSrc,
+      parent.relationship,
+    );
 
     return (
       <div className='dropdown ms-1'>
@@ -254,7 +261,12 @@ const Header = () => {
 
           <div className='d-flex align-items-center'>
             {parent?.role === 'admin' && renderSeasonDropdown()}
-            <NotificationDropdown avatarSrc={avatarSrc || DEFAULT_AVATAR} />
+            <NotificationDropdown
+              avatarSrc={getParentAvatar(
+                parent?.avatar || avatarSrc,
+                parent?.relationship,
+              )}
+            />
             <FullscreenToggle />
             {renderUserDropdown()}
           </div>

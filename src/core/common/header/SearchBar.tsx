@@ -4,15 +4,11 @@ import { all_routes } from '../../../feature-module/router/all_routes';
 import { useAuth } from '../../../context/AuthContext';
 import { SearchResult } from '../../../types/types';
 import { formatPhoneNumber } from '../../../utils/phone';
-
-const DEFAULT_PARENT_AVATAR =
-  'https://bothell-select.onrender.com/uploads/avatars/parents.png';
-const DEFAULT_COACH_AVATAR =
-  'https://bothell-select.onrender.com/uploads/avatars/coach.png';
-const DEFAULT_GIRL_AVATAR =
-  'https://bothell-select.onrender.com/uploads/avatars/girl.png';
-const DEFAULT_BOY_AVATAR =
-  'https://bothell-select.onrender.com/uploads/avatars/boy.png';
+import {
+  getParentAvatar,
+  getCoachAvatar,
+  getPlayerAvatar,
+} from '../../../utils/avatarUtils';
 
 interface SearchBarProps {
   role?: string;
@@ -72,27 +68,29 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
 
   // Helper function to get the correct avatar URL
   const getAvatarUrl = (result: SearchResult): string => {
+    // If the backend returned a concrete avatar/URL, normalize legacy paths
     if (result.image) {
-      if (result.image.startsWith('http')) {
-        return result.image;
+      if (result.image.includes('res.cloudinary.com')) {
+        return `${result.image}${result.image.includes('?') ? '&' : '?'}${Date.now()}`;
       }
-      if (result.image.startsWith('/')) {
+      if (result.image.startsWith('/uploads/')) {
         return `https://bothell-select.onrender.com${result.image}`;
       }
+      // R2 or absolute URL
+      if (result.image.startsWith('http')) return result.image;
     }
 
+    // Fallback to local defaults based on type
     switch (result.type) {
       case 'player':
-        return result.gender?.toLowerCase() === 'female'
-          ? DEFAULT_GIRL_AVATAR
-          : DEFAULT_BOY_AVATAR;
+        return getPlayerAvatar(undefined, result.gender);
       case 'coach':
-        return DEFAULT_COACH_AVATAR;
+        return getCoachAvatar(undefined);
       case 'parent':
       case 'guardian':
-        return DEFAULT_PARENT_AVATAR;
+        return getParentAvatar(undefined, (result as any).relationship);
       default:
-        return DEFAULT_PARENT_AVATAR;
+        return getParentAvatar(undefined);
     }
   };
 
@@ -147,13 +145,11 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
               ...fullPlayerData,
               _id: fullPlayerData._id || result.id,
               id: fullPlayerData.id || result.id,
-              // Remove playerId since it doesn't exist on Player type
               fullName: fullPlayerData.fullName || result.name,
               name: fullPlayerData.name || result.name,
               imgSrc:
                 fullPlayerData.imgSrc || fullPlayerData.avatar || result.image,
               avatar: fullPlayerData.avatar || result.image,
-              // Ensure seasons data is properly structured - use type assertion to avoid conflicts
               seasons: (fullPlayerData.seasons ||
                 (fullPlayerData.season
                   ? [
@@ -166,16 +162,13 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
                         paymentComplete:
                           fullPlayerData.paymentComplete ||
                           fullPlayerData.status === 'Active',
-                        // Use playerStatus instead of paymentStatus
                       },
                     ]
-                  : [])) as any, // Use type assertion to avoid type conflicts
+                  : [])) as any,
             }
           : {
-              // Fallback to search result data with enhanced seasons structure
               _id: result.id,
               id: result.id,
-              // Remove playerId since it doesn't exist on Player type
               fullName: result.name,
               name: result.name,
               gender: result.gender || '',
@@ -190,10 +183,9 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
               section: result.additionalInfo || '',
               class: result.grade || '',
               createdAt: result.createdAt,
-              playerStatus: result.status, // Use playerStatus instead of paymentStatus
+              playerStatus: result.status,
               imgSrc: result.image,
               avatar: result.image,
-              // Enhanced seasons data structure with detailed information - use type assertion
               seasons: (result.seasons || [
                 {
                   season: result.season || 'Bothell Select',
@@ -209,7 +201,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
                   registrationDate:
                     result.createdAt || new Date().toISOString(),
                   paymentComplete: result.status === 'Active',
-                  // Remove paymentStatus since it doesn't exist, use paymentComplete instead
                   amountPaid:
                     result.status === 'Active'
                       ? result.season?.includes('Tryout')
@@ -224,8 +215,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
                       : undefined,
                   cardBrand: result.status === 'Active' ? 'VISA' : undefined,
                 },
-              ]) as any, // Use type assertion to avoid type conflicts
-              // Remove paymentStatus and paymentComplete since they don't exist on Player type
+              ]) as any,
               registrationComplete: true,
             };
 
@@ -243,13 +233,11 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
         });
       } catch (err) {
         console.error('Navigation error:', err);
-        // Enhanced fallback navigation with seasons data - use type assertion
         navigate(`${routes.playerDetail}/${result.id}`, {
           state: {
             player: {
               _id: result.id,
               id: result.id,
-              // Remove playerId since it doesn't exist on Player type
               fullName: result.name,
               name: result.name,
               status: result.status || 'inactive',
@@ -270,7 +258,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
                   registrationDate:
                     result.createdAt || new Date().toISOString(),
                   paymentComplete: result.status === 'Active',
-                  // Remove paymentStatus since it doesn't exist
                   amountPaid:
                     result.status === 'Active'
                       ? result.season?.includes('Tryout')
@@ -285,7 +272,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
                       : undefined,
                   cardBrand: result.status === 'Active' ? 'VISA' : undefined,
                 },
-              ] as any, // Use type assertion to avoid type conflicts
+              ] as any,
             },
             fromSearch: true,
             key: Date.now(),
@@ -298,7 +285,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
 
   const handleSchoolNavigation = useCallback(
     (result: SearchResult) => {
-      // Use PlayerList (capital P) to match all_routes
       const basePath = routes.PlayerList || routes.playerList;
       const schoolPath = `${basePath}?school=${encodeURIComponent(result.name)}`;
       navigate(schoolPath, {
@@ -330,6 +316,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
                   email: result.email,
                   phone: result.phone,
                   address: result.address,
+                  relationship: (result as any).relationship,
                   isCoach: result.type === 'coach',
                   ...(result.isPaymentMatch &&
                     result.paymentDetails && {
@@ -405,19 +392,29 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
                     alt={result.name || 'User avatar'}
                     className='avatar-img rounded-circle'
                     onError={(e) => {
+                      // Fallback to local defaults — players only have
+                      // boy/girl; parents get mom/dad/guardian based on
+                      // relationship; coaches get coach.png
                       const target = e.target as HTMLImageElement;
                       switch (result.type) {
                         case 'player':
-                          target.src =
-                            result.gender?.toLowerCase() === 'female'
-                              ? DEFAULT_GIRL_AVATAR
-                              : DEFAULT_BOY_AVATAR;
+                          target.src = getPlayerAvatar(
+                            undefined,
+                            result.gender,
+                          );
                           break;
                         case 'coach':
-                          target.src = DEFAULT_COACH_AVATAR;
+                          target.src = getCoachAvatar(undefined);
+                          break;
+                        case 'parent':
+                        case 'guardian':
+                          target.src = getParentAvatar(
+                            undefined,
+                            (result as any).relationship,
+                          );
                           break;
                         default:
-                          target.src = DEFAULT_PARENT_AVATAR;
+                          target.src = getParentAvatar(undefined);
                       }
                     }}
                   />

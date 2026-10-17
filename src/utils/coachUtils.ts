@@ -102,7 +102,11 @@ const transformGuardianToRecord = (
     type: 'guardian' as const,
     status: 'Active',
     DateofJoin: getSafeDate(guardian.createdAt),
-    imgSrc: 'https://bothell-select.onrender.com/uploads/avatars/coach.png',
+    imgSrc:
+      guardian.avatar ||
+      (guardian.isCoach
+        ? '/assets/img/avatar/coach.png'
+        : '/assets/img/avatar/agent.png'),
     aauNumber: guardian.aauNumber || 'N/A',
     canView: true,
     createdAt: getSafeDate(guardian.createdAt),

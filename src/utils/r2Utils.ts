@@ -32,8 +32,8 @@ export const cleanR2Url = (url: string | null | undefined): string => {
   // Remove any trailing slashes
   cleanUrl = cleanUrl.replace(/\/+$/, '');
 
-  // Ensure it's a proper URL
-  if (!cleanUrl.startsWith('http')) {
+  // Ensure it's a proper URL if it's not a local path
+  if (!cleanUrl.startsWith('http') && !cleanUrl.startsWith('/')) {
     cleanUrl = `https://${cleanUrl}`;
   }
 
@@ -114,7 +114,9 @@ export const getAvatarUrl = (
 };
 
 /**
- * Get the appropriate default avatar based on role and gender
+ * Get the appropriate default avatar based on role and gender.
+ * NOW POINTS TO LOCAL ASSETS instead of the old R2 server.
+ *
  * @param role - User role (parent, coach, player, guardian)
  * @param gender - Optional gender for players
  * @returns Default avatar URL
@@ -123,7 +125,7 @@ export const getDefaultAvatar = (
   role: 'parent' | 'coach' | 'player' | 'guardian' = 'parent',
   gender?: 'Male' | 'Female',
 ): string => {
-  const baseUrl = 'https://bothell-select.onrender.com/uploads/avatars';
+  const baseUrl = '/assets/img/avatar';
 
   switch (role) {
     case 'coach':
@@ -131,11 +133,12 @@ export const getDefaultAvatar = (
     case 'player':
       return gender === 'Female' ? `${baseUrl}/girl.png` : `${baseUrl}/boy.png`;
     case 'guardian':
-      // Use same as parent for now, but you can create a specific guardian avatar later
-      return `${baseUrl}/parents.png`;
+      // Default generic guardian fallback
+      return `${baseUrl}/agent.png`;
     case 'parent':
     default:
-      return `${baseUrl}/parents.png`;
+      // Default generic parent fallback
+      return `${baseUrl}/agent.png`;
   }
 };
 

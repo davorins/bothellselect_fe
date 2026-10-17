@@ -20,6 +20,7 @@ import axios from 'axios';
 import AcceptanceEmailModal, { EmailPayload } from './AcceptanceEmailModal';
 import './TeamDetail.css';
 import './teams-mobile.css';
+import { DEFAULT_AVATARS } from '../../../utils/avatarUtils';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -807,8 +808,8 @@ const TeamDetail: React.FC = () => {
         imgSrc:
           player.avatar ||
           (player.gender === 'Female'
-            ? 'https://bothell-select.onrender.com/uploads/avatars/girl.png'
-            : 'https://bothell-select.onrender.com/uploads/avatars/boy.png'),
+            ? DEFAULT_AVATARS.girl
+            : DEFAULT_AVATARS.boy),
         parents: player.parents || [],
         seasons: player.seasons || [],
         registrationComplete: player.registrationComplete || false,
@@ -971,9 +972,7 @@ const TeamDetail: React.FC = () => {
         <div className='d-flex align-items-center'>
           <div className='avatar avatar-sm flex-shrink-0 me-2'>
             <img
-              src={
-                'https://bothell-select.onrender.com/uploads/avatars/coach.png'
-              }
+              src={DEFAULT_AVATARS.coach}
               className='img-fluid rounded-circle'
               alt={`${text} avatar`}
               style={{

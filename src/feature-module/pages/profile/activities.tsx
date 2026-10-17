@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotifications } from '../../../feature-module/hooks/useNotifications';
 import axios from 'axios';
+import { getParentAvatar } from '../../../utils/avatarUtils';
 
 const NotificationActivities = () => {
   const { parent } = useAuth();
@@ -11,8 +12,6 @@ const NotificationActivities = () => {
   );
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-  const DEFAULT_AVATAR =
-    'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
   const {
     setNotifications,
@@ -25,25 +24,30 @@ const NotificationActivities = () => {
   const fetchAvatarUrlFromBackend = useCallback(async () => {
     const token = localStorage.getItem('token');
     const parentId = localStorage.getItem('parentId');
-    if (!token || !parentId) return;
+
+    if (!token || !parentId) {
+      setAvatarSrc(getParentAvatar(parent?.avatar, parent?.relationship));
+      return;
+    }
 
     try {
       const response = await axios.get(`${API_BASE_URL}/parent/${parentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const avatarUrl = response.data.avatar;
-      if (avatarUrl?.startsWith('http')) {
-        setAvatarSrc(avatarUrl);
-        localStorage.setItem('avatarUrl', avatarUrl);
-      } else {
-        setAvatarSrc(DEFAULT_AVATAR);
+      const data = response.data;
+
+      // Use the helper to resolve: upload > relationship default > guardian fallback
+      setAvatarSrc(getParentAvatar(data.avatar, data.relationship));
+
+      if (data.avatar?.startsWith('http')) {
+        localStorage.setItem('avatarUrl', data.avatar);
       }
     } catch (err) {
       console.error('Failed to fetch avatar:', err);
-      setAvatarSrc(DEFAULT_AVATAR);
+      setAvatarSrc(getParentAvatar(parent?.avatar, parent?.relationship));
     }
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL, parent?.avatar, parent?.relationship]);
 
   useEffect(() => {
     fetchAvatarUrlFromBackend();
@@ -159,7 +163,13 @@ const NotificationActivities = () => {
                       <div className='d-flex align-items-start flex-fill'>
                         <div className='avatar avatar-lg flex-shrink-0 me-2 mb-3'>
                           <img
-                            src={avatarSrc || DEFAULT_AVATAR}
+                            src={
+                              avatarSrc ||
+                              getParentAvatar(
+                                parent.avatar,
+                                parent.relationship,
+                              )
+                            }
                             alt={parent.fullName || 'User avatar'}
                             className='img-fluid rounded-circle'
                           />

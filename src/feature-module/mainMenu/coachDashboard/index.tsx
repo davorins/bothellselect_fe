@@ -42,6 +42,8 @@ interface DashboardData {
     parents: number;
     additionalGuardians: number;
     coaches: number;
+    momCount?: number;
+    dadCount?: number;
   };
   summary: {
     totalPlayers: number;
@@ -354,7 +356,15 @@ const CoachDashboard = () => {
                 <div className='d-flex align-items-center'>
                   <div className='avatar avatar-xl bg-success-transparent me-2 p-1'>
                     <img
-                      src='https://bothell-select.onrender.com/uploads/avatars/parents.png'
+                      src={
+                        (dashboardData?.adultStats?.momCount || 0) >
+                        (dashboardData?.adultStats?.dadCount || 0)
+                          ? '/assets/img/avatar/mom.png'
+                          : (dashboardData?.adultStats?.dadCount || 0) >
+                              (dashboardData?.adultStats?.momCount || 0)
+                            ? '/assets/img/avatar/dad.png'
+                            : '/assets/img/avatar/guardian.png'
+                      }
                       alt='Parents'
                     />
                   </div>
@@ -393,10 +403,7 @@ const CoachDashboard = () => {
               <div className='card-body'>
                 <div className='d-flex align-items-center'>
                   <div className='avatar avatar-xl bg-info-transparent me-2 p-1'>
-                    <img
-                      src='https://bothell-select.onrender.com/uploads/avatars/coach.png'
-                      alt='Coaches'
-                    />
+                    <img src='/assets/img/avatar/coach.png' alt='Coaches' />
                   </div>
                   <div className='overflow-hidden flex-fill'>
                     <div className='d-flex align-items-center justify-content-between'>

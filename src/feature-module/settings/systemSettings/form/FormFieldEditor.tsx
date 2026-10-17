@@ -1,3 +1,4 @@
+// feature-module/settings/systemSettings/form/FormFieldEditor
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Row, Col } from 'react-bootstrap';
 
@@ -91,7 +92,7 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) => {
     const target = e.target;
 
@@ -112,7 +113,7 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
   const handleOptionChange = (
     index: number,
     key: 'label' | 'value',
-    value: string
+    value: string,
   ) => {
     if (!('options' in editedField)) return;
 
@@ -146,7 +147,7 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
 
   const handlePaymentConfigChange = <K extends keyof PaymentConfig>(
     key: K,
-    value: PaymentConfig[K]
+    value: PaymentConfig[K],
   ) => {
     if (!isPaymentField(editedField)) return;
 
@@ -187,7 +188,7 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
 
   // Conditional logic: find the field referenced by conditional.fieldId
   const conditionalField = otherFields.find(
-    (f) => f.id === editedField.conditional?.fieldId
+    (f) => f.id === editedField.conditional?.fieldId,
   );
 
   const renderPaymentFields = () => {
@@ -243,7 +244,7 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
             onChange={(e) =>
               handlePaymentConfigChange(
                 'currency',
-                e.target.value as 'USD' | 'CAD' | 'EUR' | 'GBP'
+                e.target.value as 'USD' | 'CAD' | 'EUR' | 'GBP',
               )
             }
           >
@@ -328,7 +329,7 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
                 name='min'
                 value={
                   'validation' in editedField
-                    ? editedField.validation?.min ?? ''
+                    ? (editedField.validation?.min ?? '')
                     : ''
                 }
                 onChange={(e) => {
@@ -355,7 +356,7 @@ const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
                 name='max'
                 value={
                   'validation' in editedField
-                    ? editedField.validation?.max ?? ''
+                    ? (editedField.validation?.max ?? '')
                     : ''
                 }
                 onChange={(e) => {

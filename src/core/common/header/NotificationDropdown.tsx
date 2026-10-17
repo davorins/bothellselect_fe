@@ -4,11 +4,9 @@ import { all_routes } from '../../../feature-module/router/all_routes';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotifications } from '../../../feature-module/hooks/useNotifications';
 import axios from 'axios';
+import { getParentAvatar } from '../../../utils/avatarUtils';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-
-const DEFAULT_AVATAR =
-  'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
 interface User {
   _id: string;
@@ -404,7 +402,10 @@ const NotificationDropdown = ({ avatarSrc }: { avatarSrc: string }) => {
                 <div className='d-flex'>
                   <span className='avatar avatar-lg me-2 flex-shrink-0'>
                     <img
-                      src={avatarSrc || DEFAULT_AVATAR}
+                      src={getParentAvatar(
+                        avatarSrc || parent?.avatar,
+                        parent?.relationship,
+                      )}
                       alt={parent.fullName || 'User avatar'}
                       className='img-fluid rounded-circle'
                     />

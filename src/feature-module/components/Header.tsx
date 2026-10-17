@@ -10,10 +10,9 @@ import {
 } from '../../core/data/redux/sidebarSlice';
 import axios from 'axios';
 import NotificationDropdown from '../../core/common/header/NotificationDropdown';
+import { getParentAvatar } from '../../utils/avatarUtils';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-const DEFAULT_AVATAR =
-  'https://bothell-select.onrender.com/uploads/avatars/parents.png';
 
 interface HeaderProps {
   showSponsorLogo: boolean;
@@ -430,7 +429,9 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const routes = all_routes;
-  const [avatarSrc, setAvatarSrc] = useState(DEFAULT_AVATAR);
+  const [avatarSrc, setAvatarSrc] = useState(
+    getParentAvatar(parent?.avatar, parent?.relationship),
+  );
   const [aboutOpen, setAboutOpen] = useState(false);
   const [teamOpen, setTeamOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
@@ -522,10 +523,13 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
 
   useEffect(() => {
     if (!parent?._id) return;
+
+    // If parent context already has the relationship/avatar logic resolved:
     if (parent.avatar?.startsWith('http')) {
       setAvatarSrc(parent.avatar);
       return;
     }
+
     const token = localStorage.getItem('token');
     axios
       .get(`${API_BASE_URL}/parent/${parent._id}`, {
@@ -533,16 +537,21 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
       })
       .then((res) => {
         const av = res.data?.avatar;
+        const rel = res.data?.relationship;
+
+        // Use the helper to pick mom.png, dad.png, or guardian.png
         setAvatarSrc(
           av
             ? av.startsWith('http')
               ? av
               : `https://bothell-select.onrender.com${av}`
-            : DEFAULT_AVATAR,
+            : getParentAvatar(null, rel), // Pass null for avatar, and relationship
         );
       })
-      .catch(() => setAvatarSrc(DEFAULT_AVATAR));
-  }, [parent?._id, parent?.avatar]);
+      .catch(() => {
+        setAvatarSrc(getParentAvatar(parent?.avatar, parent?.relationship));
+      });
+  }, [parent?._id, parent?.avatar, parent?.relationship]);
 
   const getDashboardRoute = () =>
     role === 'coach'
@@ -722,7 +731,11 @@ const Header: React.FC<HeaderProps> = ({ showSponsorLogo }) => {
         {/* Right Section */}
         <div style={S.rightSection()} className='d-none d-md-flex'>
           {/* Notification */}
-          <NotificationDropdown avatarSrc={avatarSrc || DEFAULT_AVATAR} />
+          <NotificationDropdown
+            avatarSrc={
+              avatarSrc || getParentAvatar(parent?.avatar, parent?.relationship)
+            }
+          />
 
           {isAuthenticated && parent ? (
             /* Avatar / User Dropdown */

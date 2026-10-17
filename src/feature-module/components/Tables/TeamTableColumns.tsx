@@ -7,6 +7,7 @@ import autoTable from 'jspdf-autotable';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { InternalTeamTableData } from '../../../types/teamTypes';
+import { DEFAULT_AVATARS } from '../../../utils/avatarUtils';
 
 const teamRoutes = {
   teamDetail: '/teams/detail',
@@ -171,9 +172,7 @@ export const getTeamTableColumns = ({
   currentUserRole,
 }: TeamTableColumnsProps): TableProps<InternalTeamTableData>['columns'] => {
   const resolveAvatar = (gender: string | undefined): string => {
-    return gender === 'Female'
-      ? 'https://bothell-select.onrender.com/uploads/avatars/girl.png'
-      : 'https://bothell-select.onrender.com/uploads/avatars/boy.png';
+    return gender === 'Female' ? DEFAULT_AVATARS.girl : DEFAULT_AVATARS.boy;
   };
 
   if (loading) {

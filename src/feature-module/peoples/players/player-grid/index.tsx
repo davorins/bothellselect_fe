@@ -33,6 +33,10 @@ import LoadingSpinner from '../../../../components/common/LoadingSpinner';
 import { debounce } from 'lodash';
 import { message, Tabs } from 'antd';
 import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
+import {
+  getPlayerAvatar,
+  DEFAULT_AVATARS,
+} from '../../../../utils/avatarUtils';
 
 const { TabPane } = Tabs;
 
@@ -76,16 +80,12 @@ const getAvatarUrl = (
   avatar: string | undefined,
   gender: string | undefined,
 ): string => {
-  if (!avatar) {
-    return gender === 'Female'
-      ? 'https://bothell-select.onrender.com/uploads/avatars/girl.png'
-      : 'https://bothell-select.onrender.com/uploads/avatars/boy.png';
-  }
-  if (avatar.includes('res.cloudinary.com'))
+  // Keep cloudinary legacy handling
+  if (avatar && avatar.includes('res.cloudinary.com')) {
     return `${avatar}${avatar.includes('?') ? '&' : '?'}${Date.now()}`;
-  if (avatar.startsWith('/uploads/'))
-    return `https://bothell-select.onrender.com${avatar}`;
-  return avatar;
+  }
+  // Player avatars: user upload wins, otherwise gender default
+  return getPlayerAvatar(avatar, gender);
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
