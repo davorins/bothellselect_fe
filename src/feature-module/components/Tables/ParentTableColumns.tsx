@@ -12,7 +12,8 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { getAvatarUrl, getDefaultAvatar } from '../../../utils/r2Utils';
+import { getAvatarUrl } from '../../../utils/r2Utils';
+import { getParentAvatar, getCoachAvatar } from '../../../utils/avatarUtils';
 import {
   showDeleteConfirm,
   DeleteUserData,
@@ -569,13 +570,22 @@ export const getParentTableColumns = ({
       dataIndex: 'fullName',
       key: 'name',
       render: (text: string, record: ExtendedTableRecord) => {
-        const defaultAvatar = getDefaultAvatar(
-          record.isCoach ? 'coach' : 'parent',
-        );
+        // 1. Determine the correct fallback image based on role & relationship
+        let defaultAvatar = '';
+
+        if (record.isCoach) {
+          defaultAvatar = getCoachAvatar(null);
+        } else {
+          // Uses mom.png for Mother, dad.png for Father, guardian.png for Guardian
+          defaultAvatar = getParentAvatar(null, record.relationship);
+        }
+
+        // 2. Apply cache busting / R2 cleaning to user uploads
         const avatarUrl = getAvatarUrl(
           record.avatar || record.imgSrc,
           defaultAvatar,
         );
+
         return (
           <div key={record._id} className='d-flex align-items-center'>
             <div
@@ -587,9 +597,8 @@ export const getParentTableColumns = ({
                 className='img-fluid rounded-circle'
                 alt={record.fullName}
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = getDefaultAvatar(
-                    record.isCoach ? 'coach' : 'parent',
-                  );
+                  // Fallback again if the image link is broken
+                  (e.target as HTMLImageElement).src = defaultAvatar;
                 }}
               />
             </div>
