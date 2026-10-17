@@ -134,11 +134,11 @@ export const getDefaultAvatar = (
       return gender === 'Female' ? `${baseUrl}/girl.png` : `${baseUrl}/boy.png`;
     case 'guardian':
       // Default generic guardian fallback
-      return `${baseUrl}/agent.png`;
+      return `${baseUrl}/guardian.png`;
     case 'parent':
     default:
       // Default generic parent fallback
-      return `${baseUrl}/agent.png`;
+      return `${baseUrl}/guardian.png`;
   }
 };
 
