@@ -8,14 +8,18 @@ import axios from 'axios';
 import { formatDate } from '../../../../utils/dateFormatter';
 import { formatPhoneNumber } from '../../../../utils/phone';
 import { getCurrentYear } from '../../../../utils/season';
-import { getAvatarUrl, getDefaultAvatar } from '../../../../utils/r2Utils';
+import { getAvatarUrl } from '../../../../utils/r2Utils';
+import {
+  getParentAvatar,
+  getPlayerAvatar,
+  getCoachAvatar,
+} from '../../../../utils/avatarUtils';
 import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
 import CloverReceiptModal from '../receipts/CloverReceiptModal';
 
-// ✅ R2 defaults
-const DEFAULT_PARENT_AVATAR = getDefaultAvatar('parent');
-const DEFAULT_BOY_AVATAR = getDefaultAvatar('player', 'Male');
-const DEFAULT_GIRL_AVATAR = getDefaultAvatar('player', 'Female');
+const DEFAULT_PARENT_AVATAR = getParentAvatar(null, 'Guardian');
+const DEFAULT_BOY_AVATAR = getPlayerAvatar(null, 'Male');
+const DEFAULT_GIRL_AVATAR = getPlayerAvatar(null, 'Female');
 
 // ---------------------------------------------------------------------------
 // Refund Modal
@@ -351,6 +355,7 @@ interface ParentWithStatus {
   status?: string;
   additionalGuardians?: any[];
   role?: string;
+  relationship?: string;
 }
 
 interface RefundModalState {
@@ -372,7 +377,10 @@ const ParentDetails = () => {
   const [parent, setParent] = useState<ParentWithStatus | null>(() => {
     const p = location.state?.parent;
     if (!p) return null;
-    const defaultAvatar = getDefaultAvatar(p.isCoach ? 'coach' : 'parent');
+    // Uses mom.png, dad.png, guardian.png, or coach.png based on the relationship
+    const defaultAvatar = p.isCoach
+      ? getCoachAvatar(null)
+      : getParentAvatar(null, p.relationship);
     return { ...p, avatar: getAvatarUrl(p.avatar, defaultAvatar) };
   });
 
@@ -457,9 +465,10 @@ const ParentDetails = () => {
           },
         );
         const freshAvatar = response.data?.avatar;
-        const defaultAvatar = getDefaultAvatar(
-          parent?.isCoach ? 'coach' : 'parent',
-        );
+        const freshRelationship = response.data?.relationship;
+        const defaultAvatar = parent?.isCoach
+          ? getCoachAvatar(null)
+          : getParentAvatar(null, freshRelationship);
         if (freshAvatar) {
           const resolvedAvatar = getAvatarUrl(freshAvatar, defaultAvatar);
           const freshGuardians = response.data?.additionalGuardians;
@@ -492,9 +501,10 @@ const ParentDetails = () => {
           guardian.role === 'coach' ||
           guardian.type === 'coach' ||
           (guardian.aauNumber && guardian.aauNumber.trim() !== '');
-        const defaultAvatar = getDefaultAvatar(
-          isGuardianCoach ? 'coach' : 'parent',
-        );
+        // Uses mom/dad/guardian for non-coaches, coach.png for coaches
+        const defaultAvatar = isGuardianCoach
+          ? getCoachAvatar(null)
+          : getParentAvatar(null, guardian.relationship);
         const avatarKey = guardian._id || guardian.id || `guardian-${index}`;
         newAvatarStates[avatarKey] = getAvatarUrl(
           guardian.avatar,
@@ -534,9 +544,9 @@ const ParentDetails = () => {
       try {
         const parentData = await fetchParentData(parentId);
         if (!parentData) throw new Error('Parent not found');
-        const defaultAvatar = getDefaultAvatar(
-          parentData.isCoach ? 'coach' : 'parent',
-        );
+        const defaultAvatar = parentData.isCoach
+          ? getCoachAvatar(null)
+          : getParentAvatar(null, parentData.relationship);
         const formattedParent = {
           ...parentData,
           avatar: getAvatarUrl(parentData.avatar, defaultAvatar),
@@ -1066,17 +1076,23 @@ const ParentDetails = () => {
                                 <img
                                   src={
                                     parent.avatar ||
-                                    getDefaultAvatar(
-                                      parent.isCoach ? 'coach' : 'parent',
-                                    )
+                                    (parent.isCoach
+                                      ? getCoachAvatar(null)
+                                      : getParentAvatar(
+                                          null,
+                                          parent.relationship,
+                                        ))
                                   }
                                   className='img-fluid rounded'
                                   alt={`${parent.fullName} avatar`}
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).src =
-                                      getDefaultAvatar(
-                                        parent.isCoach ? 'coach' : 'parent',
-                                      );
+                                      parent.isCoach
+                                        ? getCoachAvatar(null)
+                                        : getParentAvatar(
+                                            null,
+                                            parent.relationship,
+                                          );
                                   }}
                                 />
                               </span>
@@ -1149,9 +1165,9 @@ const ParentDetails = () => {
                               guardian.type === 'coach' ||
                               (guardian.aauNumber &&
                                 guardian.aauNumber.trim() !== '');
-                            const defaultAvatar = getDefaultAvatar(
-                              isGuardianCoach ? 'coach' : 'parent',
-                            );
+                            const defaultAvatar = isGuardianCoach
+                              ? getCoachAvatar(null)
+                              : getParentAvatar(null, guardian.relationship);
                             const avatarKey =
                               guardian._id ||
                               guardian.id ||
