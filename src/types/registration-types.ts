@@ -309,6 +309,7 @@ export interface FormData {
     password: string;
   };
   tournamentConfig?: TournamentSpecificConfig;
+  isAgent?: boolean;
 }
 
 export interface PricingPackage {

@@ -55,7 +55,7 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
   // Helper function to extract tournament data from config
   const extractTournamentConfig = useCallback(
     (
-      config: RegistrationFormConfig | TournamentSpecificConfig | null
+      config: RegistrationFormConfig | TournamentSpecificConfig | null,
     ): TournamentSpecificConfig | null => {
       if (!config) return null;
 
@@ -98,7 +98,7 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
 
       return null;
     },
-    []
+    [],
   );
 
   // Load tournament configuration
@@ -124,8 +124,8 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
 
           const response = await fetch(
             `${API_BASE_URL}/admin/tournament-configs/${encodeURIComponent(
-              seasonEvent.season
-            )}/${seasonEvent.year}`
+              seasonEvent.season,
+            )}/${seasonEvent.year}`,
           );
 
           if (response.ok) {
@@ -139,7 +139,7 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
           } else {
             const errorData = await response.json();
             throw new Error(
-              errorData.message || 'Failed to load tournament config'
+              errorData.message || 'Failed to load tournament config',
             );
           }
         } catch (error) {
@@ -162,7 +162,7 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
         year: new Date().getFullYear(),
         eventId: `tournament-${new Date().getFullYear()}`,
       },
-    [seasonEvent]
+    [seasonEvent],
   );
 
   // Default tournament config (used if none loaded)
@@ -186,7 +186,7 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
       isActive: true,
       _id: `default-tournament-${defaultSeasonEvent.year}`,
     }),
-    [defaultSeasonEvent]
+    [defaultSeasonEvent],
   );
 
   // Merge loaded config with defaults
@@ -211,7 +211,7 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
       },
       ...formConfig,
     }),
-    [formConfig, effectiveTournamentConfig]
+    [formConfig, effectiveTournamentConfig],
   );
 
   // Check if form should be shown based on isActive
@@ -238,6 +238,7 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
       eventId: defaultSeasonEvent.eventId,
     },
     teams: [],
+    isAgent: false,
   });
 
   // Step indicators
@@ -252,7 +253,7 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
 
     if (isAuthenticated || hasCompletedUserRegistration) {
       return allSteps.filter(
-        (step) => step.id !== 'account' && step.id !== 'verifyEmail'
+        (step) => step.id !== 'account' && step.id !== 'verifyEmail',
       );
     }
     return allSteps;
@@ -260,7 +261,7 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
 
   const currentStepIndex = useMemo(
     () => steps.findIndex((step) => step.id === currentStep),
-    [steps, currentStep]
+    [steps, currentStep],
   );
 
   // Initialize step for authenticated users or existing registration
@@ -321,10 +322,10 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
           zip: coachData.address?.zip?.trim() || '',
         };
 
-        // FIX: Check if AAU number is provided for coaches
+        // Check if AAU number is provided for coaches
         const aauNumber = coachData.aauNumber?.trim();
 
-        // FIX: For tournament registration, coaches might not have AAU numbers
+        // For tournament registration, coaches might not have AAU numbers
         // So we should handle this case or provide a default
         const finalAauNumber = aauNumber || 'NOT_PROVIDED';
 
@@ -335,9 +336,11 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
           fullName: coachData.fullName.trim(),
           phone: coachData.phone.replace(/\D/g, ''),
           address: normalizedAddress,
-          relationship: coachData.relationship.trim(),
-          isCoach: true, // Tournament registration is always for coaches
-          aauNumber: finalAauNumber, // Use the fixed AAU number
+          relationship: formData.isAgent
+            ? 'Agent'
+            : coachData.relationship.trim(),
+          isCoach: true,
+          aauNumber: finalAauNumber,
           agreeToTerms: coachData.agreeToTerms || false,
           registerType: 'self',
           registrationType: 'tournament',
@@ -377,7 +380,7 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(
-            errorData.message || errorData.error || 'Coach registration failed'
+            errorData.message || errorData.error || 'Coach registration failed',
           );
         }
 
@@ -398,7 +401,7 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
           };
           localStorage.setItem(
             'tournamentCoachData',
-            JSON.stringify(tournamentCoachData)
+            JSON.stringify(tournamentCoachData),
           );
 
           if (checkAuth) {
@@ -425,7 +428,7 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
       isAuthenticated,
       effectiveTournamentConfig,
       checkAuth,
-    ]
+    ],
   );
 
   const handleAccountCreated = useCallback(
@@ -465,7 +468,7 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
         setIsProcessing(false);
       }
     },
-    [createTempAccount, updateFormData]
+    [createTempAccount, updateFormData],
   );
 
   const handleVerified = useCallback(() => {
@@ -478,7 +481,13 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
         setIsProcessing(true);
         setFormError(null);
 
-        const userDataToSave = userData.user || userData;
+        // If they are an agent, override their relationship
+        const userDataToSave = {
+          ...(userData.user || userData),
+          relationship: formData.isAgent
+            ? 'Agent'
+            : userData.user?.relationship || userData.relationship,
+        };
 
         // Save coach data to database
         const savedCoach = await saveCoachData(userDataToSave);
@@ -501,13 +510,14 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
       } catch (error: any) {
         console.error('❌ Error saving coach data:', error);
         setFormError(
-          error.message || 'Failed to save coach information. Please try again.'
+          error.message ||
+            'Failed to save coach information. Please try again.',
         );
       } finally {
         setIsProcessing(false);
       }
     },
-    [saveCoachData, updateFormData]
+    [saveCoachData, updateFormData],
   );
 
   const handleNext = useCallback(
@@ -549,7 +559,7 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
       teamValidation,
       defaultFormConfig.requiresPayment,
       updateFormData,
-    ]
+    ],
   );
 
   const handleBack = useCallback(() => {
@@ -614,7 +624,7 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
         </div>
       </div>
     ),
-    [steps, currentStep, currentStepIndex]
+    [steps, currentStep, currentStepIndex],
   );
 
   // Render thank you message with tournament details
@@ -823,19 +833,54 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
         )}
 
         {currentStep === 'team' && (
-          <TournamentRegistrationModule
-            isExistingUser={
-              isExistingUser || isAuthenticated || hasCompletedUserRegistration
-            }
-            onComplete={() => handleNext()}
-            onBack={handleBack}
-            formData={formData}
-            updateFormData={updateFormData}
-            eventData={formData.eventData}
-            onValidationChange={handleTeamValidationChange}
-            tournamentConfig={effectiveTournamentConfig}
-            coachId={savedUserData?._id || currentUser?._id}
-          />
+          <>
+            <div className='card mb-4'>
+              <div className='card-body'>
+                <div className='form-check form-switch'>
+                  <input
+                    className='form-check-input'
+                    type='checkbox'
+                    id='isAgentToggle'
+                    checked={formData.isAgent}
+                    onChange={(e) => {
+                      updateFormData({ isAgent: e.target.checked });
+                      // If they check Agent, we assume they don't have a coach profile
+                      if (e.target.checked) {
+                        updateFormData({
+                          user: { ...formData.user, relationship: 'Agent' },
+                        });
+                      }
+                    }}
+                  />
+                  <label
+                    className='form-check-label fw-bold'
+                    htmlFor='isAgentToggle'
+                  >
+                    I am registering as an Agent
+                  </label>
+                  <p className='text-muted small mb-0'>
+                    Checking this will assign the Agent avatar and skip player
+                    roster requirements.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <TournamentRegistrationModule
+              isExistingUser={
+                isExistingUser ||
+                isAuthenticated ||
+                hasCompletedUserRegistration
+              }
+              onComplete={() => handleNext()}
+              onBack={handleBack}
+              formData={formData}
+              updateFormData={updateFormData}
+              eventData={formData.eventData}
+              onValidationChange={handleTeamValidationChange}
+              tournamentConfig={effectiveTournamentConfig}
+              coachId={savedUserData?._id || currentUser?._id}
+            />
+          </>
         )}
 
         {currentStep === 'payment' && (
