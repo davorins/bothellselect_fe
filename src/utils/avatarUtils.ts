@@ -39,7 +39,7 @@ export const getParentAvatar = (
     case 'other':
     case 'parent/guardian':
     default:
-      return DEFAULT_AVATARS.agent;
+      return DEFAULT_AVATARS.guardian;
   }
 };
 
