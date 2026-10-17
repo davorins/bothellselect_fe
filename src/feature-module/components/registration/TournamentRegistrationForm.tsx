@@ -833,54 +833,19 @@ const TournamentRegistrationForm: React.FC<TournamentRegistrationFormProps> = ({
         )}
 
         {currentStep === 'team' && (
-          <>
-            <div className='card mb-4'>
-              <div className='card-body'>
-                <div className='form-check form-switch'>
-                  <input
-                    className='form-check-input'
-                    type='checkbox'
-                    id='isAgentToggle'
-                    checked={formData.isAgent}
-                    onChange={(e) => {
-                      updateFormData({ isAgent: e.target.checked });
-                      // If they check Agent, we assume they don't have a coach profile
-                      if (e.target.checked) {
-                        updateFormData({
-                          user: { ...formData.user, relationship: 'Agent' },
-                        });
-                      }
-                    }}
-                  />
-                  <label
-                    className='form-check-label fw-bold'
-                    htmlFor='isAgentToggle'
-                  >
-                    I am registering as an Agent
-                  </label>
-                  <p className='text-muted small mb-0'>
-                    Checking this will assign the Agent avatar and skip player
-                    roster requirements.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <TournamentRegistrationModule
-              isExistingUser={
-                isExistingUser ||
-                isAuthenticated ||
-                hasCompletedUserRegistration
-              }
-              onComplete={() => handleNext()}
-              onBack={handleBack}
-              formData={formData}
-              updateFormData={updateFormData}
-              eventData={formData.eventData}
-              onValidationChange={handleTeamValidationChange}
-              tournamentConfig={effectiveTournamentConfig}
-              coachId={savedUserData?._id || currentUser?._id}
-            />
-          </>
+          <TournamentRegistrationModule
+            isExistingUser={
+              isExistingUser || isAuthenticated || hasCompletedUserRegistration
+            }
+            onComplete={() => handleNext()}
+            onBack={handleBack}
+            formData={formData}
+            updateFormData={updateFormData}
+            eventData={formData.eventData}
+            onValidationChange={handleTeamValidationChange}
+            tournamentConfig={effectiveTournamentConfig}
+            coachId={savedUserData?._id || currentUser?._id}
+          />
         )}
 
         {currentStep === 'payment' && (

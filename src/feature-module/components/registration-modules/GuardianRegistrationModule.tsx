@@ -106,6 +106,7 @@ const GuardianRegistrationModule: React.FC<GuardianRegistrationModuleProps> = ({
     { value: 'Guardian', label: 'Guardian' },
     { value: 'Parent/Guardian', label: 'Parent/Guardian' },
     { value: 'Other', label: 'Other' },
+    { value: 'Agent', label: 'Agent, Board Member, Coach, etc.' },
   ];
 
   // Validate form - ONLY validates fields in visibleFields
@@ -295,17 +296,46 @@ const GuardianRegistrationModule: React.FC<GuardianRegistrationModuleProps> = ({
           {isDynamicFieldVisible('relationship') && (
             <div className='col-md-6'>
               <div className='mb-3'>
-                <label className='form-label'>
-                  Relationship to Player
-                  {isDynamicFieldRequired('relationship') && (
-                    <span className='text-danger ms-1'>*</span>
-                  )}
-                </label>
+                {/* Flex container to put label and checkbox side-by-side */}
+                <div className='d-flex justify-content-between align-items-center mb-1'>
+                  <label className='form-label mb-0'>
+                    Relationship to Player
+                    {isDynamicFieldRequired('relationship') && (
+                      <span className='text-danger ms-1'>*</span>
+                    )}
+                  </label>
+
+                  {/* 👇 NEW AGENT CHECKBOX */}
+                  <div className='form-check mb-0'>
+                    <input
+                      className='form-check-input'
+                      type='checkbox'
+                      id={`isAgent-${guardian.email || 'primary'}`}
+                      checked={guardian.relationship === 'Agent'}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          handleChange('relationship', 'Agent');
+                        } else {
+                          handleChange('relationship', '');
+                        }
+                      }}
+                    />
+                    <label
+                      className='form-check-label fw-bold text-primary'
+                      htmlFor={`isAgent-${guardian.email || 'primary'}`}
+                      style={{ cursor: 'pointer', fontSize: '0.9rem' }}
+                    >
+                      Is Agent?
+                    </label>
+                  </div>
+                </div>
+
                 <select
                   className={`form-control ${getError('relationship') ? 'is-invalid' : ''}`}
                   value={guardian.relationship}
                   onChange={(e) => handleChange('relationship', e.target.value)}
                   required={isDynamicFieldRequired('relationship')}
+                  disabled={guardian.relationship === 'Agent'} // 👈 Disable if agent is checked
                 >
                   {relationshipOptions.map((option) => (
                     <option key={option.value} value={option.value}>
