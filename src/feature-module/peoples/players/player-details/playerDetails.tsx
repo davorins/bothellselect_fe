@@ -8,7 +8,8 @@ import { formatPhoneNumber } from '../../../../utils/phone';
 import { Guardian } from '../../../../types/playerTypes';
 import { getParentStatus } from '../../../../utils/parentUtils';
 import { getPlayerStatus } from '../../../../utils/season';
-import { getAvatarUrl, getDefaultAvatar } from '../../../../utils/r2Utils';
+import { getAvatarUrl } from '../../../../utils/r2Utils';
+import { getParentAvatar, getCoachAvatar } from '../../../../utils/avatarUtils';
 import {
   formatAddress,
   normalizeAddressKey,
@@ -36,7 +37,7 @@ interface GuardianWithPlayers extends Guardian {
 }
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-const DEFAULT_PARENT_AVATAR = getDefaultAvatar('parent');
+const DEFAULT_PARENT_AVATAR = getParentAvatar(null, 'Guardian');
 
 // Convert player data to the shape useDynamicFormFields expects
 const toRegistrationPlayer = (player: any): RegistrationPlayer => ({
@@ -182,7 +183,10 @@ const PlayerDetails = () => {
         guardian.role === 'coach' ||
         guardian.type === 'coach' ||
         !!guardian.aauNumber?.trim();
-      const defaultAvatar = getDefaultAvatar(isCoach ? 'coach' : 'parent');
+      // Uses mom/dad/guardian for non-coaches, coach.png for coaches
+      const defaultAvatar = isCoach
+        ? getCoachAvatar(null)
+        : getParentAvatar(null, guardian.relationship);
       const avatarKey = guardian._id || guardian.id || `guardian-${index}`;
       newAvatarStates[avatarKey] = getAvatarUrl(guardian.avatar, defaultAvatar);
 
@@ -195,7 +199,9 @@ const PlayerDetails = () => {
         const subKey = g._id || g.id || `guardian-${index}-sub-${gIndex}`;
         newAvatarStates[subKey] = getAvatarUrl(
           g.avatar,
-          getDefaultAvatar(isSubCoach ? 'coach' : 'parent'),
+          isSubCoach
+            ? getCoachAvatar(null)
+            : getParentAvatar(null, g.relationship),
         );
       });
     });
@@ -215,7 +221,10 @@ const PlayerDetails = () => {
         return;
       }
       const isCoach = primaryParent.isCoach || false;
-      const defaultAvatar = getDefaultAvatar(isCoach ? 'coach' : 'parent');
+      const defaultAvatar = isCoach
+        ? getCoachAvatar(null)
+        : getParentAvatar(null, primaryParent.relationship);
+
       if (primaryParent.avatar?.startsWith('http')) {
         setAvatarSrc(getAvatarUrl(primaryParent.avatar, defaultAvatar));
         return;
@@ -226,7 +235,14 @@ const PlayerDetails = () => {
           `${API_BASE_URL}/parent/${primaryParent.id}`,
           { headers: { Authorization: `Bearer ${storedToken}` } },
         );
-        const resolved = getAvatarUrl(response.data?.avatar, defaultAvatar);
+        // Use the fresh relationship from the API if available, else fallback to local state
+        const freshRel =
+          response.data?.relationship || primaryParent.relationship;
+        const freshDefault = isCoach
+          ? getCoachAvatar(null)
+          : getParentAvatar(null, freshRel);
+
+        const resolved = getAvatarUrl(response.data?.avatar, freshDefault);
         setAvatarSrc(resolved);
         setGuardianAvatarStates((prev) => ({ ...prev, [avatarKey]: resolved }));
       } catch {
@@ -262,7 +278,9 @@ const PlayerDetails = () => {
     const isCoach = guardian.isCoach || false;
     return getAvatarUrl(
       guardian.avatar,
-      getDefaultAvatar(isCoach ? 'coach' : 'parent'),
+      isCoach
+        ? getCoachAvatar(null)
+        : getParentAvatar(null, guardian.relationship),
     );
   };
 
@@ -493,14 +511,21 @@ const PlayerDetails = () => {
                               primaryParent.aauNumber || 'Not Available',
                           } as GuardianWithPlayers,
                           <img
-                            src={avatarSrc}
+                            src={
+                              guardianAvatarStates[
+                                primaryParent._id || primaryParent.id
+                              ] || avatarSrc
+                            }
                             alt={primaryParent.fullName}
                             className='img-fluid rounded'
                             onError={(e) => {
                               (e.target as HTMLImageElement).src =
-                                getDefaultAvatar(
-                                  primaryParent.isCoach ? 'coach' : 'parent',
-                                );
+                                primaryParent.isCoach
+                                  ? getCoachAvatar(null)
+                                  : getParentAvatar(
+                                      null,
+                                      primaryParent.relationship,
+                                    );
                             }}
                           />,
                         )}
@@ -521,9 +546,12 @@ const PlayerDetails = () => {
                               className='img-fluid rounded'
                               onError={(e) => {
                                 (e.target as HTMLImageElement).src =
-                                  getDefaultAvatar(
-                                    guardian.isCoach ? 'coach' : 'parent',
-                                  );
+                                  guardian.isCoach
+                                    ? getCoachAvatar(null)
+                                    : getParentAvatar(
+                                        null,
+                                        guardian.relationship,
+                                      );
                               }}
                             />,
                           )}

@@ -19,12 +19,12 @@ import { ParentFilters } from '../../../components/Filters/ParentFilters';
 import { ParentSortOptions } from '../../../components/Filters/ParentSortOptions';
 import { Moment } from 'moment';
 import LoadingSpinner from '../../../../components/common/LoadingSpinner';
+import { getAvatarUrl } from '../../../../utils/r2Utils';
 import {
-  getAvatarUrl,
-  getDefaultAvatar,
-  getAvatarTypeFromItem,
-  getGenderFromItem,
-} from '../../../../utils/r2Utils';
+  getParentAvatar,
+  getCoachAvatar,
+  getPlayerAvatar,
+} from '../../../../utils/avatarUtils';
 import { showDeleteConfirm } from '../../../components/modals/DeleteConfirmModal';
 import { message } from 'antd';
 import { debounce } from 'lodash';
@@ -422,9 +422,20 @@ const ParentGrid = () => {
                   item.type === 'guardian' ||
                   (item.type === 'coach' && !item.parentId));
 
-              const avatarType = getAvatarTypeFromItem(item);
-              const gender = getGenderFromItem(item);
-              const defaultAvatar = getDefaultAvatar(avatarType, gender);
+              // Determine default avatar based on role and relationship
+              let defaultAvatar = '';
+              if (item.type === 'guardian') {
+                defaultAvatar = getParentAvatar(null, item.relationship);
+              } else if (item.isCoach) {
+                defaultAvatar = getCoachAvatar(null);
+              } else {
+                // For standard parents
+                defaultAvatar = getParentAvatar(
+                  null,
+                  (item as any).relationship,
+                );
+              }
+
               const avatarUrl = getAvatarUrl(
                 item.avatar || item.imgSrc,
                 defaultAvatar,
@@ -562,10 +573,7 @@ const ParentGrid = () => {
                               alt={item.fullName}
                               onError={(e) => {
                                 (e.target as HTMLImageElement).src =
-                                  getDefaultAvatar(
-                                    getAvatarTypeFromItem(item),
-                                    getGenderFromItem(item),
-                                  );
+                                  defaultAvatar;
                               }}
                             />
                           </div>
