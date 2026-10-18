@@ -39,6 +39,7 @@ import { getAvatarUrl, getDefaultAvatar } from '../../../../utils/r2Utils';
 import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
 import { VisibleField } from '../../../../types/form-config.types';
 import NameInput, { validateFullName } from '../../../../components/NameInput';
+import { getParentAvatar, getCoachAvatar } from '../../../../utils/avatarUtils';
 
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001/api';
@@ -231,9 +232,14 @@ const AddParent = ({ isEdit }: { isEdit: boolean }) => {
           });
 
           if (parentData.avatar) {
-            const defaultAvatar = getDefaultAvatar(
-              parentData.isCoach ? 'coach' : 'parent',
-            );
+            const isAgent =
+              parentData.relationship?.trim().toLowerCase() === 'agent';
+            const defaultAvatar = isAgent
+              ? getParentAvatar(null, 'Agent')
+              : parentData.isCoach
+                ? getCoachAvatar(null)
+                : getParentAvatar(null, parentData.relationship);
+
             setAvatarPreview(getAvatarUrl(parentData.avatar, defaultAvatar));
           }
 

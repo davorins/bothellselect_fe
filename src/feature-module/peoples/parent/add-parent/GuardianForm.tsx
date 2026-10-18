@@ -12,6 +12,7 @@ import {
   validateState,
   validateZipCode,
 } from '../../../../utils/validation';
+import { getParentAvatar, getCoachAvatar } from '../../../../utils/avatarUtils';
 
 interface GuardianFormProps {
   guardian: GuardianFormData;
@@ -60,7 +61,6 @@ const GuardianForm: React.FC<GuardianFormProps> = ({
   sameAsMain = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const DEFAULT_AVATAR = getDefaultAvatar('parent');
 
   const hasField = (fieldName: string) => {
     if (visibleFields.length === 0) return true;
@@ -77,6 +77,13 @@ const GuardianForm: React.FC<GuardianFormProps> = ({
     !!guardian._id &&
     !guardian._id.toString().startsWith('temp_') &&
     guardian._id.toString().length === 24;
+
+  const isAgent = guardian.relationship?.trim().toLowerCase() === 'agent';
+  const DEFAULT_AVATAR = isAgent
+    ? getParentAvatar(null, 'Agent')
+    : guardian.isCoach
+      ? getCoachAvatar(null)
+      : getParentAvatar(null, guardian.relationship);
 
   const existingAvatar = guardian.avatar
     ? getAvatarUrl(guardian.avatar, DEFAULT_AVATAR)

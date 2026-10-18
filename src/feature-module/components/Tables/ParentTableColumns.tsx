@@ -571,9 +571,14 @@ export const getParentTableColumns = ({
       key: 'name',
       render: (text: string, record: ExtendedTableRecord) => {
         // 1. Determine the correct fallback image based on role & relationship
+        // Check 'Agent' first so it overrides the coach status
         let defaultAvatar = '';
 
-        if (record.isCoach) {
+        const isAgent = record.relationship?.trim().toLowerCase() === 'agent';
+
+        if (isAgent) {
+          defaultAvatar = getParentAvatar(null, 'Agent');
+        } else if (record.isCoach) {
           defaultAvatar = getCoachAvatar(null);
         } else {
           // Uses mom.png for Mother, dad.png for Father, guardian.png for Guardian

@@ -5,6 +5,7 @@ import { Address } from '../../../../utils/address';
 import { formatPhoneNumber } from '../../../../utils/phone';
 import NameInput from '../../../../components/NameInput';
 import { getDefaultAvatar } from '../../../../utils/r2Utils';
+import { getParentAvatar, getCoachAvatar } from '../../../../utils/avatarUtils';
 
 interface NewGuardianFormProps {
   newGuardian: GuardianFormData;
@@ -30,7 +31,12 @@ const NewGuardianForm: React.FC<NewGuardianFormProps> = ({
   mainAddress,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const DEFAULT_AVATAR = getDefaultAvatar('parent');
+  const isAgent = newGuardian.relationship?.trim().toLowerCase() === 'agent';
+  const DEFAULT_AVATAR = isAgent
+    ? getParentAvatar(null, 'Agent')
+    : newGuardian.isCoach
+      ? getCoachAvatar(null)
+      : getParentAvatar(null, newGuardian.relationship);
   const [sameAsMain, setSameAsMain] = useState(false);
 
   // ── Avatar state lives here — no dependency on parent props ──────────────
