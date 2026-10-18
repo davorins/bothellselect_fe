@@ -14,7 +14,7 @@ export const DEFAULT_AVATARS = {
 
 /**
  * Resolve a parent/guardian avatar.
- * Priority: user-uploaded → relationship default → generic agent.
+ * Priority: user-uploaded → relationship default → generic guardian.
  */
 export const getParentAvatar = (
   avatar?: string | null,
@@ -36,6 +36,7 @@ export const getParentAvatar = (
     case 'guardian':
       return DEFAULT_AVATARS.guardian;
     case 'agent':
+      return DEFAULT_AVATARS.agent; // ✅ agent now resolves correctly
     case 'other':
     case 'parent/guardian':
     default:
@@ -55,5 +56,35 @@ export const getPlayerAvatar = (
   gender?: string | null,
 ): string => {
   if (avatar) return avatar;
-  return gender === 'Female' ? DEFAULT_AVATARS.girl : DEFAULT_AVATARS.boy;
+  return (gender || '').trim().toLowerCase() === 'female'
+    ? DEFAULT_AVATARS.girl
+    : DEFAULT_AVATARS.boy;
+};
+
+/**
+ * Single source of truth for the DEFAULT fallback avatar of a parent.
+ *
+ * Precedence (highest → lowest):
+ *   1. relationship === 'agent'   → agent.png
+ *   2. isCoach === true           → coach.png
+ *   3. relationship (mom/dad/...) → mom.png / dad.png / guardian.png
+ *
+ * This ensures an agent who is ALSO flagged isCoach still gets agent.png,
+ * and prevents the "agent shown as guardian" or "agent shown as coach" bugs.
+ */
+export const resolveParentDefaultAvatar = (parent: {
+  isCoach?: boolean | null;
+  relationship?: string | null;
+}): string => {
+  const rel = (parent?.relationship || '').trim().toLowerCase();
+
+  if (rel === 'agent') {
+    return DEFAULT_AVATARS.agent;
+  }
+
+  if (parent?.isCoach) {
+    return DEFAULT_AVATARS.coach;
+  }
+
+  return getParentAvatar(null, rel);
 };

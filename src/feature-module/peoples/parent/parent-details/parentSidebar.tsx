@@ -2,7 +2,11 @@ import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { formatPhoneNumber } from '../../../../utils/phone';
 import { getAvatarUrl } from '../../../../utils/r2Utils';
-import { getParentAvatar, getCoachAvatar } from '../../../../utils/avatarUtils';
+import {
+  getParentAvatar,
+  getCoachAvatar,
+  resolveParentDefaultAvatar,
+} from '../../../../utils/avatarUtils';
 import {
   formatAddress,
   Address,
@@ -10,7 +14,6 @@ import {
 } from '../../../../utils/address';
 import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
 
-// API data may omit street2
 type LooseAddress = Omit<Address, 'street2'> & { street2?: string };
 
 interface ParentData {
@@ -37,15 +40,6 @@ interface ParentData {
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SAME RULE as ParentTableColumns.getParentPaymentLabel (Parents List):
-//   - coach              → "All Paid"
-//   - no players         → "Inactive"
-//   - every season paid  → "All Paid"
-//   - some seasons paid  → "N/M Paid"
-//   - no seasons paid    → "No Payments"
-// Reads `parent.players[].seasons[].paymentStatus` and `.paymentComplete`.
-// ─────────────────────────────────────────────────────────────────────────────
 const getParentPaymentLabel = (parent: any): string => {
   if (parent?.isCoach) return 'All Paid';
 
@@ -77,11 +71,8 @@ interface ParentSidebarProps {
 
 const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
   const [avatarSrc, setAvatarSrc] = useState<string>(() => {
-    // Determine the correct fallback based on role & relationship
-    const defaultAvatar = parent?.isCoach
-      ? getCoachAvatar(null)
-      : getParentAvatar(null, parent?.relationship);
-
+    // ✅ Single source of truth
+    const defaultAvatar = resolveParentDefaultAvatar(parent);
     return getAvatarUrl(parent?.avatar || parent?.imgSrc, defaultAvatar);
   });
 
@@ -116,13 +107,14 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        // The API returns both the avatar and the relationship
         const fetchedRelationship =
           response.data.relationship || parent?.relationship;
 
-        const defaultAvatar = parent?.isCoach
-          ? getCoachAvatar(null)
-          : getParentAvatar(null, fetchedRelationship);
+        // ✅ Single source of truth
+        const defaultAvatar = resolveParentDefaultAvatar({
+          isCoach: parent?.isCoach,
+          relationship: fetchedRelationship,
+        });
 
         setAvatarSrc(getAvatarUrl(response.data.avatar, defaultAvatar));
       } catch (err) {
@@ -139,9 +131,8 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
   ]);
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.src = parent?.isCoach
-      ? getCoachAvatar(null)
-      : getParentAvatar(null, parent?.relationship);
+    // ✅ Single source of truth
+    e.currentTarget.src = resolveParentDefaultAvatar(parent);
   };
 
   if (!parent) return <div>No parent data found.</div>;
@@ -151,9 +142,7 @@ const ParentSidebar: React.FC<ParentSidebarProps> = ({ parent }) => {
   const fmtAddr = (addr: string | LooseAddress | undefined) =>
     formatAddress(addr as Address | string | null | undefined, addrShow);
 
-  // ─── REPLACED: was getParentStatus(parent) ─────────────────────────────
   const statusLabel = getParentPaymentLabel(parent);
-  // ───────────────────────────────────────────────────────────────────────
 
   const badgeColor =
     statusLabel === 'All Paid'

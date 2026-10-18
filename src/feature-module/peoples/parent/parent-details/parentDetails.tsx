@@ -13,6 +13,7 @@ import {
   getParentAvatar,
   getPlayerAvatar,
   getCoachAvatar,
+  resolveParentDefaultAvatar,
 } from '../../../../utils/avatarUtils';
 import { useDynamicFormFields } from '../../../hooks/useDynamicFormFields';
 import CloverReceiptModal from '../receipts/CloverReceiptModal';
@@ -377,10 +378,8 @@ const ParentDetails = () => {
   const [parent, setParent] = useState<ParentWithStatus | null>(() => {
     const p = location.state?.parent;
     if (!p) return null;
-    // Uses mom.png, dad.png, guardian.png, or coach.png based on the relationship
-    const defaultAvatar = p.isCoach
-      ? getCoachAvatar(null)
-      : getParentAvatar(null, p.relationship);
+    // ✅ Single source of truth
+    const defaultAvatar = resolveParentDefaultAvatar(p);
     return { ...p, avatar: getAvatarUrl(p.avatar, defaultAvatar) };
   });
 
@@ -417,7 +416,6 @@ const ParentDetails = () => {
   const isCoach = currentUser?.isCoach || currentUser?.role === 'coach';
   const currentUserId = currentUser?._id || currentUser?.id;
 
-  // ── Dynamic fields ──────────────────────────────────────────────────────
   const { getVisibleFields: getGuardianVisibleFields } = useDynamicFormFields(
     'guardian',
     { registrationYear: new Date().getFullYear() },
@@ -431,7 +429,6 @@ const ParentDetails = () => {
     () => getGuardianVisibleFields({} as any),
     [getGuardianVisibleFields],
   );
-  // Use first player's data for field config if available
   const playerVisibleFields = useMemo(
     () =>
       players.length > 0
@@ -460,15 +457,17 @@ const ParentDetails = () => {
         const token = localStorage.getItem('token');
         const response = await axios.get(
           `${API_BASE_URL}/parent/${resolveId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         const freshAvatar = response.data?.avatar;
         const freshRelationship = response.data?.relationship;
-        const defaultAvatar = parent?.isCoach
-          ? getCoachAvatar(null)
-          : getParentAvatar(null, freshRelationship);
+
+        // ✅ Single source of truth
+        const defaultAvatar = resolveParentDefaultAvatar({
+          isCoach: parent?.isCoach,
+          relationship: freshRelationship,
+        });
+
         if (freshAvatar) {
           const resolvedAvatar = getAvatarUrl(freshAvatar, defaultAvatar);
           const freshGuardians = response.data?.additionalGuardians;
@@ -501,10 +500,13 @@ const ParentDetails = () => {
           guardian.role === 'coach' ||
           guardian.type === 'coach' ||
           (guardian.aauNumber && guardian.aauNumber.trim() !== '');
-        // Uses mom/dad/guardian for non-coaches, coach.png for coaches
-        const defaultAvatar = isGuardianCoach
-          ? getCoachAvatar(null)
-          : getParentAvatar(null, guardian.relationship);
+
+        // ✅ Single source of truth — agent still wins for guardians too
+        const defaultAvatar = resolveParentDefaultAvatar({
+          isCoach: isGuardianCoach,
+          relationship: guardian.relationship,
+        });
+
         const avatarKey = guardian._id || guardian.id || `guardian-${index}`;
         newAvatarStates[avatarKey] = getAvatarUrl(
           guardian.avatar,
@@ -544,9 +546,10 @@ const ParentDetails = () => {
       try {
         const parentData = await fetchParentData(parentId);
         if (!parentData) throw new Error('Parent not found');
-        const defaultAvatar = parentData.isCoach
-          ? getCoachAvatar(null)
-          : getParentAvatar(null, parentData.relationship);
+
+        // ✅ Single source of truth
+        const defaultAvatar = resolveParentDefaultAvatar(parentData);
+
         const formattedParent = {
           ...parentData,
           avatar: getAvatarUrl(parentData.avatar, defaultAvatar),
@@ -583,9 +586,7 @@ const ParentDetails = () => {
         const token = localStorage.getItem('token');
         const response = await axios.get(
           `${API_BASE_URL}/payment/parent/${id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         if (response.data && Array.isArray(response.data)) {
           setPayments(response.data);
@@ -643,9 +644,7 @@ const ParentDetails = () => {
       const token = localStorage.getItem('token');
       const response = await axios.get(
         `${API_BASE_URL}/payment/parent/${parent._id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       if (response.data && Array.isArray(response.data)) {
         setPayments(response.data);
@@ -689,7 +688,6 @@ const ParentDetails = () => {
         },
       );
 
-      // Close modal first, then show result
       handleCloseRefundModal();
 
       if (response.data.success) {
@@ -710,16 +708,13 @@ const ParentDetails = () => {
       }
     } catch (error: any) {
       handleCloseRefundModal();
-
       const errorMessage =
         error.response?.data?.error ||
         error.message ||
         'Failed to process refund';
-
       setTimeout(() => {
         alert(`❌ Refund Error: ${errorMessage}`);
       }, 150);
-
       return { success: false };
     }
   };
@@ -745,9 +740,7 @@ const ParentDetails = () => {
       try {
         const response = await axios.get(
           `${API_BASE_URL}/payment/${payment._id}/refund-eligibility`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         if (response.data.success) return response.data.eligibility;
       } catch (endpointError: any) {
@@ -898,9 +891,7 @@ const ParentDetails = () => {
             const refundableAmount = getRefundableAmount(payment);
             const canRefund = canRefundPayment(payment);
 
-            // ✅ Determine receipt handling based on payment system
             const renderReceiptButton = () => {
-              // Square payments - use external receipt URL
               if (payment.paymentSystem === 'square' && payment.receiptUrl) {
                 return (
                   <a
@@ -914,24 +905,10 @@ const ParentDetails = () => {
                 );
               }
 
-              // Clover payments - use internal receipt page with orderId
-              // if (payment.paymentSystem === 'clover' && payment.orderId) {
-              //   return (
-              //     <a
-              //       href={`/receipts/clover/${payment.orderId}`}
-              //       className='btn btn-sm btn-outline-primary'
-              //     >
-              //       View Receipt
-              //     </a>
-              //   );
-              // }
-
-              // ✅ Clover payments - open in modal
               if (payment.paymentSystem === 'clover' && payment.orderId) {
                 return (
                   <button
                     onClick={() => {
-                      // Handle undefined by providing a fallback
                       setSelectedOrderId(payment.orderId || null);
                       setShowReceiptModal(true);
                     }}
@@ -942,7 +919,6 @@ const ParentDetails = () => {
                 );
               }
 
-              // Fallback for any payment with receiptUrl (other processors)
               if (payment.receiptUrl) {
                 return (
                   <a
@@ -956,7 +932,6 @@ const ParentDetails = () => {
                 );
               }
 
-              // No receipt available
               return <span className='text-muted'>No receipt</span>;
             };
 
@@ -1027,7 +1002,6 @@ const ParentDetails = () => {
         <div className='row'>
           <ParentSidebar parent={parent} />
           <div className='col-xxl-9 col-xl-8'>
-            {/* Tab Navigation */}
             <div className='card mb-4'>
               <div className='card-header p-0 border-0'>
                 <ul className='nav nav-tabs nav-justified' role='tablist'>
@@ -1056,11 +1030,9 @@ const ParentDetails = () => {
               </div>
             </div>
 
-            {/* Tab Content */}
             <div className='tab-content pt-0'>
               {activeTab === 'family' && (
                 <div className='tab-pane fade show active'>
-                  {/* ── Guardians Card ── */}
                   <div className='card mb-4'>
                     <div className='card-header'>
                       <h5 className='card-title mb-0'>Guardians Information</h5>
@@ -1069,30 +1041,20 @@ const ParentDetails = () => {
                       {/* Primary Parent */}
                       <div className='border rounded p-3 pb-0 mb-3'>
                         <div className='row'>
-                          {/* Name — always shown */}
                           <div className='col-sm-6 col-lg-3'>
                             <div className='d-flex align-items-center mb-3'>
                               <span className='avatar avatar-lg flex-shrink-0'>
                                 <img
+                                  // ✅ Single source of truth
                                   src={
                                     parent.avatar ||
-                                    (parent.isCoach
-                                      ? getCoachAvatar(null)
-                                      : getParentAvatar(
-                                          null,
-                                          parent.relationship,
-                                        ))
+                                    resolveParentDefaultAvatar(parent)
                                   }
                                   className='img-fluid rounded'
                                   alt={`${parent.fullName} avatar`}
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).src =
-                                      parent.isCoach
-                                        ? getCoachAvatar(null)
-                                        : getParentAvatar(
-                                            null,
-                                            parent.relationship,
-                                          );
+                                      resolveParentDefaultAvatar(parent);
                                   }}
                                 />
                               </span>
@@ -1110,7 +1072,6 @@ const ParentDetails = () => {
                             </div>
                           </div>
 
-                          {/* AAU — show if isCoach field enabled or parent is coach */}
                           {(hasGuardianField('isCoach') || parent.isCoach) && (
                             <div className='col-sm-6 col-lg-3'>
                               <div className='mb-3'>
@@ -1122,7 +1083,6 @@ const ParentDetails = () => {
                             </div>
                           )}
 
-                          {/* Phone — gated */}
                           {hasGuardianField('phone') && (
                             <div className='col-sm-6 col-lg-3'>
                               <div className='mb-3'>
@@ -1138,7 +1098,6 @@ const ParentDetails = () => {
                             </div>
                           )}
 
-                          {/* Email — gated */}
                           {hasGuardianField('email') && (
                             <div className='col-sm-6 col-lg-3'>
                               <div className='mb-3 overflow-hidden me-3'>
@@ -1165,9 +1124,13 @@ const ParentDetails = () => {
                               guardian.type === 'coach' ||
                               (guardian.aauNumber &&
                                 guardian.aauNumber.trim() !== '');
-                            const defaultAvatar = isGuardianCoach
-                              ? getCoachAvatar(null)
-                              : getParentAvatar(null, guardian.relationship);
+
+                            // ✅ Single source of truth
+                            const defaultAvatar = resolveParentDefaultAvatar({
+                              isCoach: isGuardianCoach,
+                              relationship: guardian.relationship,
+                            });
+
                             const avatarKey =
                               guardian._id ||
                               guardian.id ||
@@ -1182,7 +1145,6 @@ const ParentDetails = () => {
                                 className='border rounded p-3 pb-0 mb-3'
                               >
                                 <div className='row'>
-                                  {/* Name — always shown */}
                                   <div className='col-sm-6 col-lg-3'>
                                     <div className='d-flex align-items-center mb-3'>
                                       <span className='avatar avatar-lg flex-shrink-0'>
@@ -1212,7 +1174,6 @@ const ParentDetails = () => {
                                     </div>
                                   </div>
 
-                                  {/* AAU — gated */}
                                   {(hasGuardianField('isCoach') ||
                                     isGuardianCoach) && (
                                     <div className='col-sm-6 col-lg-3'>
@@ -1228,7 +1189,6 @@ const ParentDetails = () => {
                                     </div>
                                   )}
 
-                                  {/* Phone — gated */}
                                   {hasGuardianField('phone') && (
                                     <div className='col-sm-6 col-lg-3'>
                                       <div className='mb-3'>
@@ -1244,7 +1204,6 @@ const ParentDetails = () => {
                                     </div>
                                   )}
 
-                                  {/* Email — gated */}
                                   {hasGuardianField('email') && (
                                     <div className='col-sm-6 col-lg-3'>
                                       <div className='mb-3 overflow-hidden me-3'>
@@ -1270,7 +1229,7 @@ const ParentDetails = () => {
                     </div>
                   </div>
 
-                  {/* ── Players Card ── */}
+                  {/* Players Card */}
                   <div className='card'>
                     <div className='card-header'>
                       <h5 className='card-title mb-0'>Players Information</h5>
@@ -1283,7 +1242,6 @@ const ParentDetails = () => {
                             className='border rounded p-3 pb-0 mb-3'
                           >
                             <div className='row'>
-                              {/* Name — always shown */}
                               <div className='col-sm-6 col-lg-3'>
                                 <div className='d-flex align-items-center mb-3'>
                                   <span className='avatar avatar-lg flex-shrink-0'>
@@ -1312,7 +1270,6 @@ const ParentDetails = () => {
                                 </div>
                               </div>
 
-                              {/* Age — gated on dob field */}
                               {hasPlayerField('dob') && (
                                 <div className='col-sm-6 col-lg-3'>
                                   <div className='mb-3'>
@@ -1324,7 +1281,6 @@ const ParentDetails = () => {
                                 </div>
                               )}
 
-                              {/* AAU Number — gated */}
                               {hasPlayerField('aauNumber') && (
                                 <div className='col-sm-6 col-lg-3'>
                                   <div className='mb-3'>
@@ -1336,7 +1292,6 @@ const ParentDetails = () => {
                                 </div>
                               )}
 
-                              {/* Grade — gated */}
                               {hasPlayerField('grade') && (
                                 <div className='col-sm-6 col-lg-2'>
                                   <div className='mb-3'>
@@ -1348,7 +1303,6 @@ const ParentDetails = () => {
                                 </div>
                               )}
 
-                              {/* View button — always shown */}
                               <div className='col-sm-6 col-lg-1'>
                                 <div className='d-flex align-items-center justify-content-end'>
                                   <button
@@ -1370,7 +1324,6 @@ const ParentDetails = () => {
                 </div>
               )}
 
-              {/* Payments Tab */}
               {activeTab === 'payments' && (
                 <div className='tab-pane fade show active'>
                   <div className='card'>
@@ -1433,7 +1386,6 @@ const ParentDetails = () => {
         </div>
       </div>
 
-      {/* Clover Receipt Modal */}
       <CloverReceiptModal
         show={showReceiptModal}
         onClose={() => {

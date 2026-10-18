@@ -13,7 +13,11 @@ import autoTable from 'jspdf-autotable';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { getAvatarUrl } from '../../../utils/r2Utils';
-import { getParentAvatar, getCoachAvatar } from '../../../utils/avatarUtils';
+import {
+  getParentAvatar,
+  getCoachAvatar,
+  resolveParentDefaultAvatar,
+} from '../../../utils/avatarUtils';
 import {
   showDeleteConfirm,
   DeleteUserData,
@@ -34,7 +38,6 @@ interface ParentTableColumnsProps {
   visibleFields?: string[];
 }
 
-// fmtAddr accepts address with optional street2 and casts for shared formatAddress
 const fmtAddr = (
   addr:
     | string
@@ -50,26 +53,15 @@ const fmtAddr = (
   show?: AddressShowConfig,
 ) => formatAddress(addr as Address | string | null | undefined, show);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Parent payment label — uses the SAME rule the Players List uses in
-// PlayerTableColumns.getSeasonsPaymentStatus:
-//   every season paid  → "All Paid"
-//   some seasons paid  → "N/M Paid"
-//   no seasons paid    → "No Payments"
-//   no players         → "Inactive"
-//   coach              → "All Paid"
-// ─────────────────────────────────────────────────────────────────────────────
 const getParentPaymentLabel = (parent: any): string => {
   if (parent.isCoach) return 'All Paid';
 
   const players: any[] = parent.players || [];
   if (players.length === 0) return 'Inactive';
 
-  // Aggregate all seasons across all players
   const allSeasons: any[] = players.flatMap((p: any) => p.seasons || []);
 
   if (allSeasons.length === 0) {
-    // Fall back to per-player paid flags if `seasons` isn't populated
     const anyPaid = players.some(
       (p: any) => p.paymentComplete === true || p.paymentStatus === 'paid',
     );
@@ -86,7 +78,6 @@ const getParentPaymentLabel = (parent: any): string => {
   return 'No Payments';
 };
 
-// Skeleton loader for parent table rows
 export const ParentTableSkeleton: React.FC<{ rows?: number }> = ({
   rows = 10,
 }) => {
@@ -156,7 +147,6 @@ export const ParentTableSkeleton: React.FC<{ rows?: number }> = ({
   );
 };
 
-// Helper: is player registered for current season (kept for exports)
 const isPlayerRegisteredForCurrentSeason = (player: any): boolean => {
   const currentYear = getCurrentYear();
   if (player.seasons && Array.isArray(player.seasons)) {
@@ -166,8 +156,6 @@ const isPlayerRegisteredForCurrentSeason = (player: any): boolean => {
   return player.season && player.registrationYear === currentYear;
 };
 
-// Helper: parent status (kept for exports — now returns the SAME label
-// the table renders)
 const getParentStatus = <T extends ExtendedTableRecord>(record: T): string => {
   return getParentPaymentLabel(record);
 };
@@ -192,7 +180,6 @@ const getVisibleFieldNames = (visibleFields: string[] = []): string[] => {
   return visibleFields;
 };
 
-// Export to PDF
 export const exportParentsToPDF = <T extends ExtendedTableRecord>(
   data: T[],
   addrShow: AddressShowConfig = {
@@ -252,7 +239,6 @@ export const exportParentsToPDF = <T extends ExtendedTableRecord>(
   doc.save(`parents_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
 
-// exportParentsToExcel
 export const exportParentsToExcel = <T extends ExtendedTableRecord>(
   data: T[],
   addrShow: AddressShowConfig = {
@@ -302,7 +288,6 @@ export const exportParentsToExcel = <T extends ExtendedTableRecord>(
   );
 };
 
-// Export email list to CSV
 export const exportEmailList = <T extends ExtendedTableRecord>(data: T[]) => {
   const uniqueEmails = Array.from(
     new Set(
@@ -347,7 +332,6 @@ export const exportEmailList = <T extends ExtendedTableRecord>(data: T[]) => {
   });
 };
 
-// Copy emails to clipboard
 export const copyEmailListToClipboard = <T extends ExtendedTableRecord>(
   data: T[],
   onSuccess?: (message: string) => void,
@@ -415,9 +399,6 @@ export const copyEmailListToClipboard = <T extends ExtendedTableRecord>(
   return true;
 };
 
-// ---------------------------------------------------------------------------
-// Main columns definition with dynamic visibility
-// ---------------------------------------------------------------------------
 export const getParentTableColumns = ({
   handleParentClick,
   handleEditClick,
@@ -444,7 +425,6 @@ export const getParentTableColumns = ({
     zip: isFieldVisible('zip'),
   };
 
-  // Loading skeleton columns
   if (loading) {
     return [
       {
@@ -570,22 +550,9 @@ export const getParentTableColumns = ({
       dataIndex: 'fullName',
       key: 'name',
       render: (text: string, record: ExtendedTableRecord) => {
-        // 1. Determine the correct fallback image based on role & relationship
-        // Check 'Agent' first so it overrides the coach status
-        let defaultAvatar = '';
+        // ✅ Single source of truth — agent wins over coach
+        const defaultAvatar = resolveParentDefaultAvatar(record);
 
-        const isAgent = record.relationship?.trim().toLowerCase() === 'agent';
-
-        if (isAgent) {
-          defaultAvatar = getParentAvatar(null, 'Agent');
-        } else if (record.isCoach) {
-          defaultAvatar = getCoachAvatar(null);
-        } else {
-          // Uses mom.png for Mother, dad.png for Father, guardian.png for Guardian
-          defaultAvatar = getParentAvatar(null, record.relationship);
-        }
-
-        // 2. Apply cache busting / R2 cleaning to user uploads
         const avatarUrl = getAvatarUrl(
           record.avatar || record.imgSrc,
           defaultAvatar,
@@ -602,7 +569,6 @@ export const getParentTableColumns = ({
                 className='img-fluid rounded-circle'
                 alt={record.fullName}
                 onError={(e) => {
-                  // Fallback again if the image link is broken
                   (e.target as HTMLImageElement).src = defaultAvatar;
                 }}
               />
@@ -679,20 +645,17 @@ export const getParentTableColumns = ({
       },
     },
 
-    // ─── Payment Status — now uses getParentPaymentLabel ────────────────
     {
       title: 'Payment Status',
       key: 'status',
       render: (_: unknown, record: ExtendedTableRecord) => {
         const label = getParentPaymentLabel(record);
-
         const badgeColor =
           label === 'All Paid'
             ? 'success'
             : label === 'Inactive'
               ? 'danger'
               : 'warning';
-
         return (
           <span
             className={`badge badge-soft-${badgeColor} d-inline-flex align-items-center`}
