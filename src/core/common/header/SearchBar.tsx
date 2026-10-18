@@ -8,6 +8,7 @@ import {
   getParentAvatar,
   getCoachAvatar,
   getPlayerAvatar,
+  resolveParentDefaultAvatar,
 } from '../../../utils/avatarUtils';
 
 interface SearchBarProps {
@@ -84,11 +85,21 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
     switch (result.type) {
       case 'player':
         return getPlayerAvatar(undefined, result.gender);
-      case 'coach':
-        return getCoachAvatar(undefined);
+
+      // ✅ Agent wins over coach for parents & guardians
       case 'parent':
       case 'guardian':
-        return getParentAvatar(undefined, (result as any).relationship);
+        return resolveParentDefaultAvatar({
+          isCoach: false,
+          relationship: (result as any).relationship,
+        });
+
+      case 'coach':
+        return resolveParentDefaultAvatar({
+          isCoach: true,
+          relationship: (result as any).relationship,
+        });
+
       default:
         return getParentAvatar(undefined);
     }
@@ -392,9 +403,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
                     alt={result.name || 'User avatar'}
                     className='avatar-img rounded-circle'
                     onError={(e) => {
-                      // Fallback to local defaults — players only have
-                      // boy/girl; parents get mom/dad/guardian based on
-                      // relationship; coaches get coach.png
+                      // ✅ Same precedence rules via shared helper
                       const target = e.target as HTMLImageElement;
                       switch (result.type) {
                         case 'player':
@@ -404,14 +413,17 @@ const SearchBar: React.FC<SearchBarProps> = ({ role }) => {
                           );
                           break;
                         case 'coach':
-                          target.src = getCoachAvatar(undefined);
+                          target.src = resolveParentDefaultAvatar({
+                            isCoach: true,
+                            relationship: (result as any).relationship,
+                          });
                           break;
                         case 'parent':
                         case 'guardian':
-                          target.src = getParentAvatar(
-                            undefined,
-                            (result as any).relationship,
-                          );
+                          target.src = resolveParentDefaultAvatar({
+                            isCoach: false,
+                            relationship: (result as any).relationship,
+                          });
                           break;
                         default:
                           target.src = getParentAvatar(undefined);
