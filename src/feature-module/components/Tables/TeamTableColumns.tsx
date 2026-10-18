@@ -303,7 +303,7 @@ export const getTeamTableColumns = ({
       const avatarUrl = resolveAvatar(record.gender);
       return (
         <div className='d-flex align-items-center'>
-          <div className='avatar avatar-sm flex-shrink-0 me-2'>
+          <div className='avatar flex-shrink-0 me-2'>
             <img
               src={avatarUrl}
               className='img-fluid rounded-circle'
