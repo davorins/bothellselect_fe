@@ -822,7 +822,7 @@ const UserRegistrationModule: React.FC<Props> = ({
                 <span className='spinner-border spinner-border-sm me-2'></span>
                 Processing...
               </>
-            ) : localData.relationship === 'Agent' ? (
+            ) : registrationType === 'tournament' ? (
               'Continue to Team Registration'
             ) : (
               'Continue to Player Registration'
