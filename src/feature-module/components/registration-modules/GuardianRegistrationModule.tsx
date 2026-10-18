@@ -323,7 +323,7 @@ const GuardianRegistrationModule: React.FC<GuardianRegistrationModuleProps> = ({
                     <label
                       className='form-check-label fw-bold text-primary'
                       htmlFor={`isAgent-${guardian.email || 'primary'}`}
-                      style={{ cursor: 'pointer', fontSize: '0.9rem' }}
+                      style={{ cursor: 'pointer', fontSize: '0.7rem' }}
                     >
                       Is Agent?
                     </label>
