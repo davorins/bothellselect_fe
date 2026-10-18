@@ -109,6 +109,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           status: item.status,
           season: item.season,
           registrationYear: item.registrationYear,
+          relationship: item.relationship,
+          isCoach: item.isCoach,
         }));
       } catch (error) {
         console.error('Search error:', error);

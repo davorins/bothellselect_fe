@@ -26,6 +26,8 @@ export interface SearchResult {
   };
   phone?: string;
   address?: any;
+  relationship?: string;
+  isCoach?: boolean;
   seasons?: Array<{
     season: string;
     year: number;
