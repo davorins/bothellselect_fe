@@ -365,37 +365,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const token = localStorage.getItem('token');
       if (!token) return [];
 
-      // First, get the first page to know total count
+      // Build a clean base query string. Ensure we don't duplicate page/limit.
+      const cleanParams = new URLSearchParams(queryParams);
+      cleanParams.delete('page');
+      cleanParams.delete('limit');
+      const baseQuery = cleanParams.toString();
+
+      // Fetch first page (large limit to minimize round-trips)
+      const firstUrl = `${API_BASE_URL}/parents?${baseQuery}${baseQuery ? '&' : ''}page=1&limit=100`;
       const initialResponse = await axios.get<{
         data: Parent[];
         pagination: any;
-      }>(`${API_BASE_URL}/parents?${queryParams}&page=1&limit=100`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      }>(firstUrl, { headers: { Authorization: `Bearer ${token}` } });
 
       const pagination = initialResponse.data.pagination;
       let allParentsData = [...(initialResponse.data.data || [])];
 
-      // If there are more pages, fetch them
+      // Fetch remaining pages if needed — WITH the same query params
       if (pagination && pagination.pages > 1) {
         const pagePromises = [];
-
-        // Start from page 2 since we already have page 1
         for (let page = 2; page <= pagination.pages; page++) {
+          const url = `${API_BASE_URL}/parents?${baseQuery}${baseQuery ? '&' : ''}page=${page}&limit=100`;
           pagePromises.push(
-            axios.get<{ data: Parent[] }>(
-              `${API_BASE_URL}/parents?${queryParams}&page=${page}&limit=100`,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              },
-            ),
+            axios.get<{ data: Parent[] }>(url, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
           );
         }
 
-        // Wait for all page requests to complete
         const pageResponses = await Promise.all(pagePromises);
-
-        // Combine all data
         pageResponses.forEach((response) => {
           allParentsData = [...allParentsData, ...(response.data.data || [])];
         });

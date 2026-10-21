@@ -2072,7 +2072,7 @@ const TournamentRegistrationModule: React.FC<
             </button>
           </div>
           <div className='card-body'>
-            {/* FIXED LOGIC: Show appropriate content based on user state */}
+            {/* Show appropriate content based on user state */}
             {teams.length === 0 ? (
               <div className='text-center py-4'>
                 {hasLoadedExistingTeams ? (
