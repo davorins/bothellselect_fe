@@ -109,9 +109,10 @@ const TeamForm: React.FC = () => {
       }
 
       const coaches = await fetchAllParents('isCoach=true');
-      setAvailableCoaches(coaches.filter((p: any) => p.isCoach === true));
+      const filteredCoaches = coaches.filter((p: any) => p.isCoach === true);
 
       if (isEdit) {
+        // ── Fetch team FIRST so we know which coaches are already assigned
         const teamResponse = await fetch(
           `${process.env.REACT_APP_API_BASE_URL}/internal-teams/${id}`,
           { headers: { Authorization: `Bearer ${token}` } },
@@ -120,6 +121,19 @@ const TeamForm: React.FC = () => {
 
         const team = await teamResponse.json();
         setCurrentTeamData(team);
+
+        // ── Merge in any coach on the team that the API didn't return
+        const teamCoachIds = new Set(
+          (team.coachIds || []).map((c: any) => c._id),
+        );
+        const apiCoachIds = new Set(filteredCoaches.map((c: any) => c._id));
+
+        const missingCoaches = (team.coachIds || []).filter(
+          (c: any) => !apiCoachIds.has(c._id),
+        );
+
+        setAvailableCoaches([...filteredCoaches, ...missingCoaches]);
+
         setFormValues({
           name: team.name || '',
           year: team.year || currentYear,
@@ -139,6 +153,7 @@ const TeamForm: React.FC = () => {
           team,
         );
       } else {
+        setAvailableCoaches(filteredCoaches);
         setTimeout(() => {
           setFormValues((prev) => {
             if (prev.tryoutSeason && prev.tryoutYear) {
@@ -343,13 +358,26 @@ const TeamForm: React.FC = () => {
       }));
   }, [availablePlayers]);
 
-  const selectedCoachOptions = useMemo(
-    () =>
-      coachOptions.filter((o) =>
-        (formValues.coachIds as string[]).includes(o.value),
-      ),
-    [coachOptions, formValues.coachIds],
-  );
+  const selectedCoachOptions = useMemo<SelectOption[]>(() => {
+    const selectedIds = (formValues.coachIds as string[]) || [];
+    return selectedIds.map((id) => {
+      const found = coachOptions.find((o) => o.value === id);
+      if (found) return found;
+
+      const fallback = currentTeamData?.coachIds?.find(
+        (c: any) => c._id === id,
+      );
+      if (fallback) {
+        return {
+          value: id,
+          label:
+            fallback.fullName + (fallback.email ? ` — ${fallback.email}` : ''),
+        };
+      }
+
+      return { value: id, label: id };
+    });
+  }, [coachOptions, formValues.coachIds, currentTeamData]);
 
   const selectedPlayerOptions = useMemo(() => {
     const allOpts = playerGroupedOptions.flatMap((g) => g.options);
